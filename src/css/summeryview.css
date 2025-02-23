@@ -1,0 +1,203 @@
+.summery-view {
+  background-color: white;
+  margin: 10px;
+  display: flex;
+  flex-direction: column;
+  height: 98%;
+  width: 98%;
+}
+
+.summery-up {
+  display: flex;
+  flex-direction: column;
+  /* Change to column to stack elements vertically */
+  gap: 15px;
+  /* Add spacing between elements */
+}
+
+.sec1,
+.sec2,
+.sec3 {
+  gap: 20px;
+  display: flex;
+  flex-direction: row;
+}
+
+.summery-group-select {
+  display: flex;
+  flex-direction: column;
+  /* Stack label and dropdown vertically */
+  gap: 10px;
+  width: 95%;
+  /* Make the dropdowns take full width */
+}
+
+.summery-group-select label {
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.summery-down {
+  flex: 4;
+  /* Flex 4: This part will take 4 parts of available space */
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.sec3 {
+  align-items: flex-end;
+  /* Align all child elements to the bottom */
+}
+
+.search-button-class {
+  flex: 1; /* Takes equal space */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.search-btn {
+  flex: 1;
+  width: 60% !important;
+  padding: 10px 20px;
+  font-size: 16px;
+  font-weight: bold;
+  color: #ffffff;
+  background-color: #004B71;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.search-btn:disabled {
+  flex: 1;
+  width: 60% !important;
+  background-color: #ccc;
+  /* Gray color when disabled */
+  cursor: not-allowed;
+}
+
+.search-btn.disabled:hover {
+  background-color: #8600008a;
+}
+
+.search-btn:hover {
+  background-color: #0056b3;
+}
+
+
+.summary-widget-container {
+  display: flex;
+  flex-direction: column;
+  /* Change to column to display widgets vertically */
+  justify-content: center;
+  width: 95%;
+  margin: 0 auto;
+}
+
+.summary-widget-container .summary-widget {
+  width: 95%;
+  /* Ensure widget takes up the full width within the container */
+}
+
+.date-range-picker-summery {
+  flex: 1; /* Takes equal space */
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.date-picker-summery {
+  flex: 1;
+  width: 95%;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  /* Ensures space between the two date pickers */
+}
+
+.to-date {
+  font-weight: bold;
+  color: #004B71;
+  /* Using the specified color */
+  font-size: 16px;
+  width: 10%;
+  /* Adjusted width to look more balanced */
+  text-align: center;
+}
+
+.react-datepicker-wrapper {
+  flex-grow: 1;
+  /* Allow the date picker to take available space */
+  background-color: #ffffff00;
+  /* Light background for the date picker */
+  padding: 5px 10px;
+  /* Padding inside the date picker */
+  font-size: 14px;
+  /* Font size for the date picker */
+}
+
+.react-datepicker__input-container input {
+  border: none;
+  outline: none;
+  padding: 8px;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #333;
+  /* Text color */
+}
+
+.react-datepicker__input-container input:focus {
+  border-color: #004B71;
+  /* Highlight border on focus */
+  box-shadow: 0 0 4px rgba(0, 75, 113, 0.5);
+  /* Focus shadow effect */
+}
+
+.react-datepicker__header {
+  background-color: #004B71;
+  /* Header background color */
+  color: white;
+  /* White text in header */
+}
+
+.react-datepicker__day--selected,
+.react-datepicker__day:hover {
+  background-color: #004B71;
+  /* Highlight selected day or hovered day */
+  color: white;
+  /* White text on selected day */
+}
+
+.react-datepicker__month {
+  margin: 0;
+}
+
+.no-plans-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  margin: 20px auto;
+  width: 80%;
+  max-width: 90%;
+}
+
+.no-plans-image {
+  width: 350px;
+  height: auto;
+  margin-bottom: 16px;
+  opacity: 0.7;
+}
+
+.no-plans-message {
+  font-size: 18px;
+  font-weight: 500;
+  color: #e93636;
+  text-align: center;
+  line-height: 1.5;
+}
+

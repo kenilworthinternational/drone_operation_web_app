@@ -1,0 +1,147 @@
+.summery-widget {
+  width: 100%;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 16px;
+  margin: 12px 0;
+  background-color: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  font-family: Arial, sans-serif;
+  transition: all 0.3s ease;
+}
+
+.summary-header {
+  margin-top: 5px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 14px 16px;
+  background-color: #f0f4f8;
+  border-radius: 8px;
+  border: 1px solid #d1d9e0;
+  transition: background-color 0.3s;
+}
+
+.summary-header:hover {
+  background-color: #e6eef5;
+}
+
+.summary-header span {
+  text-align: center !important;
+  margin-right: 12px;
+  color: #333333;
+}
+
+.summary-header svg {
+  font-size: 20px;
+  color: #555555;
+}
+
+.details-container {
+  margin-bottom: 12px;
+  padding: 12px 16px;
+  background: #f9fafc;
+  border-radius: 8px;
+  border: 1px solid #e0e6ed;
+}
+
+.table-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.table-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background-color: #ffffff00;
+}
+
+.table-row:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.07);
+}
+
+.table-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: #444444;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.team-column {
+  max-width: 220px;
+}
+
+.drone-column {
+  max-width: 150px;
+  text-align: center;
+  font-weight: 500;
+}
+
+.lead-column {
+  max-width: 220px;
+}
+
+.profile-pic {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid #cccccc;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s;
+}
+
+.profile-pic:hover {
+  transform: scale(1.1);
+}
+
+.name-section-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.name-section-summary span {
+  display: block;
+  font-size: 13px;
+  color: #555555;
+}
+
+.name-section-summary span:first-child {
+  font-weight: 600;
+  color: #333333;
+}
+
+.no-data {
+  text-align: center;
+  font-size: 14px;
+  padding: 16px;
+}
+
+.team-member-set {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.name-mobile-team{
+    display: flex;
+    flex-direction: column !important;
+}

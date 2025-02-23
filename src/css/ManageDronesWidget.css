@@ -1,0 +1,75 @@
+.manage-drones-widget {
+    display: flex;
+    flex-direction: column;
+    width: 80%; /* Changed from 300px to 80% */
+    max-width: 600px; /* Optional: Limit max width if needed */
+
+  }
+  
+  .drone-item {
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: height 0.3s ease-in-out;
+    overflow: hidden;
+    background: #fff;
+    margin: 10px;
+  }
+  
+  .drone-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+  }
+  
+  .drone-name {
+    font-size: 16px;
+    font-weight: 500;
+    flex-grow: 1;
+    margin-left: 10px;
+  }
+  
+  .remove-btn-drone {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    padding: 6px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+  }
+  
+  .remove-btn:hover {
+    background-color: #c0392b;
+  }
+  
+  .trash-icon {
+    font-size: 14px;
+  }
+  
+  .dropdown-icon {
+    transition: transform 0.3s ease;
+  }
+  
+  .drone-details {
+    padding: 10px;
+    margin-top: 5px;
+    background-color: #e9ecef;
+    border-radius: 4px;
+    border-left: 3px solid #28a745;
+  }
+  
+  .no-drones {
+    text-align: center;
+    color: #777;
+    font-size: 14px;
+    margin-top: 10px;
+  }
+  
