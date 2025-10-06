@@ -1,0 +1,248 @@
+/* Ops Report 8 - Structured Styles */
+
+.ops-report-container-opsreport8 {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+}
+
+.ops-report-header-opsreport8 {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ops-report-header-opsreport8 h2 {
+  margin: 0;
+  color: #0a3550;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.ops-controls-opsreport8 {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 16px;
+  align-items: flex-start;
+}
+
+.date-controls-opsreport8 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(220px, 320px));
+  gap: 12px;
+  align-items: end;
+}
+
+.date-group-opsreport8 {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.date-group-opsreport8 label {
+  font-size: 12px;
+  color: #374151;
+}
+
+.date-picker-opsreport8 {
+  width: 100%;
+  max-width: 320px;
+  padding: 8px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.filter-controls-opsreport8 {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.filter-row-opsreport8 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 320px));
+  gap: 12px;
+}
+
+/* Top row: Group, Plantation, Region, Estate */
+.filter-row-top-opsreport8 {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(220px, 320px));
+  gap: 12px;
+}
+
+/* Bottom row: Reason + Export button */
+.filter-row-bottom-opsreport8 {
+  display: grid;
+  grid-template-columns: minmax(220px, 320px) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+/* Right-aligned actions row */
+.actions-row-opsreport8 {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.filter-group-opsreport8 {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.filter-group-opsreport8 label {
+  font-size: 12px;
+  color: #374151;
+}
+
+.filter-select-opsreport8 {
+  width: 100%;
+  max-width: 320px;
+  padding: 8px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 14px;
+}
+
+.export-btn-opsreport8 {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  width: fit-content;
+  padding: 0 12px;
+  border: 1px solid #0b6fae;
+  background: #0b6fae;
+  color: #fff;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.export-btn-opsreport8:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ops-report-content-opsreport8 {
+  display: block;
+}
+
+.loading-container-opsreport8 {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  gap: 10px;
+  color: #004B71;
+}
+
+.table-container-opsreport8 {
+  width: 100%;
+  overflow: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.ops-table-opsreport8 {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 960px;
+}
+
+.ops-table-opsreport8 thead th {
+  position: sticky;
+  top: 0;
+  background: #f3f4f6;
+  color: #111827;
+  text-align: left;
+  font-weight: 600;
+  font-size: 13px;
+  padding: 10px 12px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.ops-table-opsreport8 tbody td {
+  font-size: 13px;
+  color: #1f2937;
+  padding: 10px 12px;
+  border-bottom: 1px solid #f3f4f6;
+  vertical-align: top;
+}
+
+.fields-cell-opsreport8 {
+  max-width: 420px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fields-count-cell-opsreport8, .area-cell-opsreport8 {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.summary-row-opsreport8 td {
+  background: #fafafa;
+  border-top: 2px solid #e5e7eb;
+  font-weight: 600;
+}
+
+.summary-label-opsreport8 {
+  text-align: right;
+}
+
+.summary-area-opsreport8 {
+  color: #0a6d3b;
+}
+
+.no-data-opsreport8 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 160px;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .filter-row-opsreport8,
+  .filter-row-top-opsreport8 {
+    grid-template-columns: repeat(2, minmax(160px, 1fr));
+  }
+  .filter-row-bottom-opsreport8 {
+    grid-template-columns: 1fr auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .date-controls-opsreport8 {
+    grid-template-columns: 1fr;
+  }
+
+  .filter-row-opsreport8,
+  .filter-row-top-opsreport8 {
+    grid-template-columns: 1fr;
+  }
+  .filter-row-bottom-opsreport8 {
+    grid-template-columns: 1fr;
+  }
+
+  .ops-table-opsreport8 {
+    min-width: 720px;
+  }
+}
+
+

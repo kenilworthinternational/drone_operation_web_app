@@ -1,0 +1,460 @@
+.broker-management-bro-manage {
+  padding: 20px;
+}
+
+.broker-management-title-bro-manage {
+  color: #004B71;
+  margin-bottom: 30px;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+/* Search Section */
+.search-section-bro-manage {
+  margin-bottom: 30px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.search-input-group-bro-manage {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.search-input-bro-manage {
+  flex: 1;
+  padding: 12px 16px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 16px;
+  outline: none;
+  transition: border-color 0.3s ease;
+}
+
+.search-input-bro-manage:focus {
+  border-color: #004B71;
+  box-shadow: 0 0 0 2px rgba(0, 75, 113, 0.1);
+}
+
+.search-btn-bro-manage {
+  padding: 12px 20px;
+  background: #004B71;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 0.3s ease;
+}
+
+.search-btn-bro-manage:hover {
+  background: #003d5f;
+}
+
+/* Message Display */
+.message-bro-manage {
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  font-weight: 500;
+}
+
+.message-bro-manage.success {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.message-bro-manage.error {
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+/* Table Container */
+.brokers-table-container-bro-manage {
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+.loading-bro-manage,
+.no-data-bro-manage {
+  padding: 40px;
+  text-align: center;
+  color: #666;
+  font-size: 16px;
+}
+
+/* Table Styles */
+.brokers-table-bro-manage {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.brokers-table-bro-manage th {
+  background: #004B71;
+  color: white;
+  padding: 15px 12px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.brokers-table-bro-manage td {
+  padding: 12px;
+  border-bottom: 1px solid #e9ecef;
+  vertical-align: middle;
+}
+
+.brokers-table-bro-manage tbody tr:hover {
+  background: #f8f9fa;
+}
+
+.brokers-table-bro-manage tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Actions Column */
+.actions-bro-manage {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-start;
+}
+
+.action-btn-bro-manage {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 36px;
+}
+
+.view-bro-manage {
+  background: #17a2b8;
+  color: white;
+}
+
+.view-bro-manage:hover {
+  background: #138496;
+}
+
+.edit-bro-manage {
+  background: #ffc107;
+  color: #212529;
+}
+
+.edit-bro-manage:hover {
+  background: #e0a800;
+}
+
+.toggle-bro-manage {
+  background: #f8f9fa;
+  color: #6c757d;
+  border: 2px solid #dee2e6;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.toggle-bro-manage.active {
+  background: #e8f5e8;
+  color: #28a745;
+  border-color: #28a745;
+}
+
+.toggle-bro-manage.inactive {
+  background: #fff5f5;
+  color: #dc3545;
+  border-color: #dc3545;
+}
+
+.toggle-bro-manage:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.toggle-bro-manage:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.toggle-bro-manage svg {
+  font-size: 16px;
+  transition: transform 0.2s ease;
+}
+
+.toggle-bro-manage:hover svg {
+  transform: scale(1.1);
+}
+
+.loading-spinner-bro-manage {
+  width: 12px;
+  height: 12px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin-bro-manage 1s linear infinite;
+}
+
+@keyframes spin-bro-manage {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Modal Styles */
+.modal-overlay-bro-manage {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-content-bro-manage {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  max-width: 600px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.edit-modal-bro-manage {
+  max-width: 800px;
+}
+
+.modal-header-bro-manage {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 25px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.modal-header-bro-manage h4 {
+  color: #004B71;
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.close-btn-bro-manage {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+}
+
+.close-btn-bro-manage:hover {
+  background: #f8f9fa;
+  color: #333;
+}
+
+.modal-body-bro-manage {
+  padding: 25px;
+}
+
+.detail-grid-bro-manage {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.detail-item-bro-manage {
+  display: flex;
+  flex-direction: column;
+}
+
+.detail-item-bro-manage.full-width-bro-manage {
+  grid-column: 1 / -1;
+}
+
+.detail-item-bro-manage label {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 5px;
+  font-size: 14px;
+}
+
+.detail-item-bro-manage span {
+  color: #666;
+  font-size: 16px;
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+/* Edit Form Styles */
+.edit-form-bro-manage {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.form-row-bro-manage {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.form-row-bro-manage:last-child {
+  margin-bottom: 0;
+}
+
+.form-group-bro-manage {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.form-group-bro-manage.full-width-bro-manage {
+  flex: 1;
+}
+
+.form-group-bro-manage label {
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #333;
+  font-size: 13px;
+}
+
+.form-group-bro-manage input,
+.form-group-bro-manage textarea {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.3s ease;
+}
+
+.form-group-bro-manage input:focus,
+.form-group-bro-manage textarea:focus {
+  border-color: #004B71;
+  box-shadow: 0 0 0 2px rgba(0, 75, 113, 0.1);
+}
+
+.readonly-field-bro-manage {
+  background: #f8f9fa;
+  color: #6c757d;
+  cursor: not-allowed;
+}
+
+.form-group-bro-manage textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.form-actions-bro-manage {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.submit-btn-bro-manage {
+  padding: 10px 25px;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.3s ease;
+  min-width: 180px;
+  justify-content: center;
+}
+
+.update-bro-manage {
+  background: #ffc107;
+  color: #212529;
+}
+
+.update-bro-manage:hover {
+  background: #e0a800;
+}
+
+.submit-btn-bro-manage:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  color: #666;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .broker-management-bro-manage {
+    padding: 10px;
+  }
+  
+  .search-input-group-bro-manage {
+    flex-direction: column;
+  }
+  
+  .brokers-table-bro-manage {
+    font-size: 12px;
+  }
+  
+  .brokers-table-bro-manage th,
+  .brokers-table-bro-manage td {
+    padding: 8px 6px;
+  }
+  
+  .actions-bro-manage {
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .action-btn-bro-manage {
+    min-width: 32px;
+    height: 32px;
+    font-size: 12px;
+  }
+  
+  .modal-content-bro-manage {
+    margin: 10px;
+    max-height: 90vh;
+  }
+  
+  .detail-grid-bro-manage {
+    grid-template-columns: 1fr;
+  }
+  
+  .form-row-bro-manage {
+    flex-direction: column;
+    gap: 10px;
+  }
+}

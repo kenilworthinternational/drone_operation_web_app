@@ -1,0 +1,66 @@
+/* styles/chemicalreport.css */
+
+.container-chemical {
+    max-height: 500px;
+    padding: 12px;
+    overflow: auto;
+
+  }
+  
+  .filters {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  
+  .input-group label {
+    display: block;
+    margin-bottom: 4px;
+  }
+  
+  .buttons {
+    margin-left: auto;
+    display: flex;
+    gap: 8px;
+  }
+  
+  .error {
+    color: red;
+    margin-bottom: 8px;
+  }
+  
+  .table-wrapper {
+    overflow-x: auto;
+  }
+  
+  .table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .table th {
+    border-bottom: 1px solid #ddd;
+    text-align: left;
+    padding: 8px;
+  }
+  
+  .table td {
+    border-bottom: 1px solid #f0f0f0;
+    padding: 8px;
+  }
+  
+  .no-data {
+    padding: 12px;
+    text-align: center;
+  }
+  
+  .summary {
+    margin-top: 16px;
+  }
+  
+  .summary-title {
+    font-weight: 600;
+    margin-bottom: 8px;
+  }

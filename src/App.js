@@ -1,12 +1,48 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import HomePage from './View/HomePage';
-import Services from './View/Services';
-import Dashboard from './View/Dashboard';
-import Login from './View/Login';
-import ProceedPlan from './View/ProceedPlan';
-import SummeryView from './View/SummeryView';
-import CalenderView from './View/CalenderView';
+import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import HomePage from './pages/HomePage';
+import UpdateServices from './features/misc/UpdateServices';
+import CreateBookings from './features/bookings/CreateBookings';
+import Dashboard from './features/dashboard/Dashboard';
+import Login from './pages/Login';
+import ProceedPlan from './features/misc/ProceedPlan';
+import TeamAllocation from './features/misc/teamAllocation';
+import NonpTeamAllocation from './features/nonp/nonpTeamAllocation';
+import SummeryView from './features/misc/SummeryView';
+import CalenderView from './features/calendar/CalenderView';
+import CalenderViewOnly from './features/calendar/CalenderViewOnly';
+import DeletePlan from './features/misc/DeletePlan';
+import DeactivatePlan from './features/misc/DeactivatePlan';
+import ReportSection from './features/reports/ReportSection';
+import DayEndProcess from './features/dayend/DayEndProcess';
+import DayEndView from './features/dayend/DayEndView';
+import DayEndProcessAsc from './features/dayend/DayEndProcessAsc';
+import ManagerRescheduler from './features/misc/ManagerRescheduler';
+import Missions from './features/misc/Missions';
+import BookingList from './features/bookings/BookingList';
+import ProceedPlanAscNonp from './features/misc/ProceedPlanAscNonp';
+import MDDashboard from './features/dashboard/MDDashboard';
+import FieldHistory from './features/misc/FieldHistory';
+import DataViewer from './features/data/DataViewer';
+import CEODataViewer from './features/dashboard/CEODataViewer';
+import OpsAsign from './features/ops/OpsAsign';
+import ReportReview from './features/reports/ReportReview';
+import Brokers from './features/brokers/Brokers';
+
+// ProtectedRoute component to check authentication
+const ProtectedRoute = ({ children }) => {
+  const userData = JSON.parse(localStorage.getItem('userData'));
+  const isAuthenticated = userData && userData.login_status;
+
+  return isAuthenticated ? children : <Navigate to="/login" />;
+};
+
+// Route guard for Developers only
+const DevelopersOnlyRoute = ({ children }) => {
+  const userData = JSON.parse(localStorage.getItem('userData')) || {};
+  const isDeveloper = userData.member_type === 'i' && userData.user_level === 'i';
+  return isDeveloper ? children : <Navigate to="/home/dashboard" />;
+};
 
 function App() {
   return (
@@ -15,13 +51,249 @@ function App() {
         <Route path="/" element={<Navigate to="/login" />} />
         <Route path="/login" element={<Login />} />
         
-        {/* HomePage is the layout, Dashboard and Services load inside it */}
-        <Route path="/home" element={<HomePage />}>
-          <Route path="dashboard" element={<Dashboard />} />
-          <Route path="services" element={<Services />} />
-          <Route path="proceedPlan" element={<ProceedPlan />} />
-          <Route path="summeryView" element={<SummeryView />} />
-          <Route path="calenderView" element={<CalenderView />} />
+        {/* Wrap protected routes with ProtectedRoute */}
+        <Route
+          path="/home"
+          element={
+            <ProtectedRoute>
+              <HomePage />
+            </ProtectedRoute>
+          }
+        >
+          <Route
+            path="dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="dataViewer"
+            element={
+              <ProtectedRoute>
+                <DataViewer />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="ceoDataViewer"
+            element={
+              <ProtectedRoute>
+                <CEODataViewer />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="mDDashboard"
+            element={
+              <ProtectedRoute>
+                <MDDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="createBookings"
+            element={
+              <ProtectedRoute>
+                <CreateBookings />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="updateservices"
+            element={
+              <ProtectedRoute>
+                <UpdateServices />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="missions"
+            element={
+              <ProtectedRoute>
+                <Missions />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="proceedPlan"
+            element={
+              <ProtectedRoute>
+                <ProceedPlan />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="teamAllocation"
+            element={
+              <ProtectedRoute>
+                <TeamAllocation />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="nonpTeamAllocation"
+            element={
+              <ProtectedRoute>
+                <NonpTeamAllocation />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="summeryView"
+            element={
+              <ProtectedRoute>
+                <SummeryView />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="calenderView"
+            element={
+              <ProtectedRoute>
+                <CalenderView />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="calenderViewOnly"
+            element={
+              <ProtectedRoute>
+                <CalenderViewOnly />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="deletePlan"
+            element={
+              <ProtectedRoute>
+                <DeletePlan />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="deactivatePlan"
+            element={
+              <ProtectedRoute>
+                <DeactivatePlan />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="reportSection"
+            element={
+              <ProtectedRoute>
+                <ReportSection />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="reports/finance"
+            element={
+              <ProtectedRoute>
+                <ReportSection section="finance" />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="reports/ops"
+            element={
+              <ProtectedRoute>
+                <ReportSection section="ops" />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="reports/plantation"
+            element={
+              <ProtectedRoute>
+                <ReportSection section="plantation" />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="dayEndProcess"
+            element={
+              <ProtectedRoute>
+                <DayEndProcess />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="dayEndProcessAsc"
+            element={
+              <ProtectedRoute>
+                <DayEndProcessAsc />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="dayEndView"
+            element={
+              <ProtectedRoute>
+                <DayEndView />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="fieldHistory"
+            element={
+              <ProtectedRoute>
+                <FieldHistory />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="managerRescheduler"
+            element={
+              <ProtectedRoute>
+                <ManagerRescheduler />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="bookingList"
+            element={
+              <ProtectedRoute>
+                <BookingList />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="proceedPlanAsc"
+            element={
+              <ProtectedRoute>
+                <ProceedPlanAscNonp />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="opsAsign"
+            element={
+              <ProtectedRoute>
+                <OpsAsign />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="reportReview"
+            element={
+              <ProtectedRoute>
+                <ReportReview />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="brokers"
+            element={
+              <ProtectedRoute>
+                <DevelopersOnlyRoute>
+                  <Brokers />
+                </DevelopersOnlyRoute>
+              </ProtectedRoute>
+            }
+          />
         </Route>
       </Routes>
     </Router>

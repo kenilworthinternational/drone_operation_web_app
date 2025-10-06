@@ -1,0 +1,119 @@
+/* Ensure content is positioned properly */
+.content-dashboard {
+    overflow-y: auto;
+    overflow-x: hidden;
+    /* margin-left and width are now handled dynamically in the component */
+    padding: 1px;
+    height: 100vh; /* Ensure it stays within the viewport */
+    box-sizing: border-box;
+    background-color: rgb(252, 254, 255);
+    scrollbar-width: thin;
+    scrollbar-color: #004B71 #f1f1f1;
+}
+
+.content-dashboard::-webkit-scrollbar {
+    width: 8px;
+}
+.content-dashboard::-webkit-scrollbar-thumb {
+    background: #004B71;
+    border-radius: 4px;
+}
+.content-dashboard::-webkit-scrollbar-thumb:hover {
+    background: #00334d;
+}
+
+@media (max-width: 768px) {
+  /* Layout */
+  .main-container, .services, .services-container, .plan-proceed, .calendar, .dayendprocess, .form-side, .right-side, .division-side {
+    width: 100vw !important;
+    min-width: 0 !important;
+    max-width: 100vw !important;
+    height: auto !important;
+    min-height: 100vh;
+    flex-direction: column !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+
+  /* Hide sidebar, show hamburger */
+  .left-nav {
+    position: fixed !important;
+    left: -250px !important;
+    width: 200px !important;
+    z-index: 1000 !important;
+    transition: left 0.3s;
+    height: 100vh !important;
+    box-shadow: 2px 0 8px rgba(0,0,0,0.1);
+  }
+  .left-nav.open {
+    left: 0 !important;
+  }
+  .content, .content-dashboard {
+    margin-left: 0 !important;
+    width: 100vw !important;
+    padding: 0 !important;
+  }
+
+  /* Forms, cards, widgets */
+  .form-side, .division-side, .right-side, .card, .summary-widget, .team-container, .division-box-new, .drone-box, .booking-list, .selected-item, .not-selected, .selected-drone, .not-selected-drone {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100vw !important;
+    padding: 8px !important;
+    margin: 8px 0 !important;
+    box-sizing: border-box;
+    border-radius: 0 !important;
+  }
+
+  /* Buttons and inputs */
+  button, .button-class, .submit-button, .search-btn, .edit-btn, .save-btn, .proceed-btn-asc, .date-asc, .search-btn-asc {
+    width: 100% !important;
+    min-width: 0 !important;
+    font-size: 16px !important;
+    padding: 12px !important;
+    margin: 8px 0 !important;
+    border-radius: 6px !important;
+  }
+  input, select, textarea {
+    width: 100% !important;
+    min-width: 0 !important;
+    font-size: 16px !important;
+    padding: 10px !important;
+    margin: 8px 0 !important;
+    border-radius: 6px !important;
+  }
+
+  /* Tables and grids */
+  table, .report-table, .grid-container-dataviewer, .grid-container-dataviewerceo {
+    display: block !important;
+    width: 100% !important;
+    overflow-x: auto !important;
+  }
+  th, td {
+    min-width: 120px !important;
+    font-size: 13px !important;
+  }
+
+  /* Hide non-essential columns or details if needed */
+  .hide-on-mobile {
+    display: none !important;
+  }
+
+  /* Popup/modal */
+  .popup-content-calender, .popup-content, .popup-overlay, .subtask-popup-content, .rejection-popup-content {
+    width: 98vw !important;
+    min-width: 0 !important;
+    max-width: 100vw !important;
+    padding: 8px !important;
+    border-radius: 0 !important;
+  }
+
+  /* Misc */
+  .date-area, .mission-type, .group-select, .add-hoc-container, .estate-search-wrapper, .estate-suggestions-list, .selected-estate-info {
+    width: 100% !important;
+    margin: 8px 0 !important;
+    padding: 0 4px !important;
+  }
+}
+  

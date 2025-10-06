@@ -1,0 +1,170 @@
+.reportsection {
+  max-height: 99vh;
+    height:max-content; /* Adjust this value based on your layout */
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    box-sizing: border-box;
+    overflow: auto; /* Enable vertical scrolling */
+    scrollbar-width: thin;
+    scrollbar-color: #004B71 #f1f1f1;
+}
+.reportsection::-webkit-scrollbar {
+  width: 8px;
+}
+.reportsection::-webkit-scrollbar-thumb {
+  background: #004B71;
+  border-radius: 4px;
+}
+.reportsection::-webkit-scrollbar-thumb:hover {
+  background: #00334d;
+}
+
+
+.reportsection > div {
+    width: 95%;
+    border-radius: 10px;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+    background-color: #f9f9f9;
+    transition: all 0.3s ease-in-out;
+}
+
+.top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 20px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.top-bar:hover {
+    background: #e0e0e0;
+}
+
+.content-reports {
+    padding: 0 20px;
+    font-size: 1rem;
+    color: #555;
+    background: #ff0000;
+    border-top: 1px solid #ddd;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-in-out, padding 0.3s ease-in-out;
+}
+
+.content-reports.expanded {
+    max-height: max-content; /* Adjust based on content needs */
+    padding: 15px 20px;
+}
+/* Target .finance-section that contains an expanded content-reports */
+.finance-section.has-expanded, 
+.ops-section.has-expanded,
+.plantation-section.has-expanded,
+.admin-section.has-expanded {
+  width: 100%;
+    position: relative;
+    overflow: auto;
+    min-height: 150px;
+    height: max-content;
+    max-height: 90vh;
+    scrollbar-width: thin;
+    scrollbar-color: #004B71 #f1f1f1;
+}
+.finance-section.has-expanded::-webkit-scrollbar,
+.ops-section.has-expanded::-webkit-scrollbar,
+.plantation-section.has-expanded::-webkit-scrollbar,
+.admin-section.has-expanded::-webkit-scrollbar {
+  width: 8px;
+}
+.finance-section.has-expanded::-webkit-scrollbar-thumb,
+.ops-section.has-expanded::-webkit-scrollbar-thumb,
+.plantation-section.has-expanded::-webkit-scrollbar-thumb,
+.admin-section.has-expanded::-webkit-scrollbar-thumb {
+  background: #004B71;
+  border-radius: 4px;
+}
+.finance-section.has-expanded::-webkit-scrollbar-thumb:hover,
+.ops-section.has-expanded::-webkit-scrollbar-thumb:hover,
+.plantation-section.has-expanded::-webkit-scrollbar-thumb:hover,
+.admin-section.has-expanded::-webkit-scrollbar-thumb:hover {
+  background: #00334d;
+}
+/* Section-Specific Colors */
+.finance-section .top-bar {
+    background-color: #007bff27;
+    color: rgb(0, 0, 0);
+}
+
+.ops-section .top-bar {
+    background-color: #28a74669;
+    color: rgb(0, 0, 0);
+}
+
+.plantation-section .top-bar {
+    background-color: #ffc10754;
+    color: rgb(0, 0, 0);
+}
+
+.admin-section .top-bar {
+    background-color: #dc354652;
+    color: rgb(0, 0, 0);
+}
+.ops-content {
+  padding: 0 15px;
+}
+
+.ops-item {
+  margin: 10px 0;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+}
+
+.ops-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  background: #f5f5f5;
+  cursor: pointer;
+}
+
+.ops-sub-content {
+  
+  background: rgb(255, 255, 255);
+  border-top: 1px solid #eee;
+}
+/* General section styling */
+[class$="-content"] {
+  padding: 0 15px;
+}
+
+[class$="-item"] {
+  margin: 10px 0;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+}
+
+[class$="-item-header"] {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  background: #f5f5f5;
+  cursor: pointer;
+}
+
+[class$="-sub-content"] {
+  background: white;
+  border-top: 1px solid #eee;
+}
+
+/* Specific section theming */
+.finance-item-header { background: #e8f5e9; }
+.ops-item-header { background: #e3f2fd; }
+.plantation-item-header { background: #f0f4c3; }
+.admin-item-header { background: #fce4ec; }

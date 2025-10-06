@@ -1,0 +1,722 @@
+.ops-assign-container {
+  width: 100%;
+  margin: 0 auto;
+  background: #f8f9fa;
+  height: 99vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.ops-assign-tabs {
+  height: 5vh;
+  display: flex;
+  background: white;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e9ecef;
+  position: relative;
+  flex-shrink: 0;
+  text-align: center;
+  justify-content: center;
+}
+
+.ops-assign-tab {
+  flex: 1;
+  padding: 12px 20px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: #23272b;
+  justify-content: center;
+  transition: all 0.3s ease;
+  position: relative;
+  margin: 0;
+  text-align: center !important;
+}
+
+.ops-assign-tab.active {
+  background: #004B71;
+  color: white;
+  box-shadow: 0 1px 3px rgba(65, 128, 185, 0.3);
+}
+
+.ops-assign-tab:hover:not(.active) {
+  background: #e9ecef;
+  color: #495057;
+}
+
+.ops-assign-content {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  padding: 0;
+  height: 100%;
+}
+
+/* Date Picker Section */
+.date-picker-section-assign {
+  padding: 5px;
+  background: #004B71;
+  border: 1px solid #e9ecef;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  height: 5vh;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  text-align: left;
+  width: 100%;
+}
+
+.date-picker-label {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  display: block;
+}
+
+.date-picker-input {
+  width: 250px;
+  padding: 12px 16px;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  font-size: 14px;
+  background: white;
+  text-align: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.date-picker-input:focus {
+  outline: none;
+  border-color: #4180B9;
+  box-shadow: 0 0 0 3px rgba(65, 128, 185, 0.1);
+  transform: translateY(-1px);
+}
+
+.date-picker-input:hover {
+  border-color: #4180B9;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.plans-assign-section {
+  height: 80vh;
+  overflow-y: auto;
+}
+
+/* Plans Grid */
+.plans-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.plan-card {
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.plan-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+.plan-card.inactive {
+  opacity: 0.6;
+  background: #f8f9fa;
+}
+
+.plan-card.inactive:hover {
+  transform: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.plan-card.unassigned {
+  background: #fff5f5;
+  border: 1px solid #fed7d7;
+}
+
+.plan-card.unassigned:hover {
+  background: #fed7d7;
+  box-shadow: 0 4px 12px rgba(254, 215, 215, 0.3);
+}
+
+.plan-card.assigned {
+  background: #f0fff4;
+  border: 1px solid #c6f6d5;
+}
+
+.plan-card.assigned:hover {
+  background: #c6f6d5;
+  box-shadow: 0 4px 12px rgba(198, 246, 213, 0.3);
+}
+
+.plan-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.plan-estate {
+  font-weight: 600;
+  color: #333;
+  font-size: 14px;
+}
+
+.plan-id {
+  font-size: 12px;
+  color: #6c757d;
+  font-weight: 500;
+  background: #e9ecef;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.plan-body {
+  padding: 12px 15px;
+}
+
+.plan-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.plan-detail {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+}
+
+.plan-detail-label {
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.plan-detail-value {
+  color: #333;
+  font-weight: 600;
+}
+
+/* Status Badges */
+.status-badge-assign {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-badge-assign.active {
+  background: #00701a;
+  color: #ffffff;
+}
+
+.status-badge-assign.inactive {
+  background: #ff1528;
+  color: #ffffff;
+}
+
+/* Operator Assignment */
+.operator-section {
+  border-top: 1px solid #e9ecef;
+  padding-top: 12px;
+}
+
+.operator-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.operator-select {
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 12px;
+  background: white;
+  cursor: pointer;
+}
+
+.operator-select:focus {
+  outline: none;
+  border-color: #4180B9;
+  box-shadow: 0 0 0 2px rgba(65, 128, 185, 0.2);
+}
+
+.operator-select:disabled {
+  background: #f8f9fa;
+  color: #6c757d;
+  cursor: not-allowed;
+}
+
+.operator-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  margin-top: 6px;
+}
+
+.operator-status.assigned {
+  background: #d4edda;
+  color: #155724;
+}
+
+.operator-status.unassigned {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.operator-status-icon {
+  font-size: 14px;
+}
+
+/* Action Buttons */
+.plan-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.action-btn {
+  flex: 1;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.action-btn.primary {
+  background: #4180B9;
+  color: white;
+}
+
+.action-btn.primary:hover {
+  background: #2d5a7a;
+}
+
+.action-btn.primary:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+}
+
+.action-btn.secondary {
+  background: #6c757d;
+  color: white;
+}
+
+.action-btn.secondary:hover {
+  background: #545b62;
+}
+
+/* Loading and Messages */
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+}
+
+.error-message {
+  background: #f8d7da;
+  color: #721c24;
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  border: 1px solid #f5c6cb;
+}
+
+.success-message {
+  background: #d4edda;
+  color: #155724;
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  border: 1px solid #c3e6cb;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.success-icon {
+  font-size: 16px;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #6c757d;
+}
+
+.empty-state h3 {
+  margin-bottom: 10px;
+  color: #495057;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .ops-assign-container {
+    padding: 10px;
+  }
+  
+  .plans-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .plan-details {
+    grid-template-columns: 1fr;
+  }
+  
+  .date-picker-input {
+    width: 100%;
+  }
+}
+
+/* Date Range Picker */
+.date-range-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.date-range-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.filter-options {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.filter-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 3px;
+}
+
+.filter-select {
+  padding: 6px 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 12px;
+  background: white;
+  cursor: pointer;
+  min-width: 120px;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: #4180B9;
+  box-shadow: 0 0 0 2px rgba(65, 128, 185, 0.2);
+}
+
+.search-btn {
+  background: #4180B9;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 15px;
+}
+
+.search-btn:hover {
+  background: #2d5a7a;
+  transform: translateY(-1px);
+}
+
+.search-btn:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Assigned Plans Section */
+.assigned-plans-section {
+  padding: 15px;
+  height: 80vh;
+  overflow-y: auto;
+}
+
+.assigned-plans-table {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.operator-group {
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.operator-header {
+  background: #f8f9fa;
+  padding: 12px 15px;
+  border-bottom: 1px solid #e9ecef;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.operator-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.operator-icon {
+  font-size: 18px;
+  color: #4180B9;
+  background: #e3f2fd;
+  padding: 6px;
+  border-radius: 50%;
+}
+
+.operator-details h3 {
+  margin: 0 0 3px 0;
+  color: #333;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.operator-mobile {
+  margin: 0;
+  color: #6c757d;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mobile-icon {
+  font-size: 10px;
+}
+
+.operator-stats {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.plan-count {
+  background: #4180B9;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* Plans Table */
+.plans-table {
+  overflow-x: auto;
+}
+
+.plans-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.plans-table th {
+  background: #f8f9fa;
+  padding: 10px 8px;
+  text-align: left;
+  font-weight: 600;
+  color: #333;
+  border-bottom: 1px solid #e9ecef;
+  font-size: 12px;
+}
+
+.plans-table td {
+  padding: 8px;
+  border-bottom: 1px solid #f1f3f4;
+  vertical-align: middle;
+}
+
+.plans-table tr:hover {
+  background: #f8f9fa;
+}
+
+.plan-id-cell {
+  font-weight: 600;
+  color: #4180B9;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+}
+
+.estate-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #333;
+}
+
+.estate-icon {
+  color: #6c757d;
+  font-size: 12px;
+}
+
+.area-cell {
+  font-weight: 500;
+  color: #495057;
+  font-size: 12px;
+}
+
+.status-cell {
+  text-align: center;
+}
+
+/* Responsive Design for Assigned Plans */
+@media (max-width: 768px) {
+  .date-range-container {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .operator-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  
+  .plans-table {
+    font-size: 11px;
+  }
+  
+  .plans-table th,
+  .plans-table td {
+    padding: 6px 4px;
+  }
+}
+
+.date-range-bar {
+    display: flex;
+    flex: 1;
+    max-width: 30vw;
+    text-align: left;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    width: max-content !important;
+  }
+
+.date-range-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+  margin-right: 8px;
+  white-space: nowrap;
+}
+
+.filter-group-assigned {
+  display: flex;
+  flex: 1;
+  align-items: left;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.filter-select {
+  padding: 6px 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 12px;
+  background: white;
+  cursor: pointer;
+  min-width: 120px;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: #4180B9;
+  box-shadow: 0 0 0 2px rgba(65, 128, 185, 0.2);
+}
+
+/* Download Excel Button */
+.download-excel-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.download-excel-btn:hover {
+  background: #218838;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.download-excel-btn:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.download-excel-btn:disabled:hover {
+  background: #6c757d;
+  transform: none;
+  box-shadow: none;
+}
+
+.download-icon {
+  font-size: 14px;
+}
+
+.planned-date-cell {
+  font-weight: 500;
+  color: #495057;
+  font-size: 12px;
+  text-align: left;
+}

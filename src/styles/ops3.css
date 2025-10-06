@@ -1,0 +1,192 @@
+/* OpsReport3.css */
+.ops-report-container3 {
+    display: flex;
+    flex-direction: column;
+    max-height: 400px;
+    margin: 0 auto;
+    padding: 20px;
+    overflow: auto;
+    font-family: 'Arial', sans-serif;
+    min-height: 300px;
+}
+
+/* Date Picker Section */
+.daterangepicker-ops3 {
+    justify-content: space-between;
+    display: flex;
+    flex-direction: row;
+    position: relative;
+    margin-bottom: 30px;
+    background: #f5f5f5;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+.date-range-report {
+    
+    display: flex;
+    flex-direction: row;
+}
+.sortable-header {
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.2s;
+}
+.filter-dropdown {
+    padding: 8px 12px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    margin: 0 10px;
+    font-size: 14px;
+}
+
+.leader-filter {
+    margin: 10px 0;
+}
+.sortable-header:hover {
+    background-color: #00115a;
+}
+.select-date-text {
+    text-align: center;
+    justify-content: center;
+    font-weight: 600;
+    color: #004B71;
+    cursor: pointer;
+    margin-right: 10px;
+    align-self: center;
+    font-size: 0.9rem;
+}
+
+.date-range {
+    background: #d9f0ff;
+    padding: 8px 12px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    cursor: pointer;
+    font-size: 0.95rem;
+    color: #34495e;
+}
+
+.react-date-picker-ops {
+    position: absolute;
+    z-index: 100;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Filters Section */
+.filters-section {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    margin-bottom: 25px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+
+
+.export-btn {
+    padding: 8px 15px;
+    background: #27ae60;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.export-btn:hover {
+    background: #219a52;
+}
+
+/* Table Styling */
+.report-table {
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.report-table table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.report-table th,
+.report-table td {
+    padding: 12px 15px;
+    text-align: left;
+    font-size: 0.9rem;
+}
+
+.report-table th {
+    background: #2c3e50;
+    color: white;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+}
+
+.report-table td {
+    border-bottom: 1px solid #ecf0f1;
+    color: #34495e;
+}
+
+.report-table tr:hover {
+    background-color: #f8f9fa;
+}
+
+.report-table tr:nth-child(even) {
+    background-color: #f8f9fa;
+}
+
+/* Responsive Table */
+@media (max-width: 768px) {
+    .filters-section {
+        flex-direction: column;
+    }
+
+    .report-table {
+        overflow-x: auto;
+        display: block;
+    }
+
+    .report-table th,
+    .report-table td {
+        min-width: 120px;
+    }
+}
+
+/* Utility Classes */
+.text-ops {
+    font-size: 0.9rem;
+    color: #7f8c8d;
+}
+
+/* Sort Indicators */
+button[data-sorted]::after {
+    content: ' ↑';
+    font-size: 0.8em;
+}
+
+button[data-sorted="desc"]::after {
+    content: ' ↓';
+}
+.loader-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 300px;
+    width: 100%;
+}
+
+.no-data {
+    text-align: center;
+    padding: 20px;
+    color: #666;
+}

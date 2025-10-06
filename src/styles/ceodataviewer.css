@@ -1,0 +1,145 @@
+.container-dataviewerceo {
+  display: flex;
+  flex-direction: column;
+  min-height: 99vh; /* Ensure container takes at least viewport height */
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.scrollable-content-dataviewerceo {
+  max-height: calc(99vh - 20px); /* Account for padding/margins */
+  overflow-y: auto; /* Enable vertical scrolling */
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 10px;
+  box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: #004B71 #f1f1f1;
+}
+
+.scrollable-content-dataviewerceo::-webkit-scrollbar {
+  width: 8px;
+}
+
+.scrollable-content-dataviewerceo::-webkit-scrollbar-thumb {
+  background: #004B71;
+  border-radius: 4px;
+}
+
+.scrollable-content-dataviewerceo::-webkit-scrollbar-thumb:hover {
+  background: #00334d;
+}
+
+.scrollable-content-dataviewerceo::-webkit-scrollbar-track {
+  background-color: #f1f1f1;
+}
+
+.title-dataviewerceo {
+  font-size: 24px;
+  font-weight: bold;
+  color: #004B71;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.grid-container-dataviewerceo {
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, 50%);
+  gap: 10px;
+  width: 99%;
+  box-sizing: border-box;
+  height: auto; /* Allow natural height */
+}
+
+.grid-item-dataviewerceo {
+  width: calc(48vw - 7.5vw);
+  padding: 10px 30px; /* Internal spacing */
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05); /* Subtle shadow */
+  background: white; /* White background */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: max-content;
+}
+
+.grid-item-dataviewerceo h3 {
+  font-size: 18px;
+  color: #004B71;
+  margin-bottom: 10px;
+}
+
+.grid-item-dataviewerceo p {
+  font-size: 14px;
+  color: #555;
+  text-align: center;
+}
+
+.date-range-selector-plansceo {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  justify-content: space-evenly;
+  margin: 10px 10px;
+}
+
+.date-set-dataviewceo {
+  width: max-content;
+  display: block;
+}
+
+.rdrCalendarWrapperceo {
+  width: max-content;
+  font-size: 14px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.rdrDefinedRangesWrapperceo {
+  width: 150px !important;
+  border-right: 1px solid #e0e0e0;
+}
+
+.rdrDateDisplayWrapperceo {
+  background: #f5f5f5;
+}
+
+.rdrStaticRangeceo {
+  max-width: 100px;
+}
+
+.rdrInputRangesceo {
+  display: none;
+}
+
+.rdrMonthceo {
+  min-width: max-content;
+}
+
+.rdrDayceo {
+  margin: 0;
+}
+
+.toggle-picker-buttonceo {
+  margin-bottom: 10px;
+  padding: 8px 16px;
+  background-color: #004B71;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  height: 40px;
+}
+
+.toggle-picker-buttonceo:hover {
+  background-color: #004B71;
+}
+
+.calender-data-ceoceo {
+  height: auto; /* Allow natural height */
+  overflow: auto;
+  padding: 10px;
+}

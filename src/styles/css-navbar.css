@@ -1,0 +1,609 @@
+.left-nav {
+    width: 280px;
+    background-color: #f0f0f0;
+    color: white;
+    padding: 10px;
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-y: auto;
+    transition: width 200ms ease;
+    scrollbar-color: #004B71 #004B71; /* thumb color, track color */
+    scrollbar-width: thin;
+}
+
+.left-nav.collapsed {
+    width: 64px;
+    padding: 10px;
+    scrollbar-color: #004B71 #004B71; /* thumb color, track color */
+    scrollbar-width: 20px;
+
+    /* WebKit browsers (Chrome, Safari, Edge) */
+    &::-webkit-scrollbar {
+        width: 8px; /* Scrollbar width */
+    }
+
+    &::-webkit-scrollbar-track {
+        background: #004B71; /* Track color */
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background: #888; /* Thumb color */
+        border-radius: 4px;
+    }
+
+    &::-webkit-scrollbar-thumb:hover {
+        background: #555; /* Thumb color on hover */
+    }
+}
+
+/* Logo Styling */
+.logo {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    position: relative;
+}
+
+/* Collapsed state styles */
+.left-nav.collapsed .logo {
+    justify-content: center;
+    min-height: 48px;
+    padding: 8px 0;
+}
+
+.left-nav.collapsed .logo img {
+    display: none;
+}
+
+/* Collapse button styles */
+.collapse-btn {
+    background: transparent;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: white;
+    padding: 8px;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    min-height: 32px;
+}
+
+.collapse-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Navigation list styles */
+.nav-list {
+    padding: 0;
+    margin: 20px 0 0 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.left-nav.collapsed .nav-list {
+    align-items: center;
+    margin-top: 10px;
+}
+
+.left-nav:not(.collapsed) .nav-list {
+    align-items: stretch;
+}
+
+/* Navigation item styles */
+.nav-item {
+    width: 100%;
+    margin: 0 !important;
+    border: none !important;
+}
+
+/* Navigation link styles */
+.nav-link {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    text-decoration: none;
+    color: inherit;
+    width: 100%;
+    transition: all 0.2s ease;
+    margin: 0 8px;
+    width: calc(100% - 16px);
+}
+
+.left-nav.collapsed .nav-link {
+    justify-content: center;
+    gap: 0;
+    padding: 12px 8px;
+    min-height: 48px;
+    margin: 0 4px;
+    width: calc(100% - 8px);
+}
+
+.left-nav:not(.collapsed) .nav-link {
+    justify-content: flex-start;
+    gap: 8px;
+}
+
+/* Navigation icon styles */
+.nav-icon {
+    min-width: 20px;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.left-nav.collapsed .nav-icon {
+    min-width: 24px;
+    font-size: 20px;
+}
+
+/* Navigation text styles */
+.nav-text {
+    flex: 1;
+    white-space: nowrap;
+}
+
+.left-nav.collapsed .nav-text {
+    display: none !important;
+}
+
+/* Ensure text is completely hidden when collapsed */
+.left-nav.collapsed .nav-link span,
+.left-nav.collapsed .logout-btn span {
+    display: none !important;
+}
+
+/* Logout button styles */
+.logout-btn {
+    background: none;
+    border: none;
+    width: 100%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    color: inherit;
+    transition: all 0.2s ease;
+    border-radius: 6px;
+    margin: 0 8px;
+    width: calc(100% - 16px);
+}
+
+.left-nav.collapsed .logout-btn {
+    justify-content: center;
+    gap: 0;
+    padding: 12px 8px;
+    min-height: 48px;
+    margin: 0 4px;
+    width: calc(100% - 8px);
+}
+
+.left-nav:not(.collapsed) .logout-btn {
+    justify-content: flex-start;
+    gap: 8px;
+    padding: 12px 16px;
+}
+
+.logo img {
+    max-width: 80%; /* Make the logo responsive */
+    height: auto;
+    max-height: 120px; /* Reduce height if needed */
+    margin-bottom: 20px; /* Ensure spacing */
+}
+.left-nav ul {
+    list-style-type: none;
+    padding: 0;
+    width: 100%;
+    margin-top: 20px; /* Ensure gap between logo and menu */
+    list-style-type: none;
+}
+
+/* Styling for when the user is a 'pilot' */
+.left-nav.blue {
+    background-color: #004B71;
+}
+
+/* Styling for when the user is a 'manager' */
+.left-nav.green {
+    background-color: #025F0B;
+}
+
+/* Styling for when the user is 'ops' */
+.left-nav.darkblue {
+    background-color: #004B71;
+}
+
+/* Styling for Nav Links - Override base styles */
+.nav-link {
+    color: white;  /* White text by default */
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+    margin: 4px 8px;
+    border-radius: 8px;
+}
+
+/* Hover effect based on user type */
+.left-nav .nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.12);
+}
+
+/* Active Link Color based on user type */
+.nav-link.active {
+    background-color: rgba(255, 255, 255, 0.22);  /* Active link background color */
+    color: #fff;  /* Keep text white */
+}
+
+.left-nav.blue .nav-link.active,
+.left-nav.green .nav-link.active,
+.left-nav.darkblue .nav-link.active {
+    background-color: rgba(255, 255, 255, 0.22);
+    color: #fff;
+}
+
+/* Active state styling for collapsed mode - keep icon white */
+.left-nav.collapsed .nav-link.active .nav-icon,
+.left-nav.collapsed .logout-btn.active .nav-icon {
+    color: white !important;
+}
+
+.left-nav.collapsed .nav-link.active,
+.left-nav.collapsed .logout-btn.active {
+    background-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.nav-icon {
+    margin-right: 10px;
+    font-size: 20px;
+}
+
+/* Override for collapsed state */
+.left-nav.collapsed .nav-icon {
+    margin-right: 0;
+}
+
+/* Top Navbar Styling */
+.top-nav {
+    width: calc(100% - 250px);   /* Full width of the screen */
+    background-color: #025F0B;  /* Default background color */
+    color: white;  /* Text color */
+    display: flex;  /* Use flexbox for layout */
+    justify-content: space-between;  /* Space between the items */
+    align-items: center;  /* Vertically center the items */
+    position: fixed;
+    top: 0;
+    left: 250px;  /* Offset by the width of the left navbar */
+    z-index: 1100;  /* Ensure top nav stays above content and side nav */
+    padding: 10px;
+}
+
+.top-nav.blue {
+    background-color: #004B71;
+}
+
+.top-nav.green {
+    background-color: #025F0B;
+}
+
+.top-nav.darkblue {
+    background-color: #004B71;
+}
+
+.left-empty {
+    flex: 1;  /* Take 3 parts of the total space */
+}
+
+.project-name {
+    color: white !important;
+    flex: 2;  /* Take 2 parts of the total space */
+    text-align: center;  /* Center the project name */
+    font-size: 24px;  /* Font size for the project name */
+}
+
+.profile-icon {
+    padding: 0 30px;
+    flex: 1;  
+    display: flex;
+    justify-content: flex-end;  /* Align to the right */
+    align-items: center;
+}
+
+.profile-pic {
+    width: 40px;  /* Adjust the size */
+    height: 40px;
+    border-radius: 50%;  /* Make it circular */
+    object-fit: cover;  /* Ensure the image scales properly */
+    border: 2px solid rgb(0, 167, 167);  /* Optional: Add a white border */
+}
+
+
+/* For Content Section */
+.content {
+    margin-left: 250px;  /* Make sure content starts after the left navbar */
+    margin-top: 50px;  /* Make sure content starts after the top navbar */
+    padding: 20px;
+}
+
+/* Icon styling */
+.nav-icon {
+    margin-right: 10px;  /* Space between icon and text */
+    font-size: 20px;  /* Icon size */
+}
+.pending-count {
+    background: red;
+    color: white;
+    border-radius: 50%;
+    padding: 2px 6px;
+    font-size: 0.8em;
+    margin-left: 10px;
+}
+
+/* Category + submenu styling */
+.nav-category {
+    width: 100%;
+    margin: 8px 0 0 0;
+}
+
+.nav-category-btn {
+    width: 100%;
+    margin: 8px 0 0 0;
+    padding: 10px 12px;
+    border-radius: 0;
+    background: rgba(255, 255, 255, 0.12);
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: background 0.2s ease;
+    font-weight: 700;
+    text-transform: none;
+    letter-spacing: 0.2px;
+}
+
+.nav-category-icon {
+    margin-right: 8px;
+    font-size: 14px;
+    opacity: 0.95;
+}
+
+.nav-category-btn:hover {
+    background: rgba(255, 255, 255, 0.18);
+}
+
+.nav-category-text,
+.nav-category-text-collapsed {
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: 0.3px;
+}
+
+.nav-sublist {
+    list-style: none;
+    margin: 0 0 10px 0;
+    padding: 6px 0 8px 0;
+    background: rgba(0,0,0,0.10);
+    border-left: 3px solid #66b2ff; /* default accent */
+}
+
+.nav-sublist .nav-item .nav-link {
+    margin: 4px 0;
+    padding: 10px 12px 10px 16px;
+    border-radius: 0;
+    position: relative;
+}
+
+.nav-sublist .nav-item .nav-link::before {
+    content: '';
+    position: absolute;
+    left: -10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.6);
+}
+
+.nav-category-chevron {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    opacity: 0.95;
+}
+
+/* Themed accents for clarity under different roles */
+.left-nav.green .nav-sublist {
+    border-left-color: #7ed957;
+}
+.left-nav.darkblue .nav-sublist {
+    border-left-color: #66b2ff;
+}
+.left-nav.blue .nav-sublist {
+    border-left-color: #66b2ff;
+}
+
+/* Provide additional separation between groups */
+.nav-category + .nav-category {
+    margin-top: 10px;
+}
+
+/* Hide pending count when collapsed */
+.left-nav.collapsed .pending-count {
+    display: none !important;
+}
+
+  /* Logout Dialog Overlay */
+.logout-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6); /* Semi-transparent black overlay */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10000; /* High z-index to ensure it covers other elements */
+  pointer-events: auto; /* Capture all clicks */
+}
+
+/* Logout Dialog Box */
+.logout-dialog {
+  position: relative;
+  z-index: 10001; /* Above the overlay */
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  max-width: 400px;
+  width: 90%;
+  pointer-events: auto; /* Ensure dialog is interactive */
+  border: 1px solid #ddd; /* Optional: Add a subtle border */
+}
+
+/* Dialog Title */
+.logout-dialog h3 {
+  margin-bottom: 10px;
+  font-size: 1.5rem;
+  color: #333;
+  font-weight: 600; /* Slightly bolder for emphasis */
+}
+
+/* Dialog Message */
+.logout-dialog p {
+  margin-bottom: 20px;
+  color: #555;
+  font-size: 1rem;
+}
+
+/* Dialog Buttons Container */
+.dialog-buttons {
+  display: flex;
+  justify-content: space-around;
+  gap: 10px; /* Add some spacing between buttons */
+}
+
+/* Button Styles */
+.cancel-btn,
+.confirm-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.2s ease;
+}
+
+.cancel-btn {
+  background: #ccc;
+  color: #333;
+}
+
+.confirm-btn {
+  background: #ff4d4f; /* Red for confirm, matching your screenshot */
+  color: #fff;
+}
+
+.cancel-btn:hover {
+  background: #bbb;
+}
+
+.confirm-btn:hover {
+  background: #e63946;
+}
+
+/* Disable interactions with elements behind the dialog */
+body.dialog-open {
+  overflow: hidden; /* Prevent scrolling */
+}
+
+/* Ensure navbar and other elements stay below */
+.left-nav,
+.left-nav * {
+  z-index: 1; /* Keep navbar and its children below the dialog */
+}
+
+@media (max-width: 768px) {
+  .left-nav {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 70vw;
+    max-width: 300px;
+    height: 100vh;
+    z-index: 1000;
+    transform: translateX(-100%);
+    transition: transform 0.3s;
+    box-shadow: 2px 0 8px rgba(0,0,0,0.2);
+  }
+  .left-nav.show {
+    transform: translateX(0);
+  }
+  .left-nav.hide {
+    transform: translateX(-100%);
+  }
+  .close-btn {
+    display: block;
+    background: none;
+    border: none;
+    font-size: 2rem;
+    color: #fff;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 1100;
+  }
+  .top-nav {
+    left: 0;
+    width: 100vw;
+  }
+  .hamburger {
+    display: block;
+    background: none;
+    border: none;
+    font-size: 2rem;
+    color: #fff;
+    margin-left: 10px;
+    position: absolute;
+    left: 10px;
+    top: 10px;
+    z-index: 1200;
+  }
+  .top-nav.mobile-only {
+    display: flex !important;
+  }
+  .top-nav:not(.mobile-only) {
+    display: none !important;
+  }
+}
+@media (min-width: 769px) {
+  .close-btn, .hamburger {
+    display: none;
+  }
+  .left-nav {
+    transform: none !important;
+  }
+  .top-nav.mobile-only {
+    display: none !important;
+  }
+}

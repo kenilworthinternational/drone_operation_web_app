@@ -1,0 +1,370 @@
+.pilot-mapping-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 20px;
+    max-height: 95%;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    scrollbar-width: thin;
+    scrollbar-color: #004B71 #f1f1f1;
+}
+
+/* Custom Scrollbar (for WebKit browsers) */
+.pilot-mapping-container::-webkit-scrollbar {
+    width: 6px;
+}
+.pilot-mapping-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+.pilot-mapping-container::-webkit-scrollbar-thumb {
+    background: #004B71;
+    border-radius: 3px;
+}
+.pilot-mapping-container::-webkit-scrollbar-thumb:hover {
+    background: #00334d;
+}
+
+/* Pilot & Plan Styling */
+.pilot-card-details {
+    background-color: #f5f5f5;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.pilot-header {
+    display: flex;
+    justify-content: space-between; /* Space between left and right areas */
+    align-items: center; /* Vertically center the content */
+    font-weight: bold;
+    font-size: 16px;
+    background: #e3f2fd;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+.left-set-area {
+    display: flex;
+    align-items: center; /* Vertically center image and text */
+}
+
+.profile-image-mapping {
+    width: 40px; /* Adjust the size of the image */
+    height: 40px;
+    border-radius: 50%; /* Make the image round */
+    margin-right: 10px; /* Space between the image and text */
+}
+
+.left-set-area span {
+    display: inline-block;
+    white-space: nowrap; /* Prevents text from breaking onto multiple lines */
+}
+
+.right-set-area {
+    display: flex;
+    align-items: center; /* Vertically center the icon button */
+}
+
+.right-set-area .MuiIconButton-root {
+    padding: 8px; /* Adjust the padding around the icon button */
+}
+
+.pilot-header {
+    display: flex;
+    align-items: center; /* Vertically center the text with the image */
+}
+.plans-container {
+    margin-top: 10px;
+    padding-left: 20px;
+}
+
+.plan-card {
+    background-color: #ffffff;
+    border-left: 4px solid #007bff;
+    margin-bottom: 10px;
+    padding: 10px;
+    border-radius: 6px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.plan-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+    font-weight: 600;
+    background: #bbdefb;
+    padding: 8px;
+    border-radius: 4px;
+}
+
+/* Tasks & Subtasks */
+.tasks-list {
+    list-style-type: none;
+    padding-left: 0;
+    margin-top: 10px;
+}
+
+.task-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    background-color: #e3f2fd;
+    padding: 12px;
+    margin: 8px 0;
+    border-radius: 6px;
+    font-size: 14px;
+    border: 1px solid #ddd;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.task-info {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.task-details-view {
+    display: flex;
+    gap: 15px;
+}
+
+.first-col-map-details,
+.second-col-map-details,
+.third-col-map-details {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+/* Task Buttons */
+.third-col-map-details {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.third-col-map-details button {
+    background-color: #007bff;
+    color: white;
+    padding: 6px 12px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.third-col-map-details button:hover {
+    background-color: #0056b3;
+}
+
+/* Thumbnail Image Styling */
+.field-image {
+    max-width: 100px;
+    max-height: 100px;
+    cursor: pointer;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+    transition: transform 0.2s ease-in-out;
+    object-fit: cover;
+}
+
+.field-image:hover {
+    transform: scale(1.1);
+}
+
+/* Full-Size Image Modal */
+.full-size-image-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 1000;
+}
+
+.full-size-image {
+    max-width: 90vw;
+    max-height: 90vh;
+    border-radius: 5px;
+    display: block;
+}
+
+/* Close Button for Modal */
+.close-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #ff4d4d;
+    color: white;
+    border: none;
+    padding: 8px;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+.close-button:hover {
+    background: #cc0000;
+}
+
+/* Error Message */
+.error {
+    color: red;
+    font-weight: bold;
+    text-align: center;
+}
+
+/* Subtask Section */
+.subtask-container {
+    background: #f9f9f9;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    margin-top: 10px;
+}
+
+.subtask-list {
+    list-style: none;
+    padding: 0;
+}
+
+.subtask-item {
+    background: #f0f0f0;
+    padding: 8px;
+    border-radius: 6px;
+    margin-bottom: 6px;
+    font-size: 14px;
+}
+
+.subtask-image, .field-image-thumbnail {
+    width: 100px !important;
+    height: 80px !important;
+    object-fit: cover;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: transform 0.2s ease-in-out;
+}
+
+.subtask-image:hover {
+    transform: scale(1.1);
+}
+.full-size-image {
+    max-width: 100%;
+    max-height: 90vh;
+    display: block;
+    margin: auto;
+}
+.subtask-set-details {
+    margin: 0 auto;
+    width: 90%;
+    display: flex;
+    gap: 20px;
+    padding: 20px;
+    background: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    align-items: center;
+    border-left: 5px solid #004B71; /* Accent color for better visibility */
+}
+
+.detail-col {
+    flex: 1;
+    font-size: 15px;
+    color: #444;
+    line-height: 1.6;
+}
+
+.detail-col strong {
+    color: #222;
+    font-weight: 600;
+}
+
+.image-col {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.subtask-image {
+    width: 120px;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    border: 3px solid #ddd;
+}
+
+.subtask-image:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+
+.loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: fixed; /* Use fixed to center relative to the viewport */
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100vw;
+    height: 100vh;
+    background: rgba(255, 255, 255, 0.8); /* Optional: Light overlay effect */
+    z-index: 1000; /* Ensure it stays on top */
+}
+.profile-image-mapping {
+    width: 40px; /* Set a width */
+    height: 40px; /* Set a height */
+    border-radius: 50%; /* This will make the image circular */
+    object-fit: cover; /* Ensures the image covers the area without distortion */
+}
+/* Style for disabled button */
+button:disabled {
+    background-color: #d3d3d3;  /* Light gray color */
+    border: 1px solid #d3d3d3;  /* Matching border color */
+    color: #a9a9a9;  /* Dark gray text color */
+    cursor: not-allowed;  /* Change the cursor to indicate it's not clickable */
+}
+
+.field-name {
+    font-weight: bold;
+    font-size: 16px;
+}
+
+
+.completed-task, .not-sprayed-task, .ongoing-task, .pending-task, .incomplete-task, .incomplete-task {
+    padding: 10px;
+    border-radius: 5px; /* Optional: add rounded corners */
+}
+
+.completed-task {
+    background-color: rgb(0, 97, 0);
+    color: white;
+}
+
+.not-sprayed-task{
+    background-color: rgb(202, 0, 0);
+    color: white;
+}
+
+.ongoing-task {
+    background-color: rgb(255, 165, 0);
+    color: white;
+}
+.pending-task {
+    background-color: rgb(0, 98, 122);
+    color: rgb(255, 255, 255);
+}
+.incomplete-task {
+    background-color: rgb(133, 133, 133);
+    color: rgb(255, 255, 255);
+}

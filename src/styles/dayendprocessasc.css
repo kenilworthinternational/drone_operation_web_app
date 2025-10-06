@@ -1,0 +1,15 @@
+.servicdayendprocessasces {
+    width: calc(100vw - 255px); /* Adjust width */
+    height: calc(100vh); /* Adjust height */
+    margin: 0;
+    background-color: #ffffff;
+    overflow: hidden; /* Ensure scrolling if content exceeds the height */
+    display: flex; /* Use Flexbox for layout */
+    flex-direction: row; /* Stack elements vertically */
+  }
+  .left-ascdayend{
+    flex: 1;
+  }
+  .right-ascdayend{
+    flex: 3;
+  }

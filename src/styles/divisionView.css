@@ -1,0 +1,306 @@
+.division-box-new {
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    margin: 10px 0;
+    background-color: #f9f9f9;
+    width: 100%;
+    height: 100%;
+  }
+  
+  .division-box-new h3 {
+    margin: 0;
+    font-size: 18px;
+    color: #333;
+  }
+  
+  .division-box-new hr {
+    margin: 10px 0;
+    border: 0;
+    border-top: 1px solid #ddd;
+  }
+
+  /* Tabs styling - for both individual division tabs and top-level tabs */
+  .division-tabs {
+    width: 100%;
+    display: flex;
+  }
+
+  .tab-button {
+    background: none;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    border-bottom: 2px solid transparent;
+    transition: all 0.3s ease;
+  }
+
+  .tab-button:hover {
+    background-color: #f0f0f0;
+  }
+
+  .tab-button.active {
+    color: #004B71;
+    border-bottom-color: #4C74AFFF;
+    background-color: #f8f9fa;
+  }
+
+  .tab-content {
+    min-height: 200px;
+  }
+  
+  .division-grid-view {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* 3 columns per row */
+    gap: 15px; /* Space between checkboxes */
+  }
+  
+  .field-checkbox-new {
+    display: flex;
+    align-items: center;
+    gap: 8px; /* Space between checkbox and label */
+  }
+  
+  .field-checkbox-new input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+  }
+  
+  .field-checkbox-new label {
+    font-size: 14px;
+    color: #555;
+    cursor: pointer;
+  }
+
+/* Restricted field (cannot spray/spread) visual */
+.field-checkbox-new.restricted-field {
+  background-color: #fff4e5; /* light orange */
+  border: 1px dashed #ff9800;
+  border-radius: 4px;
+  padding: 4px 6px;
+}
+.field-checkbox-new.restricted-field label {
+  color: #b36b00;
+  font-weight: 600;
+}
+  
+/* New styles for disabled checkboxes in Ad-Hoc mode */
+.field-checkbox-new.disabled-adhoc {
+  background-color: #f0f0f0; /* Light gray background */
+  border-radius: 4px;
+  padding: 2px 5px;
+  position: relative;
+}
+
+.field-checkbox-new.disabled-adhoc input:disabled {
+  opacity: 0.5; /* Gray out the checkbox */
+  cursor: not-allowed;
+}
+
+.field-checkbox-new.disabled-adhoc label {
+  color: #888; /* Gray text */
+  text-decoration: line-through; /* Strikethrough to indicate unavailability */
+  cursor: not-allowed;
+}
+
+/* Tooltip for disabled Ad-Hoc fields */
+.field-checkbox-new.disabled-adhoc::after {
+  content: 'This field is already scheduled for this date and mission type';
+  position: absolute;
+  top: -25px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #333;
+  color: #fff;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  display: none;
+  z-index: 10;
+}
+
+.field-checkbox-new.disabled-adhoc:hover::after {
+  display: block; /* Show tooltip on hover */
+}
+
+/* Map container styling */
+.map-container {
+
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.map-container .leaflet-container {
+  border-radius: 8px;
+  min-height: 70vh;
+}
+
+/* Custom marker styling */
+.custom-marker {
+  background: transparent;
+  border: none;
+}
+
+.custom-marker div {
+  transition: transform 0.2s ease;
+}
+
+.custom-marker:hover div {
+  transform: scale(1.2);
+}
+
+/* Hover tooltip styling */
+.map-hover-tooltip {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  z-index: 1001;
+  pointer-events: none;
+}
+
+.tooltip-content {
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  padding: 12px;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  max-width: 250px;
+  font-size: 12px;
+  line-height: 1.4;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.tooltip-content h4 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.tooltip-content p {
+  margin: 4px 0;
+  color: #e0e0e0;
+}
+
+.tooltip-content strong {
+  color: #fff;
+  font-weight: 600;
+}
+
+/* Legend styling */
+.map-legend {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: white;
+  padding: 10px;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  z-index: 1000;
+  min-width: 120px;
+}
+
+.map-legend h4 {
+  margin: 0 0 8px 0;
+  font-size: 12px;
+  color: #333;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.legend-item:last-child {
+  margin-bottom: 0;
+}
+
+.legend-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+.legend-item span {
+  font-size: 11px;
+  color: #666;
+}
+
+/* Loading container */
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+}
+.right-side {
+  width: 100%;
+}
+/* Top-level tabs styling for the right-side container */
+.right-side .division-tabs {
+  background-color: #ffffff;
+  border-radius: 8px 8px 0 0;
+  color: #004B71 !important;
+}
+
+.right-side .division-tabs .tab-button {
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.right-side .division-tabs .tab-button.active {
+  background-color: #004B71;
+  color: #ffffff;
+  border-bottom-color: #00273a;
+}
+.right-side .division-tabs .tab-button:not(.active) {
+  background-color: #e9ecef;
+  color: #004B71;
+}
+.right-side .division-tabs .tab-button:hover:not(.active) {
+  background-color: #dededf;
+  color: #00324b;
+}
+
+/* Division map legend bar (no color swatches, just clickable names) */
+.division-map-legend-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 0 8px 0;
+}
+.legend-swatch {
+  display: inline-flex;
+  align-items: center;
+  background: #f5f5f5;
+  border-radius: 16px;
+  padding: 4px 16px;
+  font-size: 13px;
+  color: #333;
+  cursor: pointer;
+  border: 1px solid #e0e0e0;
+  transition: background 0.2s, color 0.2s, border 0.2s;
+  user-select: none;
+}
+.legend-swatch.selected {
+  background: #4C74AFFF;
+  color: #fff;
+  border: 1.5px solid #4C74AFFF;
+  font-weight: 600;
+}
+.legend-swatch:hover:not(.selected) {
+  background: #e0e0e0;
+  color: #222;
+  border: 1.5px solid #bdbdbd;
+}

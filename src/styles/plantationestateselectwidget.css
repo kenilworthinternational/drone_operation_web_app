@@ -1,0 +1,126 @@
+.plantation-estate-widget {
+    padding: 5%;
+    width: 95%;
+    background: #fff;
+    font-family: Arial, sans-serif;
+    height: 95%; /* You can adjust the height as per your needs */
+    overflow-y: auto; /* Enable vertical scrolling */
+}
+
+
+/* Label styling */
+.plantation-estate-widget label {
+    display: block;
+    font-weight: bold;
+    color: #333;
+}
+
+/* Input container */
+.input-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+/* Search input styling */
+.search-input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.3s ease-in-out;
+}
+
+.search-input:focus {
+    border-color: #007bff;
+}
+
+/* Clear button */
+.clear-button {
+    position: absolute;
+    right: 5px;
+    bottom:5px;
+    background: transparent;
+    border: none;
+    font-size: 20px;
+    font-weight: bolder;
+    cursor: pointer;
+    color: #ff1717;
+}
+
+.clear-button:hover {
+    color: #333;
+}
+
+/* Dropdown list */
+.dropdown-list {
+    position: absolute;
+    width: 100%;
+    max-width: 380px;
+    max-height: 150px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    margin-top: 5px;
+    background: rgb(255, 255, 255);
+    border-radius: 4px;
+    z-index: 1000;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.dropdown-list div {
+    padding: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.dropdown-list div:hover {
+    background-color: #f0f0f0;
+}
+
+/* Checkbox group */
+.checkbox-group {
+    margin-top: 10px;
+    padding: 8px;
+    border-radius: 4px;
+    background: #f9f9f900;
+    width: 100%;
+    display: flex;
+    flex-direction: column; /* Stack checkboxes vertically */
+}
+
+.checkbox-group div {
+    display: flex;
+    flex-direction: column; /* Stack checkbox and label vertically */
+    gap: 4px; /* Add some space between checkbox and label */
+    padding: 6px 0; /* Add vertical padding between each checkbox group */
+}
+
+.checkbox-group input {
+    width: 20px; /* Adjust width for better spacing */
+    height: 20px; /* Adjust height for better checkbox size */
+    cursor: pointer;
+}
+
+.checkbox-group label {
+    cursor: pointer;
+    text-align: center;
+    align-content: center;
+    color: #004B71;
+    font-size: 14px;
+    padding-left: 5px; /* Add a little space between checkbox and label */
+}
+.estate-item, .select-all-container{
+    display: flex;
+    flex-direction: row !important;
+}
+.estate-item {
+    border: none;
+    margin: 0;
+    width: 95%;
+}

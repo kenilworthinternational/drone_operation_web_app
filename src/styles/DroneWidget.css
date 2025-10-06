@@ -1,0 +1,61 @@
+.drone-box {
+  display: flex;
+  width: 100%;
+  max-width: 500px;
+  padding: 15px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.1);
+  align-items: center;
+  justify-content: space-between;
+}
+
+
+  .drone-box.expanded {
+    height: auto;
+  }
+  
+  .drone-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+  }
+  .drone-id {
+    
+    flex-grow: 1; /* This makes sure the drone ID takes the available space */
+    padding-right: 10px; /* Space between ID and button */
+  }
+  .dropdown-icon {
+    cursor: pointer;
+  }
+  
+  .options-container {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-top: 5px;
+  }
+  
+  
+  .add-btn-drone {
+    background-color: #004B71;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 150px;
+  }
+  .add-btn-drone:hover {
+    background-color: rgb(255, 151, 15);
+  }
+  .plus-icon {
+    font-size: 14px;
+  }
+  

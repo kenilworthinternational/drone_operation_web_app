@@ -1,0 +1,141 @@
+.ops9-container {
+  padding: 12px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+.ops9-controls {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.ops9-controls .date-group {
+  display: flex;
+  flex-direction: column;
+}
+.ops9-table-wrapper {
+  overflow-x: auto;
+}
+.controls-spacer { flex: 1; }
+.export-btn {
+  background: #106a37;
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.export-btn:hover { background: #0e5a2f; }
+.ops9-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.ops9-table th, .ops9-table td {
+  padding: 8px 10px;
+  border: 1px solid #e2e8f0;
+  white-space: nowrap;
+}
+.ops9-table thead th {
+  background: #0f6937;
+  color: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.ops9-table thead tr.title-row th {
+  background: #3b7e2f;
+  font-size: 20px;
+  text-align: center;
+  font-weight: bold;
+}
+.ops9-table thead tr.month-row th {
+  background: #184f22;
+  text-align: center;
+}
+.ops9-table thead tr.days-row th {
+  background: #0f6937;
+  text-align: center;
+}
+.ops9-table .team-col { 
+  font-weight: 600; 
+  background: #f8f9fa;
+  text-align: center;
+  vertical-align: middle;
+}
+.ops9-table .pilot-col { 
+  font-weight: 600; 
+  padding-left: 16px;
+}
+.ops9-table .num { 
+  text-align: right; 
+  font-family: 'Courier New', monospace;
+}
+.ops9-table .total { 
+  background: #f1f5f9; 
+  font-weight: 700; 
+  text-align: right;
+}
+.ops9-table tr.even { background: #ffffff; }
+.ops9-table tr.odd { background: #f9fafb; }
+.ops9-table tr.totals-row td { 
+  background: #e6ffe6; 
+  font-weight: 700; 
+  border-top: 2px solid #0f6937;
+}
+.ops9-table tr.totals-row .team-col {
+  background: #e6ffe6;
+  text-align: center;
+}
+.ops9-table tr.totals-row .pilot-col {
+  background: #e6ffe6;
+  text-align: center;
+}
+.loading-container-reports { 
+  display: flex; 
+  flex-direction: column;
+  gap: 12px; 
+  align-items: center; 
+  justify-content: center;
+  padding: 40px 16px; 
+  background: transparent; 
+  min-height: 200px;
+}
+
+.loading-container-reports p {
+  margin: 0;
+  color: #666;
+  font-size: 16px;
+}
+.no-data { 
+  text-align: center; 
+  padding: 12px; 
+  color: #666;
+  font-style: italic;
+}
+
+/* Team grouping visual improvements */
+.ops9-table tbody tr:not(.totals-row) .team-col {
+  border-right: 2px solid #0f6937;
+}
+
+/* Hover effects */
+.ops9-table tbody tr:hover:not(.totals-row) {
+  background-color: #f0f8ff;
+}
+
+/* Date picker styling */
+.date-picker {
+  padding: 6px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.date-group label {
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: #333;
+}
+
+

@@ -1,0 +1,176 @@
+.container-dataviewer {
+  max-height: max-content;
+  display: flex;
+  flex-direction: column;
+  height: max-content;
+  overflow: hidden; /* Prevent parent from scrolling to avoid double scrollbars */
+}
+.title-dataviewer {
+  font-size: 24px;
+  font-weight: bold;
+  color: #004B71;
+  margin-bottom: 20px;
+  text-align: center;
+}
+.grid-container-dataviewer {
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, 50%);
+  gap: 10px;
+  max-height: max-content; /* Keep the max height */
+  overflow: hidden; /* Enable vertical scrolling */
+  width: 99%;
+  box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: #004B71 #f1f1f1;
+}
+.grid-container-dataviewer.one-col {
+  grid-template-columns: 1fr;
+}
+.grid-container-dataviewer::-webkit-scrollbar {
+  width: 8px; /* Scrollbar width */
+}
+
+.grid-container-dataviewer::-webkit-scrollbar-thumb {
+  background-color: #004B71; /* Dark blue thumb */
+  border-radius: 4px; /* Rounded corners */
+}
+
+.grid-container-dataviewer::-webkit-scrollbar-track {
+  background-color: #f1f1f1; /* Light gray track for contrast */
+}
+.grid-item-dataviewer {
+  width: 100%;
+  padding: 10px 30px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  background: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0;
+  justify-content: center;
+  min-height: 500px;
+}
+.grid-item-dataviewer h3 {
+  font-size: 18px;
+  color: #004B71;
+  margin-bottom: 10px;
+}
+.grid-item-dataviewer p {
+  font-size: 14px;
+  color: #555;
+  text-align: center;
+}
+.grid-container-dataviewer::-webkit-scrollbar {
+  width: 8px;
+}
+.grid-container-dataviewer::-webkit-scrollbar-thumb {
+  background-color: #888;
+  border-radius: 4px;
+}
+.grid-container-dataviewer::-webkit-scrollbar-track {
+  background-color: #f1f1f1;
+}
+.grid-container-dataviewer::-webkit-scrollbar-thumb:hover {
+  background: #00334d;
+}
+.date-range-selector-plans{
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  justify-content: space-evenly;
+  margin: 10px 10px;
+}
+.date-set-dataview {
+  width: max-content;
+  display: block;
+  
+}
+.rdrCalendarWrapper {
+  width: max-content;
+  font-size: 14px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+.rdrDefinedRangesWrapper {
+  width: 150px !important;
+  border-right: 1px solid #e0e0e0;
+}
+.rdrDateDisplayWrapper {
+  background: #f5f5f5;
+}
+.rdrStaticRange{max-width: 100px;}
+.rdrInputRanges{
+  display: none;
+}
+
+.rdrMonth{
+  min-width:max-content;
+}
+.rdrDay{
+  margin: 0;
+}
+.toggle-picker-button {
+  margin-bottom: 10px;
+  padding: 8px 16px;
+  background-color: #004B71;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  height: 40px;
+}
+
+.toggle-picker-button:hover {
+  background-color: #004B71;
+}
+.calender-data-ceo {
+  flex: 1; /* Takes remaining space */
+  overflow: auto;
+  padding: 10px;
+}
+
+/* Modern Tabs for DataViewer */
+.tabs {
+  display: flex;
+  background: linear-gradient(90deg, #004B71 0%, #004B71 100%);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  position: relative;
+  overflow: visible;
+  margin: 10px 0 0 0;
+}
+
+.tab-button {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #ffffff;
+  padding: 0.9rem 0.5rem;
+  cursor: pointer;
+  position: relative;
+  transition: color 0.25s, background 0.25s;
+  z-index: 1;
+}
+
+.tab-button.active {
+  color: #004B71;
+  background: #fff;
+  box-shadow: 0 4px 16px rgba(0,75,113,0.08);
+  border-bottom: 3px solid #004B71;
+  z-index: 2;
+}
+
+.tab-button:not(.active):hover {
+  background: #f1f5f9;
+  color: #bfe6f7;
+}
+
+.tab-content {
+  background: #fff;
+  padding: 1rem 0.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+}
