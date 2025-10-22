@@ -1,0 +1,380 @@
+/* Pilot Summary Monthly Report Styles */
+.pilot-summary-monthly-container {
+  padding: 0;
+  background: #f8f9fa;
+  min-height: 100vh;
+  font-family: 'Inter', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+}
+
+.pilot-summary-sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 99;
+  background: #f8f9fa;
+}
+
+/* Controls Section */
+.pilot-summary-controls-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  background: white;
+  border-bottom: 1px solid #dee2e6;
+}
+
+/* Main Banner */
+.pilot-summary-main-banner {
+  background: #2d5a27;
+  color: white;
+  text-align: center;
+  padding: 15px 0;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  margin-bottom: 0;
+}
+
+/* Date Controls */
+.pilot-summary-date-controls {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.pilot-summary-date-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.pilot-summary-date-picker label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #495057;
+}
+
+.pilot-summary-custom-date-input {
+  position: relative;
+  display: inline-block;
+  width: 150px;
+}
+
+.pilot-summary-date-picker-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 14px;
+  background: white;
+  cursor: pointer;
+}
+
+.pilot-summary-date-picker-input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.pilot-summary-calendar-icon {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6c757d;
+  pointer-events: none;
+}
+
+/* Download Button */
+.pilot-summary-download-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pilot-summary-download-btn:hover {
+  background: #218838;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+}
+
+.pilot-summary-download-btn:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Loading State */
+.pilot-summary-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.pilot-summary-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #007bff;
+  border-radius: 50%;
+  animation: pilot-summary-spin 1s linear infinite;
+  margin-bottom: 20px;
+}
+
+@keyframes pilot-summary-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.pilot-summary-loading p {
+  font-size: 16px;
+  color: #6c757d;
+  margin: 0;
+}
+
+/* Error State */
+.pilot-summary-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.pilot-summary-error-icon {
+  font-size: 48px;
+  margin-bottom: 20px;
+}
+
+.pilot-summary-error p {
+  font-size: 16px;
+  color: #dc3545;
+  margin: 0;
+}
+
+/* No Data State */
+.pilot-summary-no-data {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+  font-size: 16px;
+  color: #6c757d;
+}
+
+/* Grid Container */
+.pilot-summary-grid-container {
+  background: white;
+  margin: 0;
+  overflow-x: auto;
+  border-radius: 0;
+  box-shadow: none;
+  margin-top: 20px; /* Add space below sticky headers */
+}
+
+.pilot-summary-grid-wrapper {
+  overflow-x: auto;
+}
+
+.pilot-summary-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  background: white;
+}
+
+/* Header Styles */
+.pilot-summary-header-row-1 {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.pilot-summary-header-row-2 {
+  position: sticky;
+  top: 40px; /* Height of first header row */
+  z-index: 15;
+}
+
+.pilot-summary-header-cell {
+  background: #2d5a27;
+  color: white;
+  padding: 12px 8px;
+  border: 1px solid #1e3d1a;
+  font-weight: 700;
+  text-align: center;
+  font-size: 14px;
+}
+
+.pilot-summary-empty-corner-1 {
+  width: 200px; /* Same width as pilot column */
+  background: #2d5a27 !important;
+}
+
+.pilot-summary-date-range-header {
+  background: #2d5a27 !important;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.pilot-summary-pilot-header {
+  min-width: 200px;
+  font-size: 16px;
+  font-weight: 700;
+  background: #1e3d1a !important; /* Darker green */
+  text-align: left;
+  padding-left: 15px;
+}
+
+.pilot-summary-data-header {
+  min-width: 150px;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.pilot-summary-data-header:not(.pilot-summary-revenue-header) {
+  text-align: center;
+}
+
+.pilot-summary-revenue-header {
+  text-align: center;
+}
+
+/* Data Cell Styles */
+.pilot-summary-pilot-cell {
+  background: white;
+  padding: 12px 15px;
+  border: 1px solid #dee2e6;
+  color: #2c3e50;
+  position: sticky;
+  left: 0;
+  z-index: 5;
+  min-width: 200px;
+  text-align: left;
+}
+
+.pilot-summary-data-cell {
+  padding: 12px 8px;
+  border: 1px solid #dee2e6;
+  text-align: center;
+  color: #495057;
+  min-width: 150px;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+}
+
+.pilot-summary-revenue-cell {
+  text-align: right;
+}
+
+/* Row Styles */
+.pilot-summary-even-row {
+  background: #f8f9fa;
+}
+
+.pilot-summary-even-row .pilot-summary-pilot-cell {
+  background: #f8f9fa;
+}
+
+.pilot-summary-odd-row {
+  background: white;
+}
+
+.pilot-summary-odd-row .pilot-summary-pilot-cell {
+  background: white;
+}
+
+.pilot-summary-even-row:hover,
+.pilot-summary-odd-row:hover {
+  background: #e3f2fd;
+}
+
+.pilot-summary-even-row:hover .pilot-summary-pilot-cell,
+.pilot-summary-odd-row:hover .pilot-summary-pilot-cell {
+  background: #e3f2fd;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .pilot-summary-controls-section {
+    flex-direction: column;
+    gap: 15px;
+    align-items: stretch;
+  }
+  
+  .pilot-summary-date-controls {
+    justify-content: center;
+  }
+  
+  .pilot-summary-download-btn {
+    align-self: center;
+  }
+  
+  .pilot-summary-main-banner {
+    font-size: 20px;
+    padding: 12px 0;
+  }
+  
+  .pilot-summary-header-cell {
+    padding: 8px 4px;
+    font-size: 12px;
+  }
+  
+  .pilot-summary-data-cell {
+    padding: 8px 4px;
+    font-size: 12px;
+  }
+  
+  .pilot-summary-pilot-cell {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .pilot-summary-date-controls {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .pilot-summary-custom-date-input {
+    width: 100%;
+  }
+  
+  .pilot-summary-main-banner {
+    font-size: 18px;
+    padding: 10px 0;
+  }
+  
+  .pilot-summary-header-cell {
+    padding: 6px 2px;
+    font-size: 11px;
+  }
+  
+  .pilot-summary-data-cell {
+    padding: 6px 2px;
+    font-size: 11px;
+  }
+  
+  .pilot-summary-pilot-cell {
+    padding: 6px 8px;
+    font-size: 11px;
+  }
+}

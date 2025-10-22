@@ -1,0 +1,537 @@
+/* Individual Pilot Summary Report Styles */
+.individual-pilot-summary-container {
+  padding: 0;
+  background: #f8f9fa;
+  min-height: 100vh;
+  font-family: 'Inter', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+}
+
+.individual-pilot-sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 99;
+  background: #f8f9fa;
+}
+
+/* Controls Section */
+.individual-pilot-controls-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 20px;
+  background: white;
+  border-bottom: 1px solid #dee2e6;
+  gap: 20px;
+}
+
+.individual-pilot-controls-left {
+  display: flex;
+  gap: 30px;
+  align-items: flex-end;
+}
+
+/* Date Controls */
+.individual-pilot-date-controls {
+  display: flex;
+  gap: 20px;
+  align-items: flex-end;
+}
+
+.individual-pilot-date-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.individual-pilot-date-picker label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #495057;
+}
+
+.individual-pilot-custom-date-input {
+  position: relative;
+  display: inline-block;
+  width: 150px;
+}
+
+.individual-pilot-date-picker-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 14px;
+  background: white;
+  cursor: pointer;
+  height: 40px;
+  box-sizing: border-box;
+}
+
+.individual-pilot-date-picker-input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.individual-pilot-calendar-icon {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6c757d;
+  pointer-events: none;
+}
+
+/* Pilot Dropdown */
+.individual-pilot-dropdown {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.individual-pilot-dropdown label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #495057;
+}
+
+.individual-pilot-select-wrapper {
+  position: relative;
+  display: inline-block;
+  width: 250px;
+}
+
+.individual-pilot-user-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6c757d;
+  font-size: 14px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.individual-pilot-select {
+  width: 100%;
+  padding: 10px 12px 10px 35px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 14px;
+  background: white;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 8px center;
+  background-repeat: no-repeat;
+  background-size: 16px;
+  height: 40px;
+  box-sizing: border-box;
+}
+
+.individual-pilot-select:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+/* Download Button */
+.individual-pilot-download-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.individual-pilot-download-btn:hover {
+  background: #218838;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+}
+
+.individual-pilot-download-btn:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Main Banner */
+.individual-pilot-main-banner {
+  background: #2d5a27;
+  color: white;
+  text-align: center;
+  padding: 15px 0;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  margin-bottom: 0;
+}
+
+/* Loading State */
+.individual-pilot-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.individual-pilot-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #007bff;
+  border-radius: 50%;
+  animation: individual-pilot-spin 1s linear infinite;
+  margin-bottom: 20px;
+}
+
+@keyframes individual-pilot-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.individual-pilot-loading p {
+  font-size: 16px;
+  color: #6c757d;
+  margin: 0;
+}
+
+/* Error State */
+.individual-pilot-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.individual-pilot-error-icon {
+  font-size: 48px;
+  margin-bottom: 20px;
+}
+
+.individual-pilot-error p {
+  font-size: 16px;
+  color: #dc3545;
+  margin: 0;
+}
+
+/* No Pilot Selected State */
+.individual-pilot-no-pilot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  text-align: center;
+}
+
+.individual-pilot-no-pilot-icon {
+  font-size: 64px;
+  margin-bottom: 20px;
+  opacity: 0.6;
+}
+
+.individual-pilot-no-pilot h3 {
+  color: #495057;
+  margin-bottom: 10px;
+  font-size: 24px;
+}
+
+.individual-pilot-no-pilot p {
+  color: #6c757d;
+  font-size: 16px;
+  margin: 0;
+  max-width: 400px;
+}
+
+/* No Data State */
+.individual-pilot-no-data {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.individual-pilot-no-data-icon {
+  font-size: 48px;
+  margin-bottom: 20px;
+  opacity: 0.6;
+}
+
+.individual-pilot-no-data h3 {
+  color: #495057;
+  margin-bottom: 10px;
+  font-size: 20px;
+}
+
+.individual-pilot-no-data p {
+  color: #6c757d;
+  font-size: 16px;
+  margin: 0;
+}
+
+/* Grid Container */
+.individual-pilot-grid-container {
+  background: white;
+  margin: 0;
+  overflow-x: auto;
+  border-radius: 0;
+  box-shadow: none;
+  margin-top: 20px; /* Add space below sticky headers */
+}
+
+.individual-pilot-grid-wrapper {
+  overflow-x: auto;
+}
+
+.individual-pilot-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  background: white;
+}
+
+/* Header Styles */
+.individual-pilot-header-row-1 {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.individual-pilot-header-row-2 {
+  position: sticky;
+  top: 40px; /* Height of first header row */
+  z-index: 15;
+}
+
+.individual-pilot-header-cell {
+  background: #2d5a27;
+  color: white;
+  padding: 12px 8px;
+  border: 1px solid #1e3d1a;
+  font-weight: 700;
+  text-align: center;
+  font-size: 14px;
+}
+
+.individual-pilot-empty-corner-1 {
+  width: 120px; /* Same width as date column */
+  background: #2d5a27 !important;
+}
+
+.individual-pilot-date-range-header {
+  background: #2d5a27 !important;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.individual-pilot-date-header {
+  min-width: 120px;
+  font-size: 16px;
+  font-weight: 700;
+  background: #1e3d1a !important; /* Darker green */
+  text-align: left;
+  padding-left: 15px;
+}
+
+.individual-pilot-data-header {
+  min-width: 120px;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.individual-pilot-data-header:not(.individual-pilot-revenue-header) {
+  text-align: center;
+}
+
+.individual-pilot-revenue-header {
+  text-align: center;
+}
+
+/* Data Cell Styles */
+.individual-pilot-date-cell {
+  background: white;
+  padding: 12px 15px;
+  border: 1px solid #dee2e6;
+  color: #2c3e50;
+  position: sticky;
+  left: 0;
+  z-index: 5;
+  min-width: 120px;
+  text-align: left;
+  font-weight: 600;
+}
+
+.individual-pilot-data-cell {
+  padding: 12px 8px;
+  border: 1px solid #dee2e6;
+  text-align: center;
+  color: #495057;
+  min-width: 120px;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+}
+
+.individual-pilot-revenue-cell {
+  text-align: right;
+}
+
+/* Row Styles */
+.individual-pilot-even-row {
+  background: #f8f9fa;
+}
+
+.individual-pilot-even-row .individual-pilot-date-cell {
+  background: #f8f9fa;
+}
+
+.individual-pilot-odd-row {
+  background: white;
+}
+
+.individual-pilot-odd-row .individual-pilot-date-cell {
+  background: white;
+}
+
+.individual-pilot-even-row:hover,
+.individual-pilot-odd-row:hover {
+  background: #e3f2fd;
+}
+
+.individual-pilot-even-row:hover .individual-pilot-date-cell,
+.individual-pilot-odd-row:hover .individual-pilot-date-cell {
+  background: #e3f2fd;
+}
+
+/* Totals Row */
+.individual-pilot-totals-row {
+  background: #e9ecef;
+  font-weight: 600;
+}
+
+.individual-pilot-totals-cell {
+  background: #e9ecef !important;
+  padding: 12px 15px;
+  border: 1px solid #dee2e6;
+  color: #2c3e50;
+  position: sticky;
+  left: 0;
+  z-index: 5;
+  min-width: 120px;
+  text-align: left;
+  font-weight: 700;
+}
+
+.individual-pilot-totals-data-cell {
+  padding: 12px 8px;
+  border: 1px solid #dee2e6;
+  text-align: center;
+  color: #495057;
+  min-width: 120px;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  font-weight: 600;
+  background: #e9ecef;
+}
+
+.individual-pilot-grand-total {
+  background: #d4edda !important;
+  color: #155724 !important;
+  font-weight: 800 !important;
+  font-size: 14px !important;
+  text-align: right !important;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .individual-pilot-controls-section {
+    flex-direction: column;
+    gap: 15px;
+    align-items: stretch;
+  }
+  
+  .individual-pilot-controls-left {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .individual-pilot-date-controls {
+    justify-content: center;
+  }
+  
+  .individual-pilot-download-btn {
+    align-self: center;
+  }
+  
+  .individual-pilot-main-banner {
+    font-size: 20px;
+    padding: 12px 0;
+  }
+  
+  .individual-pilot-header-cell {
+    padding: 8px 4px;
+    font-size: 12px;
+  }
+  
+  .individual-pilot-data-cell {
+    padding: 8px 4px;
+    font-size: 12px;
+  }
+  
+  .individual-pilot-date-cell {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .individual-pilot-date-controls {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .individual-pilot-custom-date-input {
+    width: 100%;
+  }
+  
+  .individual-pilot-select-wrapper {
+    width: 100%;
+  }
+  
+  .individual-pilot-main-banner {
+    font-size: 18px;
+    padding: 10px 0;
+  }
+  
+  .individual-pilot-header-cell {
+    padding: 6px 2px;
+    font-size: 11px;
+  }
+  
+  .individual-pilot-data-cell {
+    padding: 6px 2px;
+    font-size: 11px;
+  }
+  
+  .individual-pilot-date-cell {
+    padding: 6px 8px;
+    font-size: 11px;
+  }
+}

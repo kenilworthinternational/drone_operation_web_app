@@ -8,25 +8,44 @@ import {
   getPlansUsingDateNonp, 
   displayTeamDataNonp, 
   addTeamToPlanNonp, 
-  teamPlannedDataNonp 
+  teamPlannedDataNonp,
+  nonpGroupAssignedMissions,
+  updateGroupAssignedMissions,
+  removeGroupAssignedMissions,
+  currentGroupAssignedMissionsByDate
 } from '../../api/api';
 import NonpTeamAllocationBottom from './nonpTeamAllocationBottom';
 
 const CustomDateInput = React.forwardRef(({ value, onClick }, ref) => (
   <div className="custom-date-input" ref={ref} onClick={onClick}>
-    <input type="text" value={value} readOnly className="date-picker-input" />
+    <input 
+      type="text" 
+      value={value} 
+      readOnly 
+      className="date-picker-input" 
+    />
     <FaCalendarAlt className="calendar-icon" />
   </div>
 ));
 
 const getDisplayName = (obj) => {
   if (!obj || typeof obj !== 'object') return 'Unknown';
-  if (obj.farmer_name && (obj.land_extent !== undefined && obj.land_extent !== null)) {
-    return `${obj.farmer_name} - ${obj.land_extent} Ha`;
+  
+  // For nonp missions, use farmer_name and land_extent
+  if (obj.farmer_name) {
+    const landExtent = obj.land_extent || obj.total_land_extent;
+    if (landExtent !== undefined && landExtent !== null && landExtent > 0) {
+      return `${obj.farmer_name} - ${landExtent} Ha`;
+    } else {
+      return `${obj.farmer_name} - N/A Ha`;
+    }
   }
+  
+  // Fallback for other types
   if (obj.estate && (obj.area !== undefined && obj.area !== null)) {
     return `${obj.estate} - ${obj.area} Ha`;
   }
+  
   return `ID ${obj.id || obj.mission_id || 'N/A'}`;
 };
 
@@ -36,10 +55,17 @@ const NonpTeamAllocation = () => {
   dayAfterTomorrow.setDate(today.getDate() + 2);
   const [selectedDate, setSelectedDate] = useState(dayAfterTomorrow);
   const [missions, setMissions] = useState([]);
-  const [selectedMission, setSelectedMission] = useState(null);
+  const [selectedMissions, setSelectedMissions] = useState([]);
+  const [missionGroups, setMissionGroups] = useState([]);
+  const [selectedGroup, setSelectedGroup] = useState(null);
+  const [showGroupManagement, setShowGroupManagement] = useState(false);
+  const [availableGroups, setAvailableGroups] = useState([]);
+  const [selectedMissionsForGroup, setSelectedMissionsForGroup] = useState([]);
   const [teams, setTeams] = useState([]);
   const [selectedTeamId, setSelectedTeamId] = useState("");
   const [assignedTeamId, setAssignedTeamId] = useState("");
+  const [selectedPilot, setSelectedPilot] = useState("");
+  const [selectedDrone, setSelectedDrone] = useState("");
   const [deployStatus, setDeployStatus] = useState(null);
   const [loadingTeams, setLoadingTeams] = useState(false);
   const [pilotPlanCounts, setPilotPlanCounts] = useState({});
@@ -59,24 +85,15 @@ const NonpTeamAllocation = () => {
     setLoadingTeams(false);
   };
 
-  const fetchAssignedTeam = async (date, missionId) => {
-    if (!date || !missionId) return;
+  const fetchGroupAssignments = async (date) => {
+    if (!date) return;
     const formattedDate = date.toLocaleDateString('en-CA');
-    const response = await teamPlannedDataNonp({ date: formattedDate });
-    if (response && response.status === "true") {
-      for (const key in response) {
-        if (!isNaN(key)) {
-          const item = response[key];
-          if (String(item.id) === String(missionId) || String(item.mission_id) === String(missionId)) {
-            setAssignedTeamId(item.team);
-            setSelectedTeamId(item.team);
-            return;
-          }
-        }
-      }
+    const response = await currentGroupAssignedMissionsByDate({ date: formattedDate });
+    if (response && response.status === "true" && response.groups) {
+      setMissionGroups(response.groups);
+    } else {
+      setMissionGroups([]);
     }
-    setAssignedTeamId("");
-    setSelectedTeamId("");
   };
 
   const getPlanCounts = async (date) => {
@@ -201,10 +218,13 @@ const NonpTeamAllocation = () => {
   };
 
   const handleDateChange = async (date) => {
-    setSelectedMission(null);
+    setSelectedMissions([]);
+    setSelectedGroup(null);
     setMissions(null);
     setAssignedTeamId("");
     setSelectedTeamId("");
+    setSelectedPilot("");
+    setSelectedDrone("");
     setDeployStatus(null);
     setSelectedDate(date);
     if (!date) return;
@@ -225,21 +245,32 @@ const NonpTeamAllocation = () => {
     }
 
     await fetchTeams();
+    await fetchGroupAssignments(date);
     const planCounts = await getPlanCounts(date);
     setPilotPlanCounts(planCounts.pilotPlanCounts);
     setDronePlanCounts(planCounts.dronePlanCounts);
     setPlanDetails(planCounts.planDetails);
   };
 
-  const handleMissionSelect = async (mission) => {
-    setSelectedMission(mission);
+  const handleMissionToggle = (mission) => {
+    setSelectedMissions(prev => {
+      const isSelected = prev.some(m => m.id === mission.id);
+      if (isSelected) {
+        return prev.filter(m => m.id !== mission.id);
+      } else {
+        return [...prev, mission];
+      }
+    });
     setDeployStatus(null);
-    if (mission) {
-      await fetchAssignedTeam(selectedDate, mission.id);
+  };
+
+  const handleSelectAllMissions = () => {
+    if (selectedMissions.length === missions.length) {
+      setSelectedMissions([]);
     } else {
-      setAssignedTeamId("");
-      setSelectedTeamId("");
+      setSelectedMissions([...missions]);
     }
+    setDeployStatus(null);
   };
 
   const handleTeamSelect = (teamId) => {
@@ -253,26 +284,98 @@ const NonpTeamAllocation = () => {
   };
 
   const handleDeployResources = async () => {
-    if (!selectedMission || !selectedTeamId) return;
+    if (!selectedMissions.length || !selectedTeamId || !selectedPilot || !selectedDrone) return;
     setDeployStatus("loading");
-    console.log(selectedMission.id, selectedTeamId);
-    const response = await addTeamToPlanNonp(selectedMission.id, selectedTeamId);
-    if (response && (response.status === "true" || response.status === true)) {
+    
+    const missionIds = selectedMissions.map(m => m.id.toString());
+    const submissionData = {
+      date: selectedDate.toLocaleDateString('en-CA'),
+      team: selectedTeamId,
+      pilot: selectedPilot,
+      drone: selectedDrone,
+      missions: missionIds
+    };
+    
+    console.log('Deploying group missions:', submissionData);
+    const response = await nonpGroupAssignedMissions(submissionData);
+    if (response && (response.status === "true" || response.status === true || response.success === true)) {
+      console.log('Successfully deployed group missions');
       setDeployStatus("success");
       setAssignedTeamId(selectedTeamId);
-      if (selectedMission) {
-        const updatedMission = { ...selectedMission, team_assigned: 1 };
-        setSelectedMission(updatedMission);
-        setMissions(prev => prev.map(m => m.id === selectedMission.id ? { ...m, team_assigned: 1 } : m));
-      }
+      setSelectedMissions([]);
+      setSelectedPilot("");
+      setSelectedDrone("");
+      
+      // Update missions to show they are assigned
+      setMissions(prev => prev.map(m => 
+        selectedMissions.some(sm => sm.id === m.id) 
+          ? { ...m, team_assigned: 1 }
+          : m
+      ));
+      
       if (selectedDate) {
+        await fetchGroupAssignments(selectedDate);
         const planCounts = await getPlanCounts(selectedDate);
         setPilotPlanCounts(planCounts.pilotPlanCounts);
         setDronePlanCounts(planCounts.dronePlanCounts);
         setPlanDetails(planCounts.planDetails);
       }
     } else {
+      console.error('Failed to deploy group missions:', response);
       setDeployStatus("error");
+    }
+  };
+
+  const handleAddMissionsToGroup = async () => {
+    if (!selectedMissionsForGroup.length || !selectedGroup) return;
+    
+    const missionIds = selectedMissionsForGroup.map(m => m.id.toString());
+    const response = await updateGroupAssignedMissions({ group: selectedGroup.id, missions: missionIds });
+    
+    if (response && (response.status === "true" || response.status === true || response.success === true)) {
+      console.log('Successfully added missions to group');
+      setSelectedMissionsForGroup([]);
+      setSelectedGroup(null);
+      await fetchGroupAssignments(selectedDate);
+    } else {
+      console.error('Failed to add missions to group:', response);
+    }
+  };
+
+  const handleRemoveMissionsFromGroup = async () => {
+    if (!selectedMissionsForGroup.length) return;
+    
+    const missionIds = selectedMissionsForGroup.map(m => m.id.toString());
+    console.log('Removing missions from groups:', missionIds);
+    
+    try {
+      const response = await removeGroupAssignedMissions({ missions: missionIds });
+      console.log('Remove response:', response);
+      
+      if (response && (response.status === "true" || response.status === true || response.success === true)) {
+        console.log('Successfully removed missions from groups');
+        setSelectedMissionsForGroup([]);
+        await fetchGroupAssignments(selectedDate);
+        // Also refresh missions to update their assignment status
+        if (selectedDate) {
+          const formattedDate = selectedDate.toLocaleDateString('en-CA');
+          const response = await getPlansUsingDateNonp(formattedDate);
+          if (response && response.status === "true" && response["0"] && Array.isArray(response["0"])) {
+            const missionArray = response["0"];
+            const missionOptions = missionArray.map(mission => ({
+              id: mission.mission_id,
+              group: getDisplayName(mission),
+              activated: mission.farmer_activated,
+              team_assigned: mission.team_assigned || 0,
+            }));
+            setMissions(missionOptions);
+          }
+        }
+      } else {
+        console.error('Failed to remove missions:', response);
+      }
+    } catch (error) {
+      console.error('Error removing missions:', error);
     }
   };
 
@@ -326,7 +429,7 @@ const NonpTeamAllocation = () => {
     <div className="plan-proceed">
       <div className="top-controls-row">
         <div className="top-control">
-          <label htmlFor="date-name-proceed">Plan Date</label>
+          <label htmlFor="date-name-proceed" className="form-label">Plan Date</label>
           <DatePicker
             selected={selectedDate}
             onChange={handleDateChange}
@@ -336,34 +439,228 @@ const NonpTeamAllocation = () => {
           />
         </div>
         <div className="top-control" style={{ flex: '1 1 0' }}>
-          <label htmlFor="mission-select-name">Select Mission</label>
-          <div
-            className={
-              selectedMission
-                ? (selectedMission.team_assigned ? "mission-dropdown-assigned" : "mission-dropdown-unassigned")
-                : ""
-            }
-            style={{ borderRadius: 8, minWidth: '275px' }}
-          >
-            <CustomDropdown
-              options={missions || []}
-              onSelect={handleMissionSelect}
-              selectedValue={selectedMission}
-            />
+          <label htmlFor="mission-select-name" className="form-label">Select Missions</label>
+          <div className="mission-selection-container">
+            {missions && missions.length > 0 && (
+              <div className="mission-selection-header">
+                <label className="select-all-checkbox">
+                  <input
+                    type="checkbox"
+                    checked={selectedMissions.length === missions.length}
+                    onChange={handleSelectAllMissions}
+                  />
+                  Select All ({missions.length} missions)
+                </label>
+              </div>
+            )}
+            <div className="mission-list">
+              {missions && missions.length > 0 ? (
+                missions.map(mission => (
+                  <div 
+                    key={mission.id} 
+                    className={`mission-item ${selectedMissions.some(m => m.id === mission.id) ? 'selected' : ''}`}
+                  >
+                    <input
+                      type="checkbox"
+                      id={`mission-${mission.id}`}
+                      checked={selectedMissions.some(m => m.id === mission.id)}
+                      onChange={() => handleMissionToggle(mission)}
+                    />
+                    <label 
+                      htmlFor={`mission-${mission.id}`}
+                      className={mission.team_assigned ? 'assigned' : ''}
+                    >
+                      {mission.group}
+                      {mission.team_assigned && (
+                        <span className="mission-assigned-badge">
+                          ASSIGNED
+                        </span>
+                      )}
+                    </label>
+                  </div>
+                ))
+              ) : (
+                <div style={{ 
+                  textAlign: 'center', 
+                  color: '#666', 
+                  padding: '20px',
+                  fontStyle: 'italic'
+                }}>
+                  No missions available for selected date
+                </div>
+              )}
+            </div>
+            {selectedMissions.length > 0 && (
+              <div className="selected-missions-summary">
+                {selectedMissions.length} mission{selectedMissions.length !== 1 ? 's' : ''} selected
+              </div>
+            )}
           </div>
         </div>
-        {selectedDate && selectedMission && (
+        
+        {/* Group Management Section */}
+        {selectedDate && missions && missions.length > 0 && (
+          <div className="top-control group-management-main" style={{ flex: '1 1 0' }}>
+            <label className="form-label group-management-label">
+              <span className="label-icon">📦</span>
+              Mission Group Management
+            </label>
+            <div className="group-management-container">
+              <div className="group-management-header">
+                <button 
+                  className="group-management-toggle-btn"
+                  onClick={() => setShowGroupManagement(!showGroupManagement)}
+                >
+                  <span className="toggle-icon">{showGroupManagement ? '▼' : '▶'}</span>
+                  {showGroupManagement ? 'Hide' : 'Show'} Group Management
+                </button>
+              </div>
+              
+              {showGroupManagement && (
+                <div className="group-management-content">
+                  {/* Current Groups Display */}
+                  <div className="current-groups-section">
+                    <div className="section-header">
+                      <h4>
+                        <span className="section-icon">📋</span>
+                        Current Groups for {selectedDate.toLocaleDateString('en-US')}
+                      </h4>
+                      <span className="groups-count">{missionGroups.length} group{missionGroups.length !== 1 ? 's' : ''}</span>
+                    </div>
+                    {missionGroups.length > 0 ? (
+                      <div className="groups-list">
+                        {missionGroups.map(group => (
+                          <div key={group.id} className="group-item">
+                            <div className="group-header">
+                              <div className="group-title">
+                                <span className="group-id">Group {group.id}</span>
+                                <span className="group-status">Active</span>
+                              </div>
+                              <span className="group-missions-count">
+                                {group.missions.length} mission{group.missions.length !== 1 ? 's' : ''}
+                              </span>
+                            </div>
+                            <div className="group-assignment-info">
+                              <div className="assignment-row">
+                                <span className="assignment-label">Team:</span>
+                                <span className="assignment-value">{group.team}</span>
+                              </div>
+                              <div className="assignment-row">
+                                <span className="assignment-label">Pilot:</span>
+                                <span className="assignment-value">{group.pilot}</span>
+                              </div>
+                              <div className="assignment-row">
+                                <span className="assignment-label">Drone:</span>
+                                <span className="assignment-value">{group.drone}</span>
+                              </div>
+                            </div>
+                            <div className="group-missions">
+                              {group.missions.map(missionId => {
+                                const mission = missions.find(m => m.id === missionId);
+                                return mission ? (
+                                  <span key={missionId} className="mission-tag">
+                                    {mission.group}
+                                  </span>
+                                ) : (
+                                  <span key={missionId} className="mission-tag unknown">
+                                    Mission {missionId}
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="no-groups-message">
+                        <div className="no-groups-icon">📦</div>
+                        <div className="no-groups-text">No groups assigned for this date</div>
+                        <div className="no-groups-subtext">Create a new group by selecting missions and assigning them to a team</div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Mission Selection for Group Operations */}
+                  <div className="mission-group-operations">
+                    <div className="section-header">
+                      <h4>
+                        <span className="section-icon">⚙️</span>
+                        Group Operations
+                      </h4>
+                      <span className="selected-count">{selectedMissionsForGroup.length} selected</span>
+                    </div>
+                    <div className="mission-selection-for-group">
+                      {missions.map(mission => (
+                        <div 
+                          key={mission.id} 
+                          className={`mission-item-for-group ${selectedMissionsForGroup.some(m => m.id === mission.id) ? 'selected' : ''} ${mission.team_assigned ? 'assigned' : ''}`}
+                        >
+                          <input
+                            type="checkbox"
+                            id={`group-mission-${mission.id}`}
+                            checked={selectedMissionsForGroup.some(m => m.id === mission.id)}
+                            onChange={() => {
+                              setSelectedMissionsForGroup(prev => {
+                                const isSelected = prev.some(m => m.id === mission.id);
+                                if (isSelected) {
+                                  return prev.filter(m => m.id !== mission.id);
+                                } else {
+                                  return [...prev, mission];
+                                }
+                              });
+                            }}
+                          />
+                          <label 
+                            htmlFor={`group-mission-${mission.id}`}
+                            className="mission-label"
+                          >
+                            <span className="mission-name">{mission.group}</span>
+                            {mission.team_assigned && (
+                              <span className="mission-assigned-badge">ASSIGNED</span>
+                            )}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {selectedMissionsForGroup.length > 0 && (
+                      <div className="group-operation-buttons">
+                        <button 
+                          className="add-to-group-btn"
+                          onClick={handleAddMissionsToGroup}
+                          disabled={!selectedGroup}
+                          title={!selectedGroup ? "Select a group first" : "Add selected missions to group"}
+                        >
+                          <span className="btn-icon">➕</span>
+                          Add to Group {selectedGroup ? selectedGroup.id : ''}
+                        </button>
+                        <button 
+                          className="remove-from-group-btn"
+                          onClick={handleRemoveMissionsFromGroup}
+                          title="Remove selected missions from their current groups"
+                        >
+                          <span className="btn-icon">➖</span>
+                          Remove from Groups
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+        
+        {selectedDate && selectedMissions.length > 0 && (
           <>
             <div className="top-control">
-              <label htmlFor="team-select">Select Team</label>
+              <label htmlFor="team-select" className="form-label">Select Team</label>
               <select
                 id="team-select"
                 value={selectedTeamId || ''}
                 onChange={e => handleTeamSelect(e.target.value)}
                 disabled={loadingTeams}
-                className={
-                  assignedTeamId ? "team-dropdown-assigned" : ""
-                }
+                className={`form-control ${assignedTeamId ? "team-dropdown-assigned" : ""}`}
               >
                 <option value="">-- Select a team --</option>
                 {teams
@@ -409,23 +706,72 @@ const NonpTeamAllocation = () => {
                   })}
               </select>
             </div>
+            
+            {selectedTeamId && (
+              <>
+                <div className="top-control">
+                  <label htmlFor="pilot-select" className="form-label">Select Pilot</label>
+                  <select
+                    id="pilot-select"
+                    value={selectedPilot || ''}
+                    onChange={e => setSelectedPilot(e.target.value)}
+                    className="form-control"
+                  >
+                    <option value="">-- Select a pilot --</option>
+                    {(() => {
+                      const selectedTeam = teams.find(t => Number(t.team_id) === Number(selectedTeamId));
+                      return selectedTeam && selectedTeam.pilots ? selectedTeam.pilots.map(pilot => (
+                        <option key={pilot[0]} value={pilot[0]}>
+                          {pilot[1]} {pilot[2] === 1 ? '(Team Lead)' : ''}
+                        </option>
+                      )) : [];
+                    })()}
+                  </select>
+                </div>
+                
+                <div className="top-control">
+                  <label htmlFor="drone-select" className="form-label">Select Drone</label>
+                  <select
+                    id="drone-select"
+                    value={selectedDrone || ''}
+                    onChange={e => setSelectedDrone(e.target.value)}
+                    className="form-control"
+                  >
+                    <option value="">-- Select a drone --</option>
+                    {(() => {
+                      const selectedTeam = teams.find(t => Number(t.team_id) === Number(selectedTeamId));
+                      return selectedTeam && selectedTeam.drones ? selectedTeam.drones.map(drone => (
+                        <option key={drone[0]} value={drone[0]}>
+                          {drone[1]}
+                        </option>
+                      )) : [];
+                    })()}
+                  </select>
+                </div>
+              </>
+            )}
+            
             <div className="top-control">
               <label style={{ visibility: 'hidden' }}>Deploy</label>
-              {selectedTeamId && (
+              {selectedTeamId && selectedPilot && selectedDrone && (
                 <button
                   className="deploy-btn"
                   onClick={handleDeployResources}
                   disabled={deployStatus === "loading"}
                 >
-                  {deployStatus === "loading" ? "Deploying..." : "Deploy Resources"}
+                  {deployStatus === "loading" ? "Deploying..." : `Deploy Group (${selectedMissions.length} missions)`}
                 </button>
               )}
 
               {deployStatus === "success" && (
-                <span style={{ color: 'green', marginLeft: 10 }}>Team assigned successfully!</span>
+                <span className="status-message status-success">
+                  ✓ Group assigned successfully!
+                </span>
               )}
               {deployStatus === "error" && (
-                <span style={{ color: 'red', marginLeft: 10 }}>Failed to assign team.</span>
+                <span className="status-message status-error">
+                  ✗ Failed to assign group.
+                </span>
               )}
             </div>
           </>
@@ -442,6 +788,9 @@ const NonpTeamAllocation = () => {
           planDetails={planDetails}
           selectedDate={selectedDate}
           teams={teams}
+          missionGroups={missionGroups}
+          selectedMissions={selectedMissions}
+          missions={missions}
         />
       </div>
     </div>

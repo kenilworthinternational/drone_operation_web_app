@@ -93,7 +93,7 @@ const reducer = (state, action) => {
   }
 };
 
-const CalendarWidget = ({ tasksData = [], currentMonth, onTaskUpdate }) => {
+const CalendarWidget = ({ tasksData = [], currentMonth, onTaskUpdate, calendarSection = 'default' }) => {
   const [state, dispatch] = useReducer(reducer, initialState);
   const [selectedTask, setSelectedTask] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -950,7 +950,7 @@ const CalendarWidget = ({ tasksData = [], currentMonth, onTaskUpdate }) => {
               <div className="popup-header-actions">
 
 
-                {userData?.member_type !== 'e' && (
+                {(userData?.member_type !== 'e' || ['ops', 'mgr', 'md', 'dops'].includes(userData?.job_role)) && calendarSection !== 'opsroom' && (
                   <button
                     className="reschedule-btn"
                     onClick={handleRescheduleClick}
@@ -1077,7 +1077,7 @@ const CalendarWidget = ({ tasksData = [], currentMonth, onTaskUpdate }) => {
               </>
             )}
             <div className="action-buttons">
-              {userData?.member_type !== 'e' && state.mode === 'view' && (
+              {(userData?.member_type !== 'e' || ['ops', 'mgr', 'md', 'dops'].includes(userData?.job_role)) && calendarSection !== 'opsroom' && state.mode === 'view' && (
                 <button className="update-btn" onClick={handleUpdateClick} disabled={loading} aria-label="Update task">
                   {loading ? <Bars height="20" width="50" color="#fff" /> : 'Update'}
                 </button>
@@ -1092,7 +1092,7 @@ const CalendarWidget = ({ tasksData = [], currentMonth, onTaskUpdate }) => {
                   {loading ? <Bars height="20" width="50" color="#fff" /> : 'Confirm Update'}
                 </button>
               )}
-              {userData?.member_type !== 'e' && state.mode === 'reschedule' && (
+              {(userData?.member_type !== 'e' || ['ops', 'mgr', 'md', 'dops'].includes(userData?.job_role)) && calendarSection !== 'opsroom' && state.mode === 'reschedule' && (
                 <button
                   className="confirm-btn"
                   onClick={handleRescheduleConfirm}
@@ -1181,6 +1181,7 @@ CalendarWidget.propTypes = {
   ),
   currentMonth: PropTypes.instanceOf(Date).isRequired,
   onTaskUpdate: PropTypes.func,
+  calendarSection: PropTypes.string,
 };
 
 export default CalendarWidget;

@@ -2,8 +2,7 @@
 
 .finance-report-container2 {
   max-width: 100%;
-  min-height: 300px;
-max-height: 400px;
+  min-height: 500px;
   padding: 1.5rem;
   background: #fff;
   overflow: auto;
@@ -61,8 +60,6 @@ max-height: 400px;
 
 .finance-report-table-section {
   margin-top: 1.5rem;
-  min-height: 300px;
-    max-height: 400px;
 }
 
 .finance-report-table {

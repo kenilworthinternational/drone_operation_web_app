@@ -114,7 +114,8 @@ const OpsReport1 = () => {
             (!filters.group || item.group === filters.group) &&
             (!filters.plantation || item.plantation === filters.plantation) &&
             (!filters.region || item.region === filters.region) &&
-            (!filters.estate || item.estate === filters.estate)
+            (!filters.estate || item.estate === filters.estate) &&
+            item.fieldArea > 0 // Hide rows where assigned area is 0
         );
     });
 

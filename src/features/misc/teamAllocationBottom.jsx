@@ -333,21 +333,18 @@ const TeamAllocationBottom = ({ onTeamUpdate, usedPilots = new Set(), usedDrones
       return {
         hasPilots: true,
         hasDrones: true,
-        hasTeamLead: true,
         isValid: true // Always valid for maintenance teams
       };
     }
 
-    // For teams 10 and above (real operational teams), check minimum requirements
-    const hasPilots = Array.isArray(team.pilots) && team.pilots.length > 0;
-    const hasDrones = Array.isArray(team.drones) && team.drones.length > 0;
-    const hasTeamLead = hasPilots && team.pilots.some(pilot => pilot[2] === 1);
+    // For teams 10 and above (real operational teams), check requirements: exactly 1 pilot and 1 drone
+    const hasPilots = Array.isArray(team.pilots) && team.pilots.length === 1;
+    const hasDrones = Array.isArray(team.drones) && team.drones.length === 1;
 
     return {
       hasPilots,
       hasDrones,
-      hasTeamLead,
-      isValid: hasPilots && hasDrones && hasTeamLead
+      isValid: hasPilots && hasDrones
     };
   };
 
@@ -361,21 +358,21 @@ const TeamAllocationBottom = ({ onTeamUpdate, usedPilots = new Set(), usedDrones
       return false;
     }
 
-    // // Skip limits for pool team (team ID 1) - it can have unlimited pilots/drones
-    // const isPoolTeam = Number(toTeamId) === 1;
+    const toTeamIdNum = Number(toTeamId);
+    
+    // Skip limits for pool team (team ID 1) and maintenance teams (ID 1-9) - they can have unlimited pilots/drones
+    const isPoolOrMaintenanceTeam = toTeamIdNum >= 1 && toTeamIdNum <= 9;
 
-    // // Check if destination team would exceed reasonable limits (optional)
-    // if (!isPoolTeam) {
-    //   if (type === 'pilot' && toTeam.pilots.length >= 5) {
-    //     setErrorMessage('Destination team already has maximum number of pilots (5).');
-    //     return false;
-    //   } else if (type === 'drone' && toTeam.drones.length >= 3) {
-    //     setErrorMessage('Destination team already has maximum number of drones (3).');
-    //     return false;
-    //   }
-    // }
-
-    // Team lead protection removed - users can move team leads freely
+    if (!isPoolOrMaintenanceTeam) {
+      // For operational teams (ID 10+), enforce exactly 1 pilot and 1 drone limit
+      if (type === 'pilot' && toTeam.pilots.length >= 1) {
+        setErrorMessage('Each team can have exactly 1 pilot. Destination team already has a pilot.');
+        return false;
+      } else if (type === 'drone' && toTeam.drones.length >= 1) {
+        setErrorMessage('Each team can have exactly 1 drone. Destination team already has a drone.');
+        return false;
+      }
+    }
 
     return true;
   };
@@ -613,9 +610,8 @@ const TeamAllocationBottom = ({ onTeamUpdate, usedPilots = new Set(), usedDrones
                               </div>
                               <div className="tooltip-content">
                                 <ul>
-                                  {!requirements.hasPilots && <li>At least 1 pilot required</li>}
-                                  {!requirements.hasDrones && <li>At least 1 drone required</li>}
-                                  {!requirements.hasTeamLead && <li>At least 1 team lead required</li>}
+                                  {!requirements.hasPilots && <li>Exactly 1 pilot required</li>}
+                                  {!requirements.hasDrones && <li>Exactly 1 drone required</li>}
                                 </ul>
                               </div>
                             </div>

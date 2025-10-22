@@ -1162,6 +1162,8 @@ export const addTeamToPlanNonp = async (plan_id, team_id) => {
   }
 };
 
+
+
 export const teamPlannedData = async (submissionData) => {
   const headers = getAuthHeaders();
   if (!headers) return { success: false, message: "User not logged in." };
@@ -1207,6 +1209,8 @@ export const teamPlannedDataNonp = async (submissionData) => {
     return { success: false, message: "Resources allocation failed" };
   }
 };
+
+
 
 export const submitUpdatePlan = async (submissionUpdateData) => {
   const headers = getAuthHeaders();
@@ -3214,3 +3218,255 @@ export const pilotTeamSprayArea = async (start_date, end_date) => {
   }
 };
 
+export const pilotRevenue = async (date) => {
+  const headers = getAuthHeaders();
+  if (!headers) return { success: false, message: "User not logged in." };
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}pilot_daily_covered_area`,
+      {
+        date: date,
+      },
+      {
+        ...headers,
+        headers: {
+          ...headers.headers,
+          "Content-Type": "application/json"
+        }
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error Finding Update Mission:", error.response?.data || error.message);
+    return null;
+  }
+};
+
+export const defaultValues = async (date) => {
+  const headers = getAuthHeaders();
+  if (!headers) return { success: false, message: "User not logged in." };
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}default_values`,
+      {
+        date: date,
+      },
+      {
+        ...headers,
+        headers: {
+          ...headers.headers,
+          "Content-Type": "application/json"
+        }
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error Finding Update Mission:", error.response?.data || error.message);
+    return null;
+  }
+};
+
+export const addPilotRevenue = async (pilot,date,assigned,covered,cancel,covered_revenue,downtime_reason,downtime_approval,downtime_payment,total_revenue,verified) => {
+  const headers = getAuthHeaders();
+  if (!headers) return { success: false, message: "User not logged in." };
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}pilot_daily_payment`,
+      {
+        pilot:pilot,
+        date:date,
+        assigned:assigned,
+        covered:covered,
+        cancel:cancel,
+        covered_revenue:covered_revenue,
+        downtime_reason:downtime_reason,
+        downtime_approval:downtime_approval,
+        downtime_payment:downtime_payment,
+        total_revenue:total_revenue,
+        verified:verified
+      },
+      {
+        ...headers,
+        headers: {
+          ...headers.headers,
+          "Content-Type": "application/json"
+        }
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error Finding Update Mission:", error.response?.data || error.message);
+    return null;
+  }
+};
+
+
+
+export const pilotsEarnedByRevenue = async (date) => {
+  const headers = getAuthHeaders();
+  if (!headers) return { success: false, message: "User not logged in." };
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}get_pilot_daily_payment_by_date`,
+      {
+        date:date,
+      },
+      {
+        ...headers,
+        headers: {
+          ...headers.headers,
+          "Content-Type": "application/json"
+        }
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error Finding Update Mission:", error.response?.data || error.message);
+    return null;
+  }
+};
+
+
+
+export const pilotsEarnedByRevenueDateRange = async (start_date, end_date) => {
+  const headers = getAuthHeaders();
+  if (!headers) return { success: false, message: "User not logged in." };
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}get_pilot_daily_payment_by_date_range`,
+      {
+        start_date:start_date,
+        end_date:end_date,
+      },
+      {
+        ...headers,
+        headers: {
+          ...headers.headers,
+          "Content-Type": "application/json"
+        }
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error Finding Update Mission:", error.response?.data || error.message);
+    return null;
+  }
+};
+
+
+
+export const pilotCanceledReasons = async () => {
+  const headers = getAuthHeaders();
+  if (!headers) return { success: false, message: "User not logged in." };
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}display_partial_complete_reasons`,
+      {
+        flag: "c",
+      },
+      {
+        ...headers,
+        headers: {
+          ...headers.headers,
+          "Content-Type": "application/json"
+        }
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error Finding Update Mission:", error.response?.data || error.message);
+    return null;
+  }
+};
+
+
+
+export const currentGroupAssignedMissionsByDate = async (dateData) => {
+  const headers = getAuthHeaders();
+  if (!headers) return { success: false, message: "User not logged in." };
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}display_groups_by_day`,
+      dateData,
+      {
+        ...headers,
+        headers: {
+          ...headers.headers,
+          "Content-Type": "application/json"
+        }
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error Finding Update Mission:", error.response?.data || error.message);
+    return null;
+  }
+};
+
+
+
+export const removeGroupAssignedMissions = async (data) => {
+  const headers = getAuthHeaders();
+  if (!headers) return { success: false, message: "User not logged in." };
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}remove_group_from_missions`,
+      data,
+      {
+        ...headers,
+        headers: {
+          ...headers.headers,
+          "Content-Type": "application/json"
+        }
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error Finding Update Mission:", error.response?.data || error.message);
+    return null;
+  }
+};
+
+export const updateGroupAssignedMissions = async (data) => {
+  const headers = getAuthHeaders();
+  if (!headers) return { success: false, message: "User not logged in." };
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}update_group_assigned_to_missions`,
+      data,
+      {
+        ...headers,
+        headers: {
+          ...headers.headers,
+          "Content-Type": "application/json"
+        }
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error Finding Update Mission:", error.response?.data || error.message);
+    return null;
+  }
+};
+
+export const nonpGroupAssignedMissions = async (data) => {
+  const headers = getAuthHeaders();
+  if (!headers) return { success: false, message: "User not logged in." };
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}create_group_assigned_missions`,
+      data,
+      {
+        ...headers,
+        headers: {
+          ...headers.headers,
+          "Content-Type": "application/json"
+        }
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error Finding Update Mission:", error.response?.data || error.message);
+    return null;
+  }
+};

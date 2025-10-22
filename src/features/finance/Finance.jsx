@@ -76,6 +76,13 @@ const Finance = () => {
                     const response = await financeReport(startDate, endDate, selectedEstates);
 
                     if (response && typeof response === 'object') {
+                        // Check if response has status field and it's false
+                        if (response.status === false || response.status === "false") {
+                            setReportData([]);
+                            setError(null);
+                            return;
+                        }
+
                         // Convert response object to array and filter out non-estate entries (like 'total')
                         const estatesData = Object.values(response).filter(item => item.estate_id);
 
@@ -115,6 +122,10 @@ const Finance = () => {
                         //
                         // setReportData(uniqueData);
                         setReportData(processedData);
+                    } else {
+                        // If response is not an object or is null/undefined, clear the data
+                        setReportData([]);
+                        setError(null);
                     }
                 } catch (err) {
                     setError("Failed to load report data");
@@ -195,8 +206,8 @@ const Finance = () => {
             Date: row.date ? new Date(row.date).toLocaleDateString() : "Invalid Date",
             "Field Name": row.fieldName,
             "Pilot Name": row.pilotNames,
-            "Land Extent": row.landExtent.toFixed(2),
-            "Covered Extent": row.fieldExtent.toFixed(2),
+            "Field Extent": row.landExtent.toFixed(2),
+            "Completed Extent": row.fieldExtent.toFixed(2),
             "Mission Type": row.missionType,
         }));
 
@@ -206,8 +217,8 @@ const Finance = () => {
             Date: "",
             "Field Name": "",
             "Pilot Name": "",
-            "Land Extent": totalLandExtent,
-            "Covered Extent": totalFieldExtent,
+            "Field Extent": totalLandExtent,
+            "Completed Extent": totalFieldExtent,
             "Mission Type": "",
         });
 
@@ -301,7 +312,7 @@ const Finance = () => {
         ]);
 
         autoTable(doc, {
-            head: [["No", "Date", "Field Name", "Land Extent", "Covered Extent", "Mission Type"]],
+            head: [["No", "Date", "Field Name", "Field Extent", "Completed Extent", "Mission Type"]],
             body: tableData,
             startY: currentY + 5,
             // Start at currentY on the first page, but keep a small top margin on subsequent pages
@@ -547,8 +558,8 @@ const Finance = () => {
                                                 <th>Date</th>
                                                 <th>Field Name</th>
                                                 <th>Pilot Name</th>
-                                                <th>Land Extent</th>
-                                                <th>Covered Extent</th>
+                                                <th>Field Extent</th>
+                                                <th>Completed Extent</th>
                                                 <th>Mission Type</th>
                                             </tr>
                                         </thead>

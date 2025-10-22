@@ -25,6 +25,7 @@ import {
   FaUserTie,
   FaProjectDiagram,
   FaMoneyBillWave,
+  FaMoneyBill,
   FaBoxes,
   FaTools,
 } from 'react-icons/fa';
@@ -39,6 +40,7 @@ const categories = [
       { path: '/home/dataViewer', label: 'Infographics', icon: FaChartBar },
       { path: '/home/dashboard', label: 'Dashboard', icon: FaHome },
       { path: '/home/calenderView', label: 'Mission Calendar', icon: FaCalendarAlt },
+      { path: '/home/reports/corporate', label: 'Reports', icon: FaFileAlt },
     ],
   },
   {
@@ -51,12 +53,13 @@ const categories = [
       { path: '/home/teamAllocation', label: 'Plantation Team Allocation', icon: FaUsers },
       { path: '/home/nonpTeamAllocation', label: 'NONP Team Allocation', icon: FaUsers },
       { path: '/home/proceedPlan', label: 'Edit Team Allocation', icon: FaCogs },
+      { path: '/home/reports/management', label: 'Reports', icon: FaFileAlt },
       { path: '/home/calenderView', label: 'Mission Calendar', icon: FaCalendarAlt },
-      { path: '/home/deletePlan', label: 'Delete Plan', icon: FaTrash },
-      { path: '/home/deactivatePlan', label: 'Deactive Plan', icon: FaPauseCircle },
+      { path: '/home/earnings', label: 'Pilot Earnings', icon: FaMoneyBill },
       { path: '/home/reportReview', label: 'Review Reports', icon: FaFlag },
       { path: '/home/opsAsign', label: 'Ops Assignment', icon: FaSitemap },
-      { path: '/home/reports/plantation', label: 'Reports', icon: FaFileAlt },
+      { path: '/home/deletePlan', label: 'Delete Plan', icon: FaTrash },
+      { path: '/home/deactivatePlan', label: 'Deactive Plan', icon: FaPauseCircle },
     ],
   },
   {
@@ -92,111 +95,117 @@ const categories = [
   },
 ];
 
-const menuAccessRules = {
-  Developers: {
-    condition: (userData) => userData.member_type === 'i' && userData.user_level === 'i',
-    allowedPaths: [
-      '/home/dashboard',
-      '/home/dataViewer',
-      '/home/createBookings',
-      '/home/bookingList',
-      '/home/missions',
-      '/home/proceedPlan',
-      '/home/summeryView',
-      '/home/calenderView',
-      '/home/deletePlan',
-      '/home/deactivatePlan',
-      '/home/reportSection',
-      '/home/reports/finance',
-      '/home/reports/ops',
-      '/home/reports/plantation',
-      '/home/reportReview',
-      '/home/brokers',
-      '/home/dayEndProcess',
-      '/home/fieldHistory',
-      '/home/managerRescheduler',
-      '/home/teamAllocation',
-      '/home/nonpTeamAllocation',
-      '/home/opsAsign',
-    ],
-  },
+// Simplified category visibility based on job roles
+const getCategoryVisibility = (userData) => {
+  const jobRole = userData.job_role || '';
+  const memberType = userData.member_type || '';
+  
+  // Developers get everything
+  if (memberType === 'i' && userData.user_level === 'i') {
+    return {
+      Corporate: true,
+      Management: true,
+      OpsRoom: true,
+      Finance: true,
+      Inventory: true,
+      Workshop: true,
+    };
+  }
 
-  Management: {
-    condition: (userData) =>
-      userData.member_type === 'i' &&
-      userData.user_level === 'm' &&
-      ['ceo', 'md', 'mgr', 'dops'].includes(userData.job_role),
-    allowedPaths: [
-      '/home/dashboard',
-      '/home/dataViewer',
-      '/home/createBookings',
-      '/home/missions',
-      '/home/proceedPlan',
-      '/home/calenderView',
-      '/home/deletePlan',
-      '/home/deactivatePlan',
-      '/home/reportSection',
-      '/home/reports/finance',
-      '/home/reports/ops',
-      '/home/reports/plantation',
-      '/home/reportReview',
-      '/home/dayEndProcess',
-      '/home/fieldHistory',
-      '/home/managerRescheduler',
-      '/home/teamAllocation',
-      // '/home/nonpTeamAllocation',
-      '/home/opsAsign',
-    ],
-  },
-  OPSRoom: {
-    condition: (userData) =>
-      userData.member_type === 'i' && userData.user_level === 'd' && userData.job_role === 'ops',
-    allowedPaths: [
-      '/home/dashboard',
-      '/home/dataViewer',
-      '/home/createBookings',
-      '/home/missions',
-      '/home/proceedPlan',
-      '/home/calenderView',
-      '/home/deactivatePlan',
-      '/home/reportSection',
-      '/home/reports/ops',
-      '/home/dayEndProcess',
-      '/home/fieldHistory',
-      '/home/managerRescheduler',
-      '/home/teamAllocation',
-      // '/home/nonpTeamAllocation',
-    ],
-  },
-  Plantations: {
-    condition: (userData) =>
-      userData.member_type === 'e' &&
-      userData.user_level === 'm' &&
-      ['ceo', 'mgr'].includes(userData.job_role),
-    allowedPaths: [
-      '/home/calenderView',
-    ],
-  },
-  SectorManager: {
-    condition: (userData) =>
-      userData.member_type === 'i' && userData.user_level === 'm' && userData.job_role === 'sc',
-    allowedPaths: [
-      '/home/dataViewer',
-      '/home/calenderView',
-      '/home/reportSection',
-      '/home/reports/plantation',
-      '/home/fieldHistory',
-    ],
-  },
+  // Only internal members see the categories
+  if (memberType !== 'i') {
+    return {
+      Corporate: false,
+      Management: false,
+      OpsRoom: false,
+      Finance: false,
+      Inventory: false,
+      Workshop: false,
+    };
+  }
+
+  return {
+    Corporate: ['ceo', 'md', 'dops'].includes(jobRole),
+    Management: ['mgr', 'dops'].includes(jobRole),
+    OpsRoom: ['md','mgr','ops', 'dops'].includes(jobRole),
+    Finance: ['md','mgr', 'fd', 'dops'].includes(jobRole),
+    Inventory: ['md','io', 'mgr', 'dops'].includes(jobRole),
+    Workshop: ['md','wt', 'mgr', 'dops'].includes(jobRole),
+  };
 };
 
 const getAllowedPaths = (userData) => {
-  for (const role in menuAccessRules) {
-    if (menuAccessRules[role].condition(userData)) {
-      return menuAccessRules[role].allowedPaths;
-    }
+  const visibility = getCategoryVisibility(userData);
+  const allowedPaths = [];
+
+  // Corporate paths
+  if (visibility.Corporate) {
+    allowedPaths.push(
+      '/home/dataViewer',
+      '/home/dashboard',
+      '/home/calenderView',
+      '/home/reports/corporate'
+    );
   }
-  return [];
+
+  // Management paths
+  if (visibility.Management) {
+    allowedPaths.push(
+      '/home/createBookings',
+      '/home/bookingList',
+      '/home/missions',
+      '/home/teamAllocation',
+      '/home/nonpTeamAllocation',
+      '/home/proceedPlan',
+      '/home/reports/management',
+      '/home/reports/ops',
+      '/home/reports/finance',
+      '/home/reports/plantation',
+      '/home/calenderView',
+      '/home/earnings',
+      '/home/reportReview',
+      '/home/opsAsign',
+      '/home/deletePlan',
+      '/home/deactivatePlan'
+    );
+  }
+
+  // OpsRoom paths
+  if (visibility.OpsRoom) {
+    allowedPaths.push(
+      '/home/missions',
+      '/home/summeryView',
+      '/home/calenderView',
+      '/home/dayEndProcess',
+      '/home/fieldHistory',
+      '/home/managerRescheduler',
+      '/home/reports/ops'
+    );
+  }
+
+  // Finance paths
+  if (visibility.Finance) {
+    allowedPaths.push(
+      '/home/brokers',
+      '/home/reports/finance'
+    );
+  }
+
+  // Inventory paths
+  if (visibility.Inventory) {
+    allowedPaths.push(
+      // Add inventory paths here when ready
+    );
+  }
+
+  // Workshop paths
+  if (visibility.Workshop) {
+    allowedPaths.push(
+      // Add workshop paths here when ready
+    );
+  }
+
+  return allowedPaths;
 };
 
 const LeftNavBar = ({ showSidebar = false, onClose = () => {}, onCollapseChange = () => {} }) => {
@@ -298,37 +307,48 @@ const LeftNavBar = ({ showSidebar = false, onClose = () => {}, onCollapseChange 
   };
 
   const allowedPaths = getAllowedPaths(userData);
+  const categoryVisibility = getCategoryVisibility(userData);
 
   return (
          <div
-       className={`left-nav ${navbarColor} ${showSidebar ? 'show' : 'hide'} ${isCollapsed ? 'collapsed' : ''}`}
-     >
-             <div className="logo">
-         {!isCollapsed && (
-           <img src={companyLogo} alt="Logo" />
-         )}
-         {showSidebar && !isCollapsed && (
-           <button className="close-btn" onClick={onClose} aria-label="Close menu">×</button>
-         )}
-         <button
-           className="collapse-btn"
-           onClick={toggleCollapse}
-           aria-label={isCollapsed ? 'Expand menu' : 'Collapse menu'}
-           title={isCollapsed ? 'Expand menu' : 'Collapse menu'}
-         >
-           {isCollapsed ? '»' : '«'}
-         </button>
-       </div>
-      <ul className="nav-list">
-        {categories.map((category) => {
-          const isExpanded = expandedCategories[category.title] ?? true;
-          const toggleCategory = () =>
-            setExpandedCategories((prev) => ({ ...prev, [category.title]: !isExpanded }));
+      className={`left-nav ${navbarColor} ${showSidebar ? 'show' : 'hide'} ${isCollapsed ? 'collapsed' : ''}`}
+    >
+            <div className="logo">
+        {!isCollapsed && (
+          <img src={companyLogo} alt="Logo" />
+        )}
+        {showSidebar && !isCollapsed && (
+          <button className="close-btn" onClick={onClose} aria-label="Close menu">×</button>
+        )}
+        <button
+          className="collapse-btn"
+          onClick={toggleCollapse}
+          aria-label={isCollapsed ? 'Expand menu' : 'Collapse menu'}
+          title={isCollapsed ? 'Expand menu' : 'Collapse menu'}
+        >
+          {isCollapsed ? '»' : '«'}
+        </button>
+      </div>
+     <ul className="nav-list">
+       {categories.map((category) => {
+         // Skip category if user doesn't have access
+         if (!categoryVisibility[category.title]) {
+           return null;
+         }
 
-          const visibleChildren = category.children.filter((child) => allowedPaths.includes(child.path));
+         const isExpanded = expandedCategories[category.title] ?? true;
+         const toggleCategory = () =>
+           setExpandedCategories((prev) => ({ ...prev, [category.title]: !isExpanded }));
 
-          return (
-            <li key={category.title} className="nav-category">
+         const visibleChildren = category.children.filter((child) => allowedPaths.includes(child.path));
+
+         // Don't render category if no visible children
+         if (visibleChildren.length === 0) {
+           return null;
+         }
+
+         return (
+           <li key={category.title} className="nav-category">
               <button
                 className={`nav-category-btn ${isExpanded ? 'expanded' : 'collapsed'}`}
                 onClick={toggleCategory}

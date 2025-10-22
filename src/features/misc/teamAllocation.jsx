@@ -433,15 +433,11 @@ const TeamAllocation = () => {
         setShowRestrictionError(false);
         setIsTeamRestricted(false);
       } else {
-        // For teams 10+ (real operational teams), check minimum requirements
-        const hasValidRequirements = Array.isArray(currentTeam.pilots) && currentTeam.pilots.length > 0 &&
-          Array.isArray(currentTeam.drones) && currentTeam.drones.length > 0;
+        // For teams 10+ (real operational teams), check requirements: exactly 1 pilot and 1 drone
+        const hasValidRequirements = Array.isArray(currentTeam.pilots) && currentTeam.pilots.length === 1 &&
+          Array.isArray(currentTeam.drones) && currentTeam.drones.length === 1;
         
-        // Check for team lead requirement (only for teams 10+)
-        const hasTeamLead = currentTeam.pilots && Array.isArray(currentTeam.pilots) && 
-          currentTeam.pilots.some(pilot => pilot[2] === 1);
-        
-        if (!hasValidRequirements || !hasTeamLead) {
+        if (!hasValidRequirements) {
           // Team no longer meets requirements, clear selection
           setSelectedTeamId("");
           setAssignedTeamId("");
@@ -548,16 +544,12 @@ const TeamAllocation = () => {
                       return hasMinRequirements;
                     }
                     
-                    // For teams 10 and above (real operational teams), check minimum requirements
-                    const hasBasicRequirements = teamId >= 10 &&
-                      Array.isArray(team.pilots) && team.pilots.length > 0 &&
-                      Array.isArray(team.drones) && team.drones.length > 0;
+                    // For teams 10 and above (real operational teams), check requirements: exactly 1 pilot and 1 drone
+                    const hasValidRequirements = teamId >= 10 &&
+                      Array.isArray(team.pilots) && team.pilots.length === 1 &&
+                      Array.isArray(team.drones) && team.drones.length === 1;
                     
-                    // Check for minimum team lead requirement (only for teams 10+)
-                    const hasTeamLead = team.pilots && Array.isArray(team.pilots) && 
-                      team.pilots.some(pilot => pilot[2] === 1); // Check if any pilot is team lead
-                    
-                    return hasBasicRequirements && hasTeamLead;
+                    return hasValidRequirements;
                   })
                   .map(team => {
                     // Check if team has restrictions

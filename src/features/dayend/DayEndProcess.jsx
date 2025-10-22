@@ -1018,7 +1018,7 @@ const DayEndProcess = () => {
                               <button className="close-button" onClick={handleTaskPopupClose}>✖</button>
                               <div className="task-popup-header">
                                 <div className="task-popup-header-top">
-                                <h3>{currentField?.field_name || 'Unknown Field'} - TaskID: {currentTask.task_id}</h3>
+                                <h3>{currentField?.field_name || 'Unknown Field'} - TaskID: {currentTask.task_id} | Field Area: {currentField?.field_area || currentTask.task_fieldArea || 'N/A'} Ha</h3>
                                 <button
                                   className="submit-button2"
                                   style={{

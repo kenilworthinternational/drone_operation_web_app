@@ -1,0 +1,416 @@
+/* Pilot Revenue Daily Report Styles */
+.pilot-revenue-daily-container {
+  padding: 0;
+  background: #f8f9fa;
+  min-height: 100vh;
+  font-family: 'Inter', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+}
+
+.pilot-revenue-sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 99;
+  background: #f8f9fa;
+}
+
+/* Controls Section */
+.pilot-revenue-controls-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  background: white;
+  border-bottom: 1px solid #dee2e6;
+}
+
+/* Main Banner - Now positioned after controls */
+.pilot-revenue-main-banner {
+  background: #2d5a27;
+  color: white;
+  text-align: center;
+  padding: 15px 0;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  margin-bottom: 0;
+}
+
+.pilot-revenue-date-controls {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
+.pilot-revenue-date-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.pilot-revenue-date-picker label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #495057;
+}
+
+.pilot-revenue-custom-date-input {
+  position: relative;
+  display: inline-block;
+}
+
+.pilot-revenue-date-picker-input {
+  padding: 8px 35px 8px 12px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 14px;
+  width: 140px;
+  background: white;
+  cursor: pointer;
+}
+
+.pilot-revenue-date-picker-input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.pilot-revenue-calendar-icon {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6c757d;
+  pointer-events: none;
+}
+
+.pilot-revenue-download-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pilot-revenue-download-btn:hover {
+  background: #218838;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+}
+
+.pilot-revenue-download-btn:active {
+  transform: translateY(0);
+}
+
+/* Loading and Error States */
+.pilot-revenue-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.pilot-revenue-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #007bff;
+  border-radius: 50%;
+  animation: pilot-revenue-spin 1s linear infinite;
+  margin-bottom: 20px;
+}
+
+@keyframes pilot-revenue-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.pilot-revenue-error {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 20px;
+  background: #f8d7da;
+  border: 1px solid #f5c6cb;
+  border-radius: 6px;
+  color: #721c24;
+}
+
+.pilot-revenue-error-icon {
+  font-size: 24px;
+}
+
+.pilot-revenue-no-data {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.pilot-revenue-no-data-icon {
+  font-size: 48px;
+  margin-bottom: 20px;
+  opacity: 0.6;
+}
+
+/* Grid Table Styles */
+.pilot-revenue-grid-container {
+  background: white;
+  overflow: hidden;
+  margin-top: 20px; /* Add space below sticky headers */
+}
+
+.pilot-revenue-grid-wrapper {
+  overflow-x: auto;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.pilot-revenue-grid-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  min-width: 600px;
+}
+
+.pilot-revenue-header-cell {
+  background: #2d5a27;
+  color: white;
+  padding: 12px 8px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 14px;
+  border: 1px solid #1e3d1a;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+/* Header Row Styles */
+.pilot-revenue-header-row-1 {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.pilot-revenue-header-row-2 {
+  position: sticky;
+  top: 40px; /* Height of first header row */
+  z-index: 15;
+}
+
+.pilot-revenue-empty-corner-1,
+.pilot-revenue-empty-corner-2 {
+  width: 200px; /* Same width as pilot column */
+  background: #2d5a27 !important;
+}
+
+.pilot-revenue-date-range-header {
+  background: #2d5a27 !important;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.pilot-revenue-pilot-header {
+  position: sticky;
+  left: 0;
+  z-index: 20;
+  min-width: 200px;
+  text-align: left;
+  padding-left: 15px;
+}
+
+.pilot-revenue-day-header {
+  min-width: 80px;
+  font-size: 16px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.pilot-revenue-total-header {
+  min-width: 100px;
+  font-size: 16px;
+  font-weight: 700;
+  background: #1e3d1a !important;
+  text-align: center;
+}
+
+.pilot-revenue-pilot-cell {
+  background: white;
+  padding: 10px 15px;
+  border: 1px solid #dee2e6;
+  font-weight: 500;
+  color: #2c3e50;
+  position: sticky;
+  left: 0;
+  z-index: 5;
+  min-width: 200px;
+  text-align: left;
+}
+
+.pilot-revenue-data-cell {
+  padding: 10px 8px;
+  border: 1px solid #dee2e6;
+  text-align: center;
+  color: #495057;
+  min-width: 80px;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+}
+
+.pilot-revenue-total-cell {
+  padding: 10px 8px;
+  border: 1px solid #dee2e6;
+  text-align: center;
+  color: #2c3e50;
+  min-width: 100px;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  font-weight: 600;
+  background: #f8f9fa;
+}
+
+.pilot-revenue-even-row {
+  background: #f8f9fa;
+}
+
+.pilot-revenue-even-row .pilot-revenue-pilot-cell {
+  background: #f8f9fa;
+}
+
+.pilot-revenue-even-row .pilot-revenue-total-cell {
+  background: #e9ecef;
+}
+
+.pilot-revenue-odd-row {
+  background: white;
+}
+
+.pilot-revenue-odd-row .pilot-revenue-pilot-cell {
+  background: white;
+}
+
+.pilot-revenue-odd-row .pilot-revenue-total-cell {
+  background: #f8f9fa;
+}
+
+.pilot-revenue-even-row:hover,
+.pilot-revenue-odd-row:hover {
+  background: #e3f2fd;
+}
+
+.pilot-revenue-even-row:hover .pilot-revenue-pilot-cell,
+.pilot-revenue-odd-row:hover .pilot-revenue-pilot-cell {
+  background: #e3f2fd;
+}
+
+.pilot-revenue-even-row:hover .pilot-revenue-total-cell,
+.pilot-revenue-odd-row:hover .pilot-revenue-total-cell {
+  background: #d1ecf1;
+}
+
+/* Totals Row */
+.pilot-revenue-totals-row {
+  background: #e9ecef;
+  font-weight: 600;
+}
+
+.pilot-revenue-totals-cell {
+  background: #e9ecef;
+  padding: 12px 15px;
+  border: 1px solid #dee2e6;
+  color: #2c3e50;
+  font-weight: 700;
+  position: sticky;
+  left: 0;
+  z-index: 5;
+  min-width: 200px;
+  text-align: left;
+}
+
+.pilot-revenue-totals-data-cell {
+  background: #e9ecef;
+  padding: 12px 8px;
+  border: 1px solid #dee2e6;
+  text-align: right;
+  color: #2c3e50;
+  font-weight: 700;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+}
+
+.pilot-revenue-grand-total {
+  background: #d4edda !important;
+  color: #155724 !important;
+  font-weight: 800 !important;
+  font-size: 14px !important;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .pilot-revenue-controls-section {
+    flex-direction: column;
+    gap: 20px;
+    align-items: stretch;
+  }
+
+  .pilot-revenue-date-controls {
+    justify-content: space-between;
+  }
+
+  .pilot-revenue-date-picker-input {
+    width: 120px;
+  }
+
+  .pilot-revenue-main-banner {
+    font-size: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .pilot-revenue-daily-container {
+    padding: 10px;
+  }
+
+  .pilot-revenue-header {
+    padding: 15px;
+  }
+
+  .pilot-revenue-date-controls {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .pilot-revenue-date-picker-input {
+    width: 100%;
+  }
+
+  .pilot-revenue-grid-table {
+    font-size: 12px;
+  }
+
+  .pilot-revenue-header-cell {
+    padding: 8px 4px;
+    font-size: 12px;
+  }
+
+  .pilot-revenue-pilot-cell,
+  .pilot-revenue-data-cell {
+    padding: 8px 6px;
+  }
+}

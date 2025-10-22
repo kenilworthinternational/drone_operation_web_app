@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import '../../styles/calenderview.css';
 import CalenderWidget from './CalenderWidget';
 import CustomDropdown from '../../components/CustomDropdown';
 import { FaArrowCircleDown, FaArrowCircleUp, FaUndo } from "react-icons/fa";
-import { Bars } from 'react-loader-spinner';
+import { Bars } from "react-loader-spinner";
 import {
   groupGetter,
   groupPlantation,
@@ -17,6 +18,18 @@ import {
 } from '../../api/api';
 
 const CalenderView = () => {
+  const location = useLocation();
+  const currentPath = location.pathname;
+  
+  // Determine which section this calendar is for
+  const getCalendarSection = () => {
+    if (currentPath.includes('/corporate')) return 'corporate';
+    if (currentPath.includes('/management')) return 'management';
+    if (currentPath.includes('/opsroom')) return 'opsroom';
+    return 'default';
+  };
+  
+  const calendarSection = getCalendarSection();
   const [state, setState] = useState({
     dropdownOptions: [],
     plantationOptions: [],
@@ -512,7 +525,11 @@ const CalenderView = () => {
             {state.calendarData.length === 0 && !isLoading.plantation && !isLoading.region && !isLoading.estate ? (
               <div className="no-data">No data available for the selected filters.</div>
             ) : (
-              <CalenderWidget tasksData={state.calendarData} currentMonth={currentMonth} />
+              <CalenderWidget 
+                tasksData={state.calendarData} 
+                currentMonth={currentMonth} 
+                calendarSection={calendarSection}
+              />
             )}
           </div>
         </div>

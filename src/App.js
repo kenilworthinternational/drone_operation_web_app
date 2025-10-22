@@ -13,8 +13,10 @@ import CalenderView from './features/calendar/CalenderView';
 import CalenderViewOnly from './features/calendar/CalenderViewOnly';
 import DeletePlan from './features/misc/DeletePlan';
 import DeactivatePlan from './features/misc/DeactivatePlan';
-import ReportSection from './features/reports/ReportSection';
+import ReportSection from './features/reports/ReportNavigation';
+import ModernReportSection from './features/reports/ModernReportSection';
 import DayEndProcess from './features/dayend/DayEndProcess';
+import Earnings from './features/dayend/Earnings';
 import DayEndView from './features/dayend/DayEndView';
 import DayEndProcessAsc from './features/dayend/DayEndProcessAsc';
 import ManagerRescheduler from './features/misc/ManagerRescheduler';
@@ -26,7 +28,7 @@ import FieldHistory from './features/misc/FieldHistory';
 import DataViewer from './features/data/DataViewer';
 import CEODataViewer from './features/dashboard/CEODataViewer';
 import OpsAsign from './features/ops/OpsAsign';
-import ReportReview from './features/reports/ReportReview';
+import ReportReview from './features/reports/TaskReviewManagement';
 import Brokers from './features/brokers/Brokers';
 
 // ProtectedRoute component to check authentication
@@ -37,12 +39,6 @@ const ProtectedRoute = ({ children }) => {
   return isAuthenticated ? children : <Navigate to="/login" />;
 };
 
-// Route guard for Developers only
-const DevelopersOnlyRoute = ({ children }) => {
-  const userData = JSON.parse(localStorage.getItem('userData')) || {};
-  const isDeveloper = userData.member_type === 'i' && userData.user_level === 'i';
-  return isDeveloper ? children : <Navigate to="/home/dashboard" />;
-};
 
 function App() {
   return (
@@ -149,7 +145,23 @@ function App() {
             }
           />
           <Route
-            path="calenderView"
+            path="calenderView/corporate"
+            element={
+              <ProtectedRoute>
+                <CalenderView />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="calenderView/management"
+            element={
+              <ProtectedRoute>
+                <CalenderView />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="calenderView/opsroom"
             element={
               <ProtectedRoute>
                 <CalenderView />
@@ -184,7 +196,23 @@ function App() {
             path="reportSection"
             element={
               <ProtectedRoute>
-                <ReportSection />
+                <ModernReportSection category={null} />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="reports/corporate"
+            element={
+              <ProtectedRoute>
+                <ModernReportSection category={null} />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="reports/management"
+            element={
+              <ProtectedRoute>
+                <ModernReportSection category="management" />
               </ProtectedRoute>
             }
           />
@@ -192,7 +220,7 @@ function App() {
             path="reports/finance"
             element={
               <ProtectedRoute>
-                <ReportSection section="finance" />
+                <ModernReportSection category="finance" />
               </ProtectedRoute>
             }
           />
@@ -200,7 +228,7 @@ function App() {
             path="reports/ops"
             element={
               <ProtectedRoute>
-                <ReportSection section="ops" />
+                <ModernReportSection category="ops" />
               </ProtectedRoute>
             }
           />
@@ -208,7 +236,7 @@ function App() {
             path="reports/plantation"
             element={
               <ProtectedRoute>
-                <ReportSection section="plantation" />
+                <ModernReportSection category="plantation" />
               </ProtectedRoute>
             }
           />
@@ -285,12 +313,18 @@ function App() {
             }
           />
           <Route
+            path="earnings"
+            element={
+              <ProtectedRoute>
+                  <Earnings />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="brokers"
             element={
               <ProtectedRoute>
-                <DevelopersOnlyRoute>
                   <Brokers />
-                </DevelopersOnlyRoute>
               </ProtectedRoute>
             }
           />

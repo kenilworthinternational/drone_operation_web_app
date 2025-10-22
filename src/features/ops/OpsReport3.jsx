@@ -108,6 +108,9 @@ const OpsReport3 = () => {
       filtered = filtered.filter(item => item.teamLeadName === selectedLeader);
     }
 
+    // Hide rows where assigned value is 0
+    filtered = filtered.filter(item => item.assigned > 0);
+
     if (assignedPercentageSort === 'default') {
       filtered.sort((a, b) => new Date(a.date || 0) - new Date(b.date || 0));
     } else {

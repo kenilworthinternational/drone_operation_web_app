@@ -87,7 +87,8 @@ const OpsReport4 = () => {
 
     const filteredData = pilotsData
         .filter(item => (
-            (!filters.pilotName || item.pilotName === filters.pilotName)
+            (!filters.pilotName || item.pilotName === filters.pilotName) &&
+            (item.assignedSpray > 0 || item.assignedSpread > 0) // Hide rows where both assigned values are 0
         ));
 
     const totals = filteredData.reduce(

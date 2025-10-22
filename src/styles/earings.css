@@ -1,0 +1,980 @@
+/* Earnings Container */
+.pilotearning-earnings-container {
+  background-color: #f8f9fa;
+  height: 100vh;
+  font-family: 'Inter', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* Header Section */
+.pilotearning-earnings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 5vh;
+  padding: 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.pilotearning-earnings-header-h2 {
+  margin: 0;
+  color: #2c3e50;
+  font-size: 28px;
+  font-weight: 600;
+  font-family: 'Inter', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* Date Picker Styling */
+.pilotearning-date-picker-container {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.pilotearning-date-picker-container label {
+  font-weight: 600;
+  color: #495057;
+  font-size: 14px;
+  font-family: 'Inter', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+}
+
+.pilotearning-custom-date-input {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  background: white;
+  transition: border-color 0.2s ease;
+}
+
+.pilotearning-custom-date-input:hover {
+  border-color: #007bff;
+}
+
+.pilotearning-date-picker-input {
+  padding: 10px 40px 10px 12px;
+  border: none !important;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 400;
+  background: transparent !important;
+  color: #495057;
+  min-width: 140px;
+  outline: none !important;
+  cursor: pointer;
+  width: 100%;
+  box-sizing: border-box;
+  font-family: 'Inter', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* Override react-datepicker styles */
+.pilotearning-custom-date-input input {
+  border: none !important;
+  background: transparent !important;
+  outline: none !important;
+}
+
+.pilotearning-calendar-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6c757d;
+  font-size: 16px;
+  pointer-events: none;
+}
+
+/* Excel Download Button */
+.pilotearning-excel-download-btn {
+  background: #28a745;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'Inter', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 15px;
+  box-shadow: 0 2px 4px rgba(40, 167, 69, 0.2);
+}
+
+.pilotearning-excel-download-btn:hover {
+  background: #218838;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+}
+
+.pilotearning-excel-download-btn:active {
+  transform: scale(0.95);
+}
+
+/* Loading and Error States */
+.pilotearning-loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.pilotearning-loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #007bff;
+  border-radius: 50%;
+  animation: pilotearning-spin 1s linear infinite;
+  margin-bottom: 15px;
+}
+
+@keyframes pilotearning-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.pilotearning-error-container {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 20px;
+  background: #f8d7da;
+  border: 1px solid #f5c6cb;
+  border-radius: 8px;
+  color: #721c24;
+  margin-bottom: 20px;
+}
+
+.pilotearning-error-icon {
+  font-size: 24px;
+}
+
+.pilotearning-no-data-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  color: #6c757d;
+}
+
+.pilotearning-no-data-icon {
+  font-size: 48px;
+  margin-bottom: 15px;
+}
+
+/* Excel-like Table Styling */
+.pilotearning-earnings-table-container {
+  height: 90vh;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.pilotearning-table-wrapper {
+  overflow-x: auto;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.pilotearning-excel-table {
+  width: 100%;
+  border-collapse: collapse;
+  border-spacing: 0;
+  table-layout: fixed;
+}
+
+/* Table Header */
+.pilotearning-table-header {
+  background: #4472c4;
+  color: white;
+  font-weight: 600;
+  font-size: 13px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.pilotearning-header-cell {
+  padding: 12px 8px;
+  border-right: 1px solid #365899;
+  font-weight: 600;
+  font-size: 13px;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-align: center;
+  font-family: 'Inter', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+}
+
+.pilotearning-header-cell:last-child {
+  border-right: none;
+}
+
+/* Column-specific styling */
+.pilotearning-name-col {
+  width: 200px;
+  text-align: left !important;
+}
+
+.pilotearning-number-col {
+  width: 120px;
+  text-align: right !important;
+}
+
+.pilotearning-center-col {
+  width: 140px;
+  text-align: center !important;
+}
+
+/* Table Body */
+.pilotearning-table-row {
+  border-bottom: 1px solid #e1e1e1;
+  transition: background-color 0.2s ease;
+}
+
+.pilotearning-table-row:hover {
+  background-color: #f8f9fa;
+}
+
+.pilotearning-even-row {
+  background-color: #ffffff;
+}
+
+.pilotearning-odd-row {
+  background-color: #f8f9fa;
+}
+
+.pilotearning-table-cell {
+  padding: 10px 8px;
+  border-right: 1px solid #e1e1e1;
+  font-size: 15px;
+  font-weight: 500;
+  color: #2c3e50;
+  min-height: 40px;
+  box-sizing: border-box;
+  font-family: 'Inter', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  line-height: 1.4;
+}
+
+.pilotearning-table-cell:last-child {
+  border-right: none;
+}
+
+/* Cell alignment based on column type */
+.pilotearning-table-cell.pilotearning-name-col {
+  text-align: left;
+}
+
+.pilotearning-table-cell.pilotearning-number-col {
+  text-align: right;
+  font-family: 'Inter', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 15px;
+}
+
+.pilotearning-table-cell.pilotearning-center-col {
+  text-align: center;
+}
+
+/* Special Styling for Total Revenue column */
+.pilotearning-total-revenue {
+  background-color: #fff3cd !important;
+  font-weight: 600 !important;
+  color: #856404 !important;
+}
+
+/* Downtime Toggle Button - 3 State System */
+.pilotearning-downtime-toggle {
+  background: #6c757d; /* Default gray for Pending */
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: 'Inter', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  transition: all 0.2s ease;
+  min-width: 80px;
+  display: block;
+  margin: 0 auto;
+}
+
+/* Pending State (0) */
+.pilotearning-downtime-toggle-0 {
+  background: #6c757d; /* Gray */
+}
+
+.pilotearning-downtime-toggle-0:hover {
+  background: #5a6268;
+}
+
+/* Approved State (1) */
+.pilotearning-downtime-toggle-1 {
+  background: #28a745; /* Green */
+}
+
+.pilotearning-downtime-toggle-1:hover {
+  background: #218838;
+}
+
+/* Declined State (2) */
+.pilotearning-downtime-toggle-2 {
+  background: #dc3545; /* Red */
+}
+
+.pilotearning-downtime-toggle-2:hover {
+  background: #c82333;
+}
+
+.pilotearning-downtime-toggle:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Save Button */
+.pilotearning-save-button {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: 'Inter', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  transition: all 0.2s ease;
+  min-width: 60px;
+  display: block;
+  margin: 0 auto;
+}
+
+.pilotearning-save-button:hover {
+  background: #0056b3;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.pilotearning-save-button:active {
+  transform: scale(0.95);
+}
+
+/* Save Button States */
+.pilotearning-save-button-save {
+  background: #007bff;
+}
+
+.pilotearning-save-button-save:hover {
+  background: #0056b3;
+}
+
+.pilotearning-save-button-completed {
+  background: #28a745;
+  cursor: default;
+}
+
+.pilotearning-save-button-completed:hover {
+  background: #28a745;
+  transform: none;
+  box-shadow: none;
+}
+
+.pilotearning-save-button-update {
+  background: #ffc107;
+  color: #212529;
+}
+
+.pilotearning-save-button-update:hover {
+  background: #e0a800;
+}
+
+/* Disabled Save Button */
+.pilotearning-save-button-disabled {
+  opacity: 0.6 !important;
+  cursor: not-allowed !important;
+}
+
+.pilotearning-save-button-disabled:hover {
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Keep green color for completed buttons even when disabled */
+.pilotearning-save-button-completed.pilotearning-save-button-disabled {
+  background: #28a745 !important;
+  color: #fff !important;
+}
+
+.pilotearning-save-button-completed.pilotearning-save-button-disabled:hover {
+  background: #28a745 !important;
+}
+
+/* Keep original colors for other disabled buttons */
+.pilotearning-save-button-save.pilotearning-save-button-disabled,
+.pilotearning-save-button-update.pilotearning-save-button-disabled {
+  background: #6c757d !important;
+  color: #fff !important;
+}
+
+.pilotearning-save-button-save.pilotearning-save-button-disabled:hover,
+.pilotearning-save-button-update.pilotearning-save-button-disabled:hover {
+  background: #6c757d !important;
+}
+
+/* Small loading spinner for buttons */
+.pilotearning-loading-spinner-small {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  border-top-color: transparent;
+  animation: pilotearning-spin 1s ease-in-out infinite;
+  margin-right: 6px;
+}
+
+@keyframes pilotearning-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Data Mismatch Row Highlighting */
+.pilotearning-data-mismatch {
+  background-color: #ffe6e6 !important;
+}
+
+.pilotearning-data-mismatch:hover {
+  background-color: #ffcccc !important;
+}
+
+/* Tooltip for data differences */
+.pilotearning-data-tooltip {
+  position: relative;
+}
+
+.pilotearning-data-tooltip:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  z-index: 1000;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Clickable Pilot Name */
+.pilotearning-pilot-name-link {
+  color: #007bff;
+  cursor: pointer;
+  text-decoration: underline;
+  transition: color 0.2s ease;
+  font-weight: 600;
+  font-size: 15px;
+  font-family: 'Inter', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+}
+
+.pilotearning-pilot-name-link:hover {
+  color: #0056b3;
+  text-decoration: none;
+}
+
+/* Modal Styles */
+.pilotearning-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.pilotearning-modal-container {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  max-width: 90vw;
+  max-height: 90vh;
+  width: 1000px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.pilotearning-modal-header {
+  background: #4472c4;
+  color: white;
+  padding: 20px;
+}
+
+.pilotearning-modal-header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.pilotearning-modal-title-section {
+  flex: 1;
+}
+
+.pilotearning-modal-title-section h3 {
+  margin: 0 0 5px 0;
+  font-size: 20px;
+  font-weight: 600;
+  font-family: 'Inter', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+}
+
+.pilotearning-modal-title-section p {
+  margin: 0;
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.pilotearning-modal-actions {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.pilotearning-download-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.pilotearning-download-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-1px);
+}
+
+.pilotearning-modal-close {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s ease;
+}
+
+.pilotearning-modal-close:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.pilotearning-modal-content {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* Details Table */
+.pilotearning-details-table-container {
+  overflow-x: auto;
+  max-height: 60vh;
+  border: 1px solid #e1e1e1;
+  border-radius: 4px;
+}
+
+.pilotearning-details-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  font-family: 'Inter', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+}
+
+.pilotearning-details-table th {
+  background: #f8f9fa;
+  padding: 12px 8px;
+  text-align: left;
+  font-weight: 600;
+  border-bottom: 2px solid #dee2e6;
+  border-right: 1px solid #dee2e6;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.pilotearning-details-table th:last-child {
+  border-right: none;
+}
+
+.pilotearning-details-table td {
+  padding: 10px 8px;
+  border-bottom: 1px solid #e1e1e1;
+  border-right: 1px solid #e1e1e1;
+  vertical-align: top;
+}
+
+.pilotearning-details-table td:last-child {
+  border-right: none;
+}
+
+.pilotearning-field-name {
+  font-weight: 500;
+  color: #2c3e50;
+}
+
+.pilotearning-number-cell {
+  text-align: right;
+  font-family: 'Courier New', monospace;
+  font-weight: 500;
+}
+
+.pilotearning-status-cell {
+  text-align: center;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.pilotearning-status-c {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.pilotearning-status-x {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.pilotearning-status-p {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.pilotearning-status-co {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.pilotearning-reason-cell {
+  max-width: 200px;
+  word-wrap: break-word;
+  font-size: 12px;
+  color: #6c757d;
+}
+
+.pilotearning-no-tasks {
+  text-align: center;
+  padding: 40px 20px;
+  color: #6c757d;
+}
+
+.pilotearning-no-tasks p {
+  margin: 0;
+  font-size: 16px;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .pilotearning-earnings-header {
+    flex-direction: column;
+    gap: 20px;
+    align-items: flex-start;
+  }
+  
+  .pilotearning-date-picker-container {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  
+  .pilotearning-excel-download-btn {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .pilotearning-earnings-container {
+    padding: 10px;
+  }
+  
+  .pilotearning-earnings-header {
+    padding: 15px;
+  }
+  
+  .pilotearning-earnings-header h2 {
+    font-size: 24px;
+  }
+  
+  .pilotearning-table-wrapper {
+    max-height: 60vh;
+  }
+  
+  .pilotearning-header-cell,
+  .pilotearning-table-cell {
+    font-size: 11px;
+    padding: 8px 4px;
+  }
+  
+  .pilotearning-header-cell {
+    font-size: 10px;
+  }
+}
+
+/* Scrollbar Styling */
+.pilotearning-table-wrapper::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.pilotearning-table-wrapper::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.pilotearning-table-wrapper::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.pilotearning-table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Print Styles */
+@media print {
+  .pilotearning-earnings-container {
+    background: white;
+    padding: 0;
+  }
+  
+  .pilotearning-earnings-header {
+    box-shadow: none;
+    border-bottom: 2px solid #333;
+  }
+  
+  .pilotearning-earnings-table-container {
+    box-shadow: none;
+    border: 1px solid #333;
+  }
+  
+  .pilotearning-table-wrapper {
+    max-height: none;
+    overflow: visible;
+  }
+  
+  .pilotearning-table-header {
+    background: #f0f0f0 !important;
+    color: #333 !important;
+  }
+}
+
+/* Downtime Container */
+.pilotearning-downtime-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+}
+
+/* Warning Icon */
+.pilotearning-warning-icon {
+  font-size: 16px;
+  cursor: help;
+  color: #ffc107;
+}
+
+/* Reason Selection Popup */
+.pilotearning-reason-popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 20px;
+}
+
+.pilotearning-reason-popup {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  max-width: 500px;
+  width: 100%;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.pilotearning-reason-popup-header {
+  background: #4472c4;
+  color: white;
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pilotearning-reason-popup-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.pilotearning-reason-popup-close {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s ease;
+}
+
+.pilotearning-reason-popup-close:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.pilotearning-reason-popup-content {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.pilotearning-reason-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pilotearning-reason-item {
+  background: #f8f9fa;
+  border: 2px solid #e1e8ed;
+  padding: 12px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #2c3e50;
+  transition: all 0.2s ease;
+  text-align: left;
+  font-family: 'Inter', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+}
+
+.pilotearning-reason-item:hover {
+  background: #e9ecef;
+  border-color: #4472c4;
+  color: #4472c4;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(68, 114, 196, 0.15);
+}
+
+.pilotearning-reason-item:active {
+  transform: scale(0.98);
+}
+
+/* Status Buttons for 3-State Selection */
+.pilotearning-status-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px 0;
+}
+
+.pilotearning-status-btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'Inter', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  min-width: 150px;
+  margin: 0 auto;
+}
+
+.pilotearning-pending-btn {
+  background: #6c757d;
+  color: white;
+}
+
+.pilotearning-pending-btn:hover {
+  background: #5a6268;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+}
+
+.pilotearning-approve-btn {
+  background: #28a745;
+  color: white;
+}
+
+.pilotearning-approve-btn:hover {
+  background: #218838;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
+.pilotearning-decline-btn {
+  background: #dc3545;
+  color: white;
+}
+
+.pilotearning-decline-btn:hover {
+  background: #c82333;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+}
+
+.pilotearning-status-btn:active {
+  transform: scale(0.95);
+}

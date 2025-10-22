@@ -9,7 +9,7 @@ import {
 } from '../../api/api';
 import '../../styles/proceedPlan.css';
 
-const NonpTeamAllocationBottom = ({ onTeamUpdate, pilotPlanCounts = {}, dronePlanCounts = {}, planDetails = {}, selectedDate, teams: propTeams = [] }) => {
+const NonpTeamAllocationBottom = ({ onTeamUpdate, pilotPlanCounts = {}, dronePlanCounts = {}, planDetails = {}, selectedDate, teams: propTeams = [], missionGroups = [], missions = [] }) => {
   const [teams, setTeams] = useState([]);
   const [draggedItem, setDraggedItem] = useState(null);
   const [dragType, setDragType] = useState(null);
@@ -28,20 +28,11 @@ const NonpTeamAllocationBottom = ({ onTeamUpdate, pilotPlanCounts = {}, dronePla
   const [poolError, setPoolError] = useState('');
   const [poolSuccess, setPoolSuccess] = useState('');
 
-  const [todayPlans, setTodayPlans] = useState({});
-  const [loadingPlans, setLoadingPlans] = useState(false);
-
   const [activeTab, setActiveTab] = useState('teams');
 
   useEffect(() => {
     fetchTeams();
   }, []);
-
-  useEffect(() => {
-    if (selectedDate && activeTab === 'plans') {
-      fetchPlansForSelectedDate(selectedDate);
-    }
-  }, [selectedDate, activeTab]);
 
   const fetchTeams = async () => {
     const response = await displayTeamDataNonp();
@@ -151,34 +142,6 @@ const NonpTeamAllocationBottom = ({ onTeamUpdate, pilotPlanCounts = {}, dronePla
   const getDronePlanDetails = (droneId) => {
     const droneInfo = dronePlanCounts[Number(droneId)];
     return droneInfo ? droneInfo.plans : [];
-  };
-
-  const fetchPlansForSelectedDate = async (date) => {
-    setLoadingPlans(true);
-    try {
-      const formattedDate = date.toLocaleDateString('en-CA');
-      const response = await teamPlannedDataNonp({ date: formattedDate });
-      if (response && response.status === "true") {
-        const plansByTeam = {};
-        for (const key in response) {
-          if (!isNaN(key)) {
-            const plan = response[key];
-            if (plan.team && plan.team !== null && plan.team !== '') {
-              const teamId = plan.team;
-              if (!plansByTeam[teamId]) plansByTeam[teamId] = [];
-              plansByTeam[teamId].push(plan);
-            }
-          }
-        }
-        setTodayPlans(plansByTeam);
-      } else {
-        setTodayPlans({});
-      }
-    } catch (error) {
-      setTodayPlans({});
-    } finally {
-      setLoadingPlans(false);
-    }
   };
 
   const checkTeamRequirements = (team) => {
@@ -322,8 +285,8 @@ const NonpTeamAllocationBottom = ({ onTeamUpdate, pilotPlanCounts = {}, dronePla
         <button className={`tab-button ${activeTab === 'teams' ? 'active' : ''}`} onClick={() => setActiveTab('teams')}>
           <span className="tab-icon">👥</span> Team Management
         </button>
-        <button className={`tab-button ${activeTab === 'plans' ? 'active' : ''}`} onClick={() => setActiveTab('plans')}>
-          <span className="tab-icon">📅</span> Allocated Resources(Missions)
+        <button className={`tab-button ${activeTab === 'groups' ? 'active' : ''}`} onClick={() => setActiveTab('groups')}>
+          <span className="tab-icon">📦</span> Mission Groups
         </button>
       </div>
 
@@ -491,61 +454,59 @@ const NonpTeamAllocationBottom = ({ onTeamUpdate, pilotPlanCounts = {}, dronePla
           </div>
         )}
 
-        {activeTab === 'plans' && (
-          <div className="today-plans-section">
-            <div className="today-plans-header">
-              <h3>Missions for {selectedDate ? selectedDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : ''}</h3>
-              <button className="refresh-plans-btn" onClick={() => fetchPlansForSelectedDate(selectedDate)} disabled={loadingPlans}>
-                {loadingPlans ? 'Refreshing...' : '🔄 Refresh'}
-              </button>
+        {activeTab === 'groups' && (
+          <div className="mission-groups-section">
+            <div className="mission-groups-header">
+              <h3>Mission Groups for {selectedDate ? selectedDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : ''}</h3>
             </div>
-            {loadingPlans ? (
-              <div className="today-plans-loading">
-                Loading missions for {selectedDate ? selectedDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : ''}...
-              </div>
-            ) : Object.keys(todayPlans).length === 0 ? (
-              <div className="today-plans-empty">
-                <div className="no-plans-icon">📅</div>
-                <div className="no-plans-text">No missions for {selectedDate ? selectedDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : ''}</div>
+            {missionGroups.length === 0 ? (
+              <div className="no-groups-message">
+                <div className="no-groups-icon">📦</div>
+                <div className="no-groups-text">No mission groups assigned for {selectedDate ? selectedDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : ''}</div>
               </div>
             ) : (
-              <div className="today-plans-grid">
-                {Object.keys(todayPlans).map(teamId => {
-                  const teamPlans = todayPlans[teamId];
-                  const team = teams.find(t => Number(t.team_id) === Number(teamId));
-                  const teamName = team ? team.team_name : `Team ${teamId}`;
+              <div className="mission-groups-grid">
+                {missionGroups.map(group => {
+                  const team = teams.find(t => Number(t.team_id) === Number(group.team));
+                  const teamName = team ? team.team_name : `Team ${group.team}`;
+                  
                   return (
-                    <div key={teamId} className="today-plans-team-card">
-                      <div className="today-plans-team-header">
-                        <h4>{teamName}</h4>
-                        <span className="team-plans-count">{teamPlans.length} mission{teamPlans.length !== 1 ? 's' : ''}</span>
+                    <div key={group.id} className="mission-group-card">
+                      <div className="group-header">
+                        <h4>Group {group.id}</h4>
+                        <span className="group-missions-count">{group.missions.length} mission{group.missions.length !== 1 ? 's' : ''}</span>
                       </div>
-                      <div className="today-plans-list">
-                        {teamPlans.map((plan) => (
-                          <div key={plan.id || plan.mission_id} className="today-plan-item">
-                            <div className="plan-header">
-                              <div className="plan-estate">
-                                {(plan.farmer_name) || 'Unknown'} - {(plan.land_extent || plan.area) || 'N/A'} Ha
-                              </div>
-                            </div>
-                            <div className="plan-details">
-                              <div className="plan-id">{`ID: ${plan.id || plan.mission_id}`}</div>
-                              {plan.team_lead && (
-                                <div className="plan-team-lead">Team Lead: {plan.team_lead}</div>
-                              )}
-                              {plan.pilots && plan.pilots.length > 0 && (
-                                <div className="plan-pilots">
-                                  <strong>Pilots:</strong> {plan.pilots.map(p => p.pilot).join(', ')}
-                                </div>
-                              )}
-                              {plan.drones && plan.drones.length > 0 && (
-                                <div className="plan-drones">
-                                  <strong>Drones:</strong> {plan.drones.map(d => d.tag).join(', ')}
-                                </div>
-                              )}
-                            </div>
+                      <div className="group-details">
+                        <div className="group-assignment">
+                          <div className="assignment-item">
+                            <strong>Team:</strong> {teamName}
                           </div>
-                        ))}
+                          <div className="assignment-item">
+                            <strong>Pilot ID:</strong> {group.pilot}
+                          </div>
+                          <div className="assignment-item">
+                            <strong>Drone ID:</strong> {group.drone}
+                          </div>
+                        </div>
+                        <div className="group-missions-list">
+                          <strong>Missions:</strong>
+                          <div className="missions-container">
+                            {group.missions.map(missionId => {
+                              const mission = missions.find(m => m.id === missionId);
+                              return mission ? (
+                                <div key={missionId} className="group-mission-item">
+                                  <span className="mission-name">{mission.group}</span>
+                                  <span className="mission-id">ID: {missionId}</span>
+                                </div>
+                              ) : (
+                                <div key={missionId} className="group-mission-item">
+                                  <span className="mission-name">Unknown Mission</span>
+                                  <span className="mission-id">ID: {missionId}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   );
