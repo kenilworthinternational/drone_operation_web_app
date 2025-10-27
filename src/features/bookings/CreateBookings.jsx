@@ -38,7 +38,7 @@ const CreateBookings = () => {
   };
 
   return (
-    <div className="missions-container">
+    <div className="missions-container-missions">
       <div className="missions-up-part">
 
         <div

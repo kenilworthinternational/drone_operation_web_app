@@ -1563,7 +1563,7 @@
 
 .today-plans-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(300px, 300px));
   gap: 20px;
 }
 
@@ -2722,4 +2722,408 @@
 
 .custom-date-input:hover .calendar-icon {
   color: #0066a1;
+}
+
+/* Drone Update Popup Styles */
+.clickable-drones {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  position: relative !important;
+  overflow: hidden !important;
+  border-radius: 8px !important;
+  padding: 6px 12px !important;
+  margin: 4px 0 !important;
+  transform: translateZ(0) !important;
+  cursor: pointer !important;
+  color: #0ea5e9 !important;
+  text-decoration: underline !important;
+  font-weight: 500 !important;
+  border: 2px solid transparent !important;
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.05), rgba(14, 165, 233, 0.02)) !important;
+}
+
+.clickable-drones::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(14, 165, 233, 0.3), transparent);
+  transition: left 0.6s ease;
+  z-index: 0;
+  border-radius: 6px;
+}
+
+.clickable-drones:hover {
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.15), rgba(14, 165, 233, 0.08)) !important;
+  transform: translateY(-2px) scale(1.02) !important;
+  box-shadow: 0 6px 20px rgba(14, 165, 233, 0.25) !important;
+  color: #0284c7 !important;
+  border-color: rgba(14, 165, 233, 0.3) !important;
+  text-decoration: none !important;
+}
+
+.clickable-drones:hover::before {
+  left: 100%;
+}
+
+.clickable-drones:active {
+  transform: translateY(0) scale(0.98) !important;
+  box-shadow: 0 3px 10px rgba(14, 165, 233, 0.4) !important;
+  transition: all 0.1s ease !important;
+}
+
+.clickable-pilots {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  position: relative !important;
+  overflow: hidden !important;
+  border-radius: 8px !important;
+  padding: 6px 12px !important;
+  margin: 4px 0 !important;
+  transform: translateZ(0) !important;
+  cursor: pointer !important;
+  color: #22c55e !important;
+  text-decoration: underline !important;
+  font-weight: 500 !important;
+  border: 2px solid transparent !important;
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.05), rgba(34, 197, 94, 0.02)) !important;
+}
+
+.clickable-pilots::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(34, 197, 94, 0.3), transparent);
+  transition: left 0.6s ease;
+  z-index: 0;
+  border-radius: 6px;
+}
+
+.clickable-pilots:hover {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(34, 197, 94, 0.08)) !important;
+  transform: translateY(-2px) scale(1.02) !important;
+  box-shadow: 0 6px 20px rgba(34, 197, 94, 0.25) !important;
+  color: #16a34a !important;
+  border-color: rgba(34, 197, 94, 0.3) !important;
+  text-decoration: none !important;
+}
+
+.clickable-pilots:hover::before {
+  left: 100%;
+}
+
+.clickable-pilots:active {
+  transform: translateY(0) scale(0.98) !important;
+  box-shadow: 0 3px 10px rgba(34, 197, 94, 0.4) !important;
+  transition: all 0.1s ease !important;
+}
+
+/* Pulse animation for clickable elements */
+@keyframes attentionPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(14, 165, 233, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(14, 165, 233, 0);
+  }
+}
+
+@keyframes attentionPulseGreen {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(34, 197, 94, 0);
+  }
+}
+
+.clickable-drones {
+  animation: attentionPulse 2s ease-in-out infinite;
+  z-index: 1;
+}
+
+.clickable-pilots {
+  animation: attentionPulseGreen 2s ease-in-out infinite;
+  z-index: 1;
+}
+
+.clickable-drones:hover,
+.clickable-pilots:hover {
+  animation: none !important;
+}
+
+.current-drone-display {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.current-drone-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #495057;
+}
+
+.pool-item-details {
+  font-size: 12px;
+  color: #666;
+  margin-top: 4px;
+  line-height: 1.3;
+}
+
+/* Enhanced Pool Item Card Effects */
+.pool-item-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  transform: translateZ(0);
+}
+
+.pool-item-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.pool-item-card:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.pool-item-card:hover::before {
+  opacity: 1;
+}
+
+.pool-item-card.selected {
+  transform: translateY(-1px) scale(1.01);
+  box-shadow: 0 6px 20px rgba(14, 165, 233, 0.3);
+  border-color: #0ea5e9;
+}
+
+.pool-item-card.selected::before {
+  opacity: 1;
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.1), rgba(14, 165, 233, 0.05));
+}
+
+.pool-item-card:active {
+  transform: translateY(0) scale(0.98);
+  transition: all 0.1s ease;
+}
+
+/* Header Layout - 3 Sections */
+.pool-popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  background: linear-gradient(135deg, #0ea5e9, #0284c7);
+  border-radius: 12px 12px 0 0;
+  position: relative;
+  min-height: 80px;
+}
+
+.pool-popup-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.pool-popup-header-middle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: 0 20px;
+}
+
+.pool-popup-header-right {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.pool-popup-title-section {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Current Assignments in Middle - Simple Text Style */
+.current-assignments {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.current-assignment-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0;
+  padding: 0;
+  background: none;
+  border: none;
+}
+
+.assignment-label {
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+}
+
+.assignment-value {
+  font-weight: 500;
+  color: #fff;
+  font-size: 14px;
+}
+
+/* Search Section */
+.search-section {
+  margin-bottom: 20px;
+}
+
+.pool-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  gap: 16px;
+}
+
+.pool-section-title {
+  margin: 0;
+  flex: 1;
+  width: 50%;
+}
+
+.search-input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  width: 50%;
+}
+
+.search-input {
+  width: 100%;
+  padding: 8px 32px 8px 12px;
+  border: 2px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 13px;
+  background: #fff;
+  transition: all 0.3s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #0ea5e9;
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+}
+
+.search-icon {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  color: #6b7280;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.search-results-info {
+  font-size: 12px;
+  color: #6b7280;
+  font-style: italic;
+  margin-left: 4px;
+}
+
+/* Enhanced Popup Animations */
+.pool-popup-container {
+  animation: popupSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes popupSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Enhanced Button Effects */
+.pool-save-button {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.pool-save-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.pool-save-button:hover::before {
+  left: 100%;
+}
+
+.pool-save-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+}
+
+.pool-save-button:active {
+  transform: translateY(0);
+  transition: all 0.1s ease;
+}
+
+.pool-cancel-button {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.pool-cancel-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(107, 114, 128, 0.2);
+}
+
+.pool-cancel-button:active {
+  transform: translateY(0);
+  transition: all 0.1s ease;
 }

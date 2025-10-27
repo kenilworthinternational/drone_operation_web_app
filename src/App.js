@@ -145,6 +145,14 @@ function App() {
             }
           />
           <Route
+            path="calenderView"
+            element={
+              <ProtectedRoute>
+                <Navigate to="/home/calenderView/corporate" replace />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="calenderView/corporate"
             element={
               <ProtectedRoute>

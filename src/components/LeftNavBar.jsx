@@ -52,7 +52,7 @@ const categories = [
       { path: '/home/missions', label: 'Completed Missions', icon: FaCheckCircle },
       { path: '/home/teamAllocation', label: 'Plantation Team Allocation', icon: FaUsers },
       { path: '/home/nonpTeamAllocation', label: 'NONP Team Allocation', icon: FaUsers },
-      { path: '/home/proceedPlan', label: 'Edit Team Allocation', icon: FaCogs },
+      // { path: '/home/proceedPlan', label: 'Edit Team Allocation', icon: FaCogs },
       { path: '/home/reports/management', label: 'Reports', icon: FaFileAlt },
       { path: '/home/calenderView', label: 'Mission Calendar', icon: FaCalendarAlt },
       { path: '/home/earnings', label: 'Pilot Earnings', icon: FaMoneyBill },

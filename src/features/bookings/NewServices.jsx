@@ -347,7 +347,7 @@ const NewServices = () => {
         ).map(f => ({
           division: div.division_name,
           field: f.field_name,
-          reason: f.can_spray_text || 'Cannot spray'
+          reason: f.can_spray_text
         }))
       );
     } else if (isSpread) {
@@ -356,9 +356,9 @@ const NewServices = () => {
         (div.fields || []).filter(f => selectedFields.has(f.field_id)).filter(f =>
           Number(f.can_spread) === 0
         ).map(f => ({
-          division: div.division_name,
+          division: div.division_name, 
           field: f.field_name,
-          reason: f.can_spread_text || 'Cannot spread'
+          reason: f.can_spread_text
         }))
       );
     }

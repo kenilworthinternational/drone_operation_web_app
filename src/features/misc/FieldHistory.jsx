@@ -11,12 +11,12 @@ const FieldHistory = () => {
   const [fieldHistory, setFieldHistory] = useState([]);
   const [expandedPlans, setExpandedPlans] = useState({});
   const [selectedImage, setSelectedImage] = useState(null);
+  const [rotation, setRotation] = useState(0);
+  const [downloadStatus, setDownloadStatus] = useState(null);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [selectedFlag, setSelectedFlag] = useState('');
   const [selectedType, setSelectedType] = useState('');
-  const [rotation, setRotation] = useState(0);
-  const [downloadStatus, setDownloadStatus] = useState(null);
 
   // Set default date range to current month
   useEffect(() => {
@@ -108,8 +108,6 @@ const FieldHistory = () => {
       setFieldHistory([]);
     }
     setExpandedPlans({});
-    setSelectedFlag('');
-    setSelectedType('');
   }, [selectedField]);
 
   // Handle estate selection
@@ -131,6 +129,7 @@ const FieldHistory = () => {
   const handleTypeChange = (event) => {
     setSelectedType(event.target.value);
   };
+
 
   // Toggle plan expansion
   const togglePlan = (planId) => {
@@ -224,77 +223,95 @@ const FieldHistory = () => {
   };
 
   return (
-    <div className="field_history">
-      {/* Top Section: 15vh */}
-      <div className="field_history_top">
-        <div className="field_history_top1">
-          <div className="dropdown_container">
-            <label htmlFor="estate-select" className="dropdown_label">
+    <div className="field-history-container-fieldhistory">
+      {/* Header Section */}
+      <div className="field-history-header-fieldhistory">
+        <div className="field-history-title-fieldhistory">
+          <h1>Field History</h1>
+          <p>Track and analyze field operations history</p>
+        </div>
+      </div>
+
+      {/* Controls Section */}
+      <div className="field-history-controls-fieldhistory">
+        <div className="field-history-controls-grid-fieldhistory">
+          {/* Estate Selection */}
+          <div className="field-history-control-group-fieldhistory">
+            <label className="field-history-control-label-fieldhistory">
+              <i className="fas fa-building"></i>
               Select Estate
             </label>
             <Select
-              id="estate-select"
               value={selectedEstate}
               onChange={handleEstateChange}
               options={estateOptions}
               isSearchable={true}
-              placeholder="Type to search estates..."
-              className="react_select_container"
-              classNamePrefix="react_select"
+              placeholder="Search estates..."
+              className="field-history-select-fieldhistory"
+              classNamePrefix="field-history-select"
               isDisabled={!estates.length}
             />
           </div>
-          <div className="dropdown_container">
-            <label htmlFor="field-select" className="dropdown_label">
+
+          {/* Field Selection */}
+          <div className="field-history-control-group-fieldhistory">
+            <label className="field-history-control-label-fieldhistory">
+              <i className="fas fa-map-marked-alt"></i>
               Select Field
             </label>
             <Select
-              id="field-select"
               value={selectedField}
               onChange={handleFieldChange}
               options={fieldOptions}
               isSearchable={true}
-              placeholder="Type to search fields..."
-              className="react_select_container"
-              classNamePrefix="react_select"
+              placeholder="Search fields..."
+              className="field-history-select-fieldhistory"
+              classNamePrefix="field-history-select"
               isDisabled={!divisions.length}
             />
           </div>
-          {fieldHistory.length > 0 && (
-            <div className="filter_container">
-              <div className="filter_item">
-                <label htmlFor="start-date" className="dropdown_label">
+        </div>
+
+        {/* Filters Section */}
+        {fieldHistory.length > 0 && (
+          <div className="field-history-filters-fieldhistory">
+            <div className="field-history-filters-header-fieldhistory">
+              <h3><i className="fas fa-filter"></i> Filters</h3>
+            </div>
+            <div className="field-history-filters-grid-fieldhistory">
+              <div className="field-history-filter-group-fieldhistory">
+                <label className="field-history-filter-label-fieldhistory">
+                  <i className="fas fa-calendar-alt"></i>
                   Start Date
                 </label>
                 <input
-                  id="start-date"
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="dropdown_select"
+                  className="field-history-date-input-fieldhistory"
                 />
               </div>
-              <div className="filter_item">
-                <label htmlFor="end-date" className="dropdown_label">
+              <div className="field-history-filter-group-fieldhistory">
+                <label className="field-history-filter-label-fieldhistory">
+                  <i className="fas fa-calendar-alt"></i>
                   End Date
                 </label>
                 <input
-                  id="end-date"
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="dropdown_select"
+                  className="field-history-date-input-fieldhistory"
                 />
               </div>
-              <div className="filter_item">
-                <label htmlFor="flag-select" className="dropdown_label">
+              <div className="field-history-filter-group-fieldhistory">
+                <label className="field-history-filter-label-fieldhistory">
+                  <i className="fas fa-tag"></i>
                   Plan Type
                 </label>
                 <select
-                  id="flag-select"
                   value={selectedFlag}
                   onChange={handleFlagChange}
-                  className="dropdown_select"
+                  className="field-history-select-input-fieldhistory"
                 >
                   <option value="">All Plans</option>
                   <option value="np">New Plan</option>
@@ -302,15 +319,15 @@ const FieldHistory = () => {
                   <option value="rp">Reschedule Plan</option>
                 </select>
               </div>
-              <div className="filter_item">
-                <label htmlFor="type-select" className="dropdown_label">
-                  Spray/Spread
+              <div className="field-history-filter-group-fieldhistory">
+                <label className="field-history-filter-label-fieldhistory">
+                  <i className="fas fa-seedling"></i>
+                  Operation Type
                 </label>
                 <select
-                  id="type-select"
                   value={selectedType}
                   onChange={handleTypeChange}
-                  className="dropdown_select"
+                  className="field-history-select-input-fieldhistory"
                 >
                   <option value="">All Types</option>
                   <option value="spy">Spray</option>
@@ -318,194 +335,301 @@ const FieldHistory = () => {
                 </select>
               </div>
             </div>
-          )}
-        </div>
-        <div className="field_history_top2_parent">
-        <div className="field_history_top2">
-          {fieldHistory.length > 0 && (
-            <div className="data_summary_field_history">
-              <div className="summary-row">
-                <span className="summary-label">Total Plans: </span>
-                <span className="summary-value">{filteredPlans.length}</span>
-              </div>
+          </div>
+        )}
 
-              <div className="summary-row">
-                <div className="summary-group">
-                  <span className="summary-tag spy">Spray(spy):</span>
-                  <span className="summary-value">{filteredPlans.filter(plan => plan.type === 'spy').length}</span>
-                </div>
-                <div className="summary-group">
-                  <span className="summary-tag spd">Spread(spd):</span>
-                  <span className="summary-value">{filteredPlans.filter(plan => plan.type === 'spd').length}</span>
-                </div>
-              </div>
+      </div>
 
-              <div className="summary-row">
-                <div className="summary-group">
-                  <span className="summary-label">Spray Area:</span>
-                  <span className="summary-value">
-                    {filteredPlans.filter(plan => plan.type === 'spy').reduce((sum, plan) => sum + plan.area, 0).toFixed(2)} ha
-                  </span>
+      {/* Summary Section */}
+      {fieldHistory.length > 0 && (
+        <div className="field-history-summary-fieldhistory">
+          
+          <div className="field-history-summary-cards-fieldhistory">
+            <div className="field-history-summary-card-fieldhistory field-history-summary-card-spray-fieldhistory">
+              <div className="field-history-summary-card-icon-fieldhistory">
+                <i className="fas fa-spray-can"></i>
+              </div>
+              <div className="field-history-summary-card-content-fieldhistory">
+                <div className="field-history-summary-card-value-fieldhistory">
+                  {filteredPlans.filter(plan => plan.type === 'spy').length}
                 </div>
-                <div className="summary-group">
-                  <span className="summary-label">Spread Area:</span>
-                  <span className="summary-value">
-                    {filteredPlans.filter(plan => plan.type === 'spd').reduce((sum, plan) => sum + plan.area, 0).toFixed(2)} ha
-                  </span>
-                </div>
+                <div className="field-history-summary-card-label-fieldhistory">Spray Plans</div>
               </div>
             </div>
-          )}
-        </div>
-        </div>
-      </div>
-      {/* Bottom Section: 85vh, Scrollable */}
-      <div className="field_history_bottom">
-        {filteredPlans.length > 0 ? (
-          filteredPlans.map(plan => (
-            <div key={plan.plan_id} className="plan_container">
-              <div className="plan_header" onClick={() => togglePlan(plan.plan_id)}>
-                <span>({plan.plan_id}) {plan.estate_text} - {plan.area} Ha</span>
-                <span>{plan.date} - {getFlagText(plan.flag)} ({getTypeText(plan.type)})</span>
-                <span></span>
-                <span className="toggle_arrow">{expandedPlans[plan.plan_id] ? '▲' : '▼'}</span>
+            
+            <div className="field-history-summary-card-fieldhistory field-history-summary-card-spread-fieldhistory">
+              <div className="field-history-summary-card-icon-fieldhistory">
+                <i className="fas fa-seedling"></i>
               </div>
-              {expandedPlans[plan.plan_id] && (
-                <div className="plan_details">
-                  <div className="details_grid">
-                    <div className="details_grid-left">
-                      <div className="detail_label">Type: {getTypeText(plan.type)}</div>
-                      <div className="detail_label">Crop: {plan.crop_text}</div>
-                      <div className="detail_label">Estate: {plan.estate_text}</div>
-                      <div className="detail_label">Director OPS Approval: {plan.plan_completed === 1 ? 'Approved' : 'Not Approved'}</div>
-                    </div>
-                    <div className="details_grid-right">
-                      <div className="detail_label">Team Assigned: {plan.plan_team_assigned === 1 ? 'Assigned By Ops Room' : 'Not Assigned'}</div>
-                      <div className="detail_label">Manager Approval: {plan.plan_manager_approval === 1 ? 'Approved' : 'Not Approved'}</div>
-                      <div className="detail_label">Team Lead Status: {plan.field_activated === 1 ? 'Approved' : 'Canceled'}</div>
-                      <div className="detail_label">Field Status: {getStatusText(plan.field_status)}</div>
-                      {plan.field_status === 'r' && plan.field_status_reason_text && (
-                        <>
-                          <div className="detail_label">Rejection Reason:</div>
-                          <div className="detail_value">{plan.field_status_reason_text}</div>
-                        </>
-                      )}
+              <div className="field-history-summary-card-content-fieldhistory">
+                <div className="field-history-summary-card-value-fieldhistory">
+                  {filteredPlans.filter(plan => plan.type === 'spd').length}
+                </div>
+                <div className="field-history-summary-card-label-fieldhistory">Spread Plans</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Plans Section */}
+      <div className="field-history-plans-fieldhistory">
+        {filteredPlans.length > 0 ? (
+          <div className="field-history-plans-grid-fieldhistory">
+            {filteredPlans.map(plan => (
+              <div key={plan.plan_id} className="field-history-plan-card-fieldhistory">
+                <div 
+                  className="field-history-plan-header-fieldhistory" 
+                  onClick={() => togglePlan(plan.plan_id)}
+                >
+                  <div className="field-history-plan-header-left-fieldhistory">
+                    <div className="field-history-plan-id-fieldhistory">#{plan.plan_id}</div>
+                    <div className="field-history-plan-title-fieldhistory">
+                      {plan.estate_text} - {plan.area} Ha
                     </div>
                   </div>
-                  {Array.isArray(plan.tasks) && plan.tasks.length > 0 && (
-                    <div className="tasks_container">
-                      <h4>Tasks</h4>
-                      {plan.tasks.map(task => (
-                        <div key={task.task_id} className="task_item">
-                          <div className="details_grid">
-                            <div className="details_grid-left">
-                              <div className="detail_label">Task ID: {task.task_id}</div>
-                              <div className="detail_label">Team Lead: {task.team_lead}</div>
-                              <div className="detail_label">Battery Count: {task.battary_count}</div>
-                              <div className="detail_label">Field Area: {task.fieldArea} ha</div>
-                              <div className="detail_label">Obstacle Area: {task.obstacleArea} ha</div>
-                              <div className="detail_label">Margin Area: {task.marginArea} ha</div>
-                            </div>
-                            <div className="details_grid-right">
-                              <div className="detail_label">Pilot Name: {task.pilot}</div>
-                              <div className="detail_label">Sprayed Area: {task.sprayedArea} ha</div>
-                              <div className="detail_label">Sprayed Liters: {task.sprayedLiters} L</div>
-                              <div className="detail_label">Remaining Field Area: {task.remainingFieldArea} ha</div>
-                              <div className="detail_label">Remaining Liters: {task.remainingLiters} L</div>
-                              <div className="detail_label">Drone : {task.drone} L</div>
-                            </div>
-                            {task.image && (
-                              <div className="details_grid-image">
-                                <div className="detail_value">
-                                  <img
-                                    src={task.image}
-                                    alt="Task"
-                                    className="thumbnail_image"
-                                    onClick={() => openImage(task.image || '/assets/images/no-plan-found.png')}
-                                  />
+                  <div className="field-history-plan-header-right-fieldhistory">
+                    <div className="field-history-plan-date-fieldhistory">{plan.date}</div>
+                    <div className="field-history-plan-badges-fieldhistory">
+                      <span className={`field-history-plan-badge-fieldhistory field-history-plan-badge-${plan.flag}-fieldhistory`}>
+                        {getFlagText(plan.flag)}
+                      </span>
+                      <span className={`field-history-plan-badge-fieldhistory field-history-plan-badge-${plan.type}-fieldhistory`}>
+                        {getTypeText(plan.type)}
+                      </span>
+                    </div>
+                    <div className="field-history-plan-toggle-fieldhistory">
+                      <i className={`fas fa-chevron-${expandedPlans[plan.plan_id] ? 'up' : 'down'}`}></i>
+                    </div>
+                  </div>
+                </div>
+                
+                {expandedPlans[plan.plan_id] && (
+                  <div className="field-history-plan-details-fieldhistory">
+                    <div className="field-history-plan-info-fieldhistory">
+                      <div className="field-history-plan-info-grid-fieldhistory">
+                        <div className="field-history-plan-info-section-fieldhistory">
+                          <h4><i className="fas fa-info-circle"></i> Plan Details</h4>
+                          <div className="field-history-plan-info-item-fieldhistory">
+                            <span className="field-history-plan-info-label-fieldhistory">Type:</span>
+                            <span className="field-history-plan-info-value-fieldhistory">{getTypeText(plan.type)}</span>
+                          </div>
+                          <div className="field-history-plan-info-item-fieldhistory">
+                            <span className="field-history-plan-info-label-fieldhistory">Crop:</span>
+                            <span className="field-history-plan-info-value-fieldhistory">{plan.crop_text}</span>
+                          </div>
+                          <div className="field-history-plan-info-item-fieldhistory">
+                            <span className="field-history-plan-info-label-fieldhistory">Estate:</span>
+                            <span className="field-history-plan-info-value-fieldhistory">{plan.estate_text}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="field-history-plan-info-section-fieldhistory">
+                          <h4><i className="fas fa-check-circle"></i> Approvals</h4>
+                          <div className="field-history-plan-info-item-fieldhistory">
+                            <span className="field-history-plan-info-label-fieldhistory">Team Assigned:</span>
+                            <span className={`field-history-plan-status-fieldhistory ${plan.plan_team_assigned === 1 ? 'field-history-plan-status-approved-fieldhistory' : 'field-history-plan-status-pending-fieldhistory'}`}>
+                              {plan.plan_team_assigned === 1 ? 'Assigned' : 'Not Assigned'}
+                            </span>
+                          </div>
+                          <div className="field-history-plan-info-item-fieldhistory">
+                            <span className="field-history-plan-info-label-fieldhistory">Manager:</span>
+                            <span className={`field-history-plan-status-fieldhistory ${plan.plan_manager_approval === 1 ? 'field-history-plan-status-approved-fieldhistory' : 'field-history-plan-status-pending-fieldhistory'}`}>
+                              {plan.plan_manager_approval === 1 ? 'Approved' : 'Not Approved'}
+                            </span>
+                          </div>
+                          <div className="field-history-plan-info-item-fieldhistory">
+                            <span className="field-history-plan-info-label-fieldhistory">Field Status:</span>
+                            <span className={`field-history-plan-status-fieldhistory field-history-plan-status-${plan.field_status}-fieldhistory`}>
+                              {getStatusText(plan.field_status)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {plan.field_status === 'r' && plan.field_status_reason_text && (
+                        <div className="field-history-plan-rejection-fieldhistory">
+                          <h4><i className="fas fa-exclamation-triangle"></i> Rejection Reason</h4>
+                          <p>{plan.field_status_reason_text}</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Tasks Section */}
+                    {Array.isArray(plan.tasks) && plan.tasks.length > 0 && (
+                      <div className="field-history-tasks-fieldhistory">
+                        <h4><i className="fas fa-tasks"></i> Tasks ({plan.tasks.length})</h4>
+                        <div className="field-history-tasks-grid-fieldhistory">
+                          {plan.tasks.map(task => (
+                            <div key={task.task_id} className="field-history-task-card-fieldhistory">
+                              <div className="field-history-task-header-fieldhistory">
+                                <div className="field-history-task-id-fieldhistory">Task #{task.task_id}</div>
+                                <div className="field-history-task-pilot-fieldhistory">
+                                  <i className="fas fa-user"></i> {task.pilot}
                                 </div>
                               </div>
-                            )}
-                          </div>
-                          {Array.isArray(task.sub_task) && task.sub_task.length > 0 && (
-                            <div className="subtasks_container">
-                              <h5>Subtasks</h5>
-                              {task.sub_task.map(subtask => (
-                                <div key={subtask.sub_task_id} className="subtask_item">
-                                  <div className="details_grid">
-                                    <div className="details_grid-left">
-                                      <div className="detail_label">Subtask ID: {subtask.sub_task_id}</div>
-                                      <div className="detail_label">Field Area: {subtask.fieldArea} ha</div>
-                                      <div className="detail_label">Obstacle Area: {subtask.obstacleArea} ha</div>
-                                      <div className="detail_label">Margin Area: {subtask.marginArea} ha</div>
-                                      <div className="detail_label">Sprayed Area: {subtask.sprayedArea} ha</div>
+                              
+                              <div className="field-history-task-content-fieldhistory">
+                                <div className="field-history-task-info-fieldhistory">
+                                  <div className="field-history-task-info-grid-fieldhistory">
+                                    <div className="field-history-task-info-item-fieldhistory">
+                                      <span className="field-history-task-info-label-fieldhistory">Battery Count:</span>
+                                      <span className="field-history-task-info-value-fieldhistory">{task.battary_count}</span>
                                     </div>
-                                    <div className="details_grid-right">
-                                      <div className="detail_label">Sprayed Liters: {subtask.sprayedLiters} L</div>
-                                      <div className="detail_label">Remaining Field Area: {subtask.remainingFieldArea} ha</div>
-                                      <div className="detail_label">Remaining Liters: {subtask.remainingLiters} L</div>
-                                      <div className="detail_label">
-                                        Team Lead Status: {
-                                          subtask.team_lead_status === 'a' ? 'Approved' :
-                                            subtask.team_lead_status === 'p' ? 'Pending' :
-                                              subtask.team_lead_status === 'r' ? 'Rejected' :
-                                                subtask.team_lead_status
-                                        }
-                                      </div>
-                                      <div className="detail_label">Ops Room Status: {getStatusText(subtask.ops_room_status)}</div>
+                                    <div className="field-history-task-info-item-fieldhistory">
+                                      <span className="field-history-task-info-label-fieldhistory">Drone:</span>
+                                      <span className="field-history-task-info-value-fieldhistory">{task.drone}</span>
                                     </div>
-                                    {subtask.image && (
-                                      <div className="details_grid-image">
-                                        <div className="detail_value">
-                                          <img
-                                            src={subtask.image}
-                                            alt="Subtask"
-                                            className="thumbnail_image"
-                                            onClick={() => openImage(subtask.image || '/assets/images/no-plan-found.png')}
-                                          />
-                                        </div>
-                                      </div>
-                                    )}
+                                    <div className="field-history-task-info-item-fieldhistory">
+                                      <span className="field-history-task-info-label-fieldhistory">Field Area:</span>
+                                      <span className="field-history-task-info-value-fieldhistory">{task.fieldArea} ha</span>
+                                    </div>
+                                    <div className="field-history-task-info-item-fieldhistory">
+                                      <span className="field-history-task-info-label-fieldhistory">Sprayed Area:</span>
+                                      <span className="field-history-task-info-value-fieldhistory">{task.sprayedArea} ha</span>
+                                    </div>
+                                    <div className="field-history-task-info-item-fieldhistory">
+                                      <span className="field-history-task-info-label-fieldhistory">Remaining:</span>
+                                      <span className="field-history-task-info-value-fieldhistory">{task.remainingFieldArea} ha</span>
+                                    </div>
+                                    <div className="field-history-task-info-item-fieldhistory">
+                                      <span className="field-history-task-info-label-fieldhistory">Sprayed Liters:</span>
+                                      <span className="field-history-task-info-value-fieldhistory">{task.sprayedLiters} L</span>
+                                    </div>
+                                    <div className="field-history-task-info-item-fieldhistory">
+                                      <span className="field-history-task-info-label-fieldhistory">Remaining Liters:</span>
+                                      <span className="field-history-task-info-value-fieldhistory">{task.remainingLiters} L</span>
+                                    </div>
+                                    <div className="field-history-task-info-item-fieldhistory">
+                                      <span className="field-history-task-info-label-fieldhistory">Field Status:</span>
+                                      <span className={`field-history-task-status-fieldhistory field-history-task-status-${task.field_status}-fieldhistory`}>
+                                        {getStatusText(task.field_status)}
+                                      </span>
+                                    </div>
                                   </div>
                                 </div>
-                              ))}
+                                
+                                {task.image && (
+                                  <div className="field-history-task-image-fieldhistory">
+                                    <img
+                                      src={task.image}
+                                      alt="Task Image"
+                                      className="field-history-task-thumbnail-fieldhistory"
+                                      onClick={() => openImage(task.image || '/assets/images/no-plan-found.png')}
+                                      title="Click to view full size"
+                                    />
+                                    <div className="field-history-task-image-label-fieldhistory">
+                                      <i className="fas fa-expand"></i> Click to expand
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Subtasks */}
+                              {Array.isArray(task.sub_task) && task.sub_task.length > 0 && (
+                                <div className="field-history-subtasks-fieldhistory">
+                                  <h5><i className="fas fa-list-ul"></i> Subtasks ({task.sub_task.length})</h5>
+                                  <div className="field-history-subtasks-grid-fieldhistory">
+                                    {task.sub_task.map(subtask => (
+                                      <div key={subtask.sub_task_id} className="field-history-subtask-card-fieldhistory">
+                                        <div className="field-history-subtask-header-fieldhistory">
+                                          <div className="field-history-subtask-id-fieldhistory">Subtask #{subtask.sub_task_id}</div>
+                                          <div className="field-history-subtask-status-fieldhistory">
+                                            <span className={`field-history-subtask-status-badge-fieldhistory field-history-subtask-status-${subtask.team_lead_status}-fieldhistory`}>
+                                              {subtask.team_lead_status === 'a' ? 'Approved' :
+                                                subtask.team_lead_status === 'p' ? 'Pending' :
+                                                  subtask.team_lead_status === 'r' ? 'Rejected' :
+                                                    subtask.team_lead_status}
+                                            </span>
+                                          </div>
+                                        </div>
+                                        
+                                        <div className="field-history-subtask-content-fieldhistory">
+                                          <div className="field-history-subtask-data-fieldhistory">
+                                            <div className="field-history-subtask-data-item-fieldhistory">
+                                              <span className="field-history-subtask-data-label-fieldhistory">Field:</span>
+                                              <span className="field-history-subtask-data-value-fieldhistory">{subtask.fieldArea} ha</span>
+                                            </div>
+                                            <div className="field-history-subtask-data-item-fieldhistory">
+                                              <span className="field-history-subtask-data-label-fieldhistory">Sprayed:</span>
+                                              <span className="field-history-subtask-data-value-fieldhistory">{subtask.sprayedArea} ha</span>
+                                            </div>
+                                            <div className="field-history-subtask-data-item-fieldhistory">
+                                              <span className="field-history-subtask-data-label-fieldhistory">Remaining:</span>
+                                              <span className="field-history-subtask-data-value-fieldhistory">{subtask.remainingFieldArea} ha</span>
+                                            </div>
+                                            <div className="field-history-subtask-data-item-fieldhistory">
+                                              <span className="field-history-subtask-data-label-fieldhistory">Sprayed:</span>
+                                              <span className="field-history-subtask-data-value-fieldhistory">{subtask.sprayedLiters} L</span>
+                                            </div>
+                                            <div className="field-history-subtask-data-item-fieldhistory">
+                                              <span className="field-history-subtask-data-label-fieldhistory">Remaining:</span>
+                                              <span className="field-history-subtask-data-value-fieldhistory">{subtask.remainingLiters} L</span>
+                                            </div>
+                                          </div>
+                                        </div>
+                                        
+                                        {subtask.image && (
+                                          <div className="field-history-subtask-image-fieldhistory">
+                                            <img
+                                              src={subtask.image}
+                                              alt="Subtask Image"
+                                              className="field-history-subtask-thumbnail-fieldhistory"
+                                              onClick={() => openImage(subtask.image || '/assets/images/no-plan-found.png')}
+                                              title="Click to view full size"
+                                            />
+                                            <div className="field-history-subtask-image-label-fieldhistory">
+                                              <i className="fas fa-expand"></i> Click to expand
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
                             </div>
-                          )}
+                          ))}
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          ))
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         ) : (
-          <div className="placeholder_content">
-            {selectedField ? 'No history available for this field' : 'Select a field to view details'}
+          <div className="field-history-empty-fieldhistory">
+            <div className="field-history-empty-icon-fieldhistory">
+              <i className="fas fa-search"></i>
+            </div>
+            <h3>No Data Found</h3>
+            <p>{selectedField ? 'No history available for this field' : 'Select a field to view details'}</p>
           </div>
         )}
       </div>
+
       {/* Full-screen image modal */}
       {selectedImage && (
-        <div className="image_modal" onClick={closeImage}>
-          <div className="image_modal_content_wrapper" onClick={(e) => e.stopPropagation()}>
+        <div className="field-history-image-modal-fieldhistory" onClick={closeImage}>
+          <div className="field-history-image-modal-content-fieldhistory" onClick={(e) => e.stopPropagation()}>
             <img
               src={selectedImage}
               alt="Full-screen"
-              className="image_modal_content"
+              className="field-history-image-modal-img-fieldhistory"
               style={{ transform: `rotate(${rotation}deg)` }}
             />
-            <div className="image_modal_controls">
-              <button className="image_modal_btn rotate_left" onClick={rotateLeft}>
+            <div className="field-history-image-modal-controls-fieldhistory">
+              <button className="field-history-image-modal-btn-fieldhistory field-history-image-modal-rotate-left-fieldhistory" onClick={rotateLeft}>
                 <i className="fas fa-undo"></i>
               </button>
-              <button className="image_modal_btn rotate_right" onClick={rotateRight}>
+              <button className="field-history-image-modal-btn-fieldhistory field-history-image-modal-rotate-right-fieldhistory" onClick={rotateRight}>
                 <i className="fas fa-redo"></i>
               </button>
-              {/* <button className="image_modal_btn download_btn" onClick={downloadImage}>
+              <button className="field-history-image-modal-btn-fieldhistory field-history-image-modal-download-fieldhistory" onClick={downloadImage}>
                 <i className="fas fa-download"></i>
-              </button> */}
-              <button className="image_modal_close" onClick={closeImage}>
+              </button>
+              <button className="field-history-image-modal-close-fieldhistory" onClick={closeImage}>
                 <i className="fas fa-times"></i>
               </button>
             </div>

@@ -609,6 +609,83 @@ export const getDronesDetails = async () => {
   }
 };
 
+export const getDronesAndPilotsDetails = async () => {
+  const headers = getAuthHeaders();
+  if (!headers) return { success: false, message: "User not logged in." };
+
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}display_pilots_and_drons_in_teams`,
+      {},
+      {
+        ...headers,
+        headers: {
+          ...headers.headers,
+          "Content-Type": "application/json"
+        }
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching Drone Details:", error.response?.data || error.message);
+    return { success: false, message: "Drone Details Catching Failed" };
+  }
+};
+export const updateDronePlan = async (plan_id, drone_id) => {
+  const headers = getAuthHeaders();
+  if (!headers) return { success: false, message: "User not logged in." };
+
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}change_drone_to_plan`,
+      { plan: plan_id, drone: drone_id },
+      {
+        ...headers,
+        headers: {
+          ...headers.headers,
+          "Content-Type": "application/json"
+        }
+      }
+    );
+    
+    return response.data;
+  } catch (error) {
+    console.error("Error updating drone plan:", error.response?.data || error.message);
+    return { 
+      success: false, 
+      message: error.response?.data?.message || "Failed to update drone plan",
+      error: error.response?.data || error.message
+    };
+  }
+};
+export const updatePilotToPlan = async (plan_id, pilot_id) => {
+  const headers = getAuthHeaders();
+  if (!headers) return { success: false, message: "User not logged in." };
+
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}change_pilot_to_plan`,
+      { plan: plan_id, pilot: pilot_id },
+      {
+        ...headers,
+        headers: {
+          ...headers.headers,
+          "Content-Type": "application/json"
+        }
+      }
+    );
+    
+    return response.data;
+  } catch (error) {
+    console.error("Error updating drone plan:", error.response?.data || error.message);
+    return { 
+      success: false, 
+      message: error.response?.data?.message || "Failed to update drone plan",
+      error: error.response?.data || error.message
+    };
+  }
+};
+
 export const getUpdateMissionDetails = async (data) => {
   const headers = getAuthHeaders();
   if (!headers) return { success: false, message: "User not logged in." };

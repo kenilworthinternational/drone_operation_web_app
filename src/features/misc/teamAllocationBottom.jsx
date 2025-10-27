@@ -5,7 +5,10 @@ import {
   updateTeamDrone, 
   displayPilotandDroneWithoutTeam, 
   addDroneorPilotToPool, 
-  teamPlannedData 
+  teamPlannedData,
+  getDronesAndPilotsDetails,
+  updateDronePlan,
+  updatePilotToPlan
 } from '../../api/api';
 import '../../styles/proceedPlan.css';
 
@@ -48,9 +51,39 @@ const TeamAllocationBottom = ({ onTeamUpdate, usedPilots = new Set(), usedDrones
   const [assignablePlans, setAssignablePlans] = useState({ unassigned: [], assigned: [] });
   const [loadingAssignable, setLoadingAssignable] = useState(false);
 
+  // Drone update popup state
+  const [showDroneUpdatePopup, setShowDroneUpdatePopup] = useState(false);
+  const [selectedPlanForDroneUpdate, setSelectedPlanForDroneUpdate] = useState(null);
+  const [availableDrones, setAvailableDrones] = useState([]);
+  const [availablePilots, setAvailablePilots] = useState([]);
+  const [selectedDroneForUpdate, setSelectedDroneForUpdate] = useState(null);
+  const [selectedPilotForUpdate, setSelectedPilotForUpdate] = useState(null);
+  const [droneUpdateLoading, setDroneUpdateLoading] = useState(false);
+  const [droneUpdateError, setDroneUpdateError] = useState('');
+  const [droneUpdateSuccess, setDroneUpdateSuccess] = useState('');
+  const [updateMode, setUpdateMode] = useState('drone'); // 'drone' or 'pilot'
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredDrones, setFilteredDrones] = useState([]);
+  const [filteredPilots, setFilteredPilots] = useState([]);
+
   useEffect(() => {
     fetchTeams();
   }, []);
+
+  // Filter drones and pilots based on search query
+  useEffect(() => {
+    if (updateMode === 'drone') {
+      const filtered = availableDrones.filter(drone => 
+        (drone.tag || '').toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setFilteredDrones(filtered);
+    } else {
+      const filtered = availablePilots.filter(pilot => 
+        (pilot.name || '').toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setFilteredPilots(filtered);
+    }
+  }, [searchQuery, availableDrones, availablePilots, updateMode]);
 
   // Fetch plans when selectedDate changes or when plans tab is activated
   useEffect(() => {
@@ -540,6 +573,186 @@ const TeamAllocationBottom = ({ onTeamUpdate, usedPilots = new Set(), usedDrones
     handleDragEnd();
   };
 
+  // Drone update functions
+  const handleDroneUpdateClick = async (plan) => {
+    setUpdateMode('drone');
+    await openUpdatePopup(plan);
+  };
+
+  const handlePilotUpdateClick = async (plan) => {
+    setUpdateMode('pilot');
+    await openUpdatePopup(plan);
+  };
+
+  const openUpdatePopup = async (plan) => {
+    setSelectedPlanForDroneUpdate(plan);
+    setDroneUpdateError('');
+    setDroneUpdateSuccess('');
+    setSelectedDroneForUpdate(null);
+    setSelectedPilotForUpdate(null);
+    setSearchQuery(''); // Reset search query
+
+    try {
+      setDroneUpdateLoading(true);
+      const response = await getDronesAndPilotsDetails();
+      console.log('=== DRONES AND PILOTS RESPONSE ===');
+      console.log('Full response:', response);
+      
+      if (response && response.status === "true") {
+        // Extract drones and pilots from the response
+        const drones = response.drones || [];
+        const pilots = response.members || [];
+        console.log('Available drones:', drones);
+        console.log('Available pilots:', pilots);
+        setAvailableDrones(drones);
+        setAvailablePilots(pilots);
+        setFilteredDrones(drones); // Initialize filtered lists
+        setFilteredPilots(pilots);
+        setShowDroneUpdatePopup(true);
+      } else {
+        setDroneUpdateError('Failed to load drones and pilots list');
+      }
+    } catch (error) {
+      console.error('Error fetching drones and pilots:', error);
+      setDroneUpdateError('Failed to load drones and pilots list');
+    } finally {
+      setDroneUpdateLoading(false);
+    }
+  };
+
+  const handleDroneUpdateSelection = (droneId) => {
+    setSelectedDroneForUpdate(droneId);
+  };
+
+  const handlePilotUpdateSelection = (pilotId) => {
+    setSelectedPilotForUpdate(pilotId);
+  };
+
+  const handleDroneUpdate = async () => {
+    if (!selectedPlanForDroneUpdate) {
+      setDroneUpdateError('No plan selected');
+      return;
+    }
+
+    if (updateMode === 'drone' && !selectedDroneForUpdate) {
+      setDroneUpdateError('Please select a drone to update');
+      return;
+    }
+
+    if (updateMode === 'pilot' && !selectedPilotForUpdate) {
+      setDroneUpdateError('Please select a pilot to update');
+      return;
+    }
+
+    try {
+      setDroneUpdateLoading(true);
+      setDroneUpdateError('');
+      
+      console.log('=== UPDATE DEBUG ===');
+      console.log('Plan ID:', selectedPlanForDroneUpdate.id);
+      console.log('Plan Details:', selectedPlanForDroneUpdate);
+      console.log('Update Mode:', updateMode);
+      
+      let response;
+      if (updateMode === 'drone') {
+        console.log('Selected Drone ID:', selectedDroneForUpdate);
+        console.log('Selected Drone Details:', availableDrones.find(d => d.id === selectedDroneForUpdate));
+        response = await updateDronePlan(selectedPlanForDroneUpdate.id, selectedDroneForUpdate);
+      } else {
+        console.log('Selected Pilot ID:', selectedPilotForUpdate);
+        console.log('Selected Pilot Details:', availablePilots.find(p => p.id === selectedPilotForUpdate));
+        response = await updatePilotToPlan(selectedPlanForDroneUpdate.id, selectedPilotForUpdate);
+      }
+      
+      console.log('API Response:', response);
+      console.log('Response Type:', typeof response);
+      console.log('Response Status:', response?.status);
+      console.log('Response Status Type:', typeof response?.status);
+      
+      // Handle different response formats
+      let isSuccess = false;
+      let successMessage = updateMode === 'drone' ? 'Drone updated successfully!' : 'Pilot updated successfully!';
+      
+      console.log('Checking success conditions...');
+      
+      if (response) {
+        // Check for explicit success indicators
+        if (response.status === "true" || 
+            response.status === true || 
+            response.success === true ||
+            response.message === "Plan details saved successfully" ||
+            (response.message && response.message.toLowerCase().includes('success'))) {
+          isSuccess = true;
+          console.log('✅ Success detected via explicit success indicators');
+        }
+        // Check for explicit error indicators
+        else if (response.status === "false" ||
+                 response.status === false ||
+                 response.success === false || 
+                 response.error || 
+                 (response.message && response.message.toLowerCase().includes('error')) ||
+                 (response.message && response.message.toLowerCase().includes('failed'))) {
+          isSuccess = false;
+          console.log('❌ Error detected via explicit error indicators');
+        }
+        // If no explicit success/error indicators, assume success (some APIs return empty objects on success)
+        else if (typeof response === 'object' && !response.error) {
+          isSuccess = true;
+          console.log('✅ Success assumed (no error indicators found)');
+        }
+      } else {
+        console.log('❌ No response received');
+      }
+      
+      console.log('Final success determination:', isSuccess);
+      
+      if (isSuccess) {
+        setDroneUpdateSuccess(successMessage);
+        
+        // Refresh the plans data to verify the update
+        try {
+          await fetchPlansForSelectedDate(selectedDate);
+          console.log('Plans refreshed successfully after drone update');
+        } catch (refreshError) {
+          console.warn('Failed to refresh plans after drone update:', refreshError);
+          // Don't fail the operation just because refresh failed
+        }
+        
+        // Close popup after 2 seconds
+        setTimeout(() => {
+          setShowDroneUpdatePopup(false);
+          setDroneUpdateSuccess('');
+        }, 2000);
+      } else {
+        // Show the actual response message or a generic error
+        let errorMsg;
+        if (response?.status === "false" || response?.status === false) {
+          errorMsg = response?.message || `${updateMode === 'drone' ? 'Drone' : 'Pilot'} not updated - operation failed`;
+        } else {
+          errorMsg = response?.message || response?.error || `Failed to update ${updateMode === 'drone' ? 'drone' : 'pilot'}`;
+        }
+        console.log(`${updateMode === 'drone' ? 'Drone' : 'Pilot'} update failed with message:`, errorMsg);
+        setDroneUpdateError(errorMsg);
+      }
+    } catch (error) {
+      console.error(`Error updating ${updateMode}:`, error);
+      setDroneUpdateError(`Network error: Failed to update ${updateMode === 'drone' ? 'drone' : 'pilot'}`);
+    } finally {
+      setDroneUpdateLoading(false);
+    }
+  };
+
+  const closeDroneUpdatePopup = () => {
+    setShowDroneUpdatePopup(false);
+    setSelectedPlanForDroneUpdate(null);
+    setSelectedDroneForUpdate(null);
+    setSelectedPilotForUpdate(null);
+    setDroneUpdateError('');
+    setDroneUpdateSuccess('');
+    setUpdateMode('drone'); // Reset to default mode
+    setSearchQuery(''); // Reset search query
+  };
+
   return (
     <div className="team-allocation-bottom" onClick={handleClickOutside}>
       {errorMessage && (
@@ -765,12 +978,12 @@ const TeamAllocationBottom = ({ onTeamUpdate, usedPilots = new Set(), usedDrones
                               </div>
                             </div>
                           </div>
-                          <div className="plan-meta" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 8 }}>
+                          {/* <div className="plan-meta" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 8 }}>
                             <div className="plan-id" style={{ fontSize: 12, color: '#475569' }}>Plan ID: {plan.id}</div>
                             {plan.team_lead && (
                               <div className="plan-team-lead" style={{ fontSize: 12, color: '#475569', textAlign: 'right' }}>Team Lead: {plan.team_lead}</div>
                             )}
-                          </div>
+                          </div> */}
                           {(plan.pilots && plan.pilots.length > 0) || (plan.drones && plan.drones.length > 0) ? (
                             <div className="plan-details" style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginTop: 8 }}>
                               {plan.pilots && plan.pilots.length > 0 && (
@@ -824,12 +1037,12 @@ const TeamAllocationBottom = ({ onTeamUpdate, usedPilots = new Set(), usedDrones
                               </div>
                             </div>
                           </div>
-                          <div className="plan-meta" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 8 }}>
+                          {/* <div className="plan-meta" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 8 }}>
                             <div className="plan-id" style={{ fontSize: 12, color: '#475569' }}>Plan ID: {plan.id}</div>
                             {plan.team_lead && (
                               <div className="plan-team-lead" style={{ fontSize: 12, color: '#475569', textAlign: 'right' }}>Team Lead: {plan.team_lead}</div>
                             )}
-                          </div>
+                          </div> */}
                           {(plan.pilots && plan.pilots.length > 0) || (plan.drones && plan.drones.length > 0) ? (
                             <div className="plan-details" style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginTop: 8 }}>
                               {plan.pilots && plan.pilots.length > 0 && (
@@ -887,12 +1100,12 @@ const TeamAllocationBottom = ({ onTeamUpdate, usedPilots = new Set(), usedDrones
                         <h4>{teamName}</h4>
                         <span className="team-plans-count">{teamPlans.length} plan{teamPlans.length !== 1 ? 's' : ''}</span>
                       </div>
-                      <div className="today-plans-list">
+                      <div className={`today-plans-list ${teamPlans.length === 1 ? 'single-plan' : ''}`}>
                         {teamPlans.map((plan, index) => (
                           <div key={plan.id} className="today-plan-item">
                             <div className="plan-header">
                               <div className="plan-estate">
-                                {plan.estate} - {plan.area} Ha
+                                {plan.estate} - {plan.area} Ha (Plan ID-{plan.id})
                               </div>
                               <div 
                                 className="plan-flag"
@@ -902,17 +1115,24 @@ const TeamAllocationBottom = ({ onTeamUpdate, usedPilots = new Set(), usedDrones
                               </div>
                             </div>
                             <div className="plan-details">
-                              <div className="plan-id">Plan ID: {plan.id}</div>
-                              {plan.team_lead && (
+                              {/* {plan.team_lead && (
                                 <div className="plan-team-lead">Team Lead: {plan.team_lead}</div>
-                              )}
+                              )} */}
                               {plan.pilots && plan.pilots.length > 0 && (
-                                <div className="plan-pilots">
+                                <div 
+                                  className="plan-pilots clickable-pilots"
+                                  onClick={() => handlePilotUpdateClick(plan)}
+                                  title="Click to update pilot"
+                                >
                                   <strong>Pilots:</strong> {plan.pilots.map(p => p.pilot).join(', ')}
                                 </div>
                               )}
                               {plan.drones && plan.drones.length > 0 && (
-                                <div className="plan-drones">
+                                <div 
+                                  className="plan-drones clickable-drones"
+                                  onClick={() => handleDroneUpdateClick(plan)}
+                                  title="Click to update drone"
+                                >
                                   <strong>Drones:</strong> {plan.drones.map(d => d.tag).join(', ')}
                                 </div>
                               )}
@@ -989,7 +1209,7 @@ const TeamAllocationBottom = ({ onTeamUpdate, usedPilots = new Set(), usedDrones
                       {poolData.members.length > 0 ? (
                         <div className="pool-grid">
                           {poolData.members.map((member, index) => (
-                            <div key={member.id || index}
+                            <div key={`${member.id}-${index}`}
                               className={`pool-item-card ${selectedPilots.includes(member.id) ? 'selected' : ''}`}
                               onClick={() => handlePilotSelection(member.id)}
                             >
@@ -1025,7 +1245,7 @@ const TeamAllocationBottom = ({ onTeamUpdate, usedPilots = new Set(), usedDrones
                       {poolData.drones.length > 0 ? (
                         <div className="pool-grid">
                           {poolData.drones.map((drone, index) => (
-                            <div key={drone.id || index}
+                            <div key={`${drone.id}-${index}`}
                               className={`pool-item-card ${selectedDrones.includes(drone.id) ? 'selected' : ''}`}
                               onClick={() => handleDroneSelection(drone.id)}
                             >
@@ -1063,6 +1283,178 @@ const TeamAllocationBottom = ({ onTeamUpdate, usedPilots = new Set(), usedDrones
                   className="pool-save-button"
                 >
                   {poolLoading ? 'Saving...' : 'Save to Pool'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Drone Update Popup */}
+      {showDroneUpdatePopup && (
+        <div className="pool-popup-overlay">
+          <div className="pool-popup-container">
+            <div className="pool-popup-header">
+              <div className="pool-popup-header-left">
+                <div className="pool-popup-icon">{updateMode === 'drone' ? '🛩️' : '👨‍✈️'}</div>
+                <div className="pool-popup-title-section">
+                  <h3 className="pool-popup-title">
+                    Update {updateMode === 'drone' ? 'Drone' : 'Pilot'} for Plan
+                  </h3>
+                  <p className="pool-popup-subtitle">
+                    Plan ID: {selectedPlanForDroneUpdate?.id} - {selectedPlanForDroneUpdate?.estate} - {selectedPlanForDroneUpdate?.area} Ha
+                  </p>
+                </div>
+              </div>
+              
+              <div className="pool-popup-header-middle">
+                {/* Current Pilot and Drone Info */}
+                <div className="current-assignments">
+                  {selectedPlanForDroneUpdate?.pilots && selectedPlanForDroneUpdate.pilots.length > 0 && (
+                    <div className="current-assignment-item">
+                      <span className="assignment-label">👨‍✈️ Current Pilot:</span>
+                      <span className="assignment-value">{selectedPlanForDroneUpdate.pilots.map(p => p.pilot).join(', ')}</span>
+                    </div>
+                  )}
+                  {selectedPlanForDroneUpdate?.drones && selectedPlanForDroneUpdate.drones.length > 0 && (
+                    <div className="current-assignment-item">
+                      <span className="assignment-label">🛩️ Current Drone:</span>
+                      <span className="assignment-value">{selectedPlanForDroneUpdate.drones.map(d => d.tag).join(', ')}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <div className="pool-popup-header-right">
+                <button
+                  className="pool-popup-close"
+                  onClick={closeDroneUpdatePopup}
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+
+            <div className="pool-popup-content">
+              {droneUpdateLoading && (
+                <div className="loader-container">
+                  <div>Loading available {updateMode === 'drone' ? 'drones' : 'pilots'}...</div>
+                </div>
+              )}
+
+
+              {droneUpdateError && (
+                <div className="restriction-warning-section">
+                  <div className="restriction-warning-icon">⚠️</div>
+                  <div>
+                    <span className="restriction-warning-title">Error</span>
+                    <p className="restriction-warning-text">{droneUpdateError}</p>
+                  </div>
+                </div>
+              )}
+
+              {droneUpdateSuccess && (
+                <div className="restriction-action-section">
+                  <div className="restriction-action-content">
+                    <div className="restriction-action-icon">✓</div>
+                    <div>
+                      <span className="restriction-action-title">Success</span>
+                      <p className="restriction-action-text">{droneUpdateSuccess}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {!droneUpdateLoading && (
+                <>
+                  {/* Available Drones/Pilots */}
+                  <div className="pool-section">
+                    <div className="pool-section-header">
+                      <h4 className="pool-section-title">
+                        Select New {updateMode === 'drone' ? 'Drone' : 'Pilot'} ({updateMode === 'drone' ? filteredDrones.length : filteredPilots.length})
+                      </h4>
+                      <div className="search-input-container">
+                        <input
+                          type="text"
+                          placeholder={`Search ${updateMode === 'drone' ? 'drones' : 'pilots'}...`}
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="search-input"
+                        />
+                        <div className="search-icon">🔍</div>
+                      </div>
+                    </div>
+                    {searchQuery && (
+                      <div className="search-results-info">
+                        Showing {updateMode === 'drone' ? filteredDrones.length : filteredPilots.length} of {updateMode === 'drone' ? availableDrones.length : availablePilots.length} {updateMode === 'drone' ? 'drones' : 'pilots'}
+                      </div>
+                    )}
+                    <div className="pool-section-container">
+                      {updateMode === 'drone' ? (
+                        filteredDrones.length > 0 ? (
+                          <div className="pool-grid">
+                            {filteredDrones.map((drone, index) => (
+                              <div key={`${drone.id}-${index}`}
+                                className={`pool-item-card ${selectedDroneForUpdate === drone.id ? 'selected' : ''}`}
+                                onClick={() => handleDroneUpdateSelection(drone.id)}
+                              >
+                                <div className="pool-item-content">
+                                  <div className="pool-item-name">
+                                    <span style={{ fontSize: '14px' }}>🛩️</span>
+                                    {drone.tag || `Drone ${index + 1}`}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="pool-empty-message">
+                            {searchQuery ? `No drones found matching "${searchQuery}"` : 'No available drones'}
+                          </div>
+                        )
+                      ) : (
+                        filteredPilots.length > 0 ? (
+                          <div className="pool-grid">
+                            {filteredPilots.map((pilot, index) => (
+                              <div key={`${pilot.id}-${index}`}
+                                className={`pool-item-card ${selectedPilotForUpdate === pilot.id ? 'selected' : ''}`}
+                                onClick={() => handlePilotUpdateSelection(pilot.id)}
+                              >
+                                <div className="pool-item-content">
+                                  <div className="pool-item-name">
+                                    <span style={{ fontSize: '14px' }}>👨‍✈️</span>
+                                    {pilot.name || `Pilot ${index + 1}`}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="pool-empty-message">
+                            {searchQuery ? `No pilots found matching "${searchQuery}"` : 'No available pilots'}
+                          </div>
+                        )
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className="pool-popup-footer">
+              <div className="pool-footer-buttons">
+                <button
+                  onClick={closeDroneUpdatePopup}
+                  className="pool-cancel-button"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDroneUpdate}
+                  disabled={droneUpdateLoading || (updateMode === 'drone' ? !selectedDroneForUpdate : !selectedPilotForUpdate)}
+                  className="pool-save-button"
+                >
+                  {droneUpdateLoading ? 'Updating...' : `Update ${updateMode === 'drone' ? 'Drone' : 'Pilot'}`}
                 </button>
               </div>
             </div>
