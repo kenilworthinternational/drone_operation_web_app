@@ -93,7 +93,7 @@ const reducer = (state, action) => {
   }
 };
 
-const CalendarWidget = ({ tasksData = [], currentMonth, onTaskUpdate, calendarSection = 'default' }) => {
+const CalendarWidget = ({ tasksData = [], currentMonth, onTaskUpdate, calendarSection = 'default', calendarLoading = false }) => {
   const [state, dispatch] = useReducer(reducer, initialState);
   const [selectedTask, setSelectedTask] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -208,7 +208,7 @@ const CalendarWidget = ({ tasksData = [], currentMonth, onTaskUpdate, calendarSe
     const flagColors = {
       rp: '#cdd3ff', // Rescheduled plan
       ap: '#eed7a1', // Active plan
-      np: '#e3ffd7', // New plan
+      np: '#e3ffd7', // Revolving plan
     };
 
     if (flag === 'ap') {
@@ -932,7 +932,15 @@ const CalendarWidget = ({ tasksData = [], currentMonth, onTaskUpdate, calendarSe
 
   return (
     <div className="calendar">
-      {renderCalendar()}
+      {!calendarLoading && renderCalendar()}
+      {calendarLoading && (
+        <div className="calendar-loading-overlay">
+          <div className="calendar-loading-content">
+            <Bars color="#004B71" height={60} width={80} />
+            <p>Loading calendar data...</p>
+          </div>
+        </div>
+      )}
       {selectedTask && (
         <div className="popup-overlay">
           <div className="popup-content-calender" ref={popupContentRef}>
@@ -1182,6 +1190,7 @@ CalendarWidget.propTypes = {
   currentMonth: PropTypes.instanceOf(Date).isRequired,
   onTaskUpdate: PropTypes.func,
   calendarSection: PropTypes.string,
+  calendarLoading: PropTypes.bool,
 };
 
 export default CalendarWidget;

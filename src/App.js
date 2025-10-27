@@ -10,7 +10,6 @@ import TeamAllocation from './features/misc/teamAllocation';
 import NonpTeamAllocation from './features/nonp/nonpTeamAllocation';
 import SummeryView from './features/misc/SummeryView';
 import CalenderView from './features/calendar/CalenderView';
-import CalenderViewOnly from './features/calendar/CalenderViewOnly';
 import DeletePlan from './features/misc/DeletePlan';
 import DeactivatePlan from './features/misc/DeactivatePlan';
 import ReportSection from './features/reports/ReportNavigation';
@@ -173,14 +172,6 @@ function App() {
             element={
               <ProtectedRoute>
                 <CalenderView />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="calenderViewOnly"
-            element={
-              <ProtectedRoute>
-                <CalenderViewOnly />
               </ProtectedRoute>
             }
           />

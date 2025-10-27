@@ -43,6 +43,7 @@ const CalenderView = () => {
   });
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [isTopExpanded, setIsTopExpanded] = useState(true);
+  const [calendarLoading, setCalendarLoading] = useState(false);
   const userData = JSON.parse(localStorage.getItem('userData'));
   const [isLoading, setIsLoading] = useState({
     plantation: false,
@@ -166,6 +167,7 @@ const CalenderView = () => {
   };
 
   const fetchCalendarDataForMonth = async (type, id) => {
+    setCalendarLoading(true);
     const { startDate, endDate } = getMonthDateRange(currentMonth);
 
     let fetchFunc;
@@ -186,6 +188,7 @@ const CalenderView = () => {
         fetchFunc = getSummaryDataEstateAllDateRange;
         break;
       default:
+        setCalendarLoading(false);
         return;
     }
 
@@ -203,6 +206,8 @@ const CalenderView = () => {
       }
     } catch (error) {
       console.error("Error fetching calendar data:", error);
+    } finally {
+      setCalendarLoading(false);
     }
   };
 
@@ -522,13 +527,14 @@ const CalenderView = () => {
         <div className="calendar-section">
           <h2>Calendar View</h2>
           <div className="calendar-container">
-            {state.calendarData.length === 0 && !isLoading.plantation && !isLoading.region && !isLoading.estate ? (
+            {state.calendarData.length === 0 && !isLoading.plantation && !isLoading.region && !isLoading.estate && !calendarLoading ? (
               <div className="no-data">No data available for the selected filters.</div>
             ) : (
               <CalenderWidget 
                 tasksData={state.calendarData} 
                 currentMonth={currentMonth} 
                 calendarSection={calendarSection}
+                calendarLoading={calendarLoading}
               />
             )}
           </div>

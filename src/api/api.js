@@ -3547,3 +3547,73 @@ export const nonpGroupAssignedMissions = async (data) => {
     return null;
   }
 };
+
+export const messageSenderAPI = async (mobile_no, content) => {
+  const headers = getAuthHeaders();
+  if (!headers) return { success: false, message: "User not logged in." };
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}send_sms_with_custom_body`,
+      {
+        mobile_no: mobile_no,
+        content: content
+      },
+      {
+        ...headers,
+        headers: {
+          ...headers.headers,
+          "Content-Type": "application/json"
+        }
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error Finding Update Mission:", error.response?.data || error.message);
+    return null;
+  }
+};
+
+export const sendOTP = async (mobile_no, otp) => {
+  try {
+    const content = `Your OTP for Drone Services Management System login is: ${otp}. Please do not share this code with anyone.`;
+    const response = await axios.post(
+      `${API_BASE_URL}send_sms_with_custom_body`,
+      {
+        mobile_no: mobile_no,
+        content: content
+      },
+      {
+        headers: {
+          "Content-Type": "application/json"
+        }
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error sending OTP:", error.response?.data || error.message);
+    return { status: false, message: "Failed to send OTP" };
+  }
+};
+
+export const verifyOTPAndLogin = async (mobile_no, otp) => {
+  try {
+    // Proceed to login if OTP is valid (we'll validate OTP on frontend)
+    const response = await axios.post(
+      `${API_BASE_URL}login`,
+      { mobile_no: mobile_no },
+      {
+        headers: {
+          "Content-Type": "application/json"
+        }
+      }
+    );
+    
+    return {
+      success: response.data?.login_status,
+      userData: response.data
+    };
+  } catch (error) {
+    console.error("Error verifying OTP and login:", error.response?.data || error.message);
+    return { success: false, message: "OTP verification failed" };
+  }
+};

@@ -10,6 +10,7 @@
   font-family: Arial, sans-serif;
   overflow: visible;
   margin: 1px;
+  position: relative;
 }
 .calendar-sticky-header {
   position: sticky;
@@ -1604,4 +1605,39 @@
   border: 5px solid transparent;
   border-top-color: #333;
   z-index: 1000;
+}
+
+/* Calendar Loading Overlay */
+.calendar-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+  backdrop-filter: blur(0px);
+}
+
+.calendar-loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  background: transparent;
+  padding: 40px;
+  border-radius: 12px;
+  box-shadow: none;
+}
+
+.calendar-loading-content p {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #004B71;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
 }

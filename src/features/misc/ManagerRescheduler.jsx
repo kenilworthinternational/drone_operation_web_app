@@ -4,10 +4,10 @@ import ManagerPlanReschedule from './ManagerPlanReschedule';
 import ManagerAdHocRequest from './ManagerAdHocRequest';
 
 const ManagerRescheduler = () => {
-  const [activeTab, setActiveTab] = useState('planReschedule');
+  const [activeSection, setActiveSection] = useState('planReschedule');
 
-  const renderTabContent = () => {
-    switch (activeTab) {
+  const renderContent = () => {
+    switch (activeSection) {
       case 'planReschedule':
         return <ManagerPlanReschedule />;
       case 'adHocRequest':
@@ -18,25 +18,42 @@ const ManagerRescheduler = () => {
   };
 
   return (
-    <div className="manager-rescheduler-container">
-      {/* Main Tabs */}
-      <div className="tabs-planrescheduler">
-        <button
-          className={`tab-planrescheduler ${activeTab === 'planReschedule' ? 'active' : ''}`}
-          onClick={() => setActiveTab('planReschedule')}
+    <div className="manager-rescheduler-modern-container">
+      
+      <div className="section-selector-container">
+        <div 
+          className={`section-card ${activeSection === 'planReschedule' ? 'active' : ''}`}
+          onClick={() => setActiveSection('planReschedule')}
         >
-          Plan Reschedule
-        </button>
-        <button
-          className={`tab-planrescheduler ${activeTab === 'adHocRequest' ? 'active' : ''}`}
-          onClick={() => setActiveTab('adHocRequest')}
+          <div className="section-card-icon">📅</div>
+          <div className="section-card-content">
+            <h3 className="section-card-title">Plan Reschedule</h3>
+            <p className="section-card-description">Manage reschedule requests from field managers</p>
+          </div>
+          <div className="section-card-indicator">
+            <span className={`indicator-dot ${activeSection === 'planReschedule' ? 'active' : ''}`}></span>
+          </div>
+        </div>
+
+        <div 
+          className={`section-card ${activeSection === 'adHocRequest' ? 'active' : ''}`}
+          onClick={() => setActiveSection('adHocRequest')}
         >
-          AddHoc Request
-        </button>
+          <div className="section-card-icon">🚀</div>
+          <div className="section-card-content">
+            <h3 className="section-card-title">AdHoc Requests</h3>
+            <p className="section-card-description">Review and approve ad-hoc mission requests</p>
+          </div>
+          <div className="section-card-indicator">
+            <span className={`indicator-dot ${activeSection === 'adHocRequest' ? 'active' : ''}`}></span>
+          </div>
+        </div>
       </div>
 
-      {/* Tab Content */}
-      {renderTabContent()}
+      {/* Content Area */}
+      <div className="manager-content-wrapper">
+        {renderContent()}
+      </div>
     </div>
   );
 };

@@ -8,7 +8,6 @@ import ReportPartCEO1 from '../../features/reports/CEOPlanAreasReport';
 import ReportPartCEOBottom from '../../features/reports/CEOUpcomingPlansReport';
 import { enCA } from 'date-fns/locale';
 import { format } from 'date-fns';
-import CalenderWidgetViewOnly from '../calendar/CalenderWidgetViewOnly';
 
 const CEODataViewer = () => {
   const [dateRange, setDateRange] = useState([

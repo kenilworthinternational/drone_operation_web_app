@@ -163,13 +163,9 @@ const DayEndProcess = () => {
           group: `${plan.estate}(${(plan.estate_id)}) - ${plan.area} Ha`,
           completed: plan.completed,
           activated: plan.activated,
-          team_lead: plan.team_lead,
           team_assigned: plan.team_assigned,
           operator_name: plan.operator_name,
           total_sub_task: plan.total_sub_task,
-          total_sub_task_team_lead_approved_subs: plan.total_sub_task_team_lead_approved_subs,
-          total_sub_task_team_lead_pending_subs: plan.total_sub_task_team_lead_pending_subs,
-          total_sub_task_team_lead_rejected_subs: plan.total_sub_task_team_lead_rejected_subs,
           total_sub_task_ops_room_approved_subs: plan.total_sub_task_ops_room_approved_subs,
           total_sub_task_ops_room_pending_subs: plan.total_sub_task_ops_room_pending_subs,
           total_sub_task_ops_room_rejected_subs: plan.total_sub_task_ops_room_rejected_subs,
@@ -652,16 +648,9 @@ const DayEndProcess = () => {
                   onClick={() => handleContainerClick(mission.id)}
                 >
                   <div className="mission-container-left">
-                    <p><strong>Estate:</strong> {mission.group} - <strong>Plan ID:</strong> {mission.id}</p>
-                    <p><strong>Ops: </strong>{mission.operator_name && mission.operator_name.trim() !== '' ? mission.operator_name : 'Not Assigned'} || <strong>Team Lead: </strong>{mission.team_lead ? mission.team_lead : 'Not Assigned'}</p>
+                    <p><strong>Estate:</strong> {mission.group} - ({mission.id})</p>
+                    <p><strong>Ops: </strong>{mission.operator_name && mission.operator_name.trim() !== '' ? mission.operator_name : 'Not Assigned'}</p>
                     <p className="mission-status-opsdayend">
-                      <span className="status-label-opsdayend">Team Lead:</span>
-                      <span className="status-group-opsdayend">
-                        <span className="status-badge-opsdayend approved-opsdayend">✓ {mission.total_sub_task_team_lead_approved_subs}</span>
-                        <span className="status-badge-opsdayend pending-opsdayend">⏳ {mission.total_sub_task_team_lead_pending_subs}</span>
-                        <span className="status-badge-opsdayend rejected-opsdayend">✗ {mission.total_sub_task_team_lead_rejected_subs}</span>
-                      </span>
-                      <span className="separator-opsdayend">||</span>
                       <span className="status-label-opsdayend">Ops Room:</span>
                       <span className="status-group-opsdayend">
                         <span className="status-badge-opsdayend approved-opsdayend">✓ {mission.total_sub_task_ops_room_approved_subs}</span>
@@ -725,7 +714,7 @@ const DayEndProcess = () => {
         ) : selectedMission ? (
           <div className="mission-details-container">
             <h3>
-              {selectedMission?.estateName ?? 'Unknown Estate'} - {calculateTotalExtent()} Ha - {selectedMission?.teamLead ?? 'Unknown Team Lead'}(TL)
+              {selectedMission?.estateName ?? 'Unknown Estate'} - {calculateTotalExtent()} Ha
             </h3>
             {selectedMission.divisions.map((division) => (
               <div key={division.divisionId} className="division-container">
@@ -785,7 +774,7 @@ const DayEndProcess = () => {
                         {expandedFields.includes(field.field_id) && (
                           <div className="field-tasks-container">
                             {(fieldTasks[field.field_id]?.tasks || []).map((task, taskIndex) => (
-                              <div key={`task-${task.task_id}`} className="task-details-dayend">
+                              <div key={`task-${task.task_id}-${taskIndex}`} className="task-details-dayend">
                                 <div
                                   className="task-header"
                                   style={{
@@ -853,393 +842,6 @@ const DayEndProcess = () => {
                             ))}
                           </div>
                         )}
-                        {showSubtaskPopup && subtasks.length > 0 && (
-                          <div className="subtask-popup-overlay" onClick={handleSubtaskPopupClose}>
-                            <div className="subtask-popup-content" onClick={(e) => e.stopPropagation()}>
-                              <button className="close-button" onClick={handleSubtaskPopupClose}>✖</button>
-                              <div className="subtask-image-container">
-                                <img
-                                  src={subtasks[currentSubtaskIndex].sub_task_image || '/assets/images/no-plan-found.png'}
-                                  alt="Subtask"
-                                  className="subtask-popup-image"
-                                  onClick={() => openImage(subtasks[currentSubtaskIndex].sub_task_image)}
-                                  onError={(e) => {
-                                    e.target.onerror = null;
-                                    e.target.src = '/assets/images/no-plan-found.png';
-                                  }}
-                                />
-                              </div>
-                              <div className="subtask-details">
-                                <div className="dayend-topapproval">
-                                  <span><strong>Approval :</strong></span>
-                                  <StatusToggle
-                                    status={subtasks[currentSubtaskIndex].sub_task_reject_ops_room}
-                                    onChange={async (newStatus) => {
-                                      try {
-                                        const currentSubtask = subtasks[currentSubtaskIndex];
-                                        const updatedSubtasks = [...subtasks];
-                                        updatedSubtasks[currentSubtaskIndex].sub_task_reject_ops_room = newStatus;
-                                        setSubtasks(updatedSubtasks);
-                                        const result = await subTaskApproveorDecline(
-                                          currentSubtask.sub_task_id,
-                                          newStatus
-                                        );
-                                        if (newStatus === 'a') {
-                                          try {
-                                            const logResult = await subTaskLogDetails(
-                                              currentSubtask.sub_task_id,
-                                              'a',
-                                              0,
-                                              'Approved'
-                                            );
-                                            if (!logResult.success) {
-                                              throw new Error('Approval logging failed');
-                                            }
-                                            updatedSubtasks[currentSubtaskIndex] = {
-                                              ...currentSubtask,
-                                              sub_task_reject_reason_text: 'Approved',
-                                              sub_task_rejected_person_name: userData.name,
-                                              sub_task_reject_ops_room: newStatus,
-                                            };
-                                            setSubtasks(updatedSubtasks);
-                                          } catch (error) {
-                                            console.error('Approval logging error:', error);
-                                            setSubtasks([...subtasks]);
-                                            toast.error('Approval logging failed');
-                                          }
-                                        }
-                                        if (!result?.success) {
-                                          setSubtasks([...subtasks]);
-                                          toast.error(`Update failed: ${result?.message || 'Unknown error'}`);
-                                        }
-                                      } catch (error) {
-                                        console.error('Update error:', error);
-                                        setSubtasks([...subtasks]);
-                                        toast.error(`Update failed: ${error.message || 'Unknown error'}`);
-                                      }
-                                    }}
-                                  />
-                                </div>
-                                <div className="subtask-status-details">
-                                  {subtasks[currentSubtaskIndex].sub_task_reject_ops_room === 'r' && (
-                                    <div className="rejection-info">
-                                      <p><strong>Reason:</strong> {subtasks[currentSubtaskIndex].sub_task_reject_reason_text}</p>
-                                      <p><strong>By:</strong> {subtasks[currentSubtaskIndex].sub_task_rejected_person_name}</p>
-                                    </div>
-                                  )}
-                                  {subtasks[currentSubtaskIndex].sub_task_reject_ops_room === 'a' && (
-                                    <div className="approval-info">
-                                      <p><strong>Approval:</strong> {subtasks[currentSubtaskIndex].sub_task_reject_reason_text || 'Approved'}</p>
-                                      <p><strong>By:</strong> {subtasks[currentSubtaskIndex].sub_task_rejected_person_name}</p>
-                                    </div>
-                                  )}
-                                </div>
-                                <div className="subtask-detail-columns">
-                                  <div className="subtask-detail-column">
-                                    <p><strong>Subtask ID:</strong> {subtasks[currentSubtaskIndex].sub_task_id}</p>
-                                    <p><strong>Field Area:</strong> {subtasks[currentSubtaskIndex].sub_task_fieldArea} Ha</p>
-                                    <p><strong>Liters Used:</strong> {subtasks[currentSubtaskIndex].sub_task_sprayedLiters}</p>
-                                    <p><strong>Status:</strong> {subtasks[currentSubtaskIndex].sub_task_status_text}</p>
-                                  </div>
-                                  <div className="subtask-detail-column">
-                                    <p><strong>Obstacle Area:</strong> {subtasks[currentSubtaskIndex].sub_task_obstacleArea} Ha</p>
-                                    <p><strong>Sprayed Area:</strong> {subtasks[currentSubtaskIndex].sub_task_sprayedArea} Ha</p>
-                                    <p><strong>Margin Area:</strong> {subtasks[currentSubtaskIndex].sub_task_marginArea} Ha</p>
-                                    <p
-                                      style={{
-                                        color:
-                                          subtasks[currentSubtaskIndex].sub_task_reject_team_lead === 'r'
-                                            ? 'red'
-                                            : subtasks[currentSubtaskIndex].sub_task_reject_team_lead === 'a'
-                                              ? 'green'
-                                              : subtasks[currentSubtaskIndex].sub_task_reject_team_lead === 'p'
-                                                ? 'darkgray'
-                                                : 'black',
-                                      }}
-                                    >
-                                      <strong>Team Lead Status:</strong>{' '}
-                                      {subtasks[currentSubtaskIndex].sub_task_reject_team_lead === 'r'
-                                        ? 'Rejected'
-                                        : subtasks[currentSubtaskIndex].sub_task_reject_team_lead === 'a'
-                                          ? 'Approved'
-                                          : subtasks[currentSubtaskIndex].sub_task_reject_team_lead === 'p'
-                                            ? 'Pending'
-                                            : 'Unknown'}
-                                    </p>
-                                  </div>
-                                </div>
-                                <h4>Subtask {currentSubtaskIndex + 1} of {subtasks.length}</h4>
-                              </div>
-                              <div className="subtask-navigation">
-                                {currentSubtaskIndex > 0 && (
-                                  <button className="nav-button prev-button" onClick={handlePreviousSubtask}>
-                                    Previous
-                                  </button>
-                                )}
-                                {currentSubtaskIndex < subtasks.length - 1 ? (
-                                  <button className="nav-button next-button" onClick={handleNextSubtask}>
-                                    Next
-                                  </button>
-                                ) : (
-                                  <button className="nav-button finish-button" onClick={handleSubtaskPopupClose}>
-                                    Finish Review
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                        {showRejectionPopup && (
-                          <RejectionReasonPopup
-                            currentSubtask={currentRejectingSubtask}
-                            onClose={() => {
-                              setShowRejectionPopup(false);
-                              setSelectedReason(null);
-                              setCustomReason('');
-                            }}
-                            onSubmit={(updatedSubtask) => {
-                              const updatedSubtasks = subtasks.map((st) =>
-                                st.sub_task_id === updatedSubtask.sub_task_id
-                                  ? {
-                                    ...st,
-                                    sub_task_reject_reason_text: updatedSubtask.sub_task_reject_reason_text,
-                                    sub_task_rejected_person_name: updatedSubtask.sub_task_rejected_person_name,
-                                    sub_task_reject_ops_room: 'r',
-                                  }
-                                  : st
-                              );
-                              setSubtasks(updatedSubtasks);
-                            }}
-                          />
-                        )}
-                        {showTaskPopup && currentTask && (
-                          <div className="task-popup-overlay" onClick={handleTaskPopupClose}>
-                            <div className="task-popup-content" onClick={(e) => e.stopPropagation()}>
-                              <button className="close-button" onClick={handleTaskPopupClose}>✖</button>
-                              <div className="task-popup-header">
-                                <div className="task-popup-header-top">
-                                <h3>{currentField?.field_name || 'Unknown Field'} - TaskID: {currentTask.task_id} | Field Area: {currentField?.field_area || currentTask.task_fieldArea || 'N/A'} Ha</h3>
-                                <button
-                                  className="submit-button2"
-                                  style={{
-                                    background: existingReportData
-                                      ? existingReportData.status === 'a'
-                                        ? '#2fc653'
-                                        : existingReportData.status === 'r'
-                                        ? '#ff4d4f'
-                                        : existingReportData.status === 'p'
-                                        ? '#948F62FF'
-                                        : '#004B71'
-                                      : '#004B71',
-                                    color: '#fff',
-                                    border: existingReportData ? '1.5px solid #888' : undefined,
-                                  }}
-                                  onClick={() => setShowReportPopup(true)}
-                                >
-                                  Report
-                                </button>
-                                </div>
-                                
-                                
-                                <div className="task-top-line">
-                                  <span className="status-badge">Status: {currentTask.task_status_text}</span>
-                                  <span>Drone: {currentTask.drone_tag}</span>
-                                  <span>Pilot: {currentTask.pilot}</span>
-                                  <span>Mobile: {currentTask.mobile_no}</span>
-                                </div>
-                              </div>
-                              <div className="task-popup-body">
-                              <div className="image-card image-card-full">
-                                    <h4>Task Image</h4>
-                                    <img
-                                      src={currentTask.task_image || '/assets/images/no-plan-found.png'}
-                                      alt="Task"
-                                      className="popup-image"
-                                      onClick={() => openImage(currentTask.task_image)}
-                                    />
-                                  </div>
-                                <div className="data-row">
-                                  
-                                  <div className="image-card2">
-                                    <h4>DJI Image</h4>
-                                    <img
-                                      src={
-                                        djiData.dji_image
-                                          ? (typeof djiData.dji_image === 'string'
-                                              ? djiData.dji_image
-                                              : URL.createObjectURL(djiData.dji_image))
-                                          : '/assets/images/no-plan-found.png'
-                                      }
-                                      alt="DJI"
-                                      className="popup-image"
-                                      onClick={() =>
-                                        openImage(
-                                          typeof djiData.dji_image === 'string'
-                                            ? djiData.dji_image
-                                            : URL.createObjectURL(djiData.dji_image)
-                                        )
-                                      }
-                                    />
-                                    <input
-                                      type="file"
-                                      accept="image/*"
-                                      onChange={handleImageUpload}
-                                      id="dji-image-upload"
-                                      style={{ marginTop: 8 }}
-                                    />
-                                  </div>
-                                  <div className="image-card2">
-                                    <h4>Crop Image</h4>
-                                    <img
-                                      src={
-                                        cropImagePreview ||
-                                        currentTask.image_crop ||
-                                        '/assets/images/no-plan-found.png'
-                                      }
-                                      alt="Crop"
-                                      className="popup-image"
-                                      onClick={() =>
-                                        openImage(
-                                          cropImagePreview ||
-                                          currentTask.image_crop ||
-                                          '/assets/images/no-plan-found.png'
-                                        )
-                                      }
-                                    />
-                                    <input
-                                      type="file"
-                                      accept="image/*"
-                                      onChange={handleCropImageUpload}
-                                      id="crop-image-upload"
-                                      style={{ marginTop: 8 }}
-                                    />
-                                  </div>
-                                </div>
-                                <div className="data-grid">
-                                  <div className="data-row">
-                                    <div className="data-item">
-                                      <label>Pilot Field Area (Ha):</label>
-                                      <input
-                                        type="number"
-                                        value={currentTask.task_fieldArea}
-                                        readOnly
-                                        disabled
-                                      />
-                                    </div>
-                                    <div className="data-item">
-                                      <label>DJI Field Area (Ha):</label>
-                                      <input
-                                        type="number"
-                                        value={djiData.dji_field_area}
-                                        onChange={(e) =>
-                                          setDjiData((prev) => ({
-                                            ...prev,
-                                            dji_field_area: e.target.value,
-                                          }))
-                                        }
-                                      />
-                                    </div>
-                                  </div>
-                                  <div className="data-row">
-                                    <div className="data-item">
-                                      <label>Pilot Sprayed Area (Ha):</label>
-                                      <input
-                                        type="number"
-                                        value={currentTask.task_sprayedArea}
-                                        readOnly
-                                        disabled
-                                      />
-                                    </div>
-                                    <div className="data-item">
-                                      <label>DJI Spraying Area (Ha):</label>
-                                      <input
-                                        type="number"
-                                        value={djiData.dji_spraying_area}
-                                        onChange={(e) =>
-                                          setDjiData((prev) => ({
-                                            ...prev,
-                                            dji_spraying_area: e.target.value,
-                                          }))
-                                        }
-                                      />
-                                    </div>
-                                  </div>
-                                  <div className="data-row">
-                                    <div className="data-item">
-                                      <label>Pilot Sprayed Liters:</label>
-                                      <input
-                                        type="number"
-                                        value={currentTask.task_sprayedLiters}
-                                        readOnly
-                                        disabled
-                                      />
-                                    </div>
-                                    <div className="data-item">
-                                      <label>DJI Sprayed Liters:</label>
-                                      <input
-                                        type="number"
-                                        step="0.1"
-                                        value={djiData.dji_spraying_litres}
-                                        onChange={(e) =>
-                                          setDjiData((prev) => ({
-                                            ...prev,
-                                            dji_spraying_litres: e.target.value,
-                                          }))
-                                        }
-                                      />
-                                    </div>
-                                  </div>
-                                  <div className="data-row">
-                                    <div className="data-item">
-                                      <label>DJI Flying Duration (mins):</label>
-                                      <input
-                                        type="number"
-                                        value={djiData.dji_flying_duration}
-                                        onChange={(e) =>
-                                          setDjiData((prev) => ({
-                                            ...prev,
-                                            dji_flying_duration: e.target.value,
-                                          }))
-                                        }
-                                      />
-                                    </div>
-                                    <div className="data-item">
-                                      <label>DJI No of Flights:</label>
-                                      <input
-                                        type="number"
-                                        value={djiData.dji_no_of_flights}
-                                        onChange={(e) =>
-                                          setDjiData((prev) => ({
-                                            ...prev,
-                                            dji_no_of_flights: e.target.value,
-                                          }))
-                                        }
-                                      />
-                                    </div>
-                                  </div>
-                                  <div className="data-row">
-                                    <div className="data-item">
-                                      <button
-                                        className="submit-button"
-                                        onClick={handleSubmit}
-                                        disabled={
-                                          isSubmitting ||
-                                          !djiData.dji_flying_duration ||
-                                          !djiData.dji_no_of_flights ||
-                                          !djiData.dji_field_area ||
-                                          !djiData.dji_spraying_litres ||
-                                          !djiData.dji_spraying_area
-                                        }
-                                      >
-                                        {isSubmitting ? 'Submitting...' : 'Submit DJI Data'}
-                                      </button>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        )}
                       </div>
                     ))}
                   </div>
@@ -1250,7 +852,8 @@ const DayEndProcess = () => {
         ) : (
           <div className="placeholder-text">Select a mission to view details</div>
         )}
-        {/* Full-screen image modal */}
+      </div>
+      {/* Full-screen image modal */}
         {selectedImage && (
           <div className="image_modal" onClick={closeImage}>
             <div className="image_modal_content_wrapper" onClick={(e) => e.stopPropagation()}>
@@ -1270,6 +873,374 @@ const DayEndProcess = () => {
                 <button className="image_modal_close" onClick={closeImage}>
                   <i className="fas fa-times"></i>
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
+        {/* Subtask popup */}
+        {showSubtaskPopup && subtasks.length > 0 && (
+          <div className="subtask-popup-overlay" onClick={handleSubtaskPopupClose}>
+            <div className="subtask-popup-content" onClick={(e) => e.stopPropagation()}>
+              <button className="close-button" onClick={handleSubtaskPopupClose}>✖</button>
+              <div className="subtask-image-container">
+                <img
+                  src={subtasks[currentSubtaskIndex].sub_task_image || '/assets/images/no-plan-found.png'}
+                  alt="Subtask"
+                  className="subtask-popup-image"
+                  onClick={() => openImage(subtasks[currentSubtaskIndex].sub_task_image)}
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = '/assets/images/no-plan-found.png';
+                  }}
+                />
+              </div>
+              <div className="subtask-details">
+                <div className="dayend-topapproval">
+                  <span><strong>Approval :</strong></span>
+                  <StatusToggle
+                    status={subtasks[currentSubtaskIndex].sub_task_reject_ops_room}
+                    onChange={async (newStatus) => {
+                      try {
+                        const currentSubtask = subtasks[currentSubtaskIndex];
+                        const updatedSubtasks = [...subtasks];
+                        updatedSubtasks[currentSubtaskIndex].sub_task_reject_ops_room = newStatus;
+                        setSubtasks(updatedSubtasks);
+                        const result = await subTaskApproveorDecline(
+                          currentSubtask.sub_task_id,
+                          newStatus
+                        );
+                        if (newStatus === 'a') {
+                          try {
+                            const logResult = await subTaskLogDetails(
+                              currentSubtask.sub_task_id,
+                              'a',
+                              0,
+                              'Approved'
+                            );
+                            if (!logResult.success) {
+                              throw new Error('Approval logging failed');
+                            }
+                            updatedSubtasks[currentSubtaskIndex] = {
+                              ...currentSubtask,
+                              sub_task_reject_reason_text: 'Approved',
+                              sub_task_rejected_person_name: userData.name,
+                              sub_task_reject_ops_room: newStatus,
+                            };
+                            setSubtasks(updatedSubtasks);
+                          } catch (error) {
+                            console.error('Approval logging error:', error);
+                            setSubtasks([...subtasks]);
+                            toast.error('Approval logging failed');
+                          }
+                        }
+                        if (!result?.success) {
+                          setSubtasks([...subtasks]);
+                          toast.error(`Update failed: ${result?.message || 'Unknown error'}`);
+                        }
+                      } catch (error) {
+                        console.error('Update error:', error);
+                        setSubtasks([...subtasks]);
+                        toast.error(`Update failed: ${error.message || 'Unknown error'}`);
+                      }
+                    }}
+                  />
+                </div>
+                <div className="subtask-status-details">
+                  {subtasks[currentSubtaskIndex].sub_task_reject_ops_room === 'r' && (
+                    <div className="rejection-info">
+                      <p><strong>Reason:</strong> {subtasks[currentSubtaskIndex].sub_task_reject_reason_text}</p>
+                      <p><strong>By:</strong> {subtasks[currentSubtaskIndex].sub_task_rejected_person_name}</p>
+                    </div>
+                  )}
+                  {subtasks[currentSubtaskIndex].sub_task_reject_ops_room === 'a' && (
+                    <div className="approval-info">
+                      <p><strong>Approval:</strong> {subtasks[currentSubtaskIndex].sub_task_reject_reason_text || 'Approved'}</p>
+                      <p><strong>By:</strong> {subtasks[currentSubtaskIndex].sub_task_rejected_person_name}</p>
+                    </div>
+                  )}
+                </div>
+                <div className="subtask-detail-columns">
+                  <div className="subtask-detail-column">
+                    <p><strong>Subtask ID:</strong> {subtasks[currentSubtaskIndex].sub_task_id}</p>
+                    <p><strong>Field Area:</strong> {subtasks[currentSubtaskIndex].sub_task_fieldArea} Ha</p>
+                    <p><strong>Liters Used:</strong> {subtasks[currentSubtaskIndex].sub_task_sprayedLiters}</p>
+                    <p><strong>Status:</strong> {subtasks[currentSubtaskIndex].sub_task_status_text}</p>
+                  </div>
+                  <div className="subtask-detail-column">
+                    <p><strong>Obstacle Area:</strong> {subtasks[currentSubtaskIndex].sub_task_obstacleArea} Ha</p>
+                    <p><strong>Sprayed Area:</strong> {subtasks[currentSubtaskIndex].sub_task_sprayedArea} Ha</p>
+                    <p><strong>Margin Area:</strong> {subtasks[currentSubtaskIndex].sub_task_marginArea} Ha</p>
+                  </div>
+                </div>
+                <h4>Subtask {currentSubtaskIndex + 1} of {subtasks.length}</h4>
+              </div>
+              <div className="subtask-navigation">
+                {currentSubtaskIndex > 0 && (
+                  <button className="nav-button prev-button" onClick={handlePreviousSubtask}>
+                    Previous
+                  </button>
+                )}
+                {currentSubtaskIndex < subtasks.length - 1 ? (
+                  <button className="nav-button next-button" onClick={handleNextSubtask}>
+                    Next
+                  </button>
+                ) : (
+                  <button className="nav-button finish-button" onClick={handleSubtaskPopupClose}>
+                    Finish Review
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+        {/* Rejection popup */}
+        {showRejectionPopup && (
+          <RejectionReasonPopup
+            currentSubtask={currentRejectingSubtask}
+            onClose={() => {
+              setShowRejectionPopup(false);
+              setSelectedReason(null);
+              setCustomReason('');
+            }}
+            onSubmit={(updatedSubtask) => {
+              const updatedSubtasks = subtasks.map((st) =>
+                st.sub_task_id === updatedSubtask.sub_task_id
+                  ? {
+                    ...st,
+                    sub_task_reject_reason_text: updatedSubtask.sub_task_reject_reason_text,
+                    sub_task_rejected_person_name: updatedSubtask.sub_task_rejected_person_name,
+                    sub_task_reject_ops_room: 'r',
+                  }
+                  : st
+              );
+              setSubtasks(updatedSubtasks);
+            }}
+          />
+        )}
+        {showTaskPopup && currentTask && (
+          <div className="task-popup-overlay" onClick={handleTaskPopupClose}>
+            <div className="task-popup-content" onClick={(e) => e.stopPropagation()}>
+              <button className="close-button" onClick={handleTaskPopupClose}>✖</button>
+              <div className="task-popup-header">
+                <div className="task-popup-header-top">
+                <h3>{currentField?.field_name || 'Unknown Field'} - TaskID: {currentTask.task_id} | Field Area: {currentField?.field_area || currentTask.task_fieldArea || 'N/A'} Ha</h3>
+                <button
+                  className="submit-button2"
+                  style={{
+                    background: existingReportData
+                      ? existingReportData.status === 'a'
+                        ? '#2fc653'
+                        : existingReportData.status === 'r'
+                        ? '#ff4d4f'
+                        : existingReportData.status === 'p'
+                        ? '#948F62FF'
+                        : '#004B71'
+                      : '#004B71',
+                    color: '#fff',
+                    border: existingReportData ? '1.5px solid #888' : undefined,
+                  }}
+                  onClick={() => setShowReportPopup(true)}
+                >
+                  Report
+                </button>
+                </div>
+                
+                
+                <div className="task-top-line">
+                  <span className="status-badge">Status: {currentTask.task_status_text}</span>
+                  <span>Drone: {currentTask.drone_tag}</span>
+                  <span>Pilot: {currentTask.pilot}</span>
+                  <span>Mobile: {currentTask.mobile_no}</span>
+                </div>
+              </div>
+              <div className="task-popup-body">
+              <div className="image-card image-card-full">
+                    <h4>Task Image</h4>
+                    <img
+                      src={currentTask.task_image || '/assets/images/no-plan-found.png'}
+                      alt="Task"
+                      className="popup-image"
+                      onClick={() => openImage(currentTask.task_image)}
+                    />
+                  </div>
+                <div className="data-row">
+                  
+                  <div className="image-card2">
+                    <h4>DJI Image</h4>
+                    <img
+                      src={
+                        djiData.dji_image
+                          ? (typeof djiData.dji_image === 'string'
+                              ? djiData.dji_image
+                              : URL.createObjectURL(djiData.dji_image))
+                          : '/assets/images/no-plan-found.png'
+                      }
+                      alt="DJI"
+                      className="popup-image"
+                      onClick={() =>
+                        openImage(
+                          typeof djiData.dji_image === 'string'
+                            ? djiData.dji_image
+                            : URL.createObjectURL(djiData.dji_image)
+                        )
+                      }
+                    />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      id="dji-image-upload"
+                      style={{ marginTop: 8 }}
+                    />
+                  </div>
+                  <div className="image-card2">
+                    <h4>Crop Image</h4>
+                    <img
+                      src={
+                        cropImagePreview ||
+                        currentTask.image_crop ||
+                        '/assets/images/no-plan-found.png'
+                      }
+                      alt="Crop"
+                      className="popup-image"
+                      onClick={() =>
+                        openImage(
+                          cropImagePreview ||
+                          currentTask.image_crop ||
+                          '/assets/images/no-plan-found.png'
+                        )
+                      }
+                    />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleCropImageUpload}
+                      id="crop-image-upload"
+                      style={{ marginTop: 8 }}
+                    />
+                  </div>
+                </div>
+                <div className="data-grid">
+                  <div className="data-row">
+                    <div className="data-item">
+                      <label>Pilot Field Area (Ha):</label>
+                      <input
+                        type="number"
+                        value={currentTask.task_fieldArea}
+                        readOnly
+                        disabled
+                      />
+                    </div>
+                    <div className="data-item">
+                      <label>DJI Field Area (Ha):</label>
+                      <input
+                        type="number"
+                        value={djiData.dji_field_area}
+                        onChange={(e) =>
+                          setDjiData((prev) => ({
+                            ...prev,
+                            dji_field_area: e.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+                  </div>
+                  <div className="data-row">
+                    <div className="data-item">
+                      <label>Pilot Sprayed Area (Ha):</label>
+                      <input
+                        type="number"
+                        value={currentTask.task_sprayedArea}
+                        readOnly
+                        disabled
+                      />
+                    </div>
+                    <div className="data-item">
+                      <label>DJI Spraying Area (Ha):</label>
+                      <input
+                        type="number"
+                        value={djiData.dji_spraying_area}
+                        onChange={(e) =>
+                          setDjiData((prev) => ({
+                            ...prev,
+                            dji_spraying_area: e.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+                  </div>
+                  <div className="data-row">
+                    <div className="data-item">
+                      <label>Pilot Sprayed Liters:</label>
+                      <input
+                        type="number"
+                        value={currentTask.task_sprayedLiters}
+                        readOnly
+                        disabled
+                      />
+                    </div>
+                    <div className="data-item">
+                      <label>DJI Sprayed Liters:</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={djiData.dji_spraying_litres}
+                        onChange={(e) =>
+                          setDjiData((prev) => ({
+                            ...prev,
+                            dji_spraying_litres: e.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+                  </div>
+                  <div className="data-row">
+                    <div className="data-item">
+                      <label>DJI Flying Duration (mins):</label>
+                      <input
+                        type="number"
+                        value={djiData.dji_flying_duration}
+                        onChange={(e) =>
+                          setDjiData((prev) => ({
+                            ...prev,
+                            dji_flying_duration: e.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+                    <div className="data-item">
+                      <label>DJI No of Flights:</label>
+                      <input
+                        type="number"
+                        value={djiData.dji_no_of_flights}
+                        onChange={(e) =>
+                          setDjiData((prev) => ({
+                            ...prev,
+                            dji_no_of_flights: e.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+                  </div>
+                  <div className="data-row">
+                    <div className="data-item">
+                      <button
+                        className="submit-button"
+                        onClick={handleSubmit}
+                        disabled={
+                          isSubmitting ||
+                          !djiData.dji_flying_duration ||
+                          !djiData.dji_no_of_flights ||
+                          !djiData.dji_field_area ||
+                          !djiData.dji_spraying_litres ||
+                          !djiData.dji_spraying_area
+                        }
+                      >
+                        {isSubmitting ? 'Submitting...' : 'Submit DJI Data'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -1449,7 +1420,6 @@ const DayEndProcess = () => {
             </div>
           </div>
         )}
-      </div>
     </div>
   );
 };

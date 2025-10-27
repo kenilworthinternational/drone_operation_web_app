@@ -164,18 +164,93 @@ input:focus {
   margin-top: 10px;
 }
 
+.otp-container {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 15px;
+}
+
 .otp-input {
-  width: 40px;
-  height: 40px;
+  width: 50px;
+  height: 50px;
   font-size: 1.5rem;
   text-align: center;
-  border: 2px solid #ccc;
-  border-radius: 5px;
+  border: 2px solid #ddd;
+  border-radius: 8px;
   outline: none;
   transition: all 0.3s ease;
+  background-color: #fff;
+  font-weight: bold;
+  color: #004B71;
 }
 
 .otp-input:focus {
-  border-color: #007bff;
-  box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+  border-color: #004B71;
+  box-shadow: 0 0 0 3px rgba(0, 75, 113, 0.1);
+  transform: scale(1.05);
+}
+
+.otp-input:disabled {
+  background-color: #f0f0f0;
+  cursor: not-allowed;
+}
+
+.otp-input::placeholder {
+  color: transparent;
+}
+
+.otp-input.otp-error {
+  border-color: #dc3545;
+  animation: shake 0.3s;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+.resend-otp-container {
+  margin-top: 15px;
+  text-align: center;
+}
+
+.resend-otp-btn {
+  background: none;
+  border: none;
+  color: #004B71;
+  cursor: pointer;
+  font-size: 14px;
+  text-decoration: underline;
+  padding: 5px 10px;
+  transition: color 0.3s;
+}
+
+.resend-otp-btn:hover:not(:disabled) {
+  color: #0085c7;
+}
+
+.resend-otp-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.resend-timer {
+  color: #666;
+  font-size: 14px;
+  margin: 0;
+}
+
+.submit-btn.back-btn {
+  flex: 1;
+  background-color: #6c757d;
+}
+
+.submit-btn.back-btn:hover:not(:disabled) {
+  background-color: #5a6268;
+}
+
+.submit-btn.verify-btn {
+  flex: 2;
 }

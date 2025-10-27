@@ -250,7 +250,7 @@ const DayEndView = () => {
                   <p><strong>Estate ID:</strong> {mission.estateId} - <strong>Plan ID:</strong> {mission.id}</p>
                   <div className="completion-checkbox" onClick={(e) => e.stopPropagation()}>
                     <label>
-                      Dir-Ops Approval
+                      Dir-Ops Approvals
                       <input
                         type="checkbox"
                         checked={mission.completed === 1}

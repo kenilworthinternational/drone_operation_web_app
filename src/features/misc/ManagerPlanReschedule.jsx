@@ -16,6 +16,7 @@ const ManagerPlanReschedule = () => {
   const [dateFilterType, setDateFilterType] = useState('original');
   const [selectedEstate, setSelectedEstate] = useState(null);
   const [selectedStatus, setSelectedStatus] = useState('all');
+  const [processingRequestId, setProcessingRequestId] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -103,6 +104,8 @@ const ManagerPlanReschedule = () => {
       alert(`Selected date must be between ${request.from_date} and ${request.last_date}`);
       return;
     }
+    
+    setProcessingRequestId(request.reschedule_request_id);
     try {
       if (!request.fields?.length) {
         throw new Error('No fields found in this request');
@@ -195,13 +198,16 @@ const ManagerPlanReschedule = () => {
     } catch (error) {
       console.error('❌ Approval failed:', error);
       alert(`Approval failed: ${error.response?.data?.message || error.message}`);
+    } finally {
+      setProcessingRequestId(null);
     }
   };
 
   const handleDecline = async (request) => {
-    try {
-      if (!window.confirm('Are you sure you want to decline this request?')) return;
+    if (!window.confirm('Are you sure you want to decline this request?')) return;
 
+    setProcessingRequestId(request.reschedule_request_id);
+    try {
       // 🟢 Update manager status for rejection
       await changeManagerStatus({
         reschedule_request_id: request.reschedule_request_id,
@@ -222,6 +228,8 @@ const ManagerPlanReschedule = () => {
     } catch (error) {
       console.error('❌ Decline failed:', error);
       alert(`Decline failed: ${error.response?.data?.message || error.message}`);
+    } finally {
+      setProcessingRequestId(null);
     }
   };
 
@@ -245,8 +253,7 @@ const ManagerPlanReschedule = () => {
 
 
   return (
-    <div className="manager-rescheduler-container">
-      <h2 className="title-rescheduler">Plan Reschedule Requests by Manager</h2>
+    <div className="manager-content-inner">
       <div className="tabs-planrescheduler1">
         <button
           className={`tab-planrescheduler1 ${activeTab === 'pending' ? 'active' : ''}`}
@@ -302,14 +309,23 @@ const ManagerPlanReschedule = () => {
                     <button
                       className="btn approve"
                       onClick={() => handleApprove(request)}
+                      disabled={processingRequestId === request.reschedule_request_id}
                     >
-                      Approve
+                      {processingRequestId === request.reschedule_request_id ? (
+                        <>
+                          <span className="btn-loading-spinner"></span>
+                          Processing...
+                        </>
+                      ) : (
+                        'Approve'
+                      )}
                     </button>
                     <button
                       className="btn decline"
                       onClick={() => handleDecline(request)}
+                      disabled={processingRequestId === request.reschedule_request_id}
                     >
-                      Decline
+                      {processingRequestId === request.reschedule_request_id ? 'Processing...' : 'Decline'}
                     </button>
                   </div>
                 </div>
@@ -387,17 +403,23 @@ const ManagerPlanReschedule = () => {
               <div key={request.reschedule_request_id} className="request-card">
                 <div className="request-header">
                   <h3>{request.estate_name}</h3>
-                  <div className="status-badge">
-                    Status: {request.status === 'a' ? 'Approved' : 'Declined'}
+                  <div className={`status-badge-large ${request.status === 'a' ? 'status-approved-vibrant' : 'status-declined-vibrant'}`}>
+                    {request.status === 'a' ? '✓ APPROVED' : '✗ DECLINED'}
                   </div>
-                  <div className="date-range-rescheduler">
-                    Previous: {formatDate(request.plan_date)}
-                    {request.fixed_date && (
-                      request.fixed_date === '1111-11-11'
-                        ? ' → Rescheduled: Declined'
-                        : ` → Rescheduled: ${formatDate(request.fixed_date)}`
-                    )}
-                  </div>
+                </div>
+                <div className="history-date-range-compact">
+                  <span className="history-date-item">
+                    <span className="history-label">Previous:</span>
+                    <span className="history-date">{formatDate(request.plan_date)}</span>
+                  </span>
+                  {request.fixed_date && (
+                    <span className="history-date-item">
+                      <span className="history-label">Rescheduled:</span>
+                      <span className="history-date">
+                        {request.fixed_date === '1111-11-11' ? 'Declined' : formatDate(request.fixed_date)}
+                      </span>
+                    </span>
+                  )}
                 </div>
 
                 <div className="fields-section">

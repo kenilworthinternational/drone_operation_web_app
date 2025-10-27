@@ -19,6 +19,7 @@ const ManagerAdHocRequest = () => {
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null);
   const [modalLoading, setModalLoading] = useState(false);
+  const [processingRequestId, setProcessingRequestId] = useState(null);
 
   // History filters state
   const [historyStartDate, setHistoryStartDate] = useState(null);
@@ -237,8 +238,8 @@ const ManagerAdHocRequest = () => {
       return;
     }
 
+    setProcessingRequestId(request.request_id);
     try {
-      setLoading(true);
       await updateAdHocPlanRequest(request.request_id, '', 'r');
       
       // Refresh the pending requests
@@ -248,7 +249,7 @@ const ManagerAdHocRequest = () => {
       console.error('Error declining request:', err);
       alert(`Error declining request: ${err.message}`);
     } finally {
-      setLoading(false);
+      setProcessingRequestId(null);
     }
   };
 
@@ -378,14 +379,23 @@ const ManagerAdHocRequest = () => {
           <button 
             className="btn btn-approve" 
             onClick={() => handleApprove(request)}
+            disabled={processingRequestId === request.request_id}
           >
-            Approve
+            {processingRequestId === request.request_id ? (
+              <>
+                <span className="btn-loading-spinner"></span>
+                Processing...
+              </>
+            ) : (
+              'Approve'
+            )}
           </button>
           <button 
             className="btn btn-decline" 
             onClick={() => handleDecline(request)}
+            disabled={processingRequestId === request.request_id}
           >
-            Decline
+            {processingRequestId === request.request_id ? 'Processing...' : 'Decline'}
           </button>
         </div>
       )}
@@ -405,8 +415,7 @@ const ManagerAdHocRequest = () => {
   }
 
   return (
-    <div className="manager-rescheduler-container">
-      <h2 className="title-rescheduler">AdHoc Request by Manager</h2>
+    <div className="manager-content-inner">
       <div className="tabs-addhoc">
         <button
           className={`tab-addhoc ${activeTab === 'pending' ? 'active' : ''}`}

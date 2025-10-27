@@ -198,7 +198,7 @@ const FieldHistory = () => {
   // Translate flag, type, and status fields
   const getFlagText = (flag) => {
     switch (flag) {
-      case 'np': return 'New Plan';
+      case 'np': return 'Revolving Plan';
       case 'ap': return 'Adhoc Plan';
       case 'rp': return 'Reschedule Plan';
       default: return flag;
@@ -314,7 +314,7 @@ const FieldHistory = () => {
                   className="field-history-select-input-fieldhistory"
                 >
                   <option value="">All Plans</option>
-                  <option value="np">New Plan</option>
+                  <option value="np">Revolving Plan</option>
                   <option value="ap">Adhoc Plan</option>
                   <option value="rp">Reschedule Plan</option>
                 </select>
