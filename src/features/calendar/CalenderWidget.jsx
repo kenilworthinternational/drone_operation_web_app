@@ -5,18 +5,8 @@ import 'react-datepicker/dist/react-datepicker.css';
 import { Bars } from 'react-loader-spinner';
 import { VscDebugRestart } from 'react-icons/vsc';
 import { FiPhone, FiMail } from 'react-icons/fi';
-import {
-  getUpdateMissionDetails,
-  divisionStateList,
-  submitUpdatePlan,
-  submitPlan,
-  getRescheduleMissionDetails,
-  findPlanByID,
-  updateDate,
-  estateListDetails,
-  PilotDetaisPlan,
-  deactivatePlan,
-} from '../../api/api';
+import { baseApi } from '../../api/services/allEndpoints';
+import { useAppDispatch } from '../../store/hooks';
 import '../../styles/calendarwidget.css';
 
 // State reducer for managing complex state
@@ -94,7 +84,8 @@ const reducer = (state, action) => {
 };
 
 const CalendarWidget = ({ tasksData = [], currentMonth, onTaskUpdate, calendarSection = 'default', calendarLoading = false }) => {
-  const [state, dispatch] = useReducer(reducer, initialState);
+  const [state, localDispatch] = useReducer(reducer, initialState);
+  const reduxDispatch = useAppDispatch();
   const [selectedTask, setSelectedTask] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -141,7 +132,7 @@ const CalendarWidget = ({ tasksData = [], currentMonth, onTaskUpdate, calendarSe
     }
 
     // Dispatch the action
-    dispatch({ type: 'TOGGLE_FIELD', payload: fieldId });
+    localDispatch({ type: 'TOGGLE_FIELD', payload: fieldId });
 
     // Restore scroll position after the state update
     setTimeout(() => {
@@ -163,7 +154,8 @@ const CalendarWidget = ({ tasksData = [], currentMonth, onTaskUpdate, calendarSe
   const fetchEstateDetails = async (estateId) => {
     try {
       console.log('Fetching estate details for estateId:', estateId);
-      const response = await estateListDetails(estateId);
+      const result = await reduxDispatch(baseApi.endpoints.getEstateDetails.initiate(estateId));
+      const response = result.data;
       console.log('Estate details response:', response);
       setEstateDetails(response);
     } catch (error) {
@@ -177,7 +169,8 @@ const CalendarWidget = ({ tasksData = [], currentMonth, onTaskUpdate, calendarSe
     try {
       setPilotDetailsLoading(true);
       console.log('Fetching pilot details for taskId:', taskId);
-      const response = await PilotDetaisPlan(taskId);
+      const result = await reduxDispatch(baseApi.endpoints.getPilotDetailsForPlan.initiate(taskId));
+      const response = result.data;
       console.log('Pilot details response:', response);
       setPilotDetailsData(response);
     } catch (error) {
@@ -247,7 +240,8 @@ const CalendarWidget = ({ tasksData = [], currentMonth, onTaskUpdate, calendarSe
 
       if (mode === 'view') {
         // Use findPlanByID for view mode to get the complete plan structure with field status
-        const planResponse = await findPlanByID(task.id);
+        const planResult = await reduxDispatch(baseApi.endpoints.getPlanById.initiate(task.id));
+        const planResponse = planResult.data;
         
         if (planResponse && planResponse.divisions) {
           divisions = planResponse.divisions.map(division => ({
@@ -290,15 +284,17 @@ const CalendarWidget = ({ tasksData = [], currentMonth, onTaskUpdate, calendarSe
       } else {
         // Use original approach for update and reschedule modes
         const payload = { id: task.id };
-        const updateMissionResponse = mode === 'update' 
-          ? await getUpdateMissionDetails(payload)
-          : await getRescheduleMissionDetails(payload);
+        const updateMissionResult = mode === 'update' 
+          ? await reduxDispatch(baseApi.endpoints.getPlansForUpdate.initiate(payload))
+          : await reduxDispatch(baseApi.endpoints.getPlansForReschedule.initiate(payload));
+        const updateMissionResponse = updateMissionResult.data;
 
         selectedFieldIds = new Set((updateMissionResponse?.divisions ?? []).flatMap(
           (division) => division.checkedFields?.map((field) => field.field_id) ?? []
         ));
         
-        const divisionsResponse = await divisionStateList(task.estate_id);
+        const divisionsResult = await reduxDispatch(baseApi.endpoints.getDivisionsByEstate.initiate(task.estate_id));
+        const divisionsResponse = divisionsResult.data;
 
         if (divisionsResponse && typeof divisionsResponse === 'object') {
           minimumPlanSize = divisionsResponse.minimum_plan_size || 0;
@@ -325,12 +321,13 @@ const CalendarWidget = ({ tasksData = [], currentMonth, onTaskUpdate, calendarSe
       }
 
       // Fetch estate details including manager and other contacts
-      const estateDetailsResponse = await estateListDetails(task.estate_id);
+      const estateDetailsResult = await reduxDispatch(baseApi.endpoints.getEstateDetails.initiate(task.estate_id));
+      const estateDetailsResponse = estateDetailsResult.data;
       if (estateDetailsResponse) {
         setEstateDetails(estateDetailsResponse);
       }
 
-      dispatch({
+      localDispatch({
         type: 'SET_MISSION_DETAILS',
         payload: {
           divisionOptions: divisions,
@@ -345,7 +342,7 @@ const CalendarWidget = ({ tasksData = [], currentMonth, onTaskUpdate, calendarSe
           maximumPlanSize,
         },
       });
-      dispatch({ type: 'SET_MODE', payload: mode });
+      localDispatch({ type: 'SET_MODE', payload: mode });
     } catch (error) {
       setError('Error fetching mission details');
       console.error('Error fetching mission details:', error);
@@ -362,7 +359,8 @@ const CalendarWidget = ({ tasksData = [], currentMonth, onTaskUpdate, calendarSe
     const handleMouseEnter = async () => {
       setIsHovered(true);
       try {
-        const response = await findPlanByID(missionId);
+        const planResult = await reduxDispatch(baseApi.endpoints.getPlanById.initiate(missionId));
+        const response = planResult.data;
         setPickedDate(response?.pickedDate || 'Not available');
       } catch (error) {
         console.error('Error:', error);
@@ -539,7 +537,7 @@ const CalendarWidget = ({ tasksData = [], currentMonth, onTaskUpdate, calendarSe
 
   const handleTaskClick = (task) => {
     setSelectedTask(task);
-    dispatch({ type: 'RESET' });
+    localDispatch({ type: 'RESET' });
     setSelectedRescheduledDate(null);
   };
 
@@ -548,7 +546,7 @@ const CalendarWidget = ({ tasksData = [], currentMonth, onTaskUpdate, calendarSe
     setEstateDetails(null);
     setShowContactPopup(false);
     setContactPopupData(null);
-    dispatch({ type: 'RESET' });
+    localDispatch({ type: 'RESET' });
   };
 
   const handleContactClick = (contactData) => {
@@ -635,7 +633,8 @@ const CalendarWidget = ({ tasksData = [], currentMonth, onTaskUpdate, calendarSe
     };
 
     try {
-      const result = await submitUpdatePlan(missionData);
+      const updateResult = await reduxDispatch(baseApi.endpoints.updatePlan.initiate(missionData));
+      const result = updateResult.data;
       if (result.success) {
         alert('Update successful!');
         // Refresh the task data to show updated values in calendar
@@ -712,12 +711,14 @@ const CalendarWidget = ({ tasksData = [], currentMonth, onTaskUpdate, calendarSe
     };
 
     try {
-      const result = await submitPlan(submissionRescheduleData);
+      const createResult = await reduxDispatch(baseApi.endpoints.createPlan.initiate(submissionRescheduleData));
+      const result = createResult.data;
       
       if (result.status === "true") {
         
         try {
-          const response = await deactivatePlan(selectedTask.id, 0);
+          const deactivateResult = await reduxDispatch(baseApi.endpoints.changePlanStatus.initiate({planId: selectedTask.id, status: 0}));
+          const response = deactivateResult.data;
           if (response?.status === 'true') {
             alert('Plan Rescheduled and Previous Plan Deactivated successfully!');
           } else {

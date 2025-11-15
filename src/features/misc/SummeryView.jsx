@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from "react";
 import SummaryWidget from '../../components/SummaryWidget';
 import '../../styles/summeryview.css';
-import { groupGetter, groupPlantation, groupRegion, groupEstate, teamPlannedData } from '../../api/api';
+import { baseApi } from '../../api/services/allEndpoints';
+import { useAppDispatch } from '../../store/hooks';
 import CustomDropdown from '../../components/CustomDropdown';
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { FaCalendarAlt } from "react-icons/fa";
-import { getSummaryDataGroup, getSummaryDataPlantation, getSummaryDataRegion, getSummaryDataEstate } from '../../api/api';
 
 const SummeryView = () => {
+  const dispatch = useAppDispatch();
   const [state, setState] = useState({
     dropdownOptions: [],
     plantationOptions: [],
@@ -60,7 +61,8 @@ const SummeryView = () => {
     setLoadingPlans(true);
     try {
       const formattedDate = date.toLocaleDateString('en-CA');
-      const response = await teamPlannedData({ date: formattedDate });
+      const result = await dispatch(baseApi.endpoints.getTeamPlannedData.initiate({ date: formattedDate }));
+      const response = result.data;
       
       if (response && response.status === "true") {
         // Group plans by team
@@ -94,7 +96,8 @@ const SummeryView = () => {
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
-        const [groups] = await Promise.all([groupGetter()]);
+        const groupsResult = await dispatch(baseApi.endpoints.getGroups.initiate());
+        const groups = groupsResult.data;
         setState(prev => ({
           ...prev,
           dropdownOptions: Array.isArray(groups) ? groups : [],
@@ -145,13 +148,17 @@ const SummeryView = () => {
     const estateId = selectedEstate ? selectedEstate.id : null;
 
     if (groupId && !selectedPlantation) {
-      fetchedData = await getSummaryDataGroup(groupId, formattedStartDate, formattedEndDate);
+      const result = await dispatch(baseApi.endpoints.getSummaryByGroup.initiate({ groupId, startDate: formattedStartDate, endDate: formattedEndDate }));
+      fetchedData = result.data;
     } else if (selectedPlantation && !selectedRegion) {
-      fetchedData = await getSummaryDataPlantation(plantationId, formattedStartDate, formattedEndDate);
+      const result = await dispatch(baseApi.endpoints.getSummaryByPlantation.initiate({ plantationId, startDate: formattedStartDate, endDate: formattedEndDate }));
+      fetchedData = result.data;
     } else if (selectedRegion && !selectedEstate) {
-      fetchedData = await getSummaryDataRegion(regionId, formattedStartDate, formattedEndDate);
+      const result = await dispatch(baseApi.endpoints.getSummaryByRegion.initiate({ regionId, startDate: formattedStartDate, endDate: formattedEndDate }));
+      fetchedData = result.data;
     } else if (selectedEstate) {
-      fetchedData = await getSummaryDataEstate(estateId, formattedStartDate, formattedEndDate);
+      const result = await dispatch(baseApi.endpoints.getSummaryByEstate.initiate({ estateId, startDate: formattedStartDate, endDate: formattedEndDate }));
+      fetchedData = result.data;
     }
 
     console.log("Fetched Data", fetchedData);  // Ensure the structure is as expected
@@ -250,17 +257,26 @@ const SummeryView = () => {
         <div className="sec1">
           <div className="summery-group-select">
             <label>Select Group</label>
-            <CustomDropdown options={state.dropdownOptions} onSelect={(val) => handleDropdownSelect('selectedGroup', val, groupPlantation, 'plantationOptions')} selectedValue={state.selectedGroup} />
+            <CustomDropdown options={state.dropdownOptions} onSelect={(val) => handleDropdownSelect('selectedGroup', val, async (groupId) => {
+              const result = await dispatch(baseApi.endpoints.getPlantationsByGroup.initiate(groupId));
+              return result.data;
+            }, 'plantationOptions')} selectedValue={state.selectedGroup} />
           </div>
           <div className="summery-group-select">
             <label>Select Plantation</label>
-            <CustomDropdown options={state.plantationOptions.map(({ id, plantation }) => ({ id, group: plantation }))} onSelect={(val) => handleDropdownSelect('selectedPlantation', val, groupRegion, 'regionOptions')} selectedValue={state.selectedPlantation} />
+            <CustomDropdown options={state.plantationOptions.map(({ id, plantation }) => ({ id, group: plantation }))} onSelect={(val) => handleDropdownSelect('selectedPlantation', val, async (plantationId) => {
+              const result = await dispatch(baseApi.endpoints.getRegionsByPlantation.initiate(plantationId));
+              return result.data;
+            }, 'regionOptions')} selectedValue={state.selectedPlantation} />
           </div>
         </div>
         <div className="sec2">
           <div className="summery-group-select">
             <label>Select Region</label>
-            <CustomDropdown options={state.regionOptions.map(({ id, region }) => ({ id, group: region }))} onSelect={(val) => handleDropdownSelect('selectedRegion', val, groupEstate, 'estateOptions')} selectedValue={state.selectedRegion} />
+            <CustomDropdown options={state.regionOptions.map(({ id, region }) => ({ id, group: region }))} onSelect={(val) => handleDropdownSelect('selectedRegion', val, async (regionId) => {
+              const result = await dispatch(baseApi.endpoints.getEstatesByRegion.initiate(regionId));
+              return result.data;
+            }, 'estateOptions')} selectedValue={state.selectedRegion} />
           </div>
           <div className="summery-group-select">
             <label>Select Estate</label>

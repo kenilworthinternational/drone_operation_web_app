@@ -1,18 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { 
-  displayTeamData, 
-  updateTeamPilot, 
-  updateTeamDrone, 
-  displayPilotandDroneWithoutTeam, 
-  addDroneorPilotToPool, 
-  teamPlannedData,
-  getDronesAndPilotsDetails,
-  updateDronePlan,
-  updatePilotToPlan
-} from '../../api/api';
+import { baseApi } from '../../api/services/allEndpoints';
+import { useAppDispatch } from '../../store/hooks';
 import '../../styles/proceedPlan.css';
 
 const TeamAllocationBottom = ({ onTeamUpdate, usedPilots = new Set(), usedDrones = new Set(), restrictionDetails = {}, selectedDate, teams: propTeams = [] }) => {
+  const dispatch = useAppDispatch();
   const [teams, setTeams] = useState([]);
   const [draggedItem, setDraggedItem] = useState(null);
   const [dragType, setDragType] = useState(null); // 'pilot' or 'drone'
@@ -100,7 +92,8 @@ const TeamAllocationBottom = ({ onTeamUpdate, usedPilots = new Set(), usedDrones
   }, [selectedDate, activeTab]);
 
   const fetchTeams = async () => {
-    const response = await displayTeamData();
+    const result = await dispatch(baseApi.endpoints.getTeamData.initiate());
+    const response = result.data;
     let teamsData = [];
 
     if (response && Array.isArray(response)) {
@@ -113,7 +106,7 @@ const TeamAllocationBottom = ({ onTeamUpdate, usedPilots = new Set(), usedDrones
     }
 
     // Sort teams to show team_id 2 and 3 at the end
-    const sortedTeams = teamsData.sort((a, b) => {
+    const sortedTeams = [...teamsData].sort((a, b) => {
       const teamAId = Number(a.team_id);
       const teamBId = Number(b.team_id);
 
@@ -137,7 +130,8 @@ const TeamAllocationBottom = ({ onTeamUpdate, usedPilots = new Set(), usedDrones
     setSelectedDrones([]);
 
     try {
-      const response = await displayPilotandDroneWithoutTeam();
+      const result = await dispatch(baseApi.endpoints.getPilotsAndDronesWithoutTeam.initiate());
+      const response = result.data;
 
       if (response && (response.members || response.drones)) {
         setPoolData({
@@ -201,7 +195,8 @@ const TeamAllocationBottom = ({ onTeamUpdate, usedPilots = new Set(), usedDrones
         team_id: "1"
       };
 
-      const response = await addDroneorPilotToPool(submissionData);
+      const result = await dispatch(baseApi.endpoints.addDroneOrPilotToPool.initiate(submissionData));
+      const response = result.data;
 
       if (response && response.status === "true") {
         setPoolSuccess(`Successfully added ${response.pilots_count || 0} pilots and ${response.drones_count || 0} drones to pool`);
@@ -282,7 +277,8 @@ const TeamAllocationBottom = ({ onTeamUpdate, usedPilots = new Set(), usedDrones
     setLoadingPlans(true);
     try {
       const formattedDate = date.toLocaleDateString('en-CA');
-      const response = await teamPlannedData({ date: formattedDate });
+      const result = await dispatch(baseApi.endpoints.getTeamPlannedData.initiate({ date: formattedDate }));
+      const response = result.data;
       if (response && response.status === "true") {
         const plansByTeam = {};
         for (const key in response) {
@@ -313,7 +309,8 @@ const TeamAllocationBottom = ({ onTeamUpdate, usedPilots = new Set(), usedDrones
     setLoadingAssignable(true);
     try {
       const formattedDate = date.toLocaleDateString('en-CA');
-      const response = await teamPlannedData({ date: formattedDate });
+      const result = await dispatch(baseApi.endpoints.getTeamPlannedData.initiate({ date: formattedDate }));
+      const response = result.data;
       if (response && response.status === "true") {
         const allPlans = [];
         for (const key in response) {
@@ -338,8 +335,8 @@ const TeamAllocationBottom = ({ onTeamUpdate, usedPilots = new Set(), usedDrones
         };
 
         setAssignablePlans({
-          unassigned: unassigned.sort(byEstateArea),
-          assigned: assigned.sort(byEstateArea)
+          unassigned: [...unassigned].sort(byEstateArea),
+          assigned: [...assigned].sort(byEstateArea)
         });
       } else {
         setAssignablePlans({ unassigned: [], assigned: [] });
@@ -460,17 +457,19 @@ const TeamAllocationBottom = ({ onTeamUpdate, usedPilots = new Set(), usedDrones
     try {
       let response;
       if (contextMenu.type === 'pilot') {
-        response = await updateTeamPilot({
+        const updateResult = await dispatch(baseApi.endpoints.updateTeamPilot.initiate({
           pilots: [[contextMenu.item[0], contextMenu.item[1]]],
           team_from: String(contextMenu.fromTeamId),
           team_to: String(toTeamId)
-        });
+        }));
+        response = updateResult.data;
       } else if (contextMenu.type === 'drone') {
-        response = await updateTeamDrone({
+        const updateResult = await dispatch(baseApi.endpoints.updateTeamDrone.initiate({
           drones: [[contextMenu.item[0], contextMenu.item[1]]],
           team_from: String(contextMenu.fromTeamId),
           team_to: String(toTeamId)
-        });
+        }));
+        response = updateResult.data;
       }
 
       console.log('API Response:', response); // Debug log
@@ -526,17 +525,19 @@ const TeamAllocationBottom = ({ onTeamUpdate, usedPilots = new Set(), usedDrones
     try {
       let response;
       if (dragType === 'pilot') {
-        response = await updateTeamPilot({
+        const updateResult = await dispatch(baseApi.endpoints.updateTeamPilot.initiate({
           pilots: [[draggedItem[0], draggedItem[1]]],
           team_from: String(draggedItem.fromTeamId),
           team_to: String(toTeamId)
-        });
+        }));
+        response = updateResult.data;
       } else if (dragType === 'drone') {
-        response = await updateTeamDrone({
+        const updateResult = await dispatch(baseApi.endpoints.updateTeamDrone.initiate({
           drones: [[draggedItem[0], draggedItem[1]]],
           team_from: String(draggedItem.fromTeamId),
           team_to: String(toTeamId)
-        });
+        }));
+        response = updateResult.data;
       }
 
       console.log('API Response:', response); // Debug log
@@ -594,7 +595,8 @@ const TeamAllocationBottom = ({ onTeamUpdate, usedPilots = new Set(), usedDrones
 
     try {
       setDroneUpdateLoading(true);
-      const response = await getDronesAndPilotsDetails();
+      const result = await dispatch(baseApi.endpoints.getPilotsAndDrones.initiate());
+      const response = result.data;
       console.log('=== DRONES AND PILOTS RESPONSE ===');
       console.log('Full response:', response);
       
@@ -657,11 +659,13 @@ const TeamAllocationBottom = ({ onTeamUpdate, usedPilots = new Set(), usedDrones
       if (updateMode === 'drone') {
         console.log('Selected Drone ID:', selectedDroneForUpdate);
         console.log('Selected Drone Details:', availableDrones.find(d => d.id === selectedDroneForUpdate));
-        response = await updateDronePlan(selectedPlanForDroneUpdate.id, selectedDroneForUpdate);
+        const updateResult = await dispatch(baseApi.endpoints.updateDroneToPlan.initiate({ planId: selectedPlanForDroneUpdate.id, droneId: selectedDroneForUpdate }));
+        response = updateResult.data;
       } else {
         console.log('Selected Pilot ID:', selectedPilotForUpdate);
         console.log('Selected Pilot Details:', availablePilots.find(p => p.id === selectedPilotForUpdate));
-        response = await updatePilotToPlan(selectedPlanForDroneUpdate.id, selectedPilotForUpdate);
+        const updateResult = await dispatch(baseApi.endpoints.updatePilotToPlan.initiate({ planId: selectedPlanForDroneUpdate.id, pilotId: selectedPilotForUpdate }));
+        response = updateResult.data;
       }
       
       console.log('API Response:', response);

@@ -4,7 +4,8 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import CustomDropdown from '../../components/CustomDropdown';
 import { FaCalendarAlt } from "react-icons/fa";
-import { getPlansUsingDate, displayTeamData, addTeamToPlan, teamPlannedData} from '../../api/api';
+import { useAppDispatch } from '../../store/hooks';
+import { baseApi } from '../../api/services/allEndpoints';
 import TeamAllocationBottom from './teamAllocationBottom';
 
 const CustomDateInput = React.forwardRef(({ value, onClick }, ref) => (
@@ -15,6 +16,7 @@ const CustomDateInput = React.forwardRef(({ value, onClick }, ref) => (
 ));
 
 const TeamAllocation = () => {
+  const dispatch = useAppDispatch();
   const today = new Date();
   const dayAfterTomorrow = new Date();
   dayAfterTomorrow.setDate(today.getDate() + 2);
@@ -25,7 +27,6 @@ const TeamAllocation = () => {
   const [selectedTeamId, setSelectedTeamId] = useState("");
   const [assignedTeamId, setAssignedTeamId] = useState("");
   const [deployStatus, setDeployStatus] = useState(null);
-  const [showTeamDropdown, setShowTeamDropdown] = useState(false);
   const [loadingTeams, setLoadingTeams] = useState(false);
   const [restrictedTeams, setRestrictedTeams] = useState(new Set());
   const [usedPilots, setUsedPilots] = useState(new Set());
@@ -40,7 +41,8 @@ const TeamAllocation = () => {
   // Fetch teams for dropdown and bottom part
   const fetchTeams = async () => {
     setLoadingTeams(true);
-    const response = await displayTeamData();
+    const result = await dispatch(baseApi.endpoints.getTeamData.initiate());
+    const response = result.data;
     if (response && Array.isArray(response)) {
       setTeams(response);
     } else if (response && response.data) {
@@ -59,7 +61,8 @@ const TeamAllocation = () => {
   const fetchAssignedTeam = async (date, planId) => {
     if (!date || !planId) return;
     const formattedDate = date.toLocaleDateString('en-CA');
-    const response = await teamPlannedData({ date: formattedDate });
+    const result = await dispatch(baseApi.endpoints.getTeamPlannedData.initiate({ date: formattedDate }));
+    const response = result.data;
     if (response && response.status === "true") {
       // Find the plan in the response
       for (const key in response) {
@@ -79,7 +82,8 @@ const TeamAllocation = () => {
     if (!date) return { restrictedTeams: new Set(), usedPilots: new Set(), usedDrones: new Set(), restrictionDetails: {} };
     
     const formattedDate = date.toLocaleDateString('en-CA');
-    const response = await teamPlannedData({ date: formattedDate });
+    const result = await dispatch(baseApi.endpoints.getTeamPlannedData.initiate({ date: formattedDate }));
+    const response = result.data;
     
     if (!response || response.status !== "true") return { restrictedTeams: new Set(), usedPilots: new Set(), usedDrones: new Set(), restrictionDetails: {} };
     
@@ -246,7 +250,6 @@ const TeamAllocation = () => {
     setMissions(null);
     setAssignedTeamId("");
     setSelectedTeamId("");
-    setShowTeamDropdown(false);
     setDeployStatus(null);
     setSelectedDate(date);
     setShowRestrictionError(false);
@@ -254,7 +257,8 @@ const TeamAllocation = () => {
     if (!date) return;
     
     const formattedDate = date.toLocaleDateString('en-CA');
-    const response = await getPlansUsingDate(formattedDate);
+    const result = await dispatch(baseApi.endpoints.getPlansByDate.initiate(formattedDate));
+    const response = result.data;
     if (response && response.status === "true" && Object.keys(response).length > 2) {
       const missionArray = Object.keys(response)
         .filter(key => !isNaN(key))
@@ -287,7 +291,6 @@ const TeamAllocation = () => {
   // Handle plan selection
   const handleMissionSelect = async (mission) => {
     setSelectedMission(mission);
-    setShowTeamDropdown(!!mission);
     setDeployStatus(null);
     setShowRestrictionError(false);
     setIsTeamRestricted(false);
@@ -356,7 +359,8 @@ const TeamAllocation = () => {
       return;
     }
     setDeployStatus("loading");
-    const response = await addTeamToPlan({ plan_id: String(selectedMission.id), team_id: String(selectedTeamId) });
+    const result = await dispatch(baseApi.endpoints.addTeamToPlan.initiate({ plan: String(selectedMission.id), team: String(selectedTeamId) }));
+    const response = result.data;
     if (response && (response.status === "true" || response.status === true)) {
       setDeployStatus("success");
       setAssignedTeamId(selectedTeamId);
@@ -466,6 +470,7 @@ const TeamAllocation = () => {
     // fetchPlansForSelectedDate();
     // Automatically call getPlansUsingDate with the initial date (day after tomorrow)
     handleDateChange(selectedDate);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Synchronize selectedTeamId with assignedTeamId when it changes

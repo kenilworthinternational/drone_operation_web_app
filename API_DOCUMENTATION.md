@@ -1,7 +1,45 @@
 # API Documentation DSMS Kenilworth International, Last Update 2025/09/09 Sandun Madhubhashana
 
+## RTK Query Architecture (2025 Migration)
+The monolithic `src/api/api.js` layer has been fully replaced by Redux Toolkit Query services.
+
+### Entry Points
+- **Aggregated export:** `import { baseApi } from '../api/services/allEndpoints';`
+- **Generated hooks:** `import { useGetAllEstatesQuery } from '../api';`
+- **Manual dispatch:** `dispatch(baseApi.endpoints.getAllEstates.initiate())`
+
+### Service Layout (`src/api/services/`)
+- `authApi.js` – login, OTP, verification
+- `estatesApi.js` – groups, plantations, estates, divisions, fields
+- `plansApi.js` – plan CRUD, calendar, resource allocation, ops approval
+- `teamsApi.js` – team composition, pilots, drones, ASC assignments
+- `bookingsApi.js` – mission creation, farmer data, ASC scheduling
+- `operatorsApi.js` – operator directory and assignments
+- `assetsApi.js` – drones, vehicles, generators, batteries, insurance
+- `financeApi.js` – broker management, pilot earnings, revenue reports
+- `reportsApi.js` – corporate/ops analytical reports
+- `summaryApi.js` – aggregated coverage, calendar summaries
+- `requestsApi.js` – ad-hoc, reschedule, non-plantation requests
+- `groupAssignmentsApi.js` – group↔mission mapping
+- `tasksApi.js` – sub-task approvals, logs, DJI uploads, flags
+- `dropdownsApi.js` – mission metadata lists (crops, chemicals, stages)
+- `farmersApi.js` – farmer lookup and persistence
+
+### Usage Patterns
+```javascript
+// Component-level hook
+const { data, isLoading, error } = useGetAllEstatesQuery();
+
+// Manual dispatch (e.g., inside thunk)
+const result = await dispatch(baseApi.endpoints.createPlan.initiate(planPayload));
+const response = result.data;
+```
+
+### Legacy Reference
+The remainder of this document catalogs the original Axios functions. Keep it as an HTTP payload reference; when implementing, map each legacy function name to the RTK Query endpoint noted in `API_FUNCTION_MAPPING.md` and the service list above.
+
 ## Overview
-This document provides comprehensive documentation for the Drone Operations Management API. The API is built using Axios and follows RESTful principles with POST requests for most endpoints.
+This document provides comprehensive documentation for the Drone Operations Management API. The current implementation uses Redux Toolkit Query (`baseApi`) for all network access; the legacy Axios function descriptions below remain as an HTTP contract reference when mapping endpoints.
 
 **Base URL:** `https://drone-admin-test.kenilworthinternational.com/api/`
 
@@ -986,452 +1024,3 @@ Generic error handler for API calls that logs errors and returns empty array on 
 **Function:** `getReportReasons()`
 **HTTP Method:** POST
 **URL:** `/flag_reasons`
-**Description:** Retrieves available flag/report reasons.
-
----
-
-### 86. Report Task
-**Function:** `reportTask(taskId, reason, reasonList)`
-**HTTP Method:** POST
-**URL:** `/flag_task_by_id`
-**Description:** Reports a task with specific reasons.
-
-**Parameters:**
-- `task_id` (number, required): Task ID
-- `reason` (string, required): Reason for reporting
-- `reason_list` (array, required): List of reasons
-
----
-
-### 87. View Task Report
-**Function:** `viewTaskReport(taskId)`
-**HTTP Method:** POST
-**URL:** `/search_task_flag_by_task_id`
-**Description:** Retrieves task report details by task ID.
-
----
-
-### 88. View Task Report by Date Range
-**Function:** `viewTaskReportByDateRange(fromDate, toDate)`
-**HTTP Method:** POST
-**URL:** `/search_task_flag_by_date_range`
-**Description:** Retrieves task reports within a date range.
-
----
-
-### 89. Update Review for Flag by Review Board
-**Function:** `updateReviewForFlagByReviewBoard(taskId, review)`
-**HTTP Method:** POST
-**URL:** `/update_review_for_flag_by_review_board`
-**Description:** Updates review for flagged task by review board.
-
----
-
-### 90. Update Review for Flag by Director Ops
-**Function:** `updateReviewForFlagByDirectorOps(taskId, status, review)`
-**HTTP Method:** POST
-**URL:** `/update_review_for_flag_dops`
-**Description:** Updates review for flagged task by director of operations.
-
----
-
-## Chemical Usage Endpoints
-
-### 91. Used Chemicals
-**Function:** `usedChemicals(start_date, end_date)`
-**HTTP Method:** POST
-**URL:** `/chemical_used_by_estates`
-**Description:** Retrieves chemical usage data by estates within a date range.
-
-**Parameters:**
-- `start_date` (string, required): Start date
-- `end_date` (string, required): End date
-
-**Response:**
-```json
-{
-  "chemical_usage": [
-    {
-      "estate_id": 1,
-      "estate_name": "Estate A",
-      "chemical_type": "Herbicide",
-      "quantity_used": 50.5,
-      "date": "2024-01-15"
-    }
-  ]
-}
-```
-
----
-
-## Field Management Endpoints
-
-### 92. Field Details
-**Function:** `fieldDetails(id)`
-**HTTP Method:** POST
-**URL:** `/details_by_field`
-**Description:** Retrieves detailed information about a specific field.
-
-**Parameters:**
-- `field` (number, required): Field ID
-
----
-
-### 93. Display Reject Reasons
-**Function:** `displayRejectReason()`
-**HTTP Method:** POST
-**URL:** `/display_reject_reasons`
-**Description:** Retrieves available rejection reasons.
-
----
-
-## Mission Booking Endpoints
-
-### 94. Date Range ASC Bookings
-**Function:** `dateRangAscBookings(startDate, endDate)`
-**HTTP Method:** POST
-**URL:** `/search_mission_by_requested_date_range`
-**Description:** Retrieves ASC bookings within a date range.
-
----
-
-### 95. Update Date Planned ASC Booking
-**Function:** `updateDatePlannedAscBooking(id, datePlaned, paymentType)`
-**HTTP Method:** POST
-**URL:** `/update_mission_planned_date_by_id`
-**Description:** Updates planned date for ASC booking.
-
-**Parameters:**
-- `id` (number, required): Mission ID
-- `date_planed` (string, required): New planned date
-- `payment_type` (string, optional): Payment type
-
----
-
-### 96. Update Mission Planned ASC
-**Function:** `updateMissionPlannedAsc(dataSet)`
-**HTTP Method:** POST
-**URL:** `/update_mission_by_id`
-**Description:** Updates ASC mission details.
-
----
-
-## Reschedule Management Endpoints
-
-### 97. Pending Request Reschedule
-**Function:** `pendingRequestReschedule()`
-**HTTP Method:** POST
-**URL:** `/find_all_pending_request_reschedule`
-**Description:** Retrieves all pending reschedule requests.
-
----
-
-### 98. Submit Rescheduled Plan
-**Function:** `submitRescheduledPlan(submissionRescheduleData)`
-**HTTP Method:** POST
-**URL:** `/create_plan`
-**Description:** Creates a rescheduled plan.
-
----
-
-### 99. Submit Manager Request Rescheduled Plan
-**Function:** `submitManagerRequestRescheduledPlan(submissionManagerRequestRescheduleData)`
-**HTTP Method:** POST
-**URL:** `/create_plan`
-**Description:** Creates a manager-requested rescheduled plan.
-
----
-
-### 100. Change Manager Status
-**Function:** `changeManagerStatus(changeManagerStatusData)`
-**HTTP Method:** POST
-**URL:** `/update_request_reschedule_date_by_manager`
-**Description:** Updates reschedule request status by manager.
-
----
-
-## Operations Management Endpoints
-
-### 101. Ops Approval
-**Function:** `opsApproval(plan, status)`
-**HTTP Method:** POST
-**URL:** `/update_d_ops_approval_for_plan`
-**Description:** Updates operations approval for a plan.
-
-**Parameters:**
-- `plan` (number, required): Plan ID
-- `status` (string, required): Approval status
-
----
-
-### 102. Update Date
-**Function:** `updateDate(currentId, date)`
-**HTTP Method:** POST
-**URL:** `/update_plan_date_by_plan_id`
-**Description:** Updates plan date by plan ID.
-
-**Parameters:**
-- `id` (number, required): Plan ID
-- `date` (string, required): New date
-
----
-
-## Summary Data Endpoints
-
-### 103. Get Summary Data All
-**Function:** `getSummaryDataAll(id)`
-**HTTP Method:** POST
-**URL:** `/find_plan_by_all`
-**Description:** Retrieves summary data for all plans.
-
----
-
-### 104. Get Summary Data All Date Range
-**Function:** `getSummaryDataAllDateRange(start_date, end_date)`
-**HTTP Method:** POST
-**URL:** `/find_plan_by_all_date_range`
-**Description:** Retrieves summary data for all plans within a date range.
-
----
-
-### 105. Get Summary Data Group All
-**Function:** `getSummaryDataGroupAll(id)`
-**HTTP Method:** POST
-**URL:** `/find_plan_by_group`
-**Description:** Retrieves summary data for all plans in a group.
-
----
-
-### 106. Get Summary Data Group All Date Range
-**Function:** `getSummaryDataGroupAllDateRange(id, start_date, end_date)`
-**HTTP Method:** POST
-**URL:** `/find_plan_by_group_date_range`
-**Description:** Retrieves summary data for all plans in a group within a date range.
-
----
-
-### 107. Get Summary Data Plantation All
-**Function:** `getSummaryDataPlantationAll(id)`
-**HTTP Method:** POST
-**URL:** `/find_plan_by_plantation`
-**Description:** Retrieves summary data for all plans in a plantation.
-
----
-
-### 108. Get Summary Data Plantation All Date Range
-**Function:** `getSummaryDataPlantationAllDateRange(id, start_date, end_date)`
-**HTTP Method:** POST
-**URL:** `/find_plan_by_plantation_date_range`
-**Description:** Retrieves summary data for all plans in a plantation within a date range.
-
----
-
-### 109. Get Summary Data Region All
-**Function:** `getSummaryDataRegionAll(id)`
-**HTTP Method:** POST
-**URL:** `/find_plan_by_region`
-**Description:** Retrieves summary data for all plans in a region.
-
----
-
-### 110. Get Summary Data Region All Date Range
-**Function:** `getSummaryDataRegionAllDateRange(id, start_date, end_date)`
-**HTTP Method:** POST
-**URL:** `/find_plan_by_region_date_range`
-**Description:** Retrieves summary data for all plans in a region within a date range.
-
----
-
-### 111. Get Summary Data Estate All
-**Function:** `getSummaryDataEstateAll(id)`
-**HTTP Method:** POST
-**URL:** `/find_plan_by_estate`
-**Description:** Retrieves summary data for all plans in an estate.
-
----
-
-### 112. Get Summary Data Estate All Date Range
-**Function:** `getSummaryDataEstateAllDateRange(id, start_date, end_date)`
-**HTTP Method:** POST
-**URL:** `/find_plan_by_estate_date_range_with_field`
-**Description:** Retrieves summary data for all plans in an estate within a date range, including field details.
-
----
-
-## Additional Utility Endpoints
-
-### 113. Find Plan Summary
-**Function:** `findPlanSummary(id)`
-**HTTP Method:** POST
-**URL:** `/find_plan_summary`
-**Description:** Retrieves summary information for a specific plan.
-
----
-
-### 114. Pilot Details Plan
-**Function:** `PilotDetaisPlan(id)`
-**HTTP Method:** POST
-**URL:** `/plan_team_drone_by_plan_id`
-**Description:** Retrieves pilot details for a specific plan.
-
----
-
-### 115. Get Update Mission Details
-**Function:** `getUpdateMissionDetails(data)`
-**HTTP Method:** POST
-**URL:** `/display_for_update_plan`
-**Description:** Retrieves mission details for plan updates.
-
----
-
-### 116. Get Reschedule Mission Details
-**Function:** `getRescheduleMissionDetails(data)`
-**HTTP Method:** POST
-**URL:** `/display_for_reschedulr_plan`
-**Description:** Retrieves mission details for plan rescheduling.
-
----
-
-### 117. Team Planned Data
-**Function:** `teamPlannedData(submissionData)`
-**HTTP Method:** POST
-**URL:** `/plan_team_drone_by_date`
-**Description:** Retrieves team planned data by date.
-
----
-
-### 118. Team Planned Data Non-Plantation
-**Function:** `teamPlannedDataNonp(submissionData)`
-**HTTP Method:** POST
-**URL:** `/plan_non_plantaion_team_drone_by_date`
-**Description:** Retrieves non-plantation team planned data by date.
-
----
-
-### 119. Pilot Plan and Sub Task List
-**Function:** `pilotPlanandSubTaskList(startDate, endDate, formattedEstates)`
-**HTTP Method:** POST
-**URL:** `/pilots_plans_tasks_by_date_range_and_estates`
-**Description:** Retrieves pilot plans and subtasks by date range and estates.
-
-**Parameters:**
-- `start_date` (string, required): Start date
-- `end_date` (string, required): End date
-- `estates` (array, required): Array of estate IDs
-
----
-
-### 120. Display Pilot and Drone Without Team
-**Function:** `displayPilotandDroneWithoutTeam()`
-**HTTP Method:** POST
-**URL:** `/pilots_and_drones_without_team`
-**Description:** Retrieves pilots and drones not assigned to any team.
-
----
-
-### 121. Display Pilot and Drone Without Team Non-Plantation
-**Function:** `displayPilotandDroneWithoutTeamNonp()`
-**HTTP Method:** POST
-**URL:** `/non_plantaion_pilots_and_drones_without_team`
-**Description:** Retrieves non-plantation pilots and drones not assigned to any team.
-
----
-
-### 122. Update Team Pilot Non-Plantation
-**Function:** `updateTeamPilotNonp(submissionData)`
-**HTTP Method:** POST
-**URL:** `/update_non_plantaion_team_pilot`
-**Description:** Updates non-plantation team pilot information.
-
----
-
-### 123. Update Team Drone Non-Plantation
-**Function:** `updateTeamDroneNonp(submissionData)`
-**HTTP Method:** POST
-**URL:** `/update_non_plantaion_team_drone`
-**Description:** Updates non-plantation team drone information.
-
----
-
-### 124. Get Plan Resources Allocation Non-Plantation
-**Function:** `getPlanResorcesAllocationNonp(data, date)`
-**HTTP Method:** POST
-**URL:** `/display_mission_resource_allocations_by_id`
-**Description:** Retrieves non-plantation mission resource allocation details.
-
-**Parameters:**
-- `asc` (number, required): ASC ID
-- `date` (string, required): Date
-
----
-
-### 125. Cancelled Fields by Team Lead
-**Function:** `cancelledFieldsbyTeamLead(start_date, end_date)`
-**HTTP Method:** POST
-**URL:** `/canceled_fields_by_date_range_with_cancel_reason`
-**Description:** Retrieves cancelled fields by team lead with cancellation reasons.
-
-**Parameters:**
-- `start_date` (string, required): Start date
-- `end_date` (string, required): End date
-- `group` (number, optional): Group ID (default: 0)
-- `plantation` (number, optional): Plantation ID (default: 0)
-- `region` (number, optional): Region ID (default: 0)
-- `estate` (number, optional): Estate ID (default: 0)
-
----
-
-## Error Handling
-
-All API functions include comprehensive error handling:
-
-1. **Authentication Errors:** Functions return `{ success: false, message: "User not logged in." }` when no valid token is found.
-
-2. **Network Errors:** Functions catch axios errors and return appropriate error messages.
-
-3. **API Errors:** Functions handle API response errors and return structured error objects.
-
-## Common Response Formats
-
-### Success Response
-```json
-{
-  "success": true,
-  "message": "Operation completed successfully",
-  "data": { ... }
-}
-```
-
-### Error Response
-```json
-{
-  "success": false,
-  "message": "Error description",
-  "error": "Detailed error information"
-}
-```
-
-### Status Response
-```json
-{
-  "status": "true",
-  "message": "Operation successful",
-  "id": 123
-}
-```
-
-## Rate Limiting
-No specific rate limiting is implemented in the client-side code. Rate limiting should be handled by the server.
-
-## Dependencies
-- **Axios:** HTTP client library for making API requests
-- **localStorage:** For storing authentication tokens
-
-## Notes
-- All endpoints use POST method regardless of the operation type
-- Authentication is required for all endpoints except login and verification
-- Date parameters should be in YYYY-MM-DD format
-- File uploads use multipart/form-data content type
-- The API supports both plantation and non-plantation operations
-- Error handling is consistent across all functions
-- All functions return promises and can be used with async/await syntax

@@ -1,13 +1,8 @@
 import React, { useState } from "react";
-import { FaTrash, FaChevronDown } from "react-icons/fa";
+import { FaTrash } from "react-icons/fa";
 import '../../styles/ManageDronesWidget.css';
 
 const ManageDronesWidget = ({ drones = [], onRemove }) => {
-  const [expandedDroneIndex, setExpandedDroneIndex] = useState(null);
-
-  const toggleDroneDetails = (index) => {
-    setExpandedDroneIndex((prevIndex) => (prevIndex === index ? null : index)); // ✅ Functional state update
-  };
 
   // ✅ Remove duplicate drones by ID
   const uniqueDrones = [...new Map(drones.map((drone) => [drone.id, drone])).values()];
@@ -17,7 +12,7 @@ const ManageDronesWidget = ({ drones = [], onRemove }) => {
       {uniqueDrones.length > 0 ? (
         uniqueDrones.map((drone, index) => (
           <div key={`${drone.id}-${index}`} className="drone-item"> {/* ✅ Unique key */}
-            <div className="drone-header" onClick={() => toggleDroneDetails(index)}>
+            <div className="drone-header">
               <span className="drone-name">
                 {drone?.tag ? drone.tag : "Unknown Drone"}
               </span>

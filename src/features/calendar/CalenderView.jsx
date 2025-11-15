@@ -4,20 +4,11 @@ import '../../styles/calenderview.css';
 import CalenderWidget from './CalenderWidget';
 import CustomDropdown from '../../components/CustomDropdown';
 import { FaArrowCircleDown, FaArrowCircleUp, FaUndo } from "react-icons/fa";
-import { Bars } from "react-loader-spinner";
-import {
-  groupGetter,
-  groupPlantation,
-  groupRegion,
-  groupEstate,
-  getSummaryDataGroupAllDateRange,
-  getSummaryDataPlantationAllDateRange,
-  getSummaryDataRegionAllDateRange,
-  getSummaryDataEstateAllDateRange,
-  getSummaryDataAllDateRange
-} from '../../api/api';
+import { useAppDispatch } from '../../store/hooks';
+import { baseApi } from '../../api/services/allEndpoints';
 
 const CalenderView = () => {
+  const dispatch = useAppDispatch();
   const location = useLocation();
   const currentPath = location.pathname;
   
@@ -86,7 +77,8 @@ const CalenderView = () => {
         const restrictions = getUserRestrictions();
         
         // Always fetch groups first
-        const [groups] = await Promise.all([groupGetter()]);
+        const groupsResult = await dispatch(baseApi.endpoints.getGroups.initiate());
+        const groups = groupsResult.data;
         
         // Set initial state based on user restrictions
         let initialState = {
@@ -121,7 +113,8 @@ const CalenderView = () => {
       // If group is restricted, fetch plantations for that group
       if (restrictions.hasGroupRestriction) {
         setIsLoading(prev => ({ ...prev, plantation: true }));
-        const plantations = await groupPlantation(userData.group);
+        const plantationsResult = await dispatch(baseApi.endpoints.getPlantationsByGroup.initiate(userData.group));
+        const plantations = plantationsResult.data;
         setState(prev => ({ ...prev, plantationOptions: Array.isArray(plantations) ? plantations : [] }));
         setIsLoading(prev => ({ ...prev, plantation: false }));
       }
@@ -129,7 +122,8 @@ const CalenderView = () => {
       // If plantation is restricted, fetch regions for that plantation
       if (restrictions.hasPlantationRestriction) {
         setIsLoading(prev => ({ ...prev, region: true }));
-        const regions = await groupRegion(userData.plantation);
+        const regionsResult = await dispatch(baseApi.endpoints.getRegionsByPlantation.initiate(userData.plantation));
+        const regions = regionsResult.data;
         setState(prev => ({ ...prev, regionOptions: Array.isArray(regions) ? regions : [] }));
         setIsLoading(prev => ({ ...prev, region: false }));
       }
@@ -137,7 +131,8 @@ const CalenderView = () => {
       // If region is restricted, fetch estates for that region
       if (restrictions.hasRegionRestriction) {
         setIsLoading(prev => ({ ...prev, estate: true }));
-        const estates = await groupEstate(userData.region);
+        const estatesResult = await dispatch(baseApi.endpoints.getEstatesByRegion.initiate(userData.region));
+        const estates = estatesResult.data;
         setState(prev => ({ ...prev, estateOptions: Array.isArray(estates) ? estates : [] }));
         setIsLoading(prev => ({ ...prev, estate: false }));
       }
@@ -173,19 +168,34 @@ const CalenderView = () => {
     let fetchFunc;
     switch (type) {
       case 'all':
-        fetchFunc = getSummaryDataAllDateRange;
+        fetchFunc = async (start, end) => {
+          const result = await dispatch(baseApi.endpoints.getAllPlansByDateRange.initiate({startDate: start, endDate: end}));
+          return result.data;
+        };
         break;
       case 'selectedGroup':
-        fetchFunc = getSummaryDataGroupAllDateRange;
+        fetchFunc = async (id, start, end) => {
+          const result = await dispatch(baseApi.endpoints.getPlansByGroupDateRange.initiate({groupId: id, startDate: start, endDate: end}));
+          return result.data;
+        };
         break;
       case 'selectedPlantation':
-        fetchFunc = getSummaryDataPlantationAllDateRange;
+        fetchFunc = async (id, start, end) => {
+          const result = await dispatch(baseApi.endpoints.getPlansByPlantationDateRange.initiate({plantationId: id, startDate: start, endDate: end}));
+          return result.data;
+        };
         break;
       case 'selectedRegion':
-        fetchFunc = getSummaryDataRegionAllDateRange;
+        fetchFunc = async (id, start, end) => {
+          const result = await dispatch(baseApi.endpoints.getPlansByRegionDateRange.initiate({regionId: id, startDate: start, endDate: end}));
+          return result.data;
+        };
         break;
       case 'selectedEstate':
-        fetchFunc = getSummaryDataEstateAllDateRange;
+        fetchFunc = async (id, start, end) => {
+          const result = await dispatch(baseApi.endpoints.getPlansByEstateDateRangeWithField.initiate({estateId: id, startDate: start, endDate: end}));
+          return result.data;
+        };
         break;
       default:
         setCalendarLoading(false);
@@ -428,7 +438,10 @@ const CalenderView = () => {
               ) : (
                 <CustomDropdown
                   options={state.dropdownOptions}
-                  onSelect={(val) => handleDropdownSelect('selectedGroup', val, groupPlantation, 'plantationOptions')}
+                  onSelect={(val) => handleDropdownSelect('selectedGroup', val, async (groupId) => {
+                    const result = await dispatch(baseApi.endpoints.getPlantationsByGroup.initiate(groupId));
+                    return result.data;
+                  }, 'plantationOptions')}
                   selectedValue={state.selectedGroup}
                   disabled={false}
                 />
@@ -444,7 +457,10 @@ const CalenderView = () => {
               ) : (
                 <CustomDropdown
                   options={state.plantationOptions.map(({ id, plantation }) => ({ id, group: plantation }))}
-                  onSelect={(val) => handleDropdownSelect('selectedPlantation', val, groupRegion, 'regionOptions')}
+                  onSelect={(val) => handleDropdownSelect('selectedPlantation', val, async (plantationId) => {
+                    const result = await dispatch(baseApi.endpoints.getRegionsByPlantation.initiate(plantationId));
+                    return result.data;
+                  }, 'regionOptions')}
                   selectedValue={state.selectedPlantation}
                   isLoading={isLoading.plantation}
                   disabled={false}
@@ -461,7 +477,10 @@ const CalenderView = () => {
               ) : (
                 <CustomDropdown
                   options={state.regionOptions.map(({ id, region }) => ({ id, group: region }))}
-                  onSelect={(val) => handleDropdownSelect('selectedRegion', val, groupEstate, 'estateOptions')}
+                  onSelect={(val) => handleDropdownSelect('selectedRegion', val, async (regionId) => {
+                    const result = await dispatch(baseApi.endpoints.getEstatesByRegion.initiate(regionId));
+                    return result.data;
+                  }, 'estateOptions')}
                   selectedValue={state.selectedRegion}
                   isLoading={isLoading.region}
                   disabled={false}

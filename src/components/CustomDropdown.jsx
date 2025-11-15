@@ -34,7 +34,6 @@ const CustomDropdown = ({
     if (dropdown) {
       const dropdownRect = dropdown.getBoundingClientRect();
       const spaceBelow = window.innerHeight - dropdownRect.bottom;
-      const spaceAbove = dropdownRect.top;
 
       return spaceBelow < 200 ? 'top' : 'bottom'; // Adjust '200' based on your dropdown height
     }

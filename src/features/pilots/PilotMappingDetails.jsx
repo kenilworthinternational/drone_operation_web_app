@@ -3,11 +3,13 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import CloseIcon from "@mui/icons-material/Close";
 import { Button, Dialog, DialogTitle, DialogContent, IconButton } from "@mui/material";
-import { pilotPlanandSubTaskList, getSubmissionData } from "../../api/api";
+import { baseApi } from '../../api/services/allEndpoints';
+import { useAppDispatch } from '../../store/hooks';
 import { Bars } from "react-loader-spinner";
 import "../../styles/pilotmappingdetails.css";
 
 const PilotMappingDetails = ({ estateIds, startDate, endDate }) => {
+    const dispatch = useAppDispatch();
     const [pilotData, setPilotData] = useState([]);
     const [expandedPilot, setExpandedPilot] = useState(null);
     const [expandedPlan, setExpandedPlan] = useState(null);
@@ -25,8 +27,8 @@ const PilotMappingDetails = ({ estateIds, startDate, endDate }) => {
                 setLoading(true);
                 const formattedEstates = estateIds.map(id => String(id));
                 console.log("blalalala", startDate, endDate, formattedEstates);
-                const response = await pilotPlanandSubTaskList(startDate, endDate, formattedEstates
-                );
+                const result = await dispatch(baseApi.endpoints.getPilotPlansAndSubtasks.initiate({ startDate, endDate, estates: formattedEstates }));
+                const response = result.data;
                 console.log("######", response);
                 if (response?.success) {
                     setPilotData(response.data);
@@ -45,7 +47,8 @@ const PilotMappingDetails = ({ estateIds, startDate, endDate }) => {
 
     const handleSubtaskClick = async (taskId) => {
         try {
-            const response = await getSubmissionData(taskId);
+            const result = await dispatch(baseApi.endpoints.getSubmissionData.initiate(taskId));
+            const response = result.data;
             if (response?.status === "true") {
                 setSubtaskData(Object.values(response).filter(item => typeof item === "object"));
                 setIsSubtaskModalOpen(true);

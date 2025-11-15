@@ -1,0 +1,390 @@
+/* Booking Calendar Styles */
+.booking-calender-wrapper {
+  width: 100%;
+  height: 100%;
+  background: #f8f9fa;
+  border-radius: 8px;
+  overflow-y: auto;
+  overflow-x: auto;
+  min-width: 0;
+  position: relative;
+}
+
+.booking-calender-container {
+  background: white;
+  border-radius: 4px;
+  border: 1px solid #e0e0e0;
+}
+
+.booking-calender-header {
+  padding: 16px 20px;
+  background: #004B71;
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  border-radius: 4px 4px 0 0;
+}
+
+.booking-calender-nav-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  font-size: 20px;
+  padding: 8px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.booking-calender-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.booking-calender-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  flex: 1;
+  text-align: center;
+}
+
+.booking-calender-weekday-headers {
+  display: grid;
+  grid-template-columns: repeat(7, calc(100% / 7));
+  background: #f5f5f5;
+  border-bottom: 1px solid #e0e0e0;
+  width: 100%;
+  position: sticky;
+  top: 57px;
+  z-index: 9;
+}
+
+.booking-calender-weekday-header {
+  padding: 5px 2px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 13px;
+  color: #495057;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.booking-calender-grid {
+  display: grid;
+  grid-template-columns: repeat(7, calc(100% / 7));
+  grid-auto-rows: auto;
+  gap: 1px;
+  background: #e0e0e0;
+  padding: 1px;
+  width: 100%;
+}
+
+.booking-calender-day-empty {
+  background: white;
+  min-height: 120px;
+}
+
+.booking-calender-day {
+  background: white;
+  min-height: 120px;
+  padding: 6px 4px;
+  display: flex;
+  flex-direction: column;
+  transition: background-color 0.2s;
+  position: relative;
+  border: 1px solid #e0e0e0;
+  height: auto;
+  box-sizing: border-box;
+}
+
+.booking-calender-day:hover {
+  background: #fafafa;
+}
+
+.booking-calender-day-other-month {
+  background: #fafafa;
+  opacity: 0.5;
+}
+
+.booking-calender-day-clickable {
+  cursor: pointer;
+}
+
+.booking-calender-day-clickable:hover {
+  background: #e3f2fd !important;
+  border: 1px solid #2196F3 !important;
+  box-shadow: 0 0 0 1px #2196F3 inset !important;
+}
+
+.booking-calender-day-selected {
+  background: #bbdefb !important;
+  border: 1px solid #2196F3 !important;
+  box-shadow: 0 0 0 1px #2196F3 inset !important;
+  font-weight: bold;
+}
+
+.booking-calender-day-selected .booking-calender-day-number {
+  color: #1976D2 !important;
+  font-weight: 900;
+}
+
+.booking-calender-day-header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding: 0;
+}
+
+.booking-calender-day-number {
+  font-weight: 800;
+  font-size: 20px;
+  color: #424242;
+  text-align: center;
+  padding: 4px;
+  box-sizing: border-box;
+  border-radius: 4px;
+  transition: background-color 0.2s, color 0.2s;
+  min-width: 28px;
+  display: inline-block;
+  line-height: 1.2;
+}
+
+.booking-calender-day-count {
+  font-weight: 500;
+  font-size: 10px;
+  color: #666;
+  background: #f5f5f5;
+  padding: 2px 6px;
+  border-radius: 10px;
+}
+
+.booking-calender-day:has(.booking-calender-tasks:hover) .booking-calender-day-number {
+  background: #002544;
+  color: white;
+  padding: 4px;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.booking-calender-tasks {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 80px;
+}
+
+.booking-calender-task {
+  background: #004B71;
+  border-radius: 3px;
+  padding: 4px 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-sizing: border-box;
+  border: 1px solid transparent;
+  position: relative; /* enable corner icon positioning */
+  padding-right: 26px; /* keep text clear of the corner icon */
+}
+
+.booking-calender-task:hover {
+  background: #006699;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  border: 1px solid transparent;
+}
+
+.booking-calender-task-estate {
+  font-size: 11px;
+  padding: 3px 1px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+/* Delete icon inside a task pill - white circle with red icon at top-right */
+.booking-calender-task-delete {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  color: #e53935; /* red icon */
+  border: 1px solid #ffcdd2; /* light red border */
+  border-radius: 50%;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+}
+
+.booking-calender-task-delete-icon {
+  width: 12px;
+  height: 12px;
+  display: block;
+}
+
+.booking-calender-task-delete:hover {
+  color: #c62828;
+  border-color: #ef9a9a;
+}
+
+.booking-calender-task-delete[disabled] {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Submitting indicator in calendar cell */
+.booking-calender-day-submitting {
+  position: relative;
+}
+
+.booking-calender-submitting-indicator {
+  margin-top: 4px;
+  width: 100%;
+  height: 3px;
+  background-color: #e0e0e0;
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+
+.booking-calender-loading-bar {
+  height: 100%;
+  width: 40%;
+  background: linear-gradient(90deg, #2196F3, #64B5F6, #2196F3);
+  background-size: 200% 100%;
+  animation: loading-slide 1.5s ease-in-out infinite;
+  border-radius: 2px;
+}
+
+@keyframes loading-slide {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(250%);
+  }
+}
+
+/* Loading overlay - only inside calendar area */
+.booking-calender-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  border-radius: 8px;
+}
+
+.booking-calender-loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.booking-calender-loading-content p {
+  color: #002657;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+/* Using Bars spinner instead of custom spinner */
+
+/* Scrollbar styling for calendar wrapper */
+.booking-calender-wrapper::-webkit-scrollbar {
+  width: 8px;
+}
+
+.booking-calender-wrapper::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.booking-calender-wrapper::-webkit-scrollbar-thumb {
+  background: #bdbdbd;
+  border-radius: 4px;
+}
+
+.booking-calender-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #9e9e9e;
+}
+
+/* Responsive */
+@media (max-width: 1400px) {
+  .booking-calender-weekday-header {
+    padding: 8px 4px;
+    font-size: 11px;
+  }
+  
+  .booking-calender-day {
+    min-height: 100px;
+    padding: 4px 2px;
+  }
+  
+  .booking-calender-day-number {
+    font-size: 18px;
+  }
+  
+  .booking-calender-task {
+    padding: 3px 4px;
+    font-size: 9px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .booking-calender-day {
+    min-height: 90px;
+  }
+  
+  .booking-calender-task {
+    font-size: 9px;
+  }
+}
+
+@media (max-width: 768px) {
+  .booking-calender-wrapper {
+    padding: 5px;
+  }
+  
+  .booking-calender-weekday-header {
+    padding: 6px 2px;
+    font-size: 10px;
+  }
+  
+  .booking-calender-day {
+    min-height: 70px;
+    padding: 3px 2px;
+  }
+  
+  .booking-calender-day-number {
+    font-size: 14px;
+  }
+  
+  .booking-calender-day-count {
+    font-size: 8px;
+    padding: 1px 4px;
+  }
+  
+  .booking-calender-task {
+    padding: 3px 4px;
+    font-size: 8px;
+  }
+}
+

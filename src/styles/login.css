@@ -212,34 +212,95 @@ input:focus {
 }
 
 .resend-otp-container {
-  margin-top: 15px;
+  margin-top: 20px;
   text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .resend-otp-btn {
-  background: none;
+  background: linear-gradient(135deg, #004B71 0%, #0085c7 100%);
   border: none;
-  color: #004B71;
+  color: white;
   cursor: pointer;
   font-size: 14px;
-  text-decoration: underline;
-  padding: 5px 10px;
-  transition: color 0.3s;
+  font-weight: 600;
+  padding: 10px 20px;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 2px 8px rgba(0, 75, 113, 0.2);
+  text-decoration: none;
 }
 
 .resend-otp-btn:hover:not(:disabled) {
-  color: #0085c7;
+  background: linear-gradient(135deg, #0085c7 0%, #004B71 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 75, 113, 0.3);
+}
+
+.resend-otp-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(0, 75, 113, 0.2);
 }
 
 .resend-otp-btn:disabled {
   cursor: not-allowed;
-  opacity: 0.5;
+  opacity: 0.6;
+  background: #6c757d;
+  transform: none;
+}
+
+.resend-icon {
+  font-size: 16px;
+  display: inline-block;
+  animation: none;
+  transition: transform 0.3s ease;
+}
+
+.resend-otp-btn:hover:not(:disabled) .resend-icon {
+  animation: rotate 0.6s ease;
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.resend-timer-wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background-color: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  color: #495057;
+}
+
+.timer-icon {
+  font-size: 16px;
+  color: #004B71;
 }
 
 .resend-timer {
-  color: #666;
+  color: #495057;
   font-size: 14px;
   margin: 0;
+  font-weight: 500;
+}
+
+.resend-timer strong {
+  color: #004B71;
+  font-weight: 700;
+  font-size: 15px;
 }
 
 .submit-btn.back-btn {

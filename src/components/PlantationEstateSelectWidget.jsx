@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
 import PropTypes from 'prop-types';
-import { displayPlantation, estateListAcPlant } from "../api/api";
+import { useAppDispatch } from "../store/hooks";
+import { baseApi } from "../api/services/allEndpoints";
 import '../styles/plantationestateselectwidget.css';
 
 const PlantationEstateSelectWidget = ({ onSelectionChange }) => {
+    const dispatch = useAppDispatch();
     const [plantations, setPlantations] = useState([]);
     const [selectedPlantation, setSelectedPlantation] = useState(null);
     const [estates, setEstates] = useState([]);
@@ -23,7 +25,8 @@ const PlantationEstateSelectWidget = ({ onSelectionChange }) => {
         const fetchPlantations = async () => {
             try {
                 setLoading(true);
-                const data = await displayPlantation();
+                const result = await dispatch(baseApi.endpoints.getAllPlantations.initiate());
+                const data = result.data;
                 setPlantations(data);
                 setError(null);
             } catch (err) {
@@ -41,7 +44,8 @@ const PlantationEstateSelectWidget = ({ onSelectionChange }) => {
             if (selectedPlantation) {
                 try {
                     setLoading(true);
-                    const data = await estateListAcPlant(selectedPlantation);
+                    const result = await dispatch(baseApi.endpoints.getEstatesByPlantation.initiate(selectedPlantation));
+                    const data = result.data;
                     setEstates(data);
                     setSelectedEstates([]); // This will trigger the selection useEffect
                     setError(null);

@@ -59,13 +59,13 @@ const DivisionView = ({
             let restrictionReason = '';
             
             if (isSpray) {
-              // Only check can_spray when mission type is spray
-              isRestricted = Number(field.can_spray) === 0;
-              restrictionReason = isRestricted ? (field.can_spray_text) : '';
-            } else if (isSpread) {
-              // Only check can_spread when mission type is spread
+              // Check can_spread when mission type is spray
               isRestricted = Number(field.can_spread) === 0;
               restrictionReason = isRestricted ? (field.can_spread_text) : '';
+            } else if (isSpread) {
+              // Check can_spray when mission type is spread
+              isRestricted = Number(field.can_spray) === 0;
+              restrictionReason = isRestricted ? (field.can_spray_text) : '';
             }
             if (showAddHoc) {
               isChecked = selectedFields.has(field.field_id); // Reflect user selection

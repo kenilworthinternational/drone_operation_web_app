@@ -2,7 +2,7 @@ import React from 'react';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import UpdateServices from './features/misc/UpdateServices';
-import CreateBookings from './features/bookings/CreateBookings';
+import CreateBookings from './sections/management/bookings/CreateBookings';
 import Dashboard from './features/dashboard/Dashboard';
 import Login from './pages/Login';
 import ProceedPlan from './features/misc/ProceedPlan';
@@ -10,30 +10,36 @@ import TeamAllocation from './features/misc/teamAllocation';
 import NonpTeamAllocation from './features/nonp/nonpTeamAllocation';
 import SummeryView from './features/misc/SummeryView';
 import CalenderView from './features/calendar/CalenderView';
-import DeletePlan from './features/misc/DeletePlan';
 import DeactivatePlan from './features/misc/DeactivatePlan';
-import ReportSection from './features/reports/ReportNavigation';
-import ModernReportSection from './features/reports/ModernReportSection';
-import DayEndProcess from './features/dayend/DayEndProcess';
-import Earnings from './features/dayend/Earnings';
-import DayEndView from './features/dayend/DayEndView';
-import DayEndProcessAsc from './features/dayend/DayEndProcessAsc';
-import ManagerRescheduler from './features/misc/ManagerRescheduler';
+import ModernReportSection from './components/ModernReportSection';
+import DayEndProcess from './sections/opsroom/dayend/DayEndProcess';
+import Earnings from './sections/finance/PilotEarnings/Earnings';
+import DayEndProcessAsc from './sections/opsroom/dayend/DayEndProcessAsc';
+// import ManagerRescheduler from './features/misc/ManagerRescheduler';
 import Missions from './features/misc/Missions';
-import BookingList from './features/bookings/BookingList';
-import ProceedPlanAscNonp from './features/misc/ProceedPlanAscNonp';
+import BookingList from './sections/management/bookings/BookingList';
+// import ProceedPlanAscNonp from './features/misc/ProceedPlanAscNonp';
 import MDDashboard from './features/dashboard/MDDashboard';
-import FieldHistory from './features/misc/FieldHistory';
-import DataViewer from './features/data/DataViewer';
+import FieldHistory from './sections/management/ops/FieldHistory';
+import DataViewer from './sections/corporate/chartView/DataViewer';
 import CEODataViewer from './features/dashboard/CEODataViewer';
-import OpsAsign from './features/ops/OpsAsign';
-import ReportReview from './features/reports/TaskReviewManagement';
-import Brokers from './features/brokers/Brokers';
+import OpsAssign from './sections/opsroom/operators/OpsAssign';
+import ReportReview from './sections/corporate/charts/TaskReviewManagement';
+import Brokers from './sections/finance/brokers/Brokers';
+import WorkflowDashboard from './sections/opsroom/dashboard/WorkflowDashboard';
+import PlanCalendar from './sections/opsroom/calendar/PlanCalendar';
+import RequestsQueueMain from './sections/opsroom/requests/RequestsQueueMain';
+import RequestProceed from './sections/opsroom/requests/RequestProceed';
+import PlansWithWeather from './sections/opsroom/plans/PlansWithWeather';
+import AssetsManagement from './sections/hr&admin/assets/AssetsManagement';
+import Users from './sections/ict/users/Users';
+import AuthControls from './sections/ict/authentication/AuthControls';
+
+import { useAppSelector } from './store/hooks';
 
 // ProtectedRoute component to check authentication
 const ProtectedRoute = ({ children }) => {
-  const userData = JSON.parse(localStorage.getItem('userData'));
-  const isAuthenticated = userData && userData.login_status;
+  const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
 
   return isAuthenticated ? children : <Navigate to="/login" />;
 };
@@ -55,6 +61,14 @@ function App() {
             </ProtectedRoute>
           }
         >
+          <Route
+            index
+            element={
+              <ProtectedRoute>
+                <Navigate to="/home/create" replace />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="dashboard"
             element={
@@ -92,6 +106,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <CreateBookings />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="create"
+            element={
+              <ProtectedRoute>
+                <PlansWithWeather />
               </ProtectedRoute>
             }
           />
@@ -176,14 +198,6 @@ function App() {
             }
           />
           <Route
-            path="deletePlan"
-            element={
-              <ProtectedRoute>
-                <DeletePlan />
-              </ProtectedRoute>
-            }
-          />
-          <Route
             path="deactivatePlan"
             element={
               <ProtectedRoute>
@@ -256,14 +270,6 @@ function App() {
             }
           />
           <Route
-            path="dayEndView"
-            element={
-              <ProtectedRoute>
-                <DayEndView />
-              </ProtectedRoute>
-            }
-          />
-          <Route
             path="fieldHistory"
             element={
               <ProtectedRoute>
@@ -271,14 +277,14 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route
+          {/* <Route
             path="managerRescheduler"
             element={
               <ProtectedRoute>
                 <ManagerRescheduler />
               </ProtectedRoute>
             }
-          />
+          /> */}
           <Route
             path="bookingList"
             element={
@@ -287,19 +293,19 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route
+          {/* <Route
             path="proceedPlanAsc"
             element={
               <ProtectedRoute>
                 <ProceedPlanAscNonp />
               </ProtectedRoute>
             }
-          />
+          /> */}
           <Route
             path="opsAsign"
             element={
               <ProtectedRoute>
-                <OpsAsign />
+                <OpsAssign />
               </ProtectedRoute>
             }
           />
@@ -324,6 +330,62 @@ function App() {
             element={
               <ProtectedRoute>
                   <Brokers />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="workflowDashboard"
+            element={
+              <ProtectedRoute>
+                  <WorkflowDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="opsroomPlanCalendar"
+            element={
+              <ProtectedRoute>
+                  <PlanCalendar />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="requestsQueue"
+            element={
+              <ProtectedRoute>
+                  <RequestsQueueMain />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="requestProceed"
+            element={
+              <ProtectedRoute>
+                <RequestProceed />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="assetsManagement"
+            element={
+              <ProtectedRoute>
+                <AssetsManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="ict/system-admin/users"
+            element={
+              <ProtectedRoute>
+                <Users />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="ict/system-admin/auth-controls"
+            element={
+              <ProtectedRoute>
+                <AuthControls />
               </ProtectedRoute>
             }
           />

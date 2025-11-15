@@ -2,18 +2,9 @@ import React, { useState, useEffect } from 'react';
 import '../../styles/proceedPlan.css';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import CustomDropdown from '../../components/CustomDropdown';
 import { FaCalendarAlt } from "react-icons/fa";
-import { 
-  getPlansUsingDateNonp, 
-  displayTeamDataNonp, 
-  addTeamToPlanNonp, 
-  teamPlannedDataNonp,
-  nonpGroupAssignedMissions,
-  updateGroupAssignedMissions,
-  removeGroupAssignedMissions,
-  currentGroupAssignedMissionsByDate
-} from '../../api/api';
+import { baseApi } from '../../api/services/allEndpoints';
+import { useAppDispatch } from '../../store/hooks';
 import NonpTeamAllocationBottom from './nonpTeamAllocationBottom';
 
 const CustomDateInput = React.forwardRef(({ value, onClick }, ref) => (
@@ -59,7 +50,6 @@ const NonpTeamAllocation = () => {
   const [missionGroups, setMissionGroups] = useState([]);
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [showGroupManagement, setShowGroupManagement] = useState(false);
-  const [availableGroups, setAvailableGroups] = useState([]);
   const [selectedMissionsForGroup, setSelectedMissionsForGroup] = useState([]);
   const [teams, setTeams] = useState([]);
   const [selectedTeamId, setSelectedTeamId] = useState("");
@@ -71,10 +61,12 @@ const NonpTeamAllocation = () => {
   const [pilotPlanCounts, setPilotPlanCounts] = useState({});
   const [dronePlanCounts, setDronePlanCounts] = useState({});
   const [planDetails, setPlanDetails] = useState({});
+  const dispatch = useAppDispatch();
 
   const fetchTeams = async () => {
     setLoadingTeams(true);
-    const response = await displayTeamDataNonp();
+    const result = await dispatch(baseApi.endpoints.getTeamDataNonPlantation.initiate());
+    const response = result.data;
     if (response && Array.isArray(response)) {
       setTeams(response);
     } else if (response && response.data) {
@@ -88,7 +80,8 @@ const NonpTeamAllocation = () => {
   const fetchGroupAssignments = async (date) => {
     if (!date) return;
     const formattedDate = date.toLocaleDateString('en-CA');
-    const response = await currentGroupAssignedMissionsByDate({ date: formattedDate });
+      const result = await dispatch(baseApi.endpoints.getCurrentGroupAssignedMissions.initiate({ date: formattedDate }));
+      const response = result.data;
     if (response && response.status === "true" && response.groups) {
       setMissionGroups(response.groups);
     } else {
@@ -99,11 +92,13 @@ const NonpTeamAllocation = () => {
   const getPlanCounts = async (date) => {
     if (!date) return { pilotPlanCounts: {}, dronePlanCounts: {}, planDetails: {} };
     const formattedDate = date.toLocaleDateString('en-CA');
-    const response = await teamPlannedDataNonp({ date: formattedDate });
+      const result = await dispatch(baseApi.endpoints.getTeamPlannedDataNonPlantation.initiate({ date: formattedDate }));
+      const response = result.data;
     // Also fetch missions for the same date to enrich with farmer details
     let missionLookup = {};
     try {
-      const missionsResp = await getPlansUsingDateNonp(formattedDate);
+      const missionsResult = await dispatch(baseApi.endpoints.getPlansByDate.initiate(formattedDate));
+      const missionsResp = missionsResult.data;
       if (missionsResp && missionsResp.status === "true" && missionsResp["0"] && Array.isArray(missionsResp["0"])) {
         missionsResp["0"].forEach(m => {
           const id = m.mission_id || m.id;
@@ -230,7 +225,8 @@ const NonpTeamAllocation = () => {
     if (!date) return;
 
     const formattedDate = date.toLocaleDateString('en-CA');
-    const response = await getPlansUsingDateNonp(formattedDate);
+    const result = await dispatch(baseApi.endpoints.getPlansByDate.initiate(formattedDate));
+    const response = result.data;
     if (response && response.status === "true" && response["0"] && Array.isArray(response["0"])) {
       const missionArray = response["0"];
       const missionOptions = missionArray.map(mission => ({
@@ -297,7 +293,8 @@ const NonpTeamAllocation = () => {
     };
     
     console.log('Deploying group missions:', submissionData);
-    const response = await nonpGroupAssignedMissions(submissionData);
+    const result = await dispatch(baseApi.endpoints.createGroupAssignedMissions.initiate(submissionData));
+    const response = result.data;
     if (response && (response.status === "true" || response.status === true || response.success === true)) {
       console.log('Successfully deployed group missions');
       setDeployStatus("success");
@@ -330,7 +327,8 @@ const NonpTeamAllocation = () => {
     if (!selectedMissionsForGroup.length || !selectedGroup) return;
     
     const missionIds = selectedMissionsForGroup.map(m => m.id.toString());
-    const response = await updateGroupAssignedMissions({ group: selectedGroup.id, missions: missionIds });
+    const result = await dispatch(baseApi.endpoints.updateGroupAssignedMissions.initiate({ group: selectedGroup.id, missions: missionIds }));
+    const response = result.data;
     
     if (response && (response.status === "true" || response.status === true || response.success === true)) {
       console.log('Successfully added missions to group');
@@ -349,7 +347,8 @@ const NonpTeamAllocation = () => {
     console.log('Removing missions from groups:', missionIds);
     
     try {
-      const response = await removeGroupAssignedMissions({ missions: missionIds });
+      const result = await dispatch(baseApi.endpoints.removeGroupFromMissions.initiate({ missions: missionIds }));
+      const response = result.data;
       console.log('Remove response:', response);
       
       if (response && (response.status === "true" || response.status === true || response.success === true)) {
@@ -359,7 +358,8 @@ const NonpTeamAllocation = () => {
         // Also refresh missions to update their assignment status
         if (selectedDate) {
           const formattedDate = selectedDate.toLocaleDateString('en-CA');
-          const response = await getPlansUsingDateNonp(formattedDate);
+          const result = await dispatch(baseApi.endpoints.getPlansByDate.initiate(formattedDate));
+    const response = result.data;
           if (response && response.status === "true" && response["0"] && Array.isArray(response["0"])) {
             const missionArray = response["0"];
             const missionOptions = missionArray.map(mission => ({
@@ -690,9 +690,6 @@ const NonpTeamAllocation = () => {
                     teamPlanInfo.drones.forEach(drone => {
                       drone.plans.forEach(plan => uniquePlanIds.add(plan.planId));
                     });
-                    
-                    const uniquePlanCount = uniquePlanIds.size;
-                    const hasMultiplePlans = uniquePlanCount > 0;
                     
                     return (
                       <option 

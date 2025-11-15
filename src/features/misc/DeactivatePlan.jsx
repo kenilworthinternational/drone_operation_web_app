@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import '../../styles/deactivateplan.css';
-import { getPlansUsingDate, deactivatePlan } from '../../api/api';
+import { useAppDispatch } from '../../store/hooks';
+import { baseApi } from '../../api/services/allEndpoints';
 import DatePicker from 'react-datepicker';
 import CustomDropdown from '../../components/CustomDropdown';
 import { Bars } from 'react-loader-spinner';
@@ -14,6 +15,7 @@ const CustomDateInput = React.forwardRef(({ value, onClick }, ref) => (
 ));
 
 const DeactivatePlan = () => {
+  const dispatch = useAppDispatch();
   const [missions, setMissions] = useState([]);
   const [selectedMission, setSelectedMission] = useState(null);
   const [selectedDate, setSelectedDate] = useState();
@@ -31,7 +33,8 @@ const DeactivatePlan = () => {
       if (!date) return;
 
       const formattedDate = date.toLocaleDateString('en-CA');
-      const response = await getPlansUsingDate(formattedDate);
+      const result = await dispatch(baseApi.endpoints.getPlansByDate.initiate(formattedDate));
+      const response = result.data;
 
       if (response?.status === "true" && Object.keys(response).length > 2) {
         const missionArray = Object.keys(response)
@@ -67,7 +70,8 @@ const DeactivatePlan = () => {
   const handleActivateDeactivate = async () => {
     setIsSubmitting(true);
     try {
-      const response = await deactivatePlan(selectedMission.id, selectedStatus);
+      const result = await dispatch(baseApi.endpoints.changePlanStatus.initiate({ planId: selectedMission.id, status: selectedStatus }));
+      const response = result.data;
       
       if (response?.status === 'true') {
         if (selectedDate) handleDateChange(selectedDate);

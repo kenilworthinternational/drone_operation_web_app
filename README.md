@@ -1,74 +1,171 @@
-<<<<<<< HEAD
-# drone_operation_web_app
-=======
-# Getting Started with Create React App
+# Drone Services Management System
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A React-based web application for managing drone operations and services.
 
-## Available Scripts
+## Quick Start
 
-In the project directory, you can run:
+### Available Scripts
 
-### `npm start`
+#### Environment-Specific Commands
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+```bash
+npm run start:dev    # Development mode
+npm run start:prod   # Production mode
+npm run build:dev    # Development build
+npm run build:prod   # Production build
+```
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+#### Standard Commands
 
-### `npm test`
+```bash
+npm start            # Start development server (defaults to development mode)
+npm test             # Run tests
+npm run build        # Build for production (defaults to production mode)
+npm run eject        # Eject from Create React App (one-way operation)
+```
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## Environment Configuration
 
-### `npm run build`
+The application automatically detects and configures itself based on the environment:
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### Development Mode
+- **API URL**: `https://drone-admin-test.kenilworthinternational.com/api/`
+- **Logging**: Enabled (all console logs visible)
+- **Auto-detected when**: Running on `localhost` or `127.0.0.1`
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### Production Mode
+- **API URL**: `https://drone-admin.kenilworthinternational.com/api/`
+- **Logging**: Disabled (console logs removed in production build)
+- **Auto-detected when**: `NODE_ENV=production` or `REACT_APP_ENV=production`
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### Environment Detection
 
-### `npm run eject`
+The app automatically detects the environment based on:
+1. `NODE_ENV` environment variable
+2. `REACT_APP_ENV` environment variable
+3. Hostname (localhost/127.0.0.1 = development)
+4. Defaults to **development** if not set
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+## Logger Utility
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+All console logs have been replaced with a logger utility that automatically:
+- **Development**: Shows all logs
+- **Production**: Removes all logs (tree-shaking optimization)
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+### Usage in Code
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+```javascript
+import { logger } from '../utils/logger';
+
+// Instead of console.log
+logger.log('Debug message');        // Only shows in development
+logger.error('Error message');      // Only shows in development
+logger.warn('Warning message');     // Only shows in development
+logger.info('Info message');        // Only shows in development
+logger.debug('Debug message');      // Only shows in development
+
+// Critical errors always log (even in production)
+logger.criticalError('Critical error');
+```
+
+### Available Logger Methods
+
+- `logger.log()` - General logging
+- `logger.error()` - Error logging
+- `logger.warn()` - Warning logging
+- `logger.info()` - Info logging
+- `logger.debug()` - Debug logging
+- `logger.table()` - Table logging
+- `logger.criticalError()` - Always logs (even in production)
+
+## Project Structure
+
+```
+src/
+├── api/
+│   └── api.js              # API calls with environment-aware configuration
+├── config/
+│   └── config.js           # Environment configuration
+├── utils/
+│   └── logger.js           # Conditional logging utility
+├── pages/
+│   └── Login.jsx          # Login page with OTP verification
+└── ...
+```
+
+## Configuration Files
+
+- **Config**: `src/config/config.js` - API URLs and environment detection
+- **Logger**: `src/utils/logger.js` - Conditional logging utility
+- **Environment Setup**: See `ENVIRONMENT_SETUP.md` for detailed configuration guide
+
+## Features
+
+- ✅ Environment-based API configuration
+- ✅ Automatic logging control (dev vs production)
+- ✅ OTP-based authentication
+- ✅ Cross-platform script support (Windows/Linux/Mac)
+- ✅ Production-ready build optimization
+
+## Development
+
+### Prerequisites
+
+- Node.js (v14 or higher)
+- npm or yarn
+
+### Installation
+
+```bash
+npm install
+```
+
+### Running the Application
+
+```bash
+# Development mode (with logging)
+npm run start:dev
+
+# Production mode (no logging)
+npm run start:prod
+```
+
+The app will open at [http://localhost:3000](http://localhost:3000)
+
+### Building for Production
+
+```bash
+# Development build (with logging)
+npm run build:dev
+
+# Production build (optimized, no logging)
+npm run build:prod
+```
+
+## Environment Variables
+
+You can set environment variables using a `.env` file:
+
+```env
+# For development
+REACT_APP_ENV=development
+
+# For production
+REACT_APP_ENV=production
+```
+
+**Note**: The `.env` file is already in `.gitignore` to prevent committing sensitive configuration.
 
 ## Learn More
+
+This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
 You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
 
 To learn React, check out the [React documentation](https://reactjs.org/).
 
-### Code Splitting
+## Additional Resources
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
->>>>>>> cd5f56d (Initial commit)
+- [Environment Setup Guide](./ENVIRONMENT_SETUP.md) - Detailed environment configuration
+- [Create React App Documentation](https://facebook.github.io/create-react-app/docs/getting-started)
+- [React Documentation](https://reactjs.org/)

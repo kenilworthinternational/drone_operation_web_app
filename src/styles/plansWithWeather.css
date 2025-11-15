@@ -1,0 +1,470 @@
+.plans-with-weather-container {
+  padding: 20px;
+  min-height: 100vh;
+  background: #ffffff;
+}
+
+/* Header */
+/* Header dimensions for background image:
+   - Width: 100% of container (container has 20px padding on each side, so actual width = viewport width - 40px)
+   - Height: Auto, minimum ~80-100px (20px padding top + 20px padding bottom + content height ~40-60px)
+   - Recommended image size: 1920px width x 120px height (or similar aspect ratio)
+   - Border radius: 12px (rounded corners)
+*/
+.plans-weather-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  padding: 20px;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  min-height: 80px;
+  position: relative;
+}
+
+.plans-weather-header-left {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  justify-content: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.plans-weather-title {
+  font-size: 40px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+  line-height: 1.2;
+  text-shadow: 
+    -1px -1px 0 #000000,
+    1px -1px 0 #000000,
+    -1px 1px 0 #000000,
+    1px 1px 0 #000000;
+}
+
+.plans-weather-date-display {
+  font-size: 22px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+  text-shadow: 
+    -1px -1px 0 #000000,
+    1px -1px 0 #000000,
+    -1px 1px 0 #000000,
+    1px 1px 0 #000000;
+}
+
+.plans-weather-count {
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+  text-shadow: 
+    -1px -1px 0 #000000,
+    1px -1px 0 #000000,
+    -1px 1px 0 #000000,
+    1px 1px 0 #000000;
+}
+
+.plans-weather-date-picker {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  margin-left: auto;
+}
+
+.plans-weather-date-picker label {
+  font-weight: 500;
+  color: #ffffff;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.plans-weather-date-input {
+  padding: 10px 15px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.plans-weather-date-input:hover {
+  border-color: #4a90e2;
+}
+
+.plans-weather-date-input:focus {
+  outline: none;
+  border-color: #4a90e2;
+  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+}
+
+/* Loading and Error States */
+.plans-weather-loading,
+.plans-weather-error,
+.plans-weather-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #4a90e2;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.plans-weather-error {
+  color: #e74c3c;
+}
+
+.error-detail {
+  font-size: 14px;
+  color: #c0392b;
+  margin-top: 10px;
+}
+
+.plans-weather-empty {
+  color: #7f8c8d;
+  font-size: 18px;
+}
+
+/* Plans Grid */
+.plans-weather-content {
+  width: 100%;
+}
+
+.plans-weather-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+/* Plan Weather Card */
+.plan-weather-card {
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.plan-weather-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #4a90e2, #357abd);
+}
+
+.plan-weather-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Weather-based card styling */
+.plan-weather-card.weather-clear {
+  background: linear-gradient(135deg, #fff9e6 0%, #fff 100%);
+}
+
+.plan-weather-card.weather-clear::before {
+  background: linear-gradient(90deg, #ffd700, #ffa500);
+}
+
+.plan-weather-card.weather-partly-cloudy {
+  background: linear-gradient(135deg, #f0f4f8 0%, #fff 100%);
+}
+
+.plan-weather-card.weather-partly-cloudy::before {
+  background: linear-gradient(90deg, #87ceeb, #b0c4de);
+}
+
+.plan-weather-card.weather-cloudy {
+  background: linear-gradient(135deg, #e8e8e8 0%, #fff 100%);
+}
+
+.plan-weather-card.weather-cloudy::before {
+  background: linear-gradient(90deg, #808080, #a0a0a0);
+}
+
+.plan-weather-card.weather-rainy {
+  background: linear-gradient(135deg, #e3f2fd 0%, #fff 100%);
+}
+
+.plan-weather-card.weather-rainy::before {
+  background: linear-gradient(90deg, #2196f3, #1976d2);
+}
+
+.plan-weather-card.weather-drizzle {
+  background: linear-gradient(135deg, #e8f5e9 0%, #fff 100%);
+}
+
+.plan-weather-card.weather-drizzle::before {
+  background: linear-gradient(90deg, #4caf50, #388e3c);
+}
+
+.plan-weather-card.weather-thunderstorm {
+  background: linear-gradient(135deg, #d5e3ff 0%, #f0f6ff 50%, #ffffff 100%);
+}
+
+.plan-weather-card.weather-thunderstorm::before {
+  background: linear-gradient(90deg, #3b77ff, #1f4bff);
+}
+
+.plan-weather-card.weather-foggy {
+  background: linear-gradient(135deg, #f5f5f5 0%, #fff 100%);
+}
+
+.plan-weather-card.weather-foggy::before {
+  background: linear-gradient(90deg, #9e9e9e, #757575);
+}
+
+.plan-weather-card.weather-snowy {
+  background: linear-gradient(135deg, #e1f5fe 0%, #fff 100%);
+}
+
+.plan-weather-card.weather-snowy::before {
+  background: linear-gradient(90deg, #00bcd4, #0097a7);
+}
+
+/* Card Header */
+.plan-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 15px;
+}
+
+.plan-card-title-section {
+  flex: 1;
+}
+
+.plan-card-estate {
+  font-size: 16px;
+  font-weight: 600;
+  color: #2c3e50;
+  margin: 0 0 5px 0;
+}
+
+.plan-card-city {
+  font-size: 12px;
+  color: #7f8c8d;
+  font-weight: 500;
+}
+
+.plan-card-weather-icon {
+  font-size: 28px;
+  line-height: 1;
+}
+
+/* Weather Condition */
+.plan-card-weather-condition {
+  margin-bottom: 12px;
+}
+
+.weather-condition-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: #34495e;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Temperature */
+.plan-card-temperature {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 15px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #2c3e50;
+}
+
+.temp-min {
+  color: #3498db;
+}
+
+.temp-separator {
+  color: #95a5a6;
+  margin: 0 5px;
+}
+
+.temp-max {
+  color: #e74c3c;
+}
+
+/* Details */
+.plan-card-details {
+  margin-bottom: 15px;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 8px;
+}
+
+.plan-card-detail-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 8px;
+  font-size: 11px;
+}
+
+.plan-card-detail-item:last-child {
+  margin-bottom: 0;
+}
+
+.detail-label {
+  font-weight: 600;
+  color: #555;
+  flex: 0 0 35%;
+}
+
+.detail-value {
+  color: #2c3e50;
+  font-size: 11px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.detail-subvalue {
+  color: #7f8c8d;
+  font-size: 10px;
+  display: block;
+  margin-top: 2px;
+}
+
+/* Plan Info */
+.plan-card-plan-info {
+  border-top: 1px solid #e0e0e0;
+  padding-top: 15px;
+  margin-top: 15px;
+}
+
+.plan-info-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+
+.plan-info-row:last-child {
+  margin-bottom: 0;
+}
+
+.plan-info-label {
+  font-weight: 500;
+  color: #7f8c8d;
+}
+
+.plan-info-value {
+  color: #2c3e50;
+  font-weight: 600;
+}
+
+.plan-info-value.approved {
+  color: #27ae60;
+}
+
+.plan-info-value.pending {
+  color: #f39c12;
+}
+
+/* Subtasks */
+.plan-card-subtasks {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.subtask-header {
+  font-size: 12px;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 8px;
+}
+
+.subtask-details {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.subtask-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.subtask-badge.pending {
+  background: #fff3cd;
+  color: #856404;
+}
+
+/* Responsive Design */
+@media (max-width: 1600px) {
+  .plans-weather-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 1200px) {
+  .plans-weather-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .plans-weather-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .plans-weather-header {
+    flex-direction: column;
+    gap: 20px;
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 600px) {
+  .plans-weather-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .plans-with-weather-container {
+    padding: 10px;
+  }
+}
+

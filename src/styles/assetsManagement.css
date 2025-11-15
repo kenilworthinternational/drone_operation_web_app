@@ -1,0 +1,201 @@
+.assets-management-container {
+  padding: 0;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+/* Main Tabs Container */
+.main-tabs-container {
+  display: flex;
+  gap: 0;
+  margin: 0;
+  border-bottom: 2px solid #e0e0e0;
+  padding: 0;
+  width: 100%;
+}
+
+.main-tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: #004B71;
+  color: white;
+  border: none;
+  border-bottom: 3px solid transparent;
+  border-radius: 0;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 16px;
+  font-weight: 500;
+  position: relative;
+  bottom: -2px;
+  flex: 1;
+  text-align: center;
+  margin: 0;
+}
+
+.main-tab:hover {
+  background: #003d5f;
+  color: white;
+}
+
+.main-tab.active {
+  background: white;
+  color: #004B71;
+  border-bottom-color: #004B71;
+  font-weight: 600;
+}
+
+.main-tab-icon {
+  font-size: 18px;
+}
+
+.main-tab-content {
+  margin: 0;
+  padding: 1px;
+}
+
+/* Registry Section */
+.registry-section {
+  width: 100%;
+}
+
+/* Transfer Placeholder */
+.assets-transfer-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  background: #f9f9f9;
+  border-radius: 8px;
+  border: 2px dashed #ddd;
+}
+
+.placeholder-content {
+  text-align: center;
+  color: #999;
+}
+
+.placeholder-icon {
+  font-size: 64px;
+  margin-bottom: 16px;
+  color: #ccc;
+}
+
+.placeholder-content h3 {
+  margin: 0 0 8px;
+  color: #666;
+  font-size: 20px;
+}
+
+.placeholder-content p {
+  margin: 0;
+  color: #999;
+  font-size: 14px;
+}
+
+/* View Section */
+.view-section {
+  width: 100%;
+}
+
+/* Override AssetsRegistration header when inside unified component */
+.registry-section .assets-registration-container-assets-reg {
+  padding: 0;
+}
+
+.registry-section .assets-registration-header-assets-reg {
+  display: none;
+}
+
+/* Override Assets header when inside unified component */
+.view-section .assets-container-assets {
+  padding: 0;
+}
+
+.view-section .assets-header-assets {
+  display: none;
+}
+
+/* Small tabs styling for asset types (max 5 per row, wrap to 2nd row) */
+.assets-tabs-assets-reg {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border-bottom: 2px solid #e0e0e0;
+  margin-bottom: 20px;
+  min-height: 50px;
+  flex-wrap: wrap;
+}
+
+.tabs-wrapper-assets-reg {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+}
+
+.asset-tab-assets-reg {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #f5f5f5;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  font-size: 14px;
+  font-weight: 500;
+  min-width: 120px;
+  justify-content: center;
+  flex: 0 0 calc(20% - 6.4px); /* Max 5 per row (100% / 5 = 20%, minus gap) */
+  max-width: calc(20% - 6.4px);
+}
+
+.asset-tab-assets-reg:hover {
+  background: #e8e8e8;
+  border-color: #1976d2;
+  color: #1976d2;
+}
+
+.asset-tab-assets-reg.active-assets-reg {
+  background: #1976d2;
+  color: white;
+  border-color: #1976d2;
+  box-shadow: 0 2px 4px rgba(25, 118, 210, 0.3);
+}
+
+.tab-icon-assets-reg {
+  font-size: 16px;
+}
+
+.asset-tab-assets-reg.active-assets-reg .tab-icon-assets-reg {
+  color: white;
+}
+
+.tab-text-assets-reg {
+  white-space: nowrap;
+}
+
+/* Responsive: If more than 5 tabs, wrap to second row */
+@media (max-width: 1200px) {
+  .asset-tab-assets-reg {
+    flex: 0 0 calc(25% - 6px); /* 4 per row on smaller screens */
+    max-width: calc(25% - 6px);
+  }
+}
+
+@media (max-width: 768px) {
+  .asset-tab-assets-reg {
+    flex: 0 0 calc(33.333% - 5.33px); /* 3 per row on mobile */
+    max-width: calc(33.333% - 5.33px);
+  }
+}
+

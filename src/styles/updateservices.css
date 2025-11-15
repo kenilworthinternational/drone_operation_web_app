@@ -16,14 +16,28 @@
 .services-container {
   display: flex;
   height: 100%; /* Ensures it fills the full height of .services */
-  width: 95%; /* Ensures it fills the full width of .services */
+  width: 100%; /* Ensures it fills the full width of .services */
   gap: 10px;
   justify-content: center; /* Center items horizontally */
   align-items: stretch; /* Ensure items stretch to fill the container */
+  min-width: 0; /* Prevent flexbox overflow issues */
+}
+
+/* New top-bottom layout container */
+.services-container-new {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  gap: 15px;
+  padding: 15px;
+  box-sizing: border-box;
 }
 
 .form-side {
-  flex: 1 !important;
+  flex: 0 0 300px; /* Fixed width of 300px, don't grow or shrink */
+  min-width: 300px;
+  max-width: 300px;
   background-color: #ffffff;
   padding: 0;
   border-radius: 8px;
@@ -34,6 +48,7 @@
   max-height: 95vh; /* Limit to viewport height */
   scrollbar-width: thin; /* For modern browsers */
   scrollbar-color: #004B71 #f1f1f1; /* Thumb and track color */
+  font-size: 13px; /* Reduce base font size */
 }
 
 /* For Webkit browsers (Chrome, Safari) */
@@ -53,7 +68,8 @@
 /* Right section */
 .right-side {
   padding: 0;
-  flex: 3 !important;
+  flex: 1 1 auto; /* Take up remaining space */
+  min-width: 0; /* Allow flex shrinking */
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -82,6 +98,23 @@
   scrollbar-color: #004B71 #f1f1f1;
 }
 
+/* Calendar Side */
+.calendar-side {
+  padding: 0;
+  width: 100%;
+  height: 95%;
+  flex: 1;
+  min-width: 0;
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin: 0 auto;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
 /* For Webkit browsers (Chrome, Safari) */
 .division-side::-webkit-scrollbar {
   width: 8px;
@@ -106,7 +139,7 @@
 .total-extent label {
   color: #004B71;
   font-weight: bold;
-  font-size: 15px;
+  font-size: 12px;
   width: 65%; /* Set width for the label */
   text-align: left; /* Align label text to the left */
 }
@@ -118,7 +151,7 @@
   justify-content: center; /* Center content horizontally */
   color: #004B71;
   font-weight: bolder;
-  font-size: 18px;
+  font-size: 16px;
 }
 .total-extent-2 {
   max-height: 50px;
@@ -133,7 +166,7 @@
 .total-extent-2 label {
   color: #ac0000;
   font-weight: bold;
-  font-size: 15px;
+  font-size: 12px;
   width: 65%; /* Set width for the label */
   text-align: left; /* Align label text to the left */
 }
@@ -145,7 +178,7 @@
   justify-content: center; /* Center content horizontally */
   color: #ac0000;
   font-weight: bolder;
-  font-size: 18px;
+  font-size: 16px;
 }
 
 
@@ -184,9 +217,77 @@
 
 .mission-type label {
   text-align: left;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   width: 100%;
+  font-size: 12px;
+  font-weight: 600;
 }
+
+.plan-count-selector {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  width: 80%;
+  margin: 25px auto;
+  gap: 15px;
+}
+
+.plan-count-selector label {
+  text-align: left;
+  margin-bottom: 0;
+  width: auto;
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.plan-count-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  max-width: 200px;
+}
+
+.plan-count-btn {
+  width: 28px;
+  height: 28px;
+  background: #2196F3;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.plan-count-btn:hover:not(:disabled) {
+  background: #1976D2;
+}
+
+.plan-count-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.plan-count-label {
+  flex: 1;
+  height: 28px;
+  text-align: center;
+  font-size: 18px;
+  font-weight: bold;
+  color: #424242;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .date-area {
   display: flex;
   flex-direction: row;
@@ -351,8 +452,8 @@
   border: 1px solid #ddd;
   border-radius: 4px;
   background: white;
-  z-index: 10; /* Ensures dropdown appears above other elements */
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  z-index: 1000; /* Ensures dropdown appears above calendar header and other elements */
+  box-shadow: 0 4px 6px rgba(0,0,0,0.15);
 }
 
 .estate-suggestion-item {
@@ -545,4 +646,329 @@
     margin: 10px 0 !important;
     width: 100% !important;
   }
+}
+
+/* New Top-Bottom Layout Styles */
+.form-section-top {
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 15px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  position: relative;
+  z-index: 100;
+}
+
+.form-controls-row {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-evenly;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.estate-search-container-controls {
+  flex: 0 0 auto;
+  width: 220px;
+  min-width: 200px;
+  max-width: 280px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 100;
+}
+
+.estate-search-container-controls label {
+  margin-bottom: 8px;
+  font-weight: 600;
+  font-size: 13px;
+  color: #333;
+}
+
+.estate-search-container-controls .estate-search-wrapper {
+  width: 100%;
+  position: relative;
+  z-index: 100;
+}
+
+.mission-type-controls {
+  flex: 0 0 auto;
+  width: 220px;
+  min-width: 200px;
+  max-width: 280px;
+  display: flex;
+  flex-direction: column;
+}
+
+.mission-type-controls label {
+  margin-bottom: 8px;
+  font-weight: 600;
+  font-size: 13px;
+  color: #333;
+}
+
+/* Stats Column in dropdown row */
+.stats-column-controls {
+  flex: 0 0 auto;
+  width: 220px;
+  min-width: 200px;
+  max-width: 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.stat-item-controls {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.stat-item-controls label {
+  color: #004B71;
+  font-weight: bold;
+  font-size: 12px;
+  margin: 0;
+  text-align: center;
+}
+
+.stat-value-controls {
+  color: #004B71;
+  font-weight: bolder;
+  font-size: 16px;
+  margin: 0;
+}
+
+.calendar-section-bottom {
+  flex: 1;
+  min-height: 500px;
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 15px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Plan Creation Popup Styles */
+.plan-popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.plan-popup-container {
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  width: 90%;
+  max-width: 450px;
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+  overflow: hidden;
+}
+
+.plan-popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.plan-popup-header h3 {
+  margin: 0;
+  color: #004B71;
+  font-size: 20px;
+  text-align: center;
+  flex: 1;
+}
+
+.plan-popup-close {
+  background: none;
+  border: none;
+  font-size: 28px;
+  color: #666;
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.plan-popup-close:hover {
+  background-color: #f0f0f0;
+}
+
+.plan-popup-content {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  align-items: center;
+}
+
+.plan-popup-date {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  text-align: center;
+  width: 100%;
+}
+
+.plan-popup-date label {
+  font-weight: 600;
+  font-size: 13px;
+  color: #333;
+}
+
+.plan-popup-date span {
+  font-size: 16px;
+  color: #004B71;
+  font-weight: 600;
+}
+
+.plan-popup-date-info {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.plan-popup-date-info label {
+  font-weight: 600;
+  font-size: 13px;
+  color: #333;
+  margin: 0;
+}
+
+.plan-popup-date-value {
+  font-size: 16px;
+  color: #004B71;
+  font-weight: 600;
+}
+
+.plan-count-selector-popup {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  text-align: center;
+  width: 100%;
+}
+
+.plan-count-selector-popup label {
+  font-weight: 600;
+  font-size: 14px;
+  color: #333;
+}
+
+.plan-count-controls-popup {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  justify-content: center;
+}
+
+.plan-count-btn-popup {
+  width: 35px;
+  height: 35px;
+  background: #2196F3;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.plan-count-btn-popup:hover:not(:disabled) {
+  background: #1976D2;
+}
+
+.plan-count-btn-popup:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.plan-count-label-popup {
+  min-width: 40px;
+  text-align: center;
+  font-size: 20px;
+  font-weight: bold;
+  color: #424242;
+}
+
+.plan-popup-footer {
+  padding: 20px;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: center;
+}
+
+.plan-popup-create-btn {
+  background: #004B71;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 40px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  min-width: 150px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.plan-popup-create-btn:hover:not(:disabled) {
+  background: #00334d;
+}
+
+.plan-popup-create-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* Loading cursor effect */
+.submitting-cursor,
+.submitting-cursor * {
+  cursor: wait !important;
+}
+
+/* Toast container z-index fix */
+.Toastify__toast-container {
+  z-index: 10001 !important;
 }

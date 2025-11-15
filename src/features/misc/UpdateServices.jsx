@@ -5,10 +5,12 @@ import CustomDropdown from '../../components/CustomDropdown';
 import DivisionView from '../../components/DivisionView';
 import { format, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import UpdateDivisionView from '../../components/UpdateDivisionView';
-import { getUpdatedCalander, groupGetter, groupPlantation, groupRegion, groupEstate, divisionStateList, missionType, cropType, submitPlan, getUpdateMissionDetails, submitUpdatePlan } from '../../api/api';
+import { baseApi } from '../../api/services/allEndpoints';
+import { useAppDispatch } from '../../store/hooks';
 import '../../styles/updateservices.css';
 
 const UpdateServices = () => {
+  const dispatch = useAppDispatch();
   const [state, setState] = useState({
     dropdownOptions: [],
     plantationOptions: [],
@@ -40,7 +42,14 @@ const UpdateServices = () => {
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
-        const [groups, missions, crops] = await Promise.all([groupGetter(), missionType(), cropType()]);
+        const [groupsResult, missionsResult, cropsResult] = await Promise.all([
+          dispatch(baseApi.endpoints.getGroups.initiate()),
+          dispatch(baseApi.endpoints.getMissionTypes.initiate()),
+          dispatch(baseApi.endpoints.getCropTypes.initiate())
+        ]);
+        const groups = groupsResult.data;
+        const missions = missionsResult.data;
+        const crops = cropsResult.data;
         setState(prev => ({
           ...prev,
           dropdownOptions: Array.isArray(groups) ? groups : [],
@@ -95,7 +104,8 @@ const UpdateServices = () => {
 
         console.log("Fetching mission details with payload:", payload);
 
-        const updateMissionResponse = await getUpdateMissionDetails(payload);
+        const updateResult = await dispatch(baseApi.endpoints.getPlansForUpdate.initiate(payload));
+        const updateMissionResponse = updateResult.data;
         selectedFieldIds = (updateMissionResponse?.divisions ?? [])
           .flatMap(division => division.checkedFields?.map(field => field.field_id) ?? []);
 
@@ -109,7 +119,8 @@ const UpdateServices = () => {
           selectedFields: selectedFieldIds, // Update selected fields here
         }));
 
-        const divisionsResponse = await divisionStateList(selectedEstate.id);
+        const divisionsResult = await dispatch(baseApi.endpoints.getDivisionsByEstate.initiate(selectedEstate.id));
+        const divisionsResponse = divisionsResult.data;
         let divisions = [];
         let minimumPlanSize = 0;
         let maximumPlanSize = 0;
@@ -165,7 +176,15 @@ const UpdateServices = () => {
 
         console.log("Fetching mission details with payload:", payload);
 
-        const updateMissionResponse = await getUpdatedCalander(payload);
+        const calendarResult = await dispatch(baseApi.endpoints.getCalendarData.initiate({
+          estateId: payload.estateId,
+          cropType: payload.cropTypeId,
+          missionType: payload.missionTypeId,
+          startDate: payload.startDate,
+          endDate: payload.endDate,
+          location: "update_plan"
+        }));
+        const updateMissionResponse = calendarResult.data;
         console.log(`Current Data for ${startDate}-${endDate}:`, updateMissionResponse);
 
         if (updateMissionResponse.status === "false") {
@@ -361,8 +380,9 @@ const UpdateServices = () => {
     }
 
     try {
-      const result = await submitPlan(submissionData);
-      if (result.status === "true") {
+      const result = await dispatch(baseApi.endpoints.createPlan.initiate(submissionData));
+      const resultData = result.data;
+      if (resultData.status === "true") {
         alert("Submission successful!");
         setState({
           ...state,
@@ -413,8 +433,9 @@ const UpdateServices = () => {
     }
 
     try {
-      const result = await submitUpdatePlan(submissionData);
-      if (result.success) {
+      const result = await dispatch(baseApi.endpoints.updatePlan.initiate(submissionData));
+      const resultData = result.data;
+      if (resultData.success) {
         alert("Update successful!");
         setState({
           ...state,
@@ -481,15 +502,24 @@ const UpdateServices = () => {
 
           <div className="group-select">
             <label>Select Group</label>
-            <CustomDropdown options={state.dropdownOptions} onSelect={(val) => handleDropdownSelect('selectedGroup', val, groupPlantation, 'plantationOptions')} selectedValue={state.selectedGroup} />
+            <CustomDropdown options={state.dropdownOptions} onSelect={(val) => handleDropdownSelect('selectedGroup', val, async (groupId) => {
+              const result = await dispatch(baseApi.endpoints.getPlantationsByGroup.initiate(groupId));
+              return result.data;
+            }, 'plantationOptions')} selectedValue={state.selectedGroup} />
           </div>
           <div className="group-select">
             <label>Select Plantation</label>
-            <CustomDropdown options={state.plantationOptions.map(({ id, plantation }) => ({ id, group: plantation }))} onSelect={(val) => handleDropdownSelect('selectedPlantation', val, groupRegion, 'regionOptions')} selectedValue={state.selectedPlantation} />
+            <CustomDropdown options={state.plantationOptions.map(({ id, plantation }) => ({ id, group: plantation }))} onSelect={(val) => handleDropdownSelect('selectedPlantation', val, async (plantationId) => {
+              const result = await dispatch(baseApi.endpoints.getRegionsByPlantation.initiate(plantationId));
+              return result.data;
+            }, 'regionOptions')} selectedValue={state.selectedPlantation} />
           </div>
           <div className="group-select">
             <label>Select Region</label>
-            <CustomDropdown options={state.regionOptions.map(({ id, region }) => ({ id, group: region }))} onSelect={(val) => handleDropdownSelect('selectedRegion', val, groupEstate, 'estateOptions')} selectedValue={state.selectedRegion} />
+            <CustomDropdown options={state.regionOptions.map(({ id, region }) => ({ id, group: region }))} onSelect={(val) => handleDropdownSelect('selectedRegion', val, async (regionId) => {
+              const result = await dispatch(baseApi.endpoints.getEstatesByRegion.initiate(regionId));
+              return result.data;
+            }, 'estateOptions')} selectedValue={state.selectedRegion} />
           </div>
           <div className="group-select">
             <label>Select Estate</label>

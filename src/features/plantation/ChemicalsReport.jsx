@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import { usedChemicals } from '../../api/api';
+import { useAppDispatch } from '../../store/hooks';
+import { baseApi } from '../../api/services/allEndpoints';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -17,6 +18,7 @@ const formatDate = (date) => {
 };
 
 const ChemicalsReport = () => {
+  const dispatch = useAppDispatch();
   const today = new Date();
   const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
@@ -35,7 +37,8 @@ const ChemicalsReport = () => {
       setLoading(true);
       setError('');
       try {
-        const res = await usedChemicals(formatDate(startDate), formatDate(endDate));
+        const result = await dispatch(baseApi.endpoints.getUsedChemicals.initiate({startDate: formatDate(startDate), endDate: formatDate(endDate)}));
+        const res = result.data;
         if (mounted) {
           setData(res || { chemical_usage: {} });
         }
@@ -89,29 +92,6 @@ const ChemicalsReport = () => {
     const others = allChems.filter(c => !priorityChemicals.includes(c)).sort();
     return [...prioritized, ...others];
   }, [groupedUsage, estateFilter]);
-
-  const summaryRows = useMemo(() => {
-    const selectedEstates = estateFilter === 'ALL' ? Object.keys(groupedUsage) : [estateFilter];
-    return selectedEstates.map((estate) => {
-      const entries = groupedUsage[estate] || [];
-      let totalExtent = 0;
-      const chemTotals = {};
-      chemicalList.forEach((name) => (chemTotals[name] = 0));
-      entries.forEach((entry) => {
-        totalExtent += Number(entry.extent || 0);
-        (entry.chemicals || []).forEach((chem) => {
-          const qty = Number(chem.quantity || 0);
-          chemTotals[chem.chemical] = (chemTotals[chem.chemical] || 0) + qty;
-        });
-      });
-      return {
-        estate,
-        plans: entries.length,
-        totalExtent: Number(totalExtent.toFixed(2)),
-        chemTotals,
-      };
-    });
-  }, [groupedUsage, estateFilter, chemicalList]);
 
   const tableRows = useMemo(() => {
     const selectedEstates = estateFilter === 'ALL' ? Object.keys(groupedUsage) : [estateFilter];

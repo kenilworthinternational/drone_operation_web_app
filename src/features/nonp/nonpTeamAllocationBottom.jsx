@@ -1,15 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { 
-  displayTeamDataNonp, 
-  updateTeamPilotNonp, 
-  updateTeamDroneNonp, 
-  displayPilotandDroneWithoutTeamNonp, 
-  addDroneorPilotToPoolNonp, 
-  teamPlannedDataNonp 
-} from '../../api/api';
+import { baseApi } from '../../api/services/allEndpoints';
+import { useAppDispatch } from '../../store/hooks';
 import '../../styles/proceedPlan.css';
 
 const NonpTeamAllocationBottom = ({ onTeamUpdate, pilotPlanCounts = {}, dronePlanCounts = {}, planDetails = {}, selectedDate, teams: propTeams = [], missionGroups = [], missions = [] }) => {
+  const dispatch = useAppDispatch();
   const [teams, setTeams] = useState([]);
   const [draggedItem, setDraggedItem] = useState(null);
   const [dragType, setDragType] = useState(null);
@@ -35,7 +30,8 @@ const NonpTeamAllocationBottom = ({ onTeamUpdate, pilotPlanCounts = {}, dronePla
   }, []);
 
   const fetchTeams = async () => {
-    const response = await displayTeamDataNonp();
+    const result = await dispatch(baseApi.endpoints.getTeamDataNonPlantation.initiate());
+    const response = result.data;
     let teamsData = [];
     if (response && Array.isArray(response)) {
       teamsData = response;
@@ -45,7 +41,7 @@ const NonpTeamAllocationBottom = ({ onTeamUpdate, pilotPlanCounts = {}, dronePla
       setTeams([]);
       return;
     }
-    const sortedTeams = teamsData.sort((a, b) => {
+    const sortedTeams = [...teamsData].sort((a, b) => {
       const teamAId = Number(a.team_id);
       const teamBId = Number(b.team_id);
       if (teamAId === 2 || teamAId === 3) return 1;
@@ -62,7 +58,8 @@ const NonpTeamAllocationBottom = ({ onTeamUpdate, pilotPlanCounts = {}, dronePla
     setSelectedPilots([]);
     setSelectedDrones([]);
     try {
-      const response = await displayPilotandDroneWithoutTeamNonp();
+      const result = await dispatch(baseApi.endpoints.getNonPlantationPilotsWithoutTeam.initiate());
+      const response = result.data;
       if (response && (response.members || response.drones)) {
         setPoolData({
           members: response.members || [],
@@ -107,7 +104,8 @@ const NonpTeamAllocationBottom = ({ onTeamUpdate, pilotPlanCounts = {}, dronePla
         }),
         team_id: "1"
       };
-      const response = await addDroneorPilotToPoolNonp(submissionData);
+      const result = await dispatch(baseApi.endpoints.addDroneOrPilotToPoolNonPlantation.initiate(submissionData));
+      const response = result.data;
       if (response && response.status === "true") {
         setPoolSuccess(`Successfully added ${response.pilots_count || 0} pilots and ${response.drones_count || 0} drones to pool`);
         setShowPoolPopup(false);
@@ -209,17 +207,17 @@ const NonpTeamAllocationBottom = ({ onTeamUpdate, pilotPlanCounts = {}, dronePla
     }
     try {
       if (contextMenu.type === 'pilot') {
-        await updateTeamPilotNonp({
+        await dispatch(baseApi.endpoints.updateTeamPilotNonPlantation.initiate({
           pilots: [[contextMenu.item[0], contextMenu.item[1]]],
           team_from: String(contextMenu.fromTeamId),
           team_to: String(toTeamId)
-        });
+        }));
       } else if (contextMenu.type === 'drone') {
-        await updateTeamDroneNonp({
+        await dispatch(baseApi.endpoints.updateTeamDroneNonPlantation.initiate({
           drones: [[contextMenu.item[0], contextMenu.item[1]]],
           team_from: String(contextMenu.fromTeamId),
           team_to: String(toTeamId)
-        });
+        }));
       }
       await fetchTeams();
       if (onTeamUpdate) onTeamUpdate();
@@ -251,17 +249,17 @@ const NonpTeamAllocationBottom = ({ onTeamUpdate, pilotPlanCounts = {}, dronePla
     }
     try {
       if (dragType === 'pilot') {
-        await updateTeamPilotNonp({
+        await dispatch(baseApi.endpoints.updateTeamPilotNonPlantation.initiate({
           pilots: [[draggedItem[0], draggedItem[1]]],
           team_from: String(draggedItem.fromTeamId),
           team_to: String(toTeamId)
-        });
+        }));
       } else if (dragType === 'drone') {
-        await updateTeamDroneNonp({
+        await dispatch(baseApi.endpoints.updateTeamDroneNonPlantation.initiate({
           drones: [[draggedItem[0], draggedItem[1]]],
           team_from: String(draggedItem.fromTeamId),
           team_to: String(toTeamId)
-        });
+        }));
       }
       await fetchTeams();
       if (onTeamUpdate) onTeamUpdate();

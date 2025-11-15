@@ -1,0 +1,152 @@
+.auth-controls-page {
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.auth-controls-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.auth-controls-header h1 {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 600;
+}
+
+.auth-controls-header p {
+  margin: 0.25rem 0 0;
+  color: #4a5568;
+  max-width: 48rem;
+}
+
+.auth-controls-legend {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  padding: 1.25rem 1.5rem;
+}
+
+.auth-controls-legend h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.auth-controls-legend ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.5rem 1.5rem;
+}
+
+.auth-controls-legend li {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  color: #334155;
+}
+
+.legend-code {
+  display: inline-block;
+  min-width: 48px;
+  font-weight: 700;
+  color: #1d4ed8;
+}
+
+.legend-description {
+  flex: 1;
+  font-size: 0.95rem;
+  color: #475569;
+}
+
+.auth-controls-reset {
+  background: #ef4444;
+  border: none;
+  color: #fff;
+  font-weight: 600;
+  padding: 0.65rem 1.25rem;
+  border-radius: 0.75rem;
+  cursor: pointer;
+  transition: background 0.2s ease-in-out;
+}
+
+.auth-controls-reset:hover {
+  background: #dc2626;
+}
+
+.auth-controls-table-wrapper {
+  border-radius: 1rem;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+}
+
+.auth-controls-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 0;
+  table-layout: fixed;
+}
+
+.auth-controls-table thead {
+  background: #f8fafc;
+}
+
+.auth-controls-table th,
+.auth-controls-table td {
+  padding: 0.65rem 0.45rem;
+  text-align: center;
+  border-bottom: 1px solid #e2e8f0;
+  vertical-align: middle;
+  word-wrap: break-word;
+  white-space: normal;
+  width: 72px;
+  font-size: 0.8rem;
+}
+
+.auth-controls-table th:first-child,
+.auth-controls-table td:first-child {
+  text-align: left;
+  width: 150px;
+  font-size: 0.9rem;
+}
+
+.auth-controls-table tbody tr:nth-child(even) {
+  background: #fefefe;
+}
+
+.auth-controls-checkbox {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.auth-controls-checkbox input[type='checkbox'] {
+  width: 1.1rem;
+  height: 1.1rem;
+  cursor: pointer;
+}
+
+.auth-controls-notes {
+  display: none;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+

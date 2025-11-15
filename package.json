@@ -14,6 +14,7 @@
     "@mui/private-theming": "^7.1.0",
     "@react-three/drei": "^10.0.6",
     "@reduxjs/toolkit": "^2.8.2",
+    "@tanstack/react-query": "^5.90.7",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
@@ -23,6 +24,7 @@
     "chart.js": "^4.4.9",
     "cors": "^2.8.5",
     "date-fns": "^2.30.0",
+    "debugout.js": "^1.1.0",
     "dotenv": "^16.4.7",
     "express": "^5.1.0",
     "jspdf": "^2.5.2",
@@ -55,8 +57,12 @@
   },
   "scripts": {
     "start": "react-scripts start",
+    "start:dev": "cross-env REACT_APP_ENV=development GENERATE_SOURCEMAP=false react-scripts start",
+    "start:prod": "cross-env REACT_APP_ENV=production GENERATE_SOURCEMAP=false react-scripts start",
     "server": "node server.js",
     "build": "react-scripts build",
+    "build:dev": "cross-env REACT_APP_ENV=development GENERATE_SOURCEMAP=false react-scripts build",
+    "build:prod": "cross-env REACT_APP_ENV=production GENERATE_SOURCEMAP=false react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
@@ -81,6 +87,7 @@
   "devDependencies": {
     "ajv": "^8.17.1",
     "autoprefixer": "^10.4.21",
+    "cross-env": "^7.0.3",
     "postcss": "^8.5.3"
   }
 }

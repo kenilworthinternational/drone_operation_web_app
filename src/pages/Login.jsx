@@ -1,19 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { verifyUserThunk, sendOTPThunk, loginUserThunk, clearError } from '../store/slices/authSlice';
 import '../styles/login.css';
-import { verifyUser, loginUser, sendOTP, verifyOTPAndLogin } from '../api/api';
+import { logger } from '../utils/logger';
 
 const Login = () => {
+  const dispatch = useAppDispatch();
+  const { loading, error, isAuthenticated } = useAppSelector((state) => state.auth);
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [errorMessage, setErrorMessage] = useState('');
   const [showOTPInput, setShowOTPInput] = useState(false);
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [generatedOTP, setGeneratedOTP] = useState('');
-  const [sendingOTP, setSendingOTP] = useState(false);
-  const [verifyingOTP, setVerifyingOTP] = useState(false);
   const [canResend, setCanResend] = useState(false);
   const [resendTimer, setResendTimer] = useState(60);
   const navigate = useNavigate();
+
+  // Navigate to home if authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/home/create');
+    }
+  }, [isAuthenticated, navigate]);
 
   const handlePhoneNumberChange = (e) => {
     const value = e.target.value;
@@ -27,7 +35,7 @@ const Login = () => {
     // Max length 9
     if (value.length <= 9) {
       setPhoneNumber(value);
-      setErrorMessage(''); // Clear error on valid input
+      dispatch(clearError()); // Clear error on valid input
     }
   };
 
@@ -54,7 +62,7 @@ const Login = () => {
       setOtp(newOtp);
     }
     
-    setErrorMessage('');
+    dispatch(clearError());
   };
 
   const handleOtpKeyDown = (e, index) => {
@@ -72,7 +80,7 @@ const Login = () => {
     const pastedData = e.clipboardData.getData('text').trim();
     
     if (!/^\d{6}$/.test(pastedData)) {
-      setErrorMessage('Invalid OTP format');
+      // Error will be shown via Redux error state
       return;
     }
     
@@ -94,55 +102,57 @@ const Login = () => {
   const handlePhoneSubmit = async (e) => {
     e.preventDefault();
     if (phoneNumber.length !== 9) {
-      setErrorMessage('Phone number must be 9 digits.');
       return;
     }
 
-    try {
-      setSendingOTP(true);
-      setErrorMessage('');
+    dispatch(clearError());
+    
+    // Verify user exists
+    const verifyResult = await dispatch(verifyUserThunk(phoneNumber));
+    
+    if (verifyUserThunk.fulfilled.match(verifyResult)) {
+      // Generate OTP
+      const otpCode = generateOTP();
+      setGeneratedOTP(otpCode);
+      logger.log('🔐 Generated OTP:', otpCode);
+      logger.log('📱 Phone Number:', phoneNumber);
       
-      // Verify user exists
-      const userData = await verifyUser(phoneNumber);
-      console.log('User Data:', userData);
-
-      if (userData?.status === 'true') {
-        // Generate OTP
-        const otpCode = generateOTP();
-        setGeneratedOTP(otpCode);
-        
-        // Send OTP
-        const sendResult = await sendOTP(phoneNumber, otpCode);
-        
-        if (sendResult?.status === 'true') {
-          setShowOTPInput(true);
-          setSendingOTP(false);
-        } else {
-          setErrorMessage('Failed to send OTP. Please try again.');
-          setSendingOTP(false);
-        }
-      } else {
-        setErrorMessage('Not a verified user.');
-        setSendingOTP(false);
+      // Send OTP
+      const sendResult = await dispatch(sendOTPThunk({ phoneNumber, otpCode }));
+      
+      if (sendOTPThunk.fulfilled.match(sendResult)) {
+        setShowOTPInput(true);
       }
-    } catch (error) {
-      setErrorMessage('Login failed. Please try again later.');
-      console.error('Login error:', error);
-      setSendingOTP(false);
     }
   };
 
   const handleOTPSubmit = async (e) => {
     e.preventDefault();
-    const otpString = otp.join('');
+    const otpString = otp.join('').trim();
+    
+    logger.log('🔍 OTP Submit Debug:');
+    logger.log('  - Entered OTP:', otpString);
+    logger.log('  - Generated OTP:', generatedOTP);
     
     if (otpString.length !== 6) {
-      setErrorMessage('OTP must be 6 digits.');
+      logger.log('❌ OTP length validation failed');
       return;
     }
 
-    if (otpString !== generatedOTP) {
-      setErrorMessage('Invalid OTP. Please try again.');
+    // Check if generatedOTP exists
+    if (!generatedOTP) {
+      logger.log('❌ Generated OTP is missing/empty');
+      setShowOTPInput(false);
+      setOtp(['', '', '', '', '', '']);
+      return;
+    }
+
+    // Verify OTP matches the generated OTP (compare as strings)
+    const enteredOTPStr = String(otpString);
+    const generatedOTPStr = String(generatedOTP);
+    
+    if (enteredOTPStr !== generatedOTPStr) {
+      logger.log('❌ OTP mismatch - validation failed');
       // Clear OTP and refocus first input
       setOtp(['', '', '', '', '', '']);
       setTimeout(() => {
@@ -153,58 +163,40 @@ const Login = () => {
       }, 100);
       return;
     }
-
-    try {
-      setVerifyingOTP(true);
-      setErrorMessage('');
-      
-      // Verify OTP matches and login
-      const response = await verifyOTPAndLogin(phoneNumber, otpString);
-      
-      if (response?.success && response?.userData) {
-        localStorage.setItem('userData', JSON.stringify(response.userData));
-        console.log('Login successful, user data:', response.userData);
-        navigate('/home');
-      } else {
-        setErrorMessage('Login failed. Please try again.');
-        setVerifyingOTP(false);
-      }
-    } catch (error) {
-      setErrorMessage('Login failed. Please try again later.');
-      console.error('Login error:', error);
-      setVerifyingOTP(false);
+    
+    logger.log('✅ OTP validation passed');
+    dispatch(clearError());
+    
+    // Login user after OTP verification
+    logger.log('🔐 Calling loginUser API with phone:', phoneNumber);
+    const loginResult = await dispatch(loginUserThunk(phoneNumber));
+    
+    if (loginUserThunk.fulfilled.match(loginResult)) {
+      logger.log('✅ Login successful');
+      // Navigation will happen via useEffect when isAuthenticated becomes true
+    } else {
+      logger.log('❌ Login failed');
     }
   };
 
   const handleResendOTP = async () => {
-    try {
-      setSendingOTP(true);
-      setErrorMessage('');
-      setCanResend(false);
-      
-      // Generate new OTP
-      const otpCode = generateOTP();
-      setGeneratedOTP(otpCode);
-      
-      // Clear previous OTP input
-      setOtp(['', '', '', '', '', '']);
-      
-      // Send OTP
-      const sendResult = await sendOTP(phoneNumber, otpCode);
-      
-      if (sendResult?.status === 'true') {
-        setErrorMessage(''); // Clear any previous errors
-        // Reset timer
-        setResendTimer(60);
-      } else {
-        setErrorMessage('Failed to send OTP. Please try again.');
-        setCanResend(true);
-      }
-      setSendingOTP(false);
-    } catch (error) {
-      setErrorMessage('Failed to resend OTP. Please try again.');
-      console.error('Resend OTP error:', error);
-      setSendingOTP(false);
+    setCanResend(false);
+    dispatch(clearError());
+    
+    // Generate new OTP
+    const otpCode = generateOTP();
+    setGeneratedOTP(otpCode);
+    logger.log('🔄 Resent OTP:', otpCode);
+    // Clear previous OTP input
+    setOtp(['', '', '', '', '', '']);
+    
+    // Send OTP
+    const sendResult = await dispatch(sendOTPThunk({ phoneNumber, otpCode }));
+    
+    if (sendOTPThunk.fulfilled.match(sendResult)) {
+      // Reset timer
+      setResendTimer(60);
+    } else {
       setCanResend(true);
     }
   };
@@ -235,7 +227,7 @@ const Login = () => {
     setShowOTPInput(false);
     setOtp(['', '', '', '', '', '']);
     setGeneratedOTP('');
-    setErrorMessage('');
+    dispatch(clearError());
   };
 
   return (
@@ -264,12 +256,12 @@ const Login = () => {
                     maxLength="9"
                     placeholder="Enter 9-digit number"
                     required
-                    disabled={sendingOTP}
+                    disabled={loading}
                   />
                 </div>
               </div>
-              <button type="submit" className="submit-btn" disabled={sendingOTP}>
-                {sendingOTP ? 'Sending OTP...' : 'Send OTP'}
+              <button type="submit" className="submit-btn" disabled={loading}>
+                {loading ? 'Sending OTP...' : 'Send OTP'}
               </button>
             </form>
           ) : (
@@ -288,9 +280,9 @@ const Login = () => {
                       onPaste={index === 0 ? handleOtpPaste : undefined}
                       maxLength="1"
                       required
-                      disabled={verifyingOTP}
+                      disabled={loading}
                       autoFocus={index === 0 && otp[0] === ''}
-                      className={`otp-input ${errorMessage && errorMessage.includes('Invalid OTP') ? 'otp-error' : ''}`}
+                      className={`otp-input ${error && error.includes('Invalid OTP') ? 'otp-error' : ''}`}
                     />
                   ))}
                 </div>
@@ -300,30 +292,34 @@ const Login = () => {
                       type="button" 
                       className="resend-otp-btn" 
                       onClick={handleResendOTP}
-                      disabled={sendingOTP}
+                      disabled={loading}
                     >
-                      {sendingOTP ? 'Sending...' : 'Resend OTP'}
+                      <span className="resend-icon">↻</span>
+                      {loading ? 'Sending...' : 'Resend OTP'}
                     </button>
                   ) : (
-                    <p className="resend-timer">
-                      Resend OTP in {resendTimer}s
-                    </p>
+                    <div className="resend-timer-wrapper">
+                      <span className="timer-icon">⏱</span>
+                      <span className="resend-timer">
+                        Resend OTP in <strong>{resendTimer}s</strong>
+                      </span>
+                    </div>
                   )}
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '10px' }}>
-                <button type="button" className="submit-btn back-btn" onClick={handleBackToPhone} disabled={verifyingOTP || sendingOTP}>
+                <button type="button" className="submit-btn back-btn" onClick={handleBackToPhone} disabled={loading}>
                   Back
                 </button>
-                <button type="submit" className="submit-btn verify-btn" disabled={verifyingOTP || sendingOTP}>
-                  {verifyingOTP ? 'Verifying...' : 'Verify OTP'}
+                <button type="submit" className="submit-btn verify-btn" disabled={loading}>
+                  {loading ? 'Verifying...' : 'Verify OTP'}
                 </button>
               </div>
             </form>
           )}
 
-          {errorMessage && (
-            <p className="error-message">{errorMessage}</p>
+          {error && (
+            <p className="error-message">{error}</p>
           )}
         </div>
       </div>

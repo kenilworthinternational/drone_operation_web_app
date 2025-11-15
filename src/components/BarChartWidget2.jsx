@@ -4,12 +4,11 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 import { Bars } from 'react-loader-spinner';
-import {
-  getChartAllDataGroup, getChartGroupDataGroup, getChartPlantationDataGroup,
-  getChartRegionDataGroup, getChartEstateDataGroup
-} from '../api/api';
+import { useAppDispatch } from '../store/hooks';
+import { baseApi } from '../api/services/allEndpoints';
 
 const BarChartWidget = ({ dropdownValues, currentDate }) => {
+  const dispatch = useAppDispatch();
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [chartData, setChartData] = useState([]);
   const [showChart, setShowChart] = useState(false);
@@ -32,18 +31,23 @@ const BarChartWidget = ({ dropdownValues, currentDate }) => {
     try {
       if (selectedEstate) {
         payload.estate_id = selectedEstate.id;
-        response = await getChartEstateDataGroup(payload);
+        const result = await dispatch(baseApi.endpoints.getChartEstateData.initiate(payload));
+        response = result.data;
       } else if (selectedRegion) {
         payload.region_id = selectedRegion.id;
-        response = await getChartRegionDataGroup(payload);
+        const result = await dispatch(baseApi.endpoints.getChartRegionData.initiate(payload));
+        response = result.data;
       } else if (selectedPlantation) {
         payload.plantation_id = selectedPlantation.id;
-        response = await getChartPlantationDataGroup(payload);
+        const result = await dispatch(baseApi.endpoints.getChartPlantationData.initiate(payload));
+        response = result.data;
       } else if (selectedGroup) {
         payload.group_id = selectedGroup.id;
-        response = await getChartGroupDataGroup(payload);
+        const result = await dispatch(baseApi.endpoints.getChartGroupData.initiate(payload));
+        response = result.data;
       } else {
-        response = await getChartAllDataGroup(payload);
+        const result = await dispatch(baseApi.endpoints.getChartAllDataGroup.initiate(payload));
+        response = result.data;
       }
 
       if (response && response.status === "true") {

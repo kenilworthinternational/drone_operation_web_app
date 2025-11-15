@@ -3,9 +3,7 @@ import '../../styles/ceodataviewer.css';
 import { DateRangePicker } from 'react-date-range';
 import 'react-date-range/dist/styles.css';
 import 'react-date-range/dist/theme/default.css';
-import ReportPartCEO2 from '../../features/reports/CEOCoveredAreasReport';
-import ReportPartCEO1 from '../../features/reports/CEOPlanAreasReport';
-import ReportPartCEOBottom from '../../features/reports/CEOUpcomingPlansReport';
+// Removed imports for non-existent CEO report components
 import { enCA } from 'date-fns/locale';
 import { format } from 'date-fns';
 
@@ -17,12 +15,6 @@ const CEODataViewer = () => {
       key: 'selection',
     },
   ]);
-  const [state, setState] = useState({
-    dropdownOptions: [],
-    plantationOptions: [],
-    regionOptions: [],
-    estateOptions: [],
-  });
   const [showPicker, setShowPicker] = useState(false);
 
   const handleSelect = (ranges) => {
@@ -58,8 +50,9 @@ const CEODataViewer = () => {
   };
 
   const parts = [
-    { id: 1, title: 'Analytics Dashboard', component: <ReportPartCEO1 dateRange={formattedDateRange} /> },
-    { id: 2, title: 'Activity Metrics', component: <ReportPartCEO2 dateRange={formattedDateRange} /> },
+    // Removed CEO report components - files don't exist
+    // { id: 1, title: 'Analytics Dashboard', component: <ReportPartCEO1 dateRange={formattedDateRange} /> },
+    // { id: 2, title: 'Activity Metrics', component: <ReportPartCEO2 dateRange={formattedDateRange} /> },
   ];
 
   return (
@@ -106,9 +99,10 @@ const CEODataViewer = () => {
         ))}
       </div>
       
-      <div className="calender-data-ceoceo">
+      {/* Removed CEO report component - file doesn't exist */}
+      {/* <div className="calender-data-ceoceo">
         <ReportPartCEOBottom dateRange={dateRange[0]} />
-      </div>
+      </div> */}
     </div>
   );
 };

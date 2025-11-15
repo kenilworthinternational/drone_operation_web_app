@@ -7,7 +7,8 @@ import CustomDropdown from '../../components/CustomDropdown';
 import ProfileWidget from '../pilots/pilotDetails';
 import ManageWidget from '../pilots/managePilot';
 import { FaCalendarAlt } from "react-icons/fa";
-import { getPlansUsingDate, getPilotsDetails, getDronesDetails, submitAlocation, getPlanResorcesAllocation } from '../../api/api';
+import { baseApi } from '../../api/services/allEndpoints';
+import { useAppDispatch } from '../../store/hooks';
 import ManageDronesWidget from '../drones/ManageDrone';
 import DroneWidget from '../drones/DroneDetails';
 import { Bars } from 'react-loader-spinner';
@@ -20,6 +21,7 @@ const CustomDateInput = React.forwardRef(({ value, onClick }, ref) => (
 ));
 
 const ProceedPlan = () => {
+  const dispatch = useAppDispatch();
   const today = new Date();
   const dayAfterTomorrow = new Date();
   dayAfterTomorrow.setDate(today.getDate() + 2);
@@ -36,7 +38,8 @@ const ProceedPlan = () => {
   const [searchTerm, setSearchTerm] = useState('');
   useEffect(() => {
     const fetchPilots = async () => {
-      const response = await getPilotsDetails();
+      const result = await dispatch(baseApi.endpoints.getPilotsAndDrones.initiate());
+      const response = result.data;
       if (response.status === "true") {
         const pilotArray = Object.keys(response)
           .filter(key => !isNaN(key))
@@ -48,7 +51,8 @@ const ProceedPlan = () => {
     };
 
     const fetchDrones = async () => {
-      const response = await getDronesDetails();
+      const result = await dispatch(baseApi.endpoints.getDronesList.initiate());
+      const response = result.data;
       if (response && Array.isArray(response)) {
         setAvailableDrones(response.map(drone => ({ id: drone.id, tag: drone.drone_tag })));
       } else {
@@ -126,7 +130,8 @@ const ProceedPlan = () => {
       const formattedDate = date.toLocaleDateString('en-CA'); // e.g., '2025-03-18'
       console.log("Formatted Date Sent to API:", formattedDate);
 
-      const response = await getPlansUsingDate(formattedDate);
+      const result = await dispatch(baseApi.endpoints.getPlansByDate.initiate(formattedDate));
+      const response = result.data;
       console.log("API Response:", response);
 
       // Validate response structure
@@ -176,7 +181,8 @@ const ProceedPlan = () => {
 
 
     try {
-      const response = await getPlanResorcesAllocation(mission.id);
+      const result = await dispatch(baseApi.endpoints.getPlanResourceAllocation.initiate(mission.id));
+      const response = result.data;
       if (response && response.status === "true") {
         const newSelectedPilots = response.selectedPilots || [];
         const newSelectedDrones = response.selectedDrones || [];
@@ -236,7 +242,8 @@ const ProceedPlan = () => {
     console.log("Submitting Data:", JSON.stringify(selectedMissionDetails, null, 2));
 
     try {
-      const response = await submitAlocation(selectedMissionDetails);
+      const result = await dispatch(baseApi.endpoints.submitResourceAllocation.initiate(selectedMissionDetails));
+      const response = result.data;
       if (response.success) {
         console.log("Resources allocation successful:", response.message);
         window.location.reload();
