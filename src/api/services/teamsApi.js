@@ -97,10 +97,13 @@ export const teamsApi = baseApi.injectEndpoints({
       query: (data) => ({
         url: 'add_team_to_plan',
         method: 'POST',
-        body: data,
+        body: {
+          plan_id: data.plan || data.plan_id,
+          team_id: data.team || data.team_id,
+        },
       }),
       invalidatesTags: (result, error, data) => [
-        { type: 'PlanDetails', id: data.plan },
+        { type: 'PlanDetails', id: data.plan || data.plan_id },
         'Plans'
       ],
     }),
