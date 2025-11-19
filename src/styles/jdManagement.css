@@ -1,0 +1,616 @@
+/* JD Management Container */
+.jd-management-container-jd-mgmt {
+  padding: 30px;
+  max-width: 1600px;
+  margin: 0 auto;
+  background: #f8f9fa;
+  min-height: calc(100vh - 100px);
+}
+
+.jd-management-title-jd-mgmt {
+  color: #004B71;
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 30px;
+  text-align: center;
+  letter-spacing: -0.5px;
+}
+
+/* Main Content Layout */
+.jd-management-content-jd-mgmt {
+  display: flex;
+  gap: 0;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  min-height: 600px;
+}
+
+/* Left Panel - Designations */
+.jd-left-panel-jd-mgmt {
+  flex: 0 0 350px;
+  background: #f8f9fa;
+  border-right: 2px solid #e0e0e0;
+  display: flex;
+  flex-direction: column;
+}
+
+.jd-panel-header-jd-mgmt {
+  padding: 20px 24px;
+  background: linear-gradient(135deg, #004B71 0%, #0170a8 100%);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.jd-panel-title-jd-mgmt {
+  color: white;
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: 0.5px;
+}
+
+.jd-add-button-jd-mgmt {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid white;
+  background: transparent;
+  color: white;
+  font-size: 20px;
+  font-weight: 300;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  line-height: 1;
+  padding: 0;
+}
+
+.jd-add-button-jd-mgmt:hover {
+  background: white;
+  color: #004B71;
+  transform: rotate(90deg);
+}
+
+.jd-designations-list-jd-mgmt {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+}
+
+.jd-designation-item-jd-mgmt {
+  padding: 16px 18px;
+  margin-bottom: 8px;
+  background: white;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.jd-designation-item-jd-mgmt:hover {
+  border-color: #004B71;
+  background: #f0f4f8;
+  transform: translateX(4px);
+}
+
+.jd-designation-item-jd-mgmt.active-jd-mgmt {
+  border-color: #004B71;
+  background: #e8f0f5;
+  box-shadow: 0 2px 8px rgba(0, 75, 113, 0.15);
+}
+
+.jd-designation-item-jd-mgmt.inactive-jd-mgmt {
+  opacity: 0.6;
+  background: #f5f5f5;
+}
+
+.jd-designation-content-jd-mgmt {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.jd-designation-name-jd-mgmt {
+  color: #004B71;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.jd-status-badge-jd-mgmt {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: inline-block;
+  width: fit-content;
+}
+
+.active-badge-jd-mgmt {
+  background: #d4edda;
+  color: #155724;
+}
+
+.inactive-badge-jd-mgmt {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.jd-toggle-button-jd-mgmt {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid #004B71;
+  background: white;
+  color: #004B71;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.jd-toggle-button-jd-mgmt:hover {
+  background: #004B71;
+  color: white;
+  transform: scale(1.1);
+}
+
+.jd-empty-state-jd-mgmt {
+  text-align: center;
+  padding: 40px 20px;
+  color: #999;
+  font-size: 14px;
+}
+
+/* Divider */
+.jd-divider-jd-mgmt {
+  width: 2px;
+  background: #e0e0e0;
+  flex-shrink: 0;
+}
+
+/* Right Panel - Job Description */
+.jd-right-panel-jd-mgmt {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 30px;
+  background: white;
+  overflow-y: auto;
+}
+
+.jd-details-header-jd-mgmt {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #e8e8e8;
+}
+
+.jd-selected-designation-jd-mgmt {
+  color: #004B71;
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.jd-edit-job-button-jd-mgmt {
+  padding: 10px 24px;
+  background: #004B71;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.jd-edit-job-button-jd-mgmt:hover {
+  background: #004B71;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px #004B71;
+}
+
+.jd-description-section-jd-mgmt {
+  flex: 1;
+}
+
+.jd-description-header-jd-mgmt {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.jd-description-title-jd-mgmt {
+  color: #004B71;
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.jd-add-task-button-jd-mgmt {
+  padding: 10px 20px;
+  background: #004B71;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.jd-add-task-button-jd-mgmt:hover {
+  background: #003d5f;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 75, 113, 0.3);
+}
+
+.jd-tasks-list-jd-mgmt {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.jd-task-item-jd-mgmt {
+  padding: 18px 20px;
+  background: #f8f9fa;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+.jd-task-item-jd-mgmt:hover {
+  border-color: #004B71;
+  background: #f0f4f8;
+  box-shadow: 0 2px 8px rgba(0, 75, 113, 0.1);
+}
+
+.jd-task-item-jd-mgmt.inactive-task-jd-mgmt {
+  opacity: 0.6;
+  background: #f5f5f5;
+}
+
+.jd-task-content-jd-mgmt {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.jd-task-number-jd-mgmt {
+  color: #004B71;
+  font-weight: 700;
+  font-size: 16px;
+  min-width: 24px;
+}
+
+.jd-task-text-jd-mgmt {
+  color: #333;
+  font-size: 15px;
+  flex: 1;
+}
+
+.jd-task-status-jd-mgmt {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.active-task-badge-jd-mgmt {
+  background: #d4edda;
+  color: #155724;
+}
+
+.inactive-task-badge-jd-mgmt {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.jd-task-actions-jd-mgmt {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.jd-edit-task-button-jd-mgmt,
+.jd-toggle-task-button-jd-mgmt {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: 2px solid #004B71;
+  background: white;
+  color: #004B71;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  padding: 0;
+}
+
+.jd-edit-task-button-jd-mgmt:hover {
+  background: #004B71;
+  color: white;
+  transform: scale(1.1);
+}
+
+.jd-toggle-task-button-jd-mgmt:hover {
+  background: #004B71;
+  color: white;
+  transform: scale(1.1);
+}
+
+.jd-empty-tasks-jd-mgmt {
+  text-align: center;
+  padding: 60px 20px;
+  color: #999;
+  font-size: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 2px dashed #e0e0e0;
+}
+
+.jd-no-selection-jd-mgmt {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #999;
+  font-size: 16px;
+  text-align: center;
+  padding: 40px;
+}
+
+/* Modal Styles */
+.jd-modal-overlay-jd-mgmt {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+  padding: 20px;
+}
+
+.jd-modal-content-jd-mgmt {
+  background: white;
+  border-radius: 16px;
+  max-width: 600px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  animation: jdModalSlideIn 0.3s ease;
+}
+
+@keyframes jdModalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.jd-modal-header-jd-mgmt {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 30px;
+  border-bottom: 2px solid #e8e8e8;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  border-radius: 16px 16px 0 0;
+}
+
+.jd-modal-header-jd-mgmt h2 {
+  margin: 0;
+  color: #004B71;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.jd-modal-close-jd-mgmt {
+  background: none;
+  border: none;
+  font-size: 32px;
+  color: #999;
+  cursor: pointer;
+  padding: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  line-height: 1;
+}
+
+.jd-modal-close-jd-mgmt:hover {
+  background: #f0f0f0;
+  color: #333;
+  transform: rotate(90deg);
+}
+
+.jd-modal-body-jd-mgmt {
+  padding: 30px;
+}
+
+.jd-form-group-jd-mgmt {
+  margin-bottom: 20px;
+}
+
+.jd-form-group-jd-mgmt label {
+  display: block;
+  color: #004B71;
+  font-weight: 600;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.jd-form-group-jd-mgmt input[type="text"],
+.jd-form-group-jd-mgmt textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 15px;
+  transition: all 0.3s ease;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.jd-form-group-jd-mgmt input[type="text"]:focus,
+.jd-form-group-jd-mgmt textarea:focus {
+  outline: none;
+  border-color: #004B71;
+  box-shadow: 0 0 0 3px rgba(0, 75, 113, 0.1);
+}
+
+.jd-form-group-jd-mgmt textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.jd-checkbox-label-jd-mgmt {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.jd-checkbox-label-jd-mgmt input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: #004B71;
+}
+
+.jd-modal-footer-jd-mgmt {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 20px 30px;
+  border-top: 2px solid #e8e8e8;
+  background: #f8f9fa;
+  border-radius: 0 0 16px 16px;
+}
+
+.jd-btn-cancel-jd-mgmt,
+.jd-btn-save-jd-mgmt {
+  padding: 12px 28px;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 120px;
+}
+
+.jd-btn-cancel-jd-mgmt {
+  background: #e0e0e0;
+  color: #333;
+}
+
+.jd-btn-cancel-jd-mgmt:hover {
+  background: #d0d0d0;
+  transform: translateY(-2px);
+}
+
+.jd-btn-save-jd-mgmt {
+  background: #004B71;
+  color: white;
+}
+
+.jd-btn-save-jd-mgmt:hover {
+  background: #003d5f;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 75, 113, 0.3);
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .jd-management-content-jd-mgmt {
+    flex-direction: column;
+  }
+
+  .jd-left-panel-jd-mgmt {
+    flex: 0 0 auto;
+    border-right: none;
+    border-bottom: 2px solid #e0e0e0;
+    max-height: 300px;
+  }
+
+  .jd-divider-jd-mgmt {
+    width: 100%;
+    height: 2px;
+  }
+}
+
+@media (max-width: 768px) {
+  .jd-management-container-jd-mgmt {
+    padding: 15px;
+  }
+
+  .jd-management-title-jd-mgmt {
+    font-size: 24px;
+  }
+
+  .jd-details-header-jd-mgmt {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+
+  .jd-modal-content-jd-mgmt {
+    max-width: 95%;
+  }
+
+  .jd-modal-footer-jd-mgmt {
+    flex-direction: column;
+  }
+
+  .jd-btn-cancel-jd-mgmt,
+  .jd-btn-save-jd-mgmt {
+    width: 100%;
+  }
+}
+

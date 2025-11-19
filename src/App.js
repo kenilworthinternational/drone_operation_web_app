@@ -32,6 +32,10 @@ import RequestsQueueMain from './sections/opsroom/requests/RequestsQueueMain';
 import RequestProceed from './sections/opsroom/requests/RequestProceed';
 import PlansWithWeather from './sections/opsroom/plans/PlansWithWeather';
 import AssetsManagement from './sections/hr&admin/assets/AssetsManagement';
+import EmployeeRegistration from './sections/hr&admin/EmployeeRegistration';
+import Employees from './sections/hr&admin/Employees';
+import JDManagement from './sections/hr&admin/JDManagement';
+import EmployeeAssignment from './sections/hr&admin/EmployeeAssignment';
 import Users from './sections/ict/users/Users';
 import AuthControls from './sections/ict/authentication/AuthControls';
 
@@ -370,6 +374,38 @@ function App() {
             element={
               <ProtectedRoute>
                 <AssetsManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="employeeRegistration"
+            element={
+              <ProtectedRoute>
+                <EmployeeRegistration />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="employees"
+            element={
+              <ProtectedRoute>
+                <Employees />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="jdManagement"
+            element={
+              <ProtectedRoute>
+                <JDManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="employeeAssignment"
+            element={
+              <ProtectedRoute>
+                <EmployeeAssignment />
               </ProtectedRoute>
             }
           />

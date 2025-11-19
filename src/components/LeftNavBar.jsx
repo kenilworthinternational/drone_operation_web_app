@@ -108,6 +108,10 @@ const categories = [
     icon: FaUserShield,
     children: [
       { path: '/home/assetsManagement', label: 'Assets Management', icon: FaBoxes },
+      { path: '/home/employeeRegistration', label: 'Employee Registration', icon: FaUserTie },
+      { path: '/home/employees', label: 'Employees', icon: FaUsers },
+      { path: '/home/jdManagement', label: 'JD Management', icon: FaClipboardList },
+      { path: '/home/employeeAssignment', label: 'Employee Assignment', icon: FaUserTie },
     ],
   },
 ];
@@ -218,7 +222,11 @@ const getAllowedPaths = (visibility = {}) => {
   // HR and Admin paths
   if (visibility['HR and Admin']) {
     allowedPaths.push(
-      '/home/assetsManagement'
+      '/home/assetsManagement',
+      '/home/employeeRegistration',
+      '/home/employees',
+      '/home/jdManagement',
+      '/home/employeeAssignment'
     );
   }
 
