@@ -28,6 +28,8 @@ import {
   FaUserCog,
   FaKey,
   FaCloudSunRain,
+  FaCogs,
+  FaCalendarCheck,
 } from 'react-icons/fa';
 import '../styles/css-navbar.css';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
@@ -46,11 +48,17 @@ const categories = [
     ],
   },
   {
-    title: 'Management',
-    icon: FaUserTie,
+    title: 'Planning and Monitoring',
+    icon: FaCalendarCheck,
     children: [
       { path: '/home/createBookings', label: 'Booking Creation', icon: FaPlusCircle },
       { path: '/home/bookingList', label: 'Nonp Booking', icon: FaFileAlt },
+    ],
+  },
+  {
+    title: 'Management',
+    icon: FaUserTie,
+    children: [
       // { path: '/home/missions', label: 'Completed Missions', icon: FaCheckCircle },
       { path: '/home/teamAllocation', label: 'Plantation Team Allocation', icon: FaUsers },
       { path: '/home/nonpTeamAllocation', label: 'NONP Team Allocation', icon: FaUsers },
@@ -104,6 +112,13 @@ const categories = [
     children: [],
   },
   {
+    title: 'Fleet Management',
+    icon: FaCogs,
+    children: [
+      { path: '/home/fleet', label: 'Resource Allocation', icon: FaCogs },
+    ],
+  },
+  {
     title: 'HR and Admin',
     icon: FaUserShield,
     children: [
@@ -112,6 +127,7 @@ const categories = [
       { path: '/home/employees', label: 'Employees', icon: FaUsers },
       { path: '/home/jdManagement', label: 'JD Management', icon: FaClipboardList },
       { path: '/home/employeeAssignment', label: 'Employee Assignment', icon: FaUserTie },
+      { label: 'Attendance & Roaster', icon: FaClock, path: '/home/attendance/roaster-planning'},
     ],
   },
 ];
@@ -121,27 +137,30 @@ const getCategoryVisibility = (userData, permissions) => {
   const jobRole = userData.job_role || '';
   const memberType = userData.member_type || '';
   const normalizedRole = String(jobRole).toLowerCase();
-  const categories = Object.keys(permissions || {});
 
-  // Developers get everything
+  // Use the declared categories array to determine available category titles
+  const categoryTitles = categories.map((c) => c.title);
+
+  // Developers (internal) get everything
   if (memberType === 'i' && userData.user_level === 'i') {
-    return categories.reduce((acc, category) => {
-      acc[category] = true;
+    return categoryTitles.reduce((acc, title) => {
+      acc[title] = true;
       return acc;
     }, {});
   }
 
-  // Only internal members see the categories
+  // Non-internal members see nothing by default
   if (memberType !== 'i') {
-    return categories.reduce((acc, category) => {
-      acc[category] = false;
+    return categoryTitles.reduce((acc, title) => {
+      acc[title] = false;
       return acc;
     }, {});
   }
 
-  return categories.reduce((acc, category) => {
-    const allowedRoles = permissions[category] || [];
-    acc[category] = allowedRoles.includes(normalizedRole);
+  // For internal members, consult permissions when available; default to false
+  return categoryTitles.reduce((acc, title) => {
+    const allowedRoles = (permissions && permissions[title]) || [];
+    acc[title] = allowedRoles.includes(normalizedRole);
     return acc;
   }, {});
 };
@@ -165,8 +184,6 @@ const getAllowedPaths = (visibility = {}) => {
   // Management paths
   if (visibility.Management) {
     allowedPaths.push(
-      '/home/createBookings',
-      '/home/bookingList',
       '/home/missions',
       '/home/teamAllocation',
       '/home/nonpTeamAllocation',
@@ -181,6 +198,10 @@ const getAllowedPaths = (visibility = {}) => {
       '/home/opsAsign',
       '/home/deactivatePlan'
     );
+  }
+  // Planning and Monitoring paths
+  if (visibility['Planning and Monitoring']) {
+    allowedPaths.push('/home/createBookings', '/home/bookingList');
   }
 
   // OpsRoom paths
@@ -219,6 +240,13 @@ const getAllowedPaths = (visibility = {}) => {
     );
   }
 
+  // Fleet Management paths
+  if (visibility['Fleet Management']) {
+    allowedPaths.push(
+      '/home/fleet'
+    );
+  }
+
   // HR and Admin paths
   if (visibility['HR and Admin']) {
     allowedPaths.push(
@@ -226,7 +254,9 @@ const getAllowedPaths = (visibility = {}) => {
       '/home/employeeRegistration',
       '/home/employees',
       '/home/jdManagement',
-      '/home/employeeAssignment'
+      '/home/employeeAssignment',
+      '/home/attendance/monthly-roaster',
+      '/home/attendance/roaster-planning'
     );
   }
 
@@ -251,11 +281,13 @@ const LeftNavBar = ({ showSidebar = false, onClose = () => {}, onCollapseChange 
   const [expandedCategories, setExpandedCategories] = useState(() => {
     return JSON.parse(localStorage.getItem('leftnav_expanded') || 'null') || {
       Corporate: true,
+      'Planning and Monitoring': true,
       Management: true,
       OpsRoom: true,
       Finance: true,
       Inventory: true,
       Workshop: true,
+      'Fleet Management': true,
       'HR and Admin': true,
       'ICT - System Admin': true,
     };
@@ -367,7 +399,12 @@ const LeftNavBar = ({ showSidebar = false, onClose = () => {}, onCollapseChange 
          const toggleCategory = () =>
            setExpandedCategories((prev) => ({ ...prev, [category.title]: !isExpanded }));
 
-         const visibleChildren = category.children.filter((child) => allowedPaths.includes(child.path));
+        const visibleChildren = category.children.filter((child) => {
+          if (child.subItems && child.subItems.length > 0) {
+            return child.subItems.some((sub) => allowedPaths.includes(sub.path));
+          }
+          return allowedPaths.includes(child.path);
+        });
 
          // Don't render category if no visible children
          if (visibleChildren.length === 0) {
@@ -392,6 +429,45 @@ const LeftNavBar = ({ showSidebar = false, onClose = () => {}, onCollapseChange 
               {isExpanded && visibleChildren.length > 0 && (
                 <ul className="nav-sublist">
                   {visibleChildren.map((item) => {
+                    const hasSubItems = item.subItems && item.subItems.length > 0;
+                    if (hasSubItems) {
+                      const visibleSubItems = item.subItems.filter((sub) => allowedPaths.includes(sub.path));
+                      if (visibleSubItems.length === 0) {
+                        return null;
+                      }
+                      const isSubActive = visibleSubItems.some(
+                        (sub) =>
+                          activeLink === sub.path ||
+                          activeLink.startsWith(sub.path + '/')
+                      );
+                      return (
+                        <li key={`${item.label}`} className={`nav-item nav-subgroup ${isSubActive ? 'active' : ''}`}>
+                          <div className="nav-subgroup-header">
+                            <item.icon className="nav-icon" />
+                            <span className="nav-text">{item.label}</span>
+                          </div>
+                          <ul className="nav-subgroup-list">
+                            {visibleSubItems.map((subItem) => {
+                              const isActive =
+                                activeLink === subItem.path ||
+                                activeLink.startsWith(subItem.path + '/');
+                              return (
+                                <li key={subItem.path} className="nav-item">
+                                  <Link
+                                    to={subItem.path}
+                                    className={`nav-link ${isActive ? 'active' : ''}`}
+                                    title={subItem.label}
+                                  >
+                                    <subItem.icon className="nav-icon" />
+                                    <span className="nav-text">{subItem.label}</span>
+                                  </Link>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        </li>
+                      );
+                    }
                     const activeAliases = {
                       '/home/workflowDashboard': ['/home/opsroomPlanCalendar', '/home/requestsQueue', '/home/requestProceed'],
                     };

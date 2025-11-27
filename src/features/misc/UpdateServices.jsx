@@ -434,8 +434,11 @@ const UpdateServices = () => {
 
     try {
       const result = await dispatch(baseApi.endpoints.updatePlan.initiate(submissionData));
-      const resultData = result.data;
-      if (resultData.success) {
+      const resultData = result.data || {};
+      const statusValue = typeof resultData.status === 'string' ? resultData.status.toLowerCase() : resultData.status;
+      const isSuccess = resultData.success === true || statusValue === true || statusValue === 'true';
+
+      if (isSuccess) {
         alert("Update successful!");
         setState({
           ...state,
@@ -451,7 +454,7 @@ const UpdateServices = () => {
           selectedFields: new Set(),
         });
       } else {
-        alert("Update failed: " + result.message);
+        alert("Update failed: " + (resultData.message || resultData.error || "Unknown error"));
       }
     } catch (error) {
       console.error('Update Error:', error);

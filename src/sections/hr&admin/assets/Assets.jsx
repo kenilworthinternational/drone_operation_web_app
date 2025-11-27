@@ -14,6 +14,7 @@ import {
 } from 'react-icons/fa';
 import '../../../styles/assets.css';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
+import { useGetWingsQuery } from '../../../api/services/assetsApi';
 import {
   fetchInsuranceTypes,
   fetchAssets as fetchAssetsThunk,
@@ -65,7 +66,7 @@ const TAB_CONFIG = {
   }
 };
 
-const DEFAULT_SECTOR = 'Head Office';
+const DEFAULT_WING_NAME = 'Not Available';
 
 const parsePurchasePrice = (value) => {
   if (value === undefined || value === null) {
@@ -93,12 +94,37 @@ const formatCurrency = (value) => {
   return `LKR ${parsed.toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 };
 
-const resolveSectorValue = (asset) =>
-  asset?.sector ?? asset?.sector_name ?? asset?.sectorName ?? asset?.sector_title ?? '';
+const resolveWingValue = (asset) =>
+  asset?.wing ??
+  asset?.wing_name ??
+  asset?.wingName ??
+  asset?.wing_title ??
+  asset?.sector ??
+  asset?.sector_name ??
+  asset?.sectorName ??
+  asset?.sector_title ??
+  '';
 
-const formatSectorDisplay = (asset) => {
-  const sector = resolveSectorValue(asset);
-  return sector && sector.trim() ? sector : 'Not Available';
+const extractWingId = (asset) => {
+  const candidates = [asset?.wing_id, asset?.wingId, asset?.wingID, asset?.sector_id, asset?.sectorId];
+  for (const candidate of candidates) {
+    if (candidate === undefined || candidate === null || candidate === '') {
+      continue;
+    }
+    const parsed = Number.parseInt(candidate, 10);
+    if (!Number.isNaN(parsed)) {
+      return String(parsed);
+    }
+  }
+  return '';
+};
+
+const parseWingId = (value) => {
+  if (value === undefined || value === null || value === '') {
+    return null;
+  }
+  const parsed = Number.parseInt(value, 10);
+  return Number.isNaN(parsed) ? null : String(parsed);
 };
 
 const INITIAL_FORM_STATE = {
@@ -116,7 +142,7 @@ const INITIAL_FORM_STATE = {
   warranty_period: '',
   operational_status: 'y',
   activated: '1',
-  sector: DEFAULT_SECTOR
+  wing_id: ''
 };
 
 const formatDateForInput = (value) => {
@@ -199,6 +225,80 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [formData, setFormData] = useState(INITIAL_FORM_STATE);
 
+  const {
+    data: wingsResponse,
+    isLoading: wingsLoading,
+    isError: wingsError,
+    error: wingsErrorDetails,
+  } = useGetWingsQuery();
+
+  const wings = useMemo(() => {
+    if (!wingsResponse) return [];
+    if (Array.isArray(wingsResponse)) return wingsResponse;
+    if (Array.isArray(wingsResponse?.data)) return wingsResponse.data;
+    if (Array.isArray(wingsResponse?.wings)) return wingsResponse.wings;
+    return [];
+  }, [wingsResponse]);
+
+  const wingIdToName = useMemo(() => {
+    const map = new Map();
+    wings.forEach((wing) => {
+      if (wing?.id != null) {
+        map.set(String(wing.id), wing.wing || '');
+      }
+    });
+    return map;
+  }, [wings]);
+
+  const wingNameToId = useMemo(() => {
+    const map = new Map();
+    wings.forEach((wing) => {
+      if (wing?.wing) {
+        map.set(wing.wing.toLowerCase(), String(wing.id));
+      }
+    });
+    return map;
+  }, [wings]);
+
+  const resolveWingNameById = useCallback(
+    (id) => {
+      if (id === undefined || id === null || id === '') {
+        return '';
+      }
+      return wingIdToName.get(String(id)) || '';
+    },
+    [wingIdToName]
+  );
+
+  const formatWingDisplay = useCallback(
+    (asset) => {
+      const wingText = resolveWingValue(asset);
+      const trimmedWingText = wingText ? wingText.trim() : '';
+      const isNumericWingText = trimmedWingText ? /^\d+$/.test(trimmedWingText) : false;
+      if (trimmedWingText && !isNumericWingText) {
+        return wingText;
+      }
+      const candidateId = extractWingId(asset) || (isNumericWingText ? trimmedWingText : '');
+      if (candidateId) {
+        const resolved = resolveWingNameById(candidateId);
+        if (resolved) {
+          return resolved;
+        }
+      }
+      return trimmedWingText || DEFAULT_WING_NAME;
+    },
+    [resolveWingNameById]
+  );
+
+  const wingsErrorMessage = useMemo(() => {
+    if (!wingsError) return '';
+    if (typeof wingsErrorDetails === 'string') return wingsErrorDetails;
+    if (wingsErrorDetails?.data?.message) return wingsErrorDetails.data.message;
+    if (wingsErrorDetails?.error) return wingsErrorDetails.error;
+    if (wingsErrorDetails?.message) return wingsErrorDetails.message;
+    return 'Unable to load wings.';
+  }, [wingsError, wingsErrorDetails]);
+
   useEffect(() => {
     if (!notification.message) {
       return undefined;
@@ -238,34 +338,46 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
   const isSelectedBattery = selectedAssetType === 'batteries';
   const isSelectedVehicle = selectedAssetType === 'vehicles';
 
-  const mapAssetToForm = useCallback((asset, assetType) => ({
-    id: asset?.id ?? '',
-    tag: asset?.tag ?? '',
-    serial: asset?.serial ?? '',
-    type: asset?.type ?? '',
-    ownership: asset?.ownership ?? '',
-    chassis_no: asset?.chassis_no ?? '',
-    engine_no: asset?.engine_no ?? '',
-    vehicle_no: asset?.vehicle_no ?? '',
-    make: asset?.make ?? '',
-    model: asset?.model ?? '',
-    purchase_price: asset?.purchase_price != null ? String(asset.purchase_price) : '',
-    manufacture_year: formatDateForInput(asset?.manufacture_year),
-    depreciation_period: asset?.depreciation_period != null ? String(asset.depreciation_period) : '',
-    have_insurance: asset?.have_insurance != null ? String(asset.have_insurance) : '0',
-    insurance_type: asset?.insurance_type_id != null
-      ? String(asset.insurance_type_id)
-      : asset?.insurance_type != null
-        ? String(asset.insurance_type)
-        : '',
-    warranty_period: asset?.warranty_period != null ? String(asset.warranty_period) : '',
-    operational_status: asset?.operational_status ?? 'y',
-    activated: asset?.activated != null ? String(asset.activated) : '1',
-    insurance_expire_date: formatDateForInput(asset?.insurance_expire_date),
-    revenue_license_expire_date: formatDateForInput(asset?.revenue_license_expire_date),
-    initial_mileage: asset?.initial_mileage != null ? String(asset.initial_mileage) : '',
-    sector: resolveSectorValue(asset) && resolveSectorValue(asset).trim() ? resolveSectorValue(asset) : 'Not Available'
-  }), []);
+  const mapAssetToForm = useCallback((asset) => {
+    const extractedWingId = extractWingId(asset);
+    let wingId = extractedWingId;
+    if (!wingId) {
+      const wingText = resolveWingValue(asset);
+      const matchedId = wingText ? wingNameToId.get(wingText.toLowerCase()) : null;
+      if (matchedId) {
+        wingId = matchedId;
+      }
+    }
+
+    return {
+      id: asset?.id ?? '',
+      tag: asset?.tag ?? '',
+      serial: asset?.serial ?? '',
+      type: asset?.type ?? '',
+      ownership: asset?.ownership ?? '',
+      chassis_no: asset?.chassis_no ?? '',
+      engine_no: asset?.engine_no ?? '',
+      vehicle_no: asset?.vehicle_no ?? '',
+      make: asset?.make ?? '',
+      model: asset?.model ?? '',
+      purchase_price: asset?.purchase_price != null ? String(asset.purchase_price) : '',
+      manufacture_year: formatDateForInput(asset?.manufacture_year),
+      depreciation_period: asset?.depreciation_period != null ? String(asset.depreciation_period) : '',
+      have_insurance: asset?.have_insurance != null ? String(asset.have_insurance) : '0',
+      insurance_type: asset?.insurance_type_id != null
+        ? String(asset.insurance_type_id)
+        : asset?.insurance_type != null
+          ? String(asset.insurance_type)
+          : '',
+      warranty_period: asset?.warranty_period != null ? String(asset.warranty_period) : '',
+      operational_status: asset?.operational_status ?? 'y',
+      activated: asset?.activated != null ? String(asset.activated) : '1',
+      insurance_expire_date: formatDateForInput(asset?.insurance_expire_date),
+      revenue_license_expire_date: formatDateForInput(asset?.revenue_license_expire_date),
+      initial_mileage: asset?.initial_mileage != null ? String(asset.initial_mileage) : '',
+      wing_id: wingId || ''
+    };
+  }, [wingNameToId]);
 
   // Fetch insurance types on mount
   useEffect(() => {
@@ -305,7 +417,7 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
         asset?.chassis_no,
         asset?.engine_no,
         asset?.purchase_price,
-        resolveSectorValue(asset)
+        formatWingDisplay(asset)
       ].some((field) => (field ?? '').toString().toLowerCase().includes(term)));
     }
 
@@ -333,7 +445,7 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
 
   const handleEditAsset = (asset, tabKey) => {
     dispatch(setSelectedAssetAction({ asset, assetType: tabKey }));
-    setFormData(mapAssetToForm(asset, tabKey));
+    setFormData(mapAssetToForm(asset));
     setShowEditModal(true);
   };
 
@@ -368,8 +480,34 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
     });
   };
 
+  const renderWingSelectField = () => (
+    <div className="form-group-assets">
+      <label htmlFor="wing_id">
+        Wing <span className="required-indicator-assets">*</span>
+      </label>
+      <select
+        id="wing_id"
+        name="wing_id"
+        value={formData.wing_id || ''}
+        onChange={handleFormChange}
+        required
+        disabled={wingsLoading || wings.length === 0}
+      >
+        <option value="">
+          {wingsLoading ? 'Loading wings...' : wings.length === 0 ? 'No wings available' : 'Select a wing'}
+        </option>
+        {wings.map((wing) => (
+          <option key={wing.id} value={wing.id}>
+            {wing.wing}
+          </option>
+        ))}
+      </select>
+      {wingsError && <small className="form-helper-text-assets error">{wingsErrorMessage}</small>}
+    </div>
+  );
+
   const validateForm = () => {
-    let requiredFields = ['tag', 'serial', 'purchase_price'];
+    let requiredFields = ['tag', 'serial', 'purchase_price', 'wing_id'];
 
     if (selectedAssetType === 'vehicles') {
       requiredFields = [
@@ -384,7 +522,8 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
         'revenue_license_expire_date',
         'initial_mileage',
         'operational_status',
-        'activated'
+        'activated',
+        'wing_id'
       ];
     } else {
       if (formData.have_insurance === '1') {
@@ -397,7 +536,8 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
 
     const missing = requiredFields.filter((field) => !formData[field] || !formData[field].toString().trim());
     if (missing.length > 0) {
-      return `Please fill in all required fields: ${missing.join(', ')}`;
+      const readable = missing.map((field) => (field === 'wing_id' ? 'wing' : field));
+      return `Please fill in all required fields: ${readable.join(', ')}`;
     }
 
     const normalizedPrice = parsePurchasePrice(formData.purchase_price);
@@ -426,6 +566,12 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
       return;
     }
 
+    const wingId = parseWingId(formData.wing_id);
+    if (wingId === null) {
+      setNotification({ type: 'error', message: 'Please select a wing.' });
+      return;
+    }
+
     try {
       let payload;
 
@@ -447,7 +593,7 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
             operational_status: formData.operational_status,
             activated: formData.activated,
             purchase_price: normalizedPrice,
-            sector: formData.sector && formData.sector.trim() && formData.sector !== 'Not Available' ? formData.sector : DEFAULT_SECTOR
+            wing: wingId
           };
           break;
         }
@@ -467,7 +613,7 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
             operational_status: formData.operational_status,
             activated: formData.activated,
             purchase_price: normalizedPrice,
-            sector: formData.sector && formData.sector.trim() && formData.sector !== 'Not Available' ? formData.sector : DEFAULT_SECTOR
+            wing: wingId
           };
           break;
         }
@@ -486,7 +632,7 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
             operational_status: formData.operational_status,
             activated: formData.activated,
             purchase_price: normalizedPrice,
-            sector: formData.sector && formData.sector.trim() && formData.sector !== 'Not Available' ? formData.sector : DEFAULT_SECTOR
+            wing: wingId
           };
           break;
         }
@@ -528,7 +674,7 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
           <th>Make</th>
           <th>Model</th>
           <th>Purchase Price</th>
-          <th>Sector</th>
+          <th>Wing</th>
           <th>Insurance</th>
           <th>Status</th>
           <th>Actions</th>
@@ -544,7 +690,7 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
           <th>Make</th>
           <th>Model</th>
           <th>Purchase Price</th>
-          <th>Sector</th>
+          <th>Wing</th>
           <th>Insurance Expiry</th>
           <th>Revenue License Expiry</th>
           <th>Status</th>
@@ -561,7 +707,7 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
           <th>Make</th>
           <th>Model</th>
           <th>Purchase Price</th>
-          <th>Sector</th>
+          <th>Wing</th>
           <th>Insurance</th>
           <th>Status</th>
           <th>Actions</th>
@@ -576,7 +722,7 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
         <th>Make</th>
         <th>Model</th>
         <th>Purchase Price</th>
-        <th>Sector</th>
+        <th>Wing</th>
         <th>Insurance</th>
         <th>Status</th>
         <th>Actions</th>
@@ -587,7 +733,7 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
   const renderTableRow = (asset) => {
     if (activeTab === 'vehicles') {
       const purchasePriceDisplay = formatCurrency(asset?.purchase_price);
-      const sectorDisplay = formatSectorDisplay(asset);
+      const wingDisplay = formatWingDisplay(asset);
 
       return (
         <tr key={asset?.id ?? asset?.vehicle_no}>
@@ -596,7 +742,7 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
           <td>{asset?.make || '-'}</td>
           <td>{asset?.model || '-'}</td>
           <td>{purchasePriceDisplay}</td>
-          <td>{sectorDisplay}</td>
+          <td>{wingDisplay}</td>
           <td>{formatDateForInput(asset?.insurance_expire_date) || '-'}</td>
           <td>{formatDateForInput(asset?.revenue_license_expire_date) || '-'}</td>
           <td>
@@ -630,7 +776,7 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
       ? resolveInsuranceName(insuranceOptions, asset?.insurance_type_id || asset?.insurance_type)
       : 'No';
     const purchasePriceDisplay = formatCurrency(asset?.purchase_price);
-    const sectorDisplay = formatSectorDisplay(asset);
+    const wingDisplay = formatWingDisplay(asset);
 
     return (
       <tr key={asset?.id ?? asset?.tag}>
@@ -640,7 +786,7 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
         <td>{asset?.make || '-'}</td>
         <td>{asset?.model || '-'}</td>
         <td>{purchasePriceDisplay}</td>
-        <td>{sectorDisplay}</td>
+        <td>{wingDisplay}</td>
         <td>{insuranceDisplay}</td>
         <td>
           <span className={`status-badge-assets ${asset?.operational_status === 'y' ? 'status-badge-active-assets' : 'status-badge-inactive-assets'}`}>
@@ -680,7 +826,7 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
             { label: 'Make', value: selectedAsset.make },
             { label: 'Model', value: selectedAsset.model },
             { label: 'Purchase Price', value: formatCurrency(selectedAsset.purchase_price) },
-            { label: 'Sector', value: formatSectorDisplay(selectedAsset) },
+            { label: 'Wing', value: formatWingDisplay(selectedAsset) },
             { label: 'Insurance Expiry', value: formatDateForInput(selectedAsset.insurance_expire_date) },
             { label: 'Revenue License Expiry', value: formatDateForInput(selectedAsset.revenue_license_expire_date) },
             { label: 'Operational Status', value: formatOperationalStatus(selectedAsset.operational_status) }
@@ -694,7 +840,7 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
             { label: 'Make', value: selectedAsset.make },
             { label: 'Model', value: selectedAsset.model },
             { label: 'Purchase Price', value: formatCurrency(selectedAsset.purchase_price) },
-            { label: 'Sector', value: formatSectorDisplay(selectedAsset) },
+            { label: 'Wing', value: formatWingDisplay(selectedAsset) },
             { label: 'Depreciation Period', value: selectedAsset.depreciation_period },
             {
               label: 'Insurance',
@@ -777,7 +923,7 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
           <FaSearch className="search-icon-assets" />
           <input
             type="text"
-            placeholder="Search by tag, serial, make, model, sector, or price..."
+            placeholder="Search by tag, serial, make, model, wing, or price..."
             value={searchTerm}
             onChange={(e) => dispatch(setSearchTermAction(e.target.value))}
             className="search-input-assets"
@@ -1004,17 +1150,7 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
                           required
                         />
                       </div>
-                      <div className="form-group-assets">
-                        <label htmlFor="sector">Sector</label>
-                        <input
-                          type="text"
-                          id="sector"
-                          name="sector"
-                          value={formData.sector && formData.sector.trim() && formData.sector !== DEFAULT_SECTOR ? formData.sector : 'Not Available'}
-                          readOnly
-                          disabled
-                        />
-                      </div>
+                      {renderWingSelectField()}
                     </div>
                   </>
                 ) : (
@@ -1097,17 +1233,7 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
                           required
                         />
                       </div>
-                      <div className="form-group-assets">
-                        <label htmlFor="sector">Sector</label>
-                        <input
-                          type="text"
-                          id="sector"
-                          name="sector"
-                          value={formData.sector && formData.sector.trim() && formData.sector !== DEFAULT_SECTOR ? formData.sector : 'Not Available'}
-                          readOnly
-                          disabled
-                        />
-                      </div>
+                      {renderWingSelectField()}
                     </div>
 
                     <div className="form-row-assets">

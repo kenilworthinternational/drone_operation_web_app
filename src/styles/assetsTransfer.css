@@ -188,7 +188,7 @@
 
 .assets-transfer-table thead {
   background: #004B71;
-  color: white;
+  color: #ffffff;
 }
 
 .assets-transfer-table th {
@@ -198,6 +198,7 @@
   font-size: 14px;
   white-space: nowrap;
   min-width: 100px;
+  color: #ffffff;
 }
 
 .assets-transfer-table td {

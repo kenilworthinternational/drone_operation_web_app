@@ -283,10 +283,25 @@ const CalendarWidget = ({ tasksData = [], currentMonth, onTaskUpdate, calendarSe
         }
       } else {
         // Use original approach for update and reschedule modes
-        const payload = { id: task.id };
-        const updateMissionResult = mode === 'update' 
-          ? await reduxDispatch(baseApi.endpoints.getPlansForUpdate.initiate(payload))
-          : await reduxDispatch(baseApi.endpoints.getPlansForReschedule.initiate(payload));
+        const pickedDate =
+          typeof task.date === 'string'
+            ? task.date
+            : task.date?.toLocaleDateString?.('en-CA') ?? null;
+
+        const payload = {
+          estateId: task.estate_id,
+          pickedDate,
+          missionTypeId: task.mission_type,
+          cropTypeId: task.crop_type,
+          planId: task.id,
+          id: task.id,
+          missionId: task.mission_id,
+        };
+
+        const updateMissionResult =
+          mode === 'update'
+            ? await reduxDispatch(baseApi.endpoints.getPlansForUpdate.initiate(payload))
+            : await reduxDispatch(baseApi.endpoints.getPlansForReschedule.initiate(payload));
         const updateMissionResponse = updateMissionResult.data;
 
         selectedFieldIds = new Set((updateMissionResponse?.divisions ?? []).flatMap(
@@ -300,20 +315,35 @@ const CalendarWidget = ({ tasksData = [], currentMonth, onTaskUpdate, calendarSe
           minimumPlanSize = divisionsResponse.minimum_plan_size || 0;
           maximumPlanSize = divisionsResponse.maximum_plan_size || 0;
           divisions = Object.keys(divisionsResponse)
-            .filter(key => !isNaN(key))
-            .map(key => divisionsResponse[key]);
+            .filter((key) => !isNaN(key))
+            .map((key) => {
+              const division = divisionsResponse[key] || {};
+              return {
+                ...division,
+                fields: Array.isArray(division.fields)
+                  ? division.fields.map((field) => ({ ...field }))
+                  : [],
+              };
+            });
         }
         
         if (Array.isArray(divisions)) {
-          totalExtent = divisions.reduce((total, division) => {
+          divisions = divisions.map((division) => {
+            const fields = Array.isArray(division.fields) ? division.fields : [];
             const divisionTotal =
-              division.fields?.reduce(
-                (sum, field) => (selectedFieldIds.has(field.field_id) ? sum + field.field_area : sum),
+              fields.reduce(
+                (sum, field) =>
+                  selectedFieldIds.has(field.field_id) ? sum + (field.field_area || 0) : sum,
                 0
               ) || 0;
-            division.divisionTotal = parseFloat(divisionTotal.toFixed(2));
-            return total + divisionTotal;
-          }, 0);
+            return {
+              ...division,
+              fields,
+              divisionTotal: parseFloat(divisionTotal.toFixed(2)),
+            };
+          });
+
+          totalExtent = divisions.reduce((total, division) => total + division.divisionTotal, 0);
           
           // For update mode, we need to show all fields that are available for selection
           // The selectedFieldIds already contains the fields that should be selected
@@ -634,8 +664,11 @@ const CalendarWidget = ({ tasksData = [], currentMonth, onTaskUpdate, calendarSe
 
     try {
       const updateResult = await reduxDispatch(baseApi.endpoints.updatePlan.initiate(missionData));
-      const result = updateResult.data;
-      if (result.success) {
+      const result = updateResult.data || {};
+      const statusValue = typeof result.status === 'string' ? result.status.toLowerCase() : result.status;
+      const isSuccess = result.success === true || statusValue === true || statusValue === 'true';
+
+      if (isSuccess) {
         alert('Update successful!');
         // Refresh the task data to show updated values in calendar
         if (selectedTask && onTaskUpdate) {
@@ -646,7 +679,7 @@ const CalendarWidget = ({ tasksData = [], currentMonth, onTaskUpdate, calendarSe
           window.location.reload();
         }
       } else {
-        alert(`Update failed: ${result.message}`);
+        alert(`Update failed: ${result.message || result.error || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Update Error:', error);

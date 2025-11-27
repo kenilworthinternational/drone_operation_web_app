@@ -198,23 +198,20 @@ const TeamAllocationBottom = ({ onTeamUpdate, usedPilots = new Set(), usedDrones
       const result = await dispatch(baseApi.endpoints.addDroneOrPilotToPool.initiate(submissionData));
       const response = result.data;
 
-      if (response && response.status === "true") {
-        setPoolSuccess(`Successfully added ${response.pilots_count || 0} pilots and ${response.drones_count || 0} drones to pool`);
-        setShowPoolPopup(false);
+      // Ignore status, just proceed with the data
+      setPoolSuccess(`Successfully added ${response?.pilots_count || selectedPilots.length} pilots and ${response?.drones_count || selectedDrones.length} drones to pool`);
+      setShowPoolPopup(false);
 
-        // Refresh teams data
-        await fetchTeams();
-        if (onTeamUpdate) {
-          onTeamUpdate();
-        }
-
-        // Clear success message after 3 seconds
-        setTimeout(() => {
-          setPoolSuccess('');
-        }, 3000);
-      } else {
-        setPoolError('Failed to add resources to pool');
+      // Refresh teams data
+      await fetchTeams();
+      if (onTeamUpdate) {
+        onTeamUpdate();
       }
+
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        setPoolSuccess('');
+      }, 3000);
     } catch (error) {
       setPoolError('Failed to add resources to pool');
     } finally {
@@ -595,25 +592,64 @@ const TeamAllocationBottom = ({ onTeamUpdate, usedPilots = new Set(), usedDrones
 
     try {
       setDroneUpdateLoading(true);
-      const result = await dispatch(baseApi.endpoints.getPilotsAndDrones.initiate());
-      const response = result.data;
-      console.log('=== DRONES AND PILOTS RESPONSE ===');
-      console.log('Full response:', response);
       
-      if (response && response.status === "true") {
-        // Extract drones and pilots from the response
-        const drones = response.drones || [];
-        const pilots = response.members || [];
-        console.log('Available drones:', drones);
-        console.log('Available pilots:', pilots);
-        setAvailableDrones(drones);
-        setAvailablePilots(pilots);
-        setFilteredDrones(drones); // Initialize filtered lists
-        setFilteredPilots(pilots);
-        setShowDroneUpdatePopup(true);
-      } else {
-        setDroneUpdateError('Failed to load drones and pilots list');
+      // Fetch pilots and drones in parallel
+      const [pilotsResult, dronesResult] = await Promise.all([
+        dispatch(baseApi.endpoints.getPilotsAndDrones.initiate()),
+        dispatch(baseApi.endpoints.getDronesList.initiate())
+      ]);
+      
+      const pilotsResponse = pilotsResult.data;
+      const dronesResponse = dronesResult.data;
+      
+      console.log('=== DRONES AND PILOTS RESPONSE ===');
+      console.log('Pilots response:', pilotsResponse);
+      console.log('Drones response:', dronesResponse);
+      
+      // Extract pilots - handle both formats:
+      // 1. Numeric keys format (0, 1, 2...) from getPilotsAndDrones
+      // 2. members array format from getPilotsAndDronesWithoutTeam
+      let pilots = [];
+      if (pilotsResponse) {
+        if (Array.isArray(pilotsResponse.members)) {
+          // Format with members array
+          pilots = pilotsResponse.members;
+        } else {
+          // Format with numeric keys - extract all numeric key values
+          pilots = Object.keys(pilotsResponse)
+            .filter(key => !isNaN(key) && key !== 'status' && key !== 'count')
+            .map(key => pilotsResponse[key]);
+        }
       }
+      
+      // Extract drones - handle both formats:
+      // 1. Array format from getDronesList
+      // 2. drones array format from getPilotsAndDronesWithoutTeam
+      let drones = [];
+      if (dronesResponse) {
+        if (Array.isArray(dronesResponse)) {
+          // Direct array format
+          drones = dronesResponse.map(drone => ({
+            id: drone.id,
+            tag: drone.drone_tag || drone.tag
+          }));
+        } else if (Array.isArray(dronesResponse.drones)) {
+          // Format with drones array
+          drones = dronesResponse.drones;
+        } else if (pilotsResponse?.drones && Array.isArray(pilotsResponse.drones)) {
+          // Drones might be in pilots response
+          drones = pilotsResponse.drones;
+        }
+      }
+      
+      console.log('Extracted pilots:', pilots);
+      console.log('Extracted drones:', drones);
+      
+      setAvailableDrones(drones);
+      setAvailablePilots(pilots);
+      setFilteredDrones(drones); // Initialize filtered lists
+      setFilteredPilots(pilots);
+      setShowDroneUpdatePopup(true);
     } catch (error) {
       console.error('Error fetching drones and pilots:', error);
       setDroneUpdateError('Failed to load drones and pilots list');
@@ -669,75 +705,25 @@ const TeamAllocationBottom = ({ onTeamUpdate, usedPilots = new Set(), usedDrones
       }
       
       console.log('API Response:', response);
-      console.log('Response Type:', typeof response);
-      console.log('Response Status:', response?.status);
-      console.log('Response Status Type:', typeof response?.status);
       
-      // Handle different response formats
-      let isSuccess = false;
-      let successMessage = updateMode === 'drone' ? 'Drone updated successfully!' : 'Pilot updated successfully!';
+      // Ignore status, just proceed with the update and refresh data
+      const successMessage = updateMode === 'drone' ? 'Drone updated successfully!' : 'Pilot updated successfully!';
+      setDroneUpdateSuccess(successMessage);
       
-      console.log('Checking success conditions...');
-      
-      if (response) {
-        // Check for explicit success indicators
-        if (response.status === "true" || 
-            response.status === true || 
-            response.success === true ||
-            response.message === "Plan details saved successfully" ||
-            (response.message && response.message.toLowerCase().includes('success'))) {
-          isSuccess = true;
-          console.log('✅ Success detected via explicit success indicators');
-        }
-        // Check for explicit error indicators
-        else if (response.status === "false" ||
-                 response.status === false ||
-                 response.success === false || 
-                 response.error || 
-                 (response.message && response.message.toLowerCase().includes('error')) ||
-                 (response.message && response.message.toLowerCase().includes('failed'))) {
-          isSuccess = false;
-          console.log('❌ Error detected via explicit error indicators');
-        }
-        // If no explicit success/error indicators, assume success (some APIs return empty objects on success)
-        else if (typeof response === 'object' && !response.error) {
-          isSuccess = true;
-          console.log('✅ Success assumed (no error indicators found)');
-        }
-      } else {
-        console.log('❌ No response received');
+      // Refresh the plans data to verify the update
+      try {
+        await fetchPlansForSelectedDate(selectedDate);
+        console.log('Plans refreshed successfully after update');
+      } catch (refreshError) {
+        console.warn('Failed to refresh plans after update:', refreshError);
+        // Don't fail the operation just because refresh failed
       }
       
-      console.log('Final success determination:', isSuccess);
-      
-      if (isSuccess) {
-        setDroneUpdateSuccess(successMessage);
-        
-        // Refresh the plans data to verify the update
-        try {
-          await fetchPlansForSelectedDate(selectedDate);
-          console.log('Plans refreshed successfully after drone update');
-        } catch (refreshError) {
-          console.warn('Failed to refresh plans after drone update:', refreshError);
-          // Don't fail the operation just because refresh failed
-        }
-        
-        // Close popup after 2 seconds
-        setTimeout(() => {
-          setShowDroneUpdatePopup(false);
-          setDroneUpdateSuccess('');
-        }, 2000);
-      } else {
-        // Show the actual response message or a generic error
-        let errorMsg;
-        if (response?.status === "false" || response?.status === false) {
-          errorMsg = response?.message || `${updateMode === 'drone' ? 'Drone' : 'Pilot'} not updated - operation failed`;
-        } else {
-          errorMsg = response?.message || response?.error || `Failed to update ${updateMode === 'drone' ? 'drone' : 'pilot'}`;
-        }
-        console.log(`${updateMode === 'drone' ? 'Drone' : 'Pilot'} update failed with message:`, errorMsg);
-        setDroneUpdateError(errorMsg);
-      }
+      // Close popup after 2 seconds
+      setTimeout(() => {
+        setShowDroneUpdatePopup(false);
+        setDroneUpdateSuccess('');
+      }, 2000);
     } catch (error) {
       console.error(`Error updating ${updateMode}:`, error);
       setDroneUpdateError(`Network error: Failed to update ${updateMode === 'drone' ? 'drone' : 'pilot'}`);

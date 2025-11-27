@@ -1,80 +1,129 @@
-# API Documentation DSMS Kenilworth International, Last Update 2025/09/09 Sandun Madhubhashana
-
-## RTK Query Architecture (2025 Migration)
-The monolithic `src/api/api.js` layer has been fully replaced by Redux Toolkit Query services.
-
-### Entry Points
-- **Aggregated export:** `import { baseApi } from '../api/services/allEndpoints';`
-- **Generated hooks:** `import { useGetAllEstatesQuery } from '../api';`
-- **Manual dispatch:** `dispatch(baseApi.endpoints.getAllEstates.initiate())`
-
-### Service Layout (`src/api/services/`)
-- `authApi.js` – login, OTP, verification
-- `estatesApi.js` – groups, plantations, estates, divisions, fields
-- `plansApi.js` – plan CRUD, calendar, resource allocation, ops approval
-- `teamsApi.js` – team composition, pilots, drones, ASC assignments
-- `bookingsApi.js` – mission creation, farmer data, ASC scheduling
-- `operatorsApi.js` – operator directory and assignments
-- `assetsApi.js` – drones, vehicles, generators, batteries, insurance
-- `financeApi.js` – broker management, pilot earnings, revenue reports
-- `reportsApi.js` – corporate/ops analytical reports
-- `summaryApi.js` – aggregated coverage, calendar summaries
-- `requestsApi.js` – ad-hoc, reschedule, non-plantation requests
-- `groupAssignmentsApi.js` – group↔mission mapping
-- `tasksApi.js` – sub-task approvals, logs, DJI uploads, flags
-- `dropdownsApi.js` – mission metadata lists (crops, chemicals, stages)
-- `farmersApi.js` – farmer lookup and persistence
-
-### Usage Patterns
-```javascript
-// Component-level hook
-const { data, isLoading, error } = useGetAllEstatesQuery();
-
-// Manual dispatch (e.g., inside thunk)
-const result = await dispatch(baseApi.endpoints.createPlan.initiate(planPayload));
-const response = result.data;
-```
-
-### Legacy Reference
-The remainder of this document catalogs the original Axios functions. Keep it as an HTTP payload reference; when implementing, map each legacy function name to the RTK Query endpoint noted in `API_FUNCTION_MAPPING.md` and the service list above.
+# API Documentation DSMS Kenilworth International
+**Last Updated:** 2025/01/15  
+**Author:** Sandun Madhubhashana
 
 ## Overview
-This document provides comprehensive documentation for the Drone Operations Management API. The current implementation uses Redux Toolkit Query (`baseApi`) for all network access; the legacy Axios function descriptions below remain as an HTTP contract reference when mapping endpoints.
+This document provides comprehensive documentation for the Drone Operations Management System (DSMS) API. The system has been fully migrated to **Redux Toolkit Query (RTK Query)** architecture, replacing the legacy Axios-based implementation.
 
-**Base URL:** `https://drone-admin-test.kenilworthinternational.com/api/`
+**Base URLs:**
+- **Development:** `https://drone-admin-test.kenilworthinternational.com/api/`
+- **Production:** `https://drone-admin.kenilworthinternational.com/api/`
+
+The base URL is automatically selected based on the environment configuration in `src/config/config.js`.
 
 ## Authentication
-All endpoints (except login and verification) require Bearer token authentication. The token is retrieved from localStorage and included in the Authorization header.
+All endpoints (except login and verification) require Bearer token authentication. The token is automatically retrieved from localStorage (`userData.token`) and included in the Authorization header by RTK Query's base query configuration.
 
 ```javascript
 Authorization: Bearer <token>
 ```
 
-## Helper Functions
+---
 
-### `getToken()`
-Retrieves the authentication token from localStorage.
+## RTK Query Architecture
 
-### `getAuthHeaders()`
-Returns headers object with Authorization token for authenticated requests.
+### Entry Points
+- **Base API:** `import { baseApi } from '../api/baseApi';`
+- **All Endpoints:** `import { baseApi } from '../api/services/allEndpoints';`
+- **Service-specific hooks:** `import { useGetAllEstatesQuery } from '../api/services/estatesApi';`
 
-### `handleApiError(error, context)`
-Generic error handler for API calls that logs errors and returns empty array on failure.
+### Service Organization (`src/api/services/`)
+The API is organized into domain-specific service files:
+
+1. **`authApi.js`** – Authentication, login, OTP, verification
+2. **`estatesApi.js`** – Groups, plantations, regions, estates, divisions, fields
+3. **`plansApi.js`** – Plan CRUD, calendar, resource allocation, operations approval
+4. **`teamsApi.js`** – Team composition, pilots, drones, ASC assignments
+5. **`bookingsApi.js`** – Mission creation, ASC scheduling, farmer data
+6. **`operatorsApi.js`** – Operator directory and assignments
+7. **`assetsApi.js`** – Drones, vehicles, generators, batteries, insurance
+8. **`financeApi.js`** – Broker management, pilot earnings, revenue reports
+9. **`reportsApi.js`** – Corporate/ops analytical reports, chart data
+10. **`summaryApi.js`** – Aggregated coverage, calendar summaries
+11. **`requestsApi.js`** – Ad-hoc, reschedule, non-plantation requests
+12. **`groupAssignmentsApi.js`** – Group↔mission mapping
+13. **`tasksApi.js`** – Sub-task approvals, logs, DJI uploads, flags
+14. **`dropdownsApi.js`** – Mission metadata lists (crops, chemicals, stages, reasons)
+15. **`farmersApi.js`** – Farmer lookup and persistence
+
+### Usage Patterns
+
+#### Component-level Hooks (Recommended)
+```javascript
+import { useGetAllEstatesQuery } from '../api/services/estatesApi';
+
+function MyComponent() {
+  const { data, isLoading, error, refetch } = useGetAllEstatesQuery();
+  
+  if (isLoading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+  
+  return <div>{/* Render data */}</div>;
+}
+```
+
+#### Manual Dispatch (for Thunks/Actions)
+```javascript
+import { baseApi } from '../api/baseApi';
+import { useAppDispatch } from '../store/hooks';
+
+const dispatch = useAppDispatch();
+const result = await dispatch(baseApi.endpoints.getAllEstates.initiate());
+const data = result.data;
+```
+
+#### Mutations (Create/Update/Delete)
+```javascript
+import { useCreatePlanMutation } from '../api/services/plansApi';
+
+function CreatePlanForm() {
+  const [createPlan, { isLoading, error }] = useCreatePlanMutation();
+  
+  const handleSubmit = async (formData) => {
+    try {
+      const result = await createPlan(formData).unwrap();
+      console.log('Plan created:', result);
+    } catch (err) {
+      console.error('Error:', err);
+    }
+  };
+  
+  return <form onSubmit={handleSubmit}>...</form>;
+}
+```
+
+#### Lazy Queries (Trigger on Demand)
+```javascript
+import { useLazyGetFarmerByNICQuery } from '../api/services/farmersApi';
+
+function FarmerLookup() {
+  const [getFarmer, { data, isLoading }] = useLazyGetFarmerByNICQuery();
+  
+  const handleSearch = (nic) => {
+    getFarmer(nic);
+  };
+  
+  return <div>{/* Search form */}</div>;
+}
+```
 
 ---
 
-## Authentication Endpoints
+## API Endpoints by Service
 
-### 1. Verify User
-**Function:** `verifyUser(phoneNumber)`
-**HTTP Method:** POST
-**URL:** `/check_mobile_no_availability_all`
-**Description:** Verifies if a mobile number is available for registration.
+### Authentication (`authApi.js`)
+
+#### Verify User
+**Endpoint:** `verifyUser`  
+**Type:** Mutation  
+**Hook:** `useVerifyUserMutation`  
+**URL:** `/check_mobile_no_availability_all`  
+**Method:** POST
 
 **Parameters:**
-- `mobile_no` (string, required): Phone number to verify
+- `phoneNumber` (string, required): Mobile number to verify
 
-**Request Example:**
+**Request:**
 ```json
 {
   "mobile_no": "+1234567890"
@@ -89,22 +138,19 @@ Generic error handler for API calls that logs errors and returns empty array on 
 }
 ```
 
-**Errors:**
-- 400: Invalid mobile number format
-- 409: Mobile number already exists
-
 ---
 
-### 2. Login User
-**Function:** `loginUser(phoneNumber)`
-**HTTP Method:** POST
-**URL:** `/login`
-**Description:** Authenticates user with mobile number and returns access token.
+#### Login User
+**Endpoint:** `loginUser`  
+**Type:** Mutation  
+**Hook:** `useLoginUserMutation`  
+**URL:** `/login`  
+**Method:** POST
 
 **Parameters:**
-- `mobile_no` (string, required): Phone number for login
+- `phoneNumber` (string, required): Mobile number for login
 
-**Request Example:**
+**Request:**
 ```json
 {
   "mobile_no": "+1234567890"
@@ -123,45 +169,45 @@ Generic error handler for API calls that logs errors and returns empty array on 
 }
 ```
 
-**Errors:**
-- 401: Invalid credentials
-- 404: User not found
+---
+
+#### Send OTP
+**Endpoint:** `sendOTP`  
+**Type:** Mutation  
+**Hook:** `useSendOTPMutation`  
+**URL:** `/send_sms_with_custom_body`  
+**Method:** POST
+
+**Parameters:**
+- `mobile_no` (string, required): Mobile number
+- `otp` (string, required): OTP code
 
 ---
 
-## Organizational Structure Endpoints
+### Estates & Geography (`estatesApi.js`)
 
-### 3. Get Groups
-**Function:** `groupGetter()`
-**HTTP Method:** POST
-**URL:** `/display_groups`
-**Description:** Retrieves all available groups.
+#### Get All Groups
+**Endpoint:** `getGroups`  
+**Type:** Query  
+**Hook:** `useGetGroupsQuery`  
+**URL:** `/display_groups`  
+**Method:** POST
 
 **Parameters:** None
 
-**Response:**
-```json
-[
-  {
-    "id": 1,
-    "name": "Group A",
-    "description": "Primary group"
-  }
-]
-```
-
 ---
 
-### 4. Get Plantations by Group
-**Function:** `groupPlantation(groupId)`
-**HTTP Method:** POST
-**URL:** `/display_plantation`
-**Description:** Retrieves plantations associated with a specific group.
+#### Get Plantations by Group
+**Endpoint:** `getPlantationsByGroup`  
+**Type:** Query  
+**Hook:** `useGetPlantationsByGroupQuery`  
+**URL:** `/display_plantation`  
+**Method:** POST
 
 **Parameters:**
-- `group` (number, required): Group ID
+- `groupId` (number, required): Group ID
 
-**Request Example:**
+**Request:**
 ```json
 {
   "group": 1
@@ -170,166 +216,165 @@ Generic error handler for API calls that logs errors and returns empty array on 
 
 ---
 
-### 5. Get Regions by Plantation
-**Function:** `groupRegion(plantationID)`
-**HTTP Method:** POST
-**URL:** `/display_region`
-**Description:** Retrieves regions within a specific plantation.
+#### Get Regions by Plantation
+**Endpoint:** `getRegionsByPlantation`  
+**Type:** Query  
+**Hook:** `useGetRegionsByPlantationQuery`  
+**URL:** `/display_region`  
+**Method:** POST
 
 **Parameters:**
-- `plantation` (number, required): Plantation ID
+- `plantationId` (number, required): Plantation ID
 
 ---
 
-### 6. Get Estates by Region
-**Function:** `groupEstate(regionID)`
-**HTTP Method:** POST
-**URL:** `/display_estate`
-**Description:** Retrieves estates within a specific region.
+#### Get Estates by Region
+**Endpoint:** `getEstatesByRegion`  
+**Type:** Query  
+**Hook:** `useGetEstatesByRegionQuery`  
+**URL:** `/display_estate`  
+**Method:** POST
 
 **Parameters:**
-- `region` (number, required): Region ID
+- `regionId` (number, required): Region ID
 
 ---
 
-### 7. Display All Plantations
-**Function:** `displayPlantation()`
-**HTTP Method:** POST
-**URL:** `/display_all_plantation`
-**Description:** Retrieves all plantations regardless of group.
+#### Get All Plantations
+**Endpoint:** `getAllPlantations`  
+**Type:** Query  
+**Hook:** `useGetAllPlantationsQuery`  
+**URL:** `/display_all_plantation`  
+**Method:** POST
 
 ---
 
-### 8. Display All Estates
-**Function:** `displayEstate()`
-**HTTP Method:** POST
-**URL:** `/display_all_estates`
-**Description:** Retrieves all estates.
+#### Get All Estates
+**Endpoint:** `getAllEstates`  
+**Type:** Query  
+**Hook:** `useGetAllEstatesQuery`  
+**URL:** `/display_all_estates`  
+**Method:** POST
 
 ---
 
-### 9. Get Estates by Plantation
-**Function:** `estateListAcPlant(plantationID)`
-**HTTP Method:** POST
-**URL:** `/display_estate_by_plantation`
-**Description:** Retrieves estates associated with a specific plantation.
+#### Get Estates by Plantation
+**Endpoint:** `getEstatesByPlantation`  
+**Type:** Query  
+**Hook:** `useGetEstatesByPlantationQuery`  
+**URL:** `/display_estate_by_plantation`  
+**Method:** POST
 
 **Parameters:**
-- `plantation` (number, required): Plantation ID
+- `plantationId` (number, required): Plantation ID
 
 ---
 
-### 10. Get Estate Details
-**Function:** `estateListDetails(estateID)`
-**HTTP Method:** POST
-**URL:** `/estate_profile`
-**Description:** Retrieves detailed information about a specific estate.
+#### Get Estate Details
+**Endpoint:** `getEstateDetails`  
+**Type:** Query  
+**Hook:** `useGetEstateDetailsQuery`  
+**URL:** `/estate_profile`  
+**Method:** POST
 
 **Parameters:**
-- `estate` (number, required): Estate ID
+- `estateId` (number, required): Estate ID
 
 ---
 
-### 11. Get Division Fields by Estate
-**Function:** `divisionStateList(estateID)`
-**HTTP Method:** POST
-**URL:** `/display_division_field_by_estate`
-**Description:** Retrieves division fields within a specific estate.
+#### Get Divisions by Estate
+**Endpoint:** `getDivisionsByEstate`  
+**Type:** Query  
+**Hook:** `useGetDivisionsByEstateQuery`  
+**URL:** `/display_division_field_by_estate`  
+**Method:** POST
 
 **Parameters:**
-- `estate` (number, required): Estate ID
+- `estateId` (number, required): Estate ID
 
 ---
 
-## Resource Management Endpoints
-
-### 12. Get Operators
-**Function:** `displayOperators()`
-**HTTP Method:** POST
-**URL:** `/get_operator`
-**Description:** Retrieves all available operators.
-
----
-
-### 13. Assign Operator to Plan
-**Function:** `assignOperator(planID, operatorID)`
-**HTTP Method:** POST
-**URL:** `/assign_plan_to_operator`
-**Description:** Assigns an operator to a specific plan.
+#### Get Field Details
+**Endpoint:** `getFieldDetails`  
+**Type:** Query  
+**Hook:** `useGetFieldDetailsQuery`  
+**URL:** `/details_by_field`  
+**Method:** POST
 
 **Parameters:**
-- `plan` (number, required): Plan ID
-- `operator` (number, required): Operator ID
-
-**Request Example:**
-```json
-{
-  "plan": 1,
-  "operator": 5
-}
-```
+- `fieldId` (number, required): Field ID
 
 ---
 
-### 14. Get Plan Operators by Date Range
-**Function:** `planOperatorsDateRange(start_date, end_date)`
-**HTTP Method:** POST
-**URL:** `/find_plan_operator_date_range`
-**Description:** Retrieves plan operators within a specific date range.
+### Plans (`plansApi.js`)
+
+#### Get Plans by Date
+**Endpoint:** `getPlansByDate`  
+**Type:** Query  
+**Hook:** `useGetPlansByDateQuery`  
+**URL:** `/find_plans_by_date`  
+**Method:** POST
 
 **Parameters:**
-- `start_date` (string, required): Start date (YYYY-MM-DD)
-- `end_date` (string, required): End date (YYYY-MM-DD)
+- `date` (string, required): Date in YYYY-MM-DD format
 
 ---
 
-### 15. Get Assigned Operator
-**Function:** `assignedOperator(planID)`
-**HTTP Method:** POST
-**URL:** `/find_plan_operator`
-**Description:** Retrieves the operator assigned to a specific plan.
+#### Get Plans by Date Range
+**Endpoint:** `getPlansByDateRange`  
+**Type:** Query  
+**Hook:** `useGetPlansByDateRangeQuery`  
+**URL:** `/find_plans_by_date_range`  
+**Method:** POST
 
 **Parameters:**
-- `plan` (number, required): Plan ID
+- `startDate` (string, required): Start date (YYYY-MM-DD)
+- `endDate` (string, required): End date (YYYY-MM-DD)
 
 ---
 
-## Chemical and Mission Type Endpoints
-
-### 16. Get Chemical Types
-**Function:** `chemicalTypeList()`
-**HTTP Method:** POST
-**URL:** `/chemical_type`
-**Description:** Retrieves all available chemical types.
-
----
-
-### 17. Get Mission Types
-**Function:** `missionType()`
-**HTTP Method:** POST
-**URL:** `/mission_type`
-**Description:** Retrieves all available mission types.
-
----
-
-### 18. Get Crop Types
-**Function:** `cropType()`
-**HTTP Method:** POST
-**URL:** `/display_crop_type`
-**Description:** Retrieves all available crop types.
-
----
-
-## Plan Management Endpoints
-
-### 19. Submit Plan
-**Function:** `submitPlan(submissionData)`
-**HTTP Method:** POST
-**URL:** `/create_plan`
-**Description:** Creates a new plan with the provided data.
+#### Get Plan by ID
+**Endpoint:** `getPlanById`  
+**Type:** Query  
+**Hook:** `useGetPlanByIdQuery`  
+**URL:** `/find_plan`  
+**Method:** POST
 
 **Parameters:**
-- `submissionData` (object, required): Plan data object
+- `planId` (number, required): Plan ID
+
+---
+
+#### Get Plan Summary
+**Endpoint:** `getPlanSummary`  
+**Type:** Query  
+**Hook:** `useGetPlanSummaryQuery`  
+**URL:** `/find_plan_summary`  
+**Method:** POST
+
+**Parameters:**
+- `planId` (number, required): Plan ID
+
+---
+
+#### Get Plan Resource Allocation
+**Endpoint:** `getPlanResourceAllocation`  
+**Type:** Query  
+**Hook:** `useGetPlanResourceAllocationQuery`  
+**URL:** `/get_plan_resource_allocation_details`  
+**Method:** POST
+
+**Parameters:**
+- `planId` (number, required): Plan ID
+
+---
+
+#### Create Plan
+**Endpoint:** `createPlan`  
+**Type:** Mutation  
+**Hook:** `useCreatePlanMutation`  
+**URL:** `/create_plan`  
+**Method:** POST
 
 **Request Example:**
 ```json
@@ -354,310 +399,245 @@ Generic error handler for API calls that logs errors and returns empty array on 
 
 ---
 
-### 20. Get Plans by Date
-**Function:** `getPlansUsingDate(date)`
-**HTTP Method:** POST
-**URL:** `/find_plans_by_date`
-**Description:** Retrieves plans for a specific date.
+#### Update Plan
+**Endpoint:** `updatePlan`  
+**Type:** Mutation  
+**Hook:** `useUpdatePlanMutation`  
+**URL:** `/update_plan`  
+**Method:** POST
 
 **Parameters:**
-- `date` (string, required): Date in YYYY-MM-DD format
+- `planData` (object, required): Updated plan data (must include `plan` ID)
 
 ---
 
-### 21. Get Plans by Date Range
-**Function:** `getPlansUsingDateRange(start_date, end_date)`
-**HTTP Method:** POST
-**URL:** `/find_plans_by_date_range`
-**Description:** Retrieves plans within a specific date range.
+#### Delete Plan
+**Endpoint:** `deletePlan`  
+**Type:** Mutation  
+**Hook:** `useDeletePlanMutation`  
+**URL:** `/delete_plan`  
+**Method:** POST
 
 **Parameters:**
-- `start_date` (string, required): Start date (YYYY-MM-DD)
-- `end_date` (string, required): End date (YYYY-MM-DD)
+- `planId` (number, required): Plan ID
 
 ---
 
-### 22. Find Plan by ID
-**Function:** `findPlanByID(id)`
-**HTTP Method:** POST
-**URL:** `/find_plan`
-**Description:** Retrieves detailed information about a specific plan.
+#### Change Plan Status
+**Endpoint:** `changePlanStatus`  
+**Type:** Mutation  
+**Hook:** `useChangePlanStatusMutation`  
+**URL:** `/plan_change_status`  
+**Method:** POST
 
 **Parameters:**
-- `plan` (number, required): Plan ID
-
----
-
-### 23. Update Plan
-**Function:** `submitUpdatePlan(submissionUpdateData)`
-**HTTP Method:** POST
-**URL:** `/update_plan`
-**Description:** Updates an existing plan.
-
-**Parameters:**
-- `submissionUpdateData` (object, required): Updated plan data
-
-**Response:**
-```json
-{
-  "status": "true",
-  "id": 123,
-  "message": "Plan updated successfully"
-}
-```
-
----
-
-### 24. Delete Plan
-**Function:** `deletePlan(id)`
-**HTTP Method:** POST
-**URL:** `/delete_plan`
-**Description:** Deletes a specific plan.
-
-**Parameters:**
-- `plan` (number, required): Plan ID
-
----
-
-### 25. Deactivate Plan
-**Function:** `deactivatePlan(id, status)`
-**HTTP Method:** POST
-**URL:** `/plan_change_status`
-**Description:** Changes the status of a plan (activate/deactivate).
-
-**Parameters:**
-- `plan` (number, required): Plan ID
+- `planId` (number, required): Plan ID
 - `status` (string, required): New status
 
 ---
 
-## Pilot and Drone Management Endpoints
-
-### 26. Get Pilots Details
-**Function:** `getPilotsDetails()`
-**HTTP Method:** POST
-**URL:** `/team_lead_and_pilot_list`
-**Description:** Retrieves all team leads and pilots.
-
----
-
-### 27. Get ASC Pilots Details
-**Function:** `getAscPilotsDetails()`
-**HTTP Method:** POST
-**URL:** `/asc_team_lead_and_pilot_list`
-**Description:** Retrieves ASC (Agricultural Service Center) team leads and pilots.
-
----
-
-### 28. Get Drones Details
-**Function:** `getDronesDetails()`
-**HTTP Method:** POST
-**URL:** `/drone_list`
-**Description:** Retrieves all available drones.
-
----
-
-### 29. Get Sectors
-**Function:** `getSectors()`
-**HTTP Method:** POST
-**URL:** `/display_sectors`
-**Description:** Retrieves all sectors.
-
----
-
-### 30. Get Stages
-**Function:** `getStages()`
-**HTTP Method:** POST
-**URL:** `/display_growth_level`
-**Description:** Retrieves all growth stages.
-
----
-
-### 31. Get Time Pick
-**Function:** `getTimePick()`
-**HTTP Method:** POST
-**URL:** `/time_of_the_day`
-**Description:** Retrieves available time slots for the day.
-
----
-
-## Team Management Endpoints
-
-### 32. Display Team Data
-**Function:** `displayTeamData()`
-**HTTP Method:** POST
-**URL:** `/display_all_team_pilot_drone`
-**Description:** Retrieves all team, pilot, and drone combinations.
-
----
-
-### 33. Display Team Data Non-Plantation
-**Function:** `displayTeamDataNonp()`
-**HTTP Method:** POST
-**URL:** `/display_all_non_plantaion_team_pilot_drone`
-**Description:** Retrieves non-plantation team, pilot, and drone combinations.
-
----
-
-### 34. Add Drone/Pilot to Pool
-**Function:** `addDroneorPilotToPool(submissionData)`
-**HTTP Method:** POST
-**URL:** `/add_team_pilot_drone`
-**Description:** Adds a drone or pilot to the team pool.
+#### Update Plan Date
+**Endpoint:** `updatePlanDate`  
+**Type:** Mutation  
+**Hook:** `useUpdatePlanDateMutation`  
+**URL:** `/update_plan_date_by_plan_id`  
+**Method:** POST
 
 **Parameters:**
-- `submissionData` (object, required): Team assignment data
+- `planId` (number, required): Plan ID
+- `date` (string, required): New date (YYYY-MM-DD)
 
 ---
 
-### 35. Update Team Pilot
-**Function:** `updateTeamPilot(submissionData)`
-**HTTP Method:** POST
-**URL:** `/update_team_pilot`
-**Description:** Updates pilot information in a team.
-
----
-
-### 36. Update Team Drone
-**Function:** `updateTeamDrone(submissionData)`
-**HTTP Method:** POST
-**URL:** `/update_team_drone`
-**Description:** Updates drone information in a team.
-
----
-
-### 37. Add Team to Plan
-**Function:** `addTeamToPlan(submissionData)`
-**HTTP Method:** POST
-**URL:** `/add_team_to_plan`
-**Description:** Assigns a team to a specific plan.
-
----
-
-### 38. Add Team to Mission (Non-Plantation)
-**Function:** `addTeamToPlanNonp(plan_id, team_id)`
-**HTTP Method:** POST
-**URL:** `/add_team_to_mission`
-**Description:** Assigns a team to a non-plantation mission.
+#### Update Drone to Plan
+**Endpoint:** `updateDroneToPlan`  
+**Type:** Mutation  
+**Hook:** `useUpdateDroneToPlanMutation`  
+**URL:** `/change_drone_to_plan`  
+**Method:** POST
 
 **Parameters:**
-- `plan_id` (number, required): Plan ID
-- `team_id` (number, required): Team ID
+- `planId` (number, required): Plan ID
+- `droneId` (number, required): Drone ID
 
 ---
 
-## Resource Allocation Endpoints
-
-### 39. Submit Resource Allocation
-**Function:** `submitAlocation(submissionData)`
-**HTTP Method:** POST
-**URL:** `/plan_resource_allocations`
-**Description:** Allocates resources to a plan.
-
----
-
-### 40. Submit Resource Allocation Non-Plantation
-**Function:** `submitAlocationNonp(submissionData)`
-**HTTP Method:** POST
-**URL:** `/mission_resource_allocations`
-**Description:** Allocates resources to a non-plantation mission.
-
----
-
-### 41. Get Plan Resource Allocation
-**Function:** `getPlanResorcesAllocation(data)`
-**HTTP Method:** POST
-**URL:** `/get_plan_resource_allocation_details`
-**Description:** Retrieves resource allocation details for a plan.
+#### Update Pilot to Plan
+**Endpoint:** `updatePilotToPlan`  
+**Type:** Mutation  
+**Hook:** `useUpdatePilotToPlanMutation`  
+**URL:** `/change_pilot_to_plan`  
+**Method:** POST
 
 **Parameters:**
-- `id` (number, required): Plan ID
+- `planId` (number, required): Plan ID
+- `pilotId` (number, required): Pilot ID
 
 ---
 
-## Reporting Endpoints
-
-### 42. Get Summary Data by Group
-**Function:** `getSummaryDataGroup(id, start_date, end_date)`
-**HTTP Method:** POST
-**URL:** `/get_plan_resource_allocation_details_by_group_and_date_range`
-**Description:** Retrieves summary data for a group within a date range.
+#### Get Calendar Data
+**Endpoint:** `getCalendarData`  
+**Type:** Query  
+**Hook:** `useGetCalendarDataQuery`  
+**URL:** `/find_plans_by_estate_and_crop_and_mission_type_date_range`  
+**Method:** POST
 
 **Parameters:**
-- `group` (number, required): Group ID
-- `start_date` (string, required): Start date
-- `end_date` (string, required): End date
+- `estateId` (number, optional): Estate ID
+- `cropType` (number, optional): Crop type ID
+- `missionType` (number, optional): Mission type ID
+- `startDate` (string, required): Start date
+- `endDate` (string, required): End date
+- `location` (string, optional): Location context (e.g., "new_plan")
 
 ---
 
-### 43. Get Summary Data by Plantation
-**Function:** `getSummaryDataPlantation(id, start_date, end_date)`
-**HTTP Method:** POST
-**URL:** `/get_plan_resource_allocation_details_by_plantation_and_date_range`
-**Description:** Retrieves summary data for a plantation within a date range.
-
----
-
-### 44. Get Summary Data by Region
-**Function:** `getSummaryDataRegion(id, start_date, end_date)`
-**HTTP Method:** POST
-**URL:** `/get_plan_resource_allocation_details_by_region_and_date_range`
-**Description:** Retrieves summary data for a region within a date range.
-
----
-
-### 45. Get Summary Data by Estate
-**Function:** `getSummaryDataEstate(id, start_date, end_date)`
-**HTTP Method:** POST
-**URL:** `/get_plan_resource_allocation_details_by_estate_and_date_range`
-**Description:** Retrieves summary data for an estate within a date range.
-
----
-
-### 46. Finance Report
-**Function:** `financeReport(start_date, end_date, estates)`
-**HTTP Method:** POST
-**URL:** `/sprayed_area_by_date_range_and_estate`
-**Description:** Generates finance report for sprayed areas by date range and estates.
+#### Update Operations Approval
+**Endpoint:** `updateOpsApproval`  
+**Type:** Mutation  
+**Hook:** `useUpdateOpsApprovalMutation`  
+**URL:** `/update_d_ops_approval_for_plan`  
+**Method:** POST
 
 **Parameters:**
-- `start_date` (string, required): Start date
-- `end_date` (string, required): End date
-- `estates` (array, required): Array of estate IDs
+- `plan` (number, required): Plan ID
+- `status` (string, required): Approval status
 
 ---
 
-### 47. Lead Report
-**Function:** `leadReport(start_date, end_date)`
-**HTTP Method:** POST
-**URL:** `/team_lead_performance_by_date_range`
-**Description:** Generates team lead performance report for a date range.
+### Teams (`teamsApi.js`)
+
+#### Get Pilots and Drones
+**Endpoint:** `getPilotsAndDrones`  
+**Type:** Query  
+**Hook:** `useGetPilotsAndDronesQuery`  
+**URL:** `/team_lead_and_pilot_list`  
+**Method:** POST
 
 ---
 
-### 48. Number of Flights Report
-**Function:** `noOfFlights(start_date, end_date)`
-**HTTP Method:** POST
-**URL:** `/plan_field_no_of_flights`
-**Description:** Retrieves number of flights for plans within a date range.
+#### Get ASC Pilots and Drones
+**Endpoint:** `getASCPilotsAndDrones`  
+**Type:** Query  
+**Hook:** `useGetASCPilotsAndDronesQuery`  
+**URL:** `/asc_team_lead_and_pilot_list`  
+**Method:** POST
 
 ---
 
-### 49. Approval Count Report
-**Function:** `ApprovalCount(start_date, end_date)`
-**HTTP Method:** POST
-**URL:** `/pilots_subtask_and_aprroval_count`
-**Description:** Retrieves pilot subtask and approval counts for a date range.
+#### Get Drones List
+**Endpoint:** `getDronesList`  
+**Type:** Query  
+**Hook:** `useGetDronesListQuery`  
+**URL:** `/drone_list`  
+**Method:** POST
 
 ---
 
-## Mission Management Endpoints
+#### Get Team Data
+**Endpoint:** `getTeamData`  
+**Type:** Query  
+**Hook:** `useGetTeamDataQuery`  
+**URL:** `/display_all_team_pilot_drone`  
+**Method:** POST
 
-### 50. Submit ASC Booking Data
-**Function:** `submitDataAscBooking(submissionData)`
-**HTTP Method:** POST
-**URL:** `/create_mission`
-**Description:** Creates a new ASC (Agricultural Service Center) mission.
+---
+
+#### Get Team Data (Non-Plantation)
+**Endpoint:** `getTeamDataNonPlantation`  
+**Type:** Query  
+**Hook:** `useGetTeamDataNonPlantationQuery`  
+**URL:** `/display_all_non_plantaion_team_pilot_drone`  
+**Method:** POST
+
+---
+
+#### Add Team to Plan
+**Endpoint:** `addTeamToPlan`  
+**Type:** Mutation  
+**Hook:** `useAddTeamToPlanMutation`  
+**URL:** `/add_team_to_plan`  
+**Method:** POST
+
+**Parameters:**
+- `plan_id` or `plan` (number, required): Plan ID
+- `team_id` or `team` (number, required): Team ID
+
+---
+
+#### Add Team to Mission
+**Endpoint:** `addTeamToMission`  
+**Type:** Mutation  
+**Hook:** `useAddTeamToMissionMutation`  
+**URL:** `/add_team_to_mission`  
+**Method:** POST
+
+**Parameters:**
+- `planId` (number, required): Mission/Plan ID
+- `teamId` (number, required): Team ID
+
+---
+
+#### Add Drone or Pilot to Pool
+**Endpoint:** `addDroneOrPilotToPool`  
+**Type:** Mutation  
+**Hook:** `useAddDroneOrPilotToPoolMutation`  
+**URL:** `/add_team_pilot_drone`  
+**Method:** POST
+
+---
+
+#### Update Team Pilot
+**Endpoint:** `updateTeamPilot`  
+**Type:** Mutation  
+**Hook:** `useUpdateTeamPilotMutation`  
+**URL:** `/update_team_pilot`  
+**Method:** POST
+
+---
+
+#### Update Team Drone
+**Endpoint:** `updateTeamDrone`  
+**Type:** Mutation  
+**Hook:** `useUpdateTeamDroneMutation`  
+**URL:** `/update_team_drone`  
+**Method:** POST
+
+---
+
+### Bookings/Missions (`bookingsApi.js`)
+
+#### Get ASC Bookings by Date Range
+**Endpoint:** `getASCBookingsByDateRange`  
+**Type:** Query  
+**Hook:** `useGetASCBookingsByDateRangeQuery`  
+**URL:** `/search_mission_by_requested_date_range`  
+**Method:** POST
+
+**Parameters:**
+- `startDate` (string, required): Start date
+- `endDate` (string, required): End date
+
+---
+
+#### Get Missions by Planned Date
+**Endpoint:** `getMissionsByPlannedDate`  
+**Type:** Query  
+**Hook:** `useGetMissionsByPlannedDateQuery`  
+**URL:** `/search_mission_by_planed_date`  
+**Method:** POST
+
+**Parameters:**
+- `date` (string, required): Planned date
+
+---
+
+#### Create Mission
+**Endpoint:** `createMission`  
+**Type:** Mutation  
+**Hook:** `useCreateMissionMutation`  
+**URL:** `/create_mission`  
+**Method:** POST
 
 **Response:**
 ```json
@@ -670,27 +650,48 @@ Generic error handler for API calls that logs errors and returns empty array on 
 
 ---
 
-### 51. Get ASC Pilots
-**Function:** `getAscPilots()`
-**HTTP Method:** POST
-**URL:** `/asc_team_lead_and_pilot_list`
-**Description:** Retrieves ASC pilots and team leads.
+#### Update Mission Planned Date
+**Endpoint:** `updateMissionPlannedDate`  
+**Type:** Mutation  
+**Hook:** `useUpdateMissionPlannedDateMutation`  
+**URL:** `/update_mission_planned_date_by_id`  
+**Method:** POST
+
+**Parameters:**
+- `id` (number, required): Mission ID
+- `datePlaned` (string, required): New planned date
+- `paymentType` (string, optional): Payment type
 
 ---
 
-### 52. Set ASC Team Lead
-**Function:** `setAscTeamLead(dataSet)`
-**HTTP Method:** POST
-**URL:** `/update_mission_team_lead_by_id`
-**Description:** Updates the team lead for an ASC mission.
+#### Update Mission
+**Endpoint:** `updateMission`  
+**Type:** Mutation  
+**Hook:** `useUpdateMissionMutation`  
+**URL:** `/update_mission_by_id`  
+**Method:** POST
 
 ---
 
-### 53. Set ASC for Mission
-**Function:** `setAscForMission(idOrPayload, ascIfAny)`
-**HTTP Method:** POST
-**URL:** `/update_mission_asc_by_id`
-**Description:** Sets ASC for a specific mission.
+#### Update Mission Status
+**Endpoint:** `updateMissionStatus`  
+**Type:** Mutation  
+**Hook:** `useUpdateMissionStatusMutation`  
+**URL:** `/update_mission_status_by_id`  
+**Method:** POST
+
+**Parameters:**
+- `id` (number, required): Mission ID
+- `status` (string, required): New status
+
+---
+
+#### Set ASC for Mission
+**Endpoint:** `setASCForMission`  
+**Type:** Mutation  
+**Hook:** `useSetASCForMissionMutation`  
+**URL:** `/update_mission_asc_by_id`  
+**Method:** POST
 
 **Parameters:**
 - `id` (number, required): Mission ID
@@ -699,203 +700,231 @@ Generic error handler for API calls that logs errors and returns empty array on 
 
 ---
 
-### 54. Set ASC Plan Status
-**Function:** `setStatusAscPlan(id, status)`
-**HTTP Method:** POST
-**URL:** `/update_mission_status_by_id`
-**Description:** Updates the status of an ASC plan.
-
----
-
-### 55. Display ASC
-**Function:** `displayAsc()`
-**HTTP Method:** POST
-**URL:** `/display_asc`
-**Description:** Retrieves all ASC information.
-
----
-
-## Task Management Endpoints
-
-### 56. Get Submission Data
-**Function:** `getSubmissionData(id)`
-**HTTP Method:** POST
-**URL:** `/display_pilot_field_sub_task`
-**Description:** Retrieves pilot field subtask data.
+#### Get ASC Calendar Data
+**Endpoint:** `getASCCalendarData`  
+**Type:** Query  
+**Hook:** `useGetASCCalendarDataQuery`  
+**URL:** `/mission_count_by_date_for_month`  
+**Method:** POST
 
 **Parameters:**
-- `task` (number, required): Task ID
+- `month` (number, required): Month (1-12)
+- `year` (number, required): Year
 
 ---
 
-### 57. Display Tasks by Plan and Field
-**Function:** `displayTaskPlanAndField(id, fieldid)`
-**HTTP Method:** POST
-**URL:** `/display_tasks_by_plan_and_field`
-**Description:** Retrieves tasks for a specific plan and field.
+### Operators (`operatorsApi.js`)
+
+#### Get Operators
+**Endpoint:** `getOperators`  
+**Type:** Query  
+**Hook:** `useGetOperatorsQuery`  
+**URL:** `/get_operator`  
+**Method:** POST
+
+---
+
+#### Assign Operator to Plan
+**Endpoint:** `assignOperatorToPlan`  
+**Type:** Mutation  
+**Hook:** `useAssignOperatorToPlanMutation`  
+**URL:** `/assign_plan_to_operator`  
+**Method:** POST
 
 **Parameters:**
-- `plan` (number, required): Plan ID
-- `field` (number, required): Field ID
+- `planId` (number, required): Plan ID
+- `operatorId` (number, required): Operator ID
 
 ---
 
-### 58. Sub Task Approve or Decline
-**Function:** `subTaskApproveorDecline(subtask, status)`
-**HTTP Method:** POST
-**URL:** `/update_ops_room_approval_for_sub_task`
-**Description:** Approves or declines a subtask.
+#### Get Plan Operators by Date Range
+**Endpoint:** `getPlanOperatorsByDateRange`  
+**Type:** Query  
+**Hook:** `useGetPlanOperatorsByDateRangeQuery`  
+**URL:** `/find_plan_operator_date_range`  
+**Method:** POST
+
+**Parameters:**
+- `startDate` (string, required): Start date
+- `endDate` (string, required): End date
+
+---
+
+### Tasks (`tasksApi.js`)
+
+#### Get Tasks by Plan and Field
+**Endpoint:** `getTasksByPlanAndField`  
+**Type:** Query  
+**Hook:** `useGetTasksByPlanAndFieldQuery`  
+**URL:** `/display_tasks_by_plan_and_field`  
+**Method:** POST
+
+**Parameters:**
+- `planId` (number, required): Plan ID
+- `fieldId` (number, required): Field ID
+
+---
+
+#### Get Submission Data
+**Endpoint:** `getSubmissionData`  
+**Type:** Query  
+**Hook:** `useGetSubmissionDataQuery`  
+**URL:** `/display_pilot_field_sub_task`  
+**Method:** POST
+
+**Parameters:**
+- `taskId` (number, required): Task ID
+
+---
+
+#### Update Subtask Approval
+**Endpoint:** `updateSubtaskApproval`  
+**Type:** Mutation  
+**Hook:** `useUpdateSubtaskApprovalMutation`  
+**URL:** `/update_ops_room_approval_for_sub_task`  
+**Method:** POST
 
 **Parameters:**
 - `subtask` (number, required): Subtask ID
 - `status` (string, required): Approval status
 
-**Response:**
-```json
-{
-  "status": "true",
-  "message": "Update successful"
-}
-```
-
 ---
 
-### 59. Sub Task Log Details
-**Function:** `subTaskLogDetails(subtask, status, reasonId, reasonText)`
-**HTTP Method:** POST
-**URL:** `/sub_tasks_status_log`
-**Description:** Logs details for subtask status changes.
+#### Log Subtask Status
+**Endpoint:** `logSubtaskStatus`  
+**Type:** Mutation  
+**Hook:** `useLogSubtaskStatusMutation`  
+**URL:** `/sub_tasks_status_log`  
+**Method:** POST
 
 **Parameters:**
 - `subtask` (number, required): Subtask ID
 - `status` (string, required): Status
-- `reason` (number, required): Reason ID
-- `reason_text` (string, required): Reason description
+- `reasonId` (number, required): Reason ID
+- `reasonText` (string, required): Reason description
 
 ---
 
-## File Upload Endpoints
+#### Submit DJI Record
+**Endpoint:** `submitDJIRecord`  
+**Type:** Mutation  
+**Hook:** `useSubmitDJIRecordMutation`  
+**URL:** `/submit_dji_record_by_task`  
+**Method:** POST
 
-### 60. Submit DJI Record
-**Function:** `submitDJIRecord(formData)`
-**HTTP Method:** POST
-**URL:** `/submit_dji_record_by_task`
-**Description:** Uploads DJI flight records for a task.
+**Content-Type:** `multipart/form-data`
 
 **Parameters:**
 - `formData` (FormData, required): File upload data
 
-**Content-Type:** `multipart/form-data`
-
 ---
 
-## Farmer Management Endpoints
-
-### 61. Add Farmer
-**Function:** `addFarmer(farmerData)`
-**HTTP Method:** POST
-**URL:** `/add_farmer`
-**Description:** Adds a new farmer to the system.
+#### Report Task
+**Endpoint:** `reportTask`  
+**Type:** Mutation  
+**Hook:** `useReportTaskMutation`  
+**URL:** `/flag_task_by_id`  
+**Method:** POST
 
 **Parameters:**
-- `farmerData` (object, required): Farmer information
+- `taskId` (number, required): Task ID
+- `reason` (number, required): Reason ID
+- `reasonList` (array, optional): Additional reason list
 
 ---
 
-### 62. Update Farmer
-**Function:** `updateFarmer(submissionData)`
-**HTTP Method:** POST
-**URL:** `/update_farmer`
-**Description:** Updates farmer information.
+### Farmers (`farmersApi.js`)
 
----
-
-### 63. Get Farmer Details by NIC
-**Function:** `farmerDetailsAscBooking(nic)`
-**HTTP Method:** POST
-**URL:** `/farmer_by_nic`
-**Description:** Retrieves farmer details by NIC number.
+#### Get Farmer by NIC
+**Endpoint:** `getFarmerByNIC`  
+**Type:** Query  
+**Hook:** `useGetFarmerByNICQuery`, `useLazyGetFarmerByNICQuery`  
+**URL:** `/farmer_by_nic`  
+**Method:** POST
 
 **Parameters:**
 - `nic` (string, required): National Identity Card number
 
 ---
 
-## Calendar and Scheduling Endpoints
+#### Add Farmer
+**Endpoint:** `addFarmer`  
+**Type:** Mutation  
+**Hook:** `useAddFarmerMutation`  
+**URL:** `/add_farmer`  
+**Method:** POST
 
-### 64. Get Updated Calendar
-**Function:** `getUpdatedCalander(data, location)`
-**HTTP Method:** POST
-**URL:** `/find_plans_by_estate_and_crop_and_mission_type_date_range`
-**Description:** Retrieves calendar data filtered by estate, crop, and mission type.
+---
+
+#### Update Farmer
+**Endpoint:** `updateFarmer`  
+**Type:** Mutation  
+**Hook:** `useUpdateFarmerMutation`  
+**URL:** `/update_farmer`  
+**Method:** POST
+
+---
+
+### Finance (`financeApi.js`)
+
+#### Get Pilot Revenue by Date
+**Endpoint:** `getPilotRevenueByDate`  
+**Type:** Query  
+**Hook:** `useGetPilotRevenueByDateQuery`  
+**URL:** `/pilot_daily_covered_area`  
+**Method:** POST
 
 **Parameters:**
-- `data` (object, required): Filter criteria
-- `location` (string, required): Location context
+- `date` (string, required): Date (YYYY-MM-DD)
 
 ---
 
-### 65. Set ASC Calendar Date
-**Function:** `setAscCalenderDate(month, year)`
-**HTTP Method:** POST
-**URL:** `/mission_count_by_date_for_month`
-**Description:** Retrieves mission count for a specific month and year.
+#### Get Saved Pilot Revenue by Date
+**Endpoint:** `getSavedPilotRevenueByDate`  
+**Type:** Query  
+**Hook:** `useGetSavedPilotRevenueByDateQuery`  
+**URL:** `/get_pilot_daily_payment_by_date`  
+**Method:** POST
+
+---
+
+#### Add/Update Pilot Revenue
+**Endpoint:** `addPilotRevenue`  
+**Type:** Mutation  
+**Hook:** `useAddPilotRevenueMutation`  
+**URL:** `/pilot_daily_payment`  
+**Method:** POST
 
 **Parameters:**
-- `year` (number, required): Year
-- `month` (number, required): Month
+- `pilot` (number, required): Pilot ID
+- `date` (string, required): Date
+- `assigned` (number): Assigned area
+- `covered` (number): Covered area
+- `cancel` (number): Cancelled area
+- `covered_revenue` (number): Covered revenue
+- `downtime_reason` (number): Downtime reason ID
+- `downtime_approval` (string): Downtime approval status
+- `downtime_payment` (number): Downtime payment
+- `total_revenue` (number): Total revenue
+- `verified` (boolean): Verification status
 
 ---
 
-## Chart Data Endpoints
-
-### 66. Get Chart All Data Group
-**Function:** `getChartAllDataGroup(data)`
-**HTTP Method:** POST
-**URL:** `/for_all_by_date`
-**Description:** Retrieves chart data for all groups by date.
-
----
-
-### 67. Get Chart Group Data
-**Function:** `getChartGroupDataGroup(data)`
-**HTTP Method:** POST
-**URL:** `/for_group_by_date`
-**Description:** Retrieves chart data for a specific group by date.
+#### Get Brokers
+**Endpoint:** `getBrokers`  
+**Type:** Query  
+**Hook:** `useGetBrokersQuery`  
+**URL:** `/view_brokers`  
+**Method:** POST
 
 ---
 
-### 68. Get Chart Plantation Data
-**Function:** `getChartPlantationDataGroup(data)`
-**HTTP Method:** POST
-**URL:** `/for_plantation_by_date`
-**Description:** Retrieves chart data for a plantation by date.
-
----
-
-### 69. Get Chart Region Data
-**Function:** `getChartRegionDataGroup(data)`
-**HTTP Method:** POST
-**URL:** `/for_region_by_date`
-**Description:** Retrieves chart data for a region by date.
-
----
-
-### 70. Get Chart Estate Data
-**Function:** `getChartEstateDataGroup(data)`
-**HTTP Method:** POST
-**URL:** `/for_estate_by_date`
-**Description:** Retrieves chart data for an estate by date.
-
----
-
-## Broker Management Endpoints
-
-### 71. Add Broker
-**Function:** `addBroker(name, mobile, address, nic, bank, branch, account, percentage, joined_date)`
-**HTTP Method:** POST
-**URL:** `/add_broker`
-**Description:** Adds a new broker to the system.
+#### Add Broker
+**Endpoint:** `addBroker`  
+**Type:** Mutation  
+**Hook:** `useAddBrokerMutation`  
+**URL:** `/add_broker`  
+**Method:** POST
 
 **Parameters:**
 - `name` (string, required): Broker name
@@ -910,117 +939,405 @@ Generic error handler for API calls that logs errors and returns empty array on 
 
 ---
 
-### 72. Update Broker
-**Function:** `updateBroker(id, name, mobile, address, nic, bank, branch, account, percentage, joined_date)`
-**HTTP Method:** POST
-**URL:** `/update_broker`
-**Description:** Updates broker information.
+#### Update Broker
+**Endpoint:** `updateBroker`  
+**Type:** Mutation  
+**Hook:** `useUpdateBrokerMutation`  
+**URL:** `/update_broker`  
+**Method:** POST
 
 ---
 
-### 73. Search Broker by ID
-**Function:** `searchBrokerById(id)`
-**HTTP Method:** POST
-**URL:** `/search_broker_by_id`
-**Description:** Retrieves broker information by ID.
+#### Search Broker by NIC
+**Endpoint:** `searchBrokerByNIC`  
+**Type:** Query  
+**Hook:** `useSearchBrokerByNICQuery`  
+**URL:** `/search_broker_by_nic`  
+**Method:** POST
 
 ---
 
-### 74. Search Broker by NIC
-**Function:** `searchBrokerByNIC(nic)`
-**HTTP Method:** POST
-**URL:** `/search_broker_by_nic`
-**Description:** Retrieves broker information by NIC.
+### Reports (`reportsApi.js`)
+
+#### Get Team Lead Report
+**Endpoint:** `getTeamLeadReport`  
+**Type:** Query  
+**Hook:** `useGetTeamLeadReportQuery`  
+**URL:** `/team_lead_performance_by_date_range`  
+**Method:** POST
+
+**Parameters:**
+- `startDate` (string, required): Start date
+- `endDate` (string, required): End date
 
 ---
 
-### 75. View Brokers
-**Function:** `viewBrokers()`
-**HTTP Method:** POST
-**URL:** `/view_brokers`
-**Description:** Retrieves all brokers.
+#### Get Flight Numbers Report
+**Endpoint:** `getFlightNumbersReport`  
+**Type:** Query  
+**Hook:** `useGetFlightNumbersReportQuery`  
+**URL:** `/plan_field_no_of_flights`  
+**Method:** POST
 
 ---
 
-### 76. Update Broker Status
-**Function:** `updateBrokerStatus(id, activated)`
-**HTTP Method:** POST
-**URL:** `/update_broker_status`
-**Description:** Updates broker activation status.
+#### Get Approval Count Report
+**Endpoint:** `getApprovalCountReport`  
+**Type:** Query  
+**Hook:** `useGetApprovalCountReportQuery`  
+**URL:** `/pilots_subtask_and_aprroval_count`  
+**Method:** POST
 
 ---
 
-## Ad Hoc Plan Management Endpoints
-
-### 77. Ad Hoc Plan View
-**Function:** `adHocPlanView(start_date, end_date)`
-**HTTP Method:** POST
-**URL:** `/display_adhoc_plan_request_by_manager_app`
-**Description:** Retrieves ad hoc plan requests within a date range.
-
----
-
-### 78. Ad Hoc Plan Request
-**Function:** `adHocPlanRequest()`
-**HTTP Method:** POST
-**URL:** `/display_adhoc_plan_request_by_manager_app_pending`
-**Description:** Retrieves pending ad hoc plan requests.
+#### Get Pilot Performance
+**Endpoint:** `getPilotPerformance`  
+**Type:** Query  
+**Hook:** `useGetPilotPerformanceQuery`  
+**URL:** `/pilot_performance_plantation`  
+**Method:** POST
 
 ---
 
-### 79. Update Ad Hoc Plan Request
-**Function:** `updateAdHocPlanRequest(request_id, date_planned, status)`
-**HTTP Method:** POST
-**URL:** `/update_status_adhoc_plan_request_by_manager_app`
-**Description:** Updates ad hoc plan request status.
+#### Get Finance Report
+**Endpoint:** `getFinanceReport`  
+**Type:** Query  
+**Hook:** `useGetFinanceReportQuery`  
+**URL:** `/sprayed_area_by_date_range_and_estate`  
+**Method:** POST
+
+**Parameters:**
+- `startDate` (string, required): Start date
+- `endDate` (string, required): End date
+- `estates` (array, required): Array of estate IDs
 
 ---
 
-## Performance and Analytics Endpoints
-
-### 80. Pilots Performance
-**Function:** `pilotsPerfomances(start_date, end_date)`
-**HTTP Method:** POST
-**URL:** `/pilot_performance_plantation`
-**Description:** Retrieves pilot performance data for plantations.
-
----
-
-### 81. Field Not Approved by Team Lead
-**Function:** `fieldNotApprovedTeamLead(start_date, end_date)`
-**HTTP Method:** POST
-**URL:** `/plan_field_not_approved_team_lead`
-**Description:** Retrieves fields not approved by team leads.
+#### Get Chart Data (All Groups)
+**Endpoint:** `getChartAllDataGroup`  
+**Type:** Query  
+**Hook:** `useGetChartAllDataGroupQuery`  
+**URL:** `/for_all_by_date`  
+**Method:** POST
 
 ---
 
-### 82. Incomplete Subtasks
-**Function:** `incompleteSubtasks(start_date, end_date)`
-**HTTP Method:** POST
-**URL:** `/not_complete_task_list_for_report`
-**Description:** Retrieves incomplete tasks for reporting.
+#### Get Chart Data (Group)
+**Endpoint:** `getChartGroupData`  
+**Type:** Query  
+**Hook:** `useGetChartGroupDataQuery`  
+**URL:** `/for_group_by_date`  
+**Method:** POST
 
 ---
 
-### 83. Canceled Fields by Date Range
-**Function:** `canceledFieldsByDateRange(start_date, end_date)`
-**HTTP Method:** POST
-**URL:** `/canceled_fields_by_date_range`
-**Description:** Retrieves canceled fields within a date range.
+#### Get Chart Data (Plantation)
+**Endpoint:** `getChartPlantationData`  
+**Type:** Query  
+**Hook:** `useGetChartPlantationDataQuery`  
+**URL:** `/for_plantation_by_date`  
+**Method:** POST
 
 ---
 
-### 84. Pilot Team Spray Area
-**Function:** `pilotTeamSprayArea(start_date, end_date)`
-**HTTP Method:** POST
-**URL:** `/pilot_team_date_spray_area`
-**Description:** Retrieves spray area data by pilot team and date.
+#### Get Chart Data (Region)
+**Endpoint:** `getChartRegionData`  
+**Type:** Query  
+**Hook:** `useGetChartRegionDataQuery`  
+**URL:** `/for_region_by_date`  
+**Method:** POST
 
 ---
 
-## Task Reporting Endpoints
+#### Get Chart Data (Estate)
+**Endpoint:** `getChartEstateData`  
+**Type:** Query  
+**Hook:** `useGetChartEstateDataQuery`  
+**URL:** `/for_estate_by_date`  
+**Method:** POST
 
-### 85. Get Report Reasons
-**Function:** `getReportReasons()`
-**HTTP Method:** POST
-**URL:** `/flag_reasons`
+---
+
+### Dropdowns (`dropdownsApi.js`)
+
+#### Get Sectors
+**Endpoint:** `getSectors`  
+**Type:** Query  
+**Hook:** `useGetSectorsQuery`  
+**URL:** `/display_sectors`  
+**Method:** POST
+
+---
+
+#### Get Mission Types
+**Endpoint:** `getMissionTypes`  
+**Type:** Query  
+**Hook:** `useGetMissionTypesQuery`  
+**URL:** `/mission_type`  
+**Method:** POST
+
+---
+
+#### Get Crop Types
+**Endpoint:** `getCropTypes`  
+**Type:** Query  
+**Hook:** `useGetCropTypesQuery`  
+**URL:** `/display_crop_type`  
+**Method:** POST
+
+---
+
+#### Get Time Slots
+**Endpoint:** `getTimeSlots`  
+**Type:** Query  
+**Hook:** `useGetTimeSlotsQuery`  
+**URL:** `/time_of_the_day`  
+**Method:** POST
+
+---
+
+#### Get Chemical Types
+**Endpoint:** `getChemicalTypes`  
+**Type:** Query  
+**Hook:** `useGetChemicalTypesQuery`  
+**URL:** `/chemical_type`  
+**Method:** POST
+
+---
+
+#### Get Stages
+**Endpoint:** `getStages`  
+**Type:** Query  
+**Hook:** `useGetStagesQuery`  
+**URL:** `/display_growth_level`  
+**Method:** POST
+
+---
+
+#### Get ASCs
+**Endpoint:** `getASCs`  
+**Type:** Query  
+**Hook:** `useGetASCsQuery`  
+**URL:** `/display_asc`  
+**Method:** POST
+
+---
+
+#### Get Reject Reasons
+**Endpoint:** `getRejectReasons`  
+**Type:** Query  
+**Hook:** `useGetRejectReasonsQuery`  
+**URL:** `/display_reject_reasons`  
+**Method:** POST
+
+---
+
+#### Get Flag Reasons
+**Endpoint:** `getFlagReasons`  
+**Type:** Query  
+**Hook:** `useGetFlagReasonsQuery`  
+**URL:** `/flag_reasons`  
+**Method:** POST
+
+---
+
+#### Get Partial Complete Reasons
+**Endpoint:** `getPartialCompleteReasons`  
+**Type:** Query  
+**Hook:** `useGetPartialCompleteReasonsQuery`  
+**URL:** `/display_partial_complete_reasons`  
+**Method:** POST
+
+**Parameters:**
+- `flag` (string, optional): Flag type (default: 'c')
+
+---
+
+### Summary (`summaryApi.js`)
+
+#### Get Summary by Group
+**Endpoint:** `getSummaryByGroup`  
+**Type:** Query  
+**Hook:** `useGetSummaryByGroupQuery`  
+**URL:** `/get_plan_resource_allocation_details_by_group_and_date_range`  
+**Method:** POST
+
+**Parameters:**
+- `groupId` (number, required): Group ID
+- `startDate` (string, required): Start date
+- `endDate` (string, required): End date
+
+---
+
+#### Get Summary by Plantation
+**Endpoint:** `getSummaryByPlantation`  
+**Type:** Query  
+**Hook:** `useGetSummaryByPlantationQuery`  
+**URL:** `/get_plan_resource_allocation_details_by_plantation_and_date_range`  
+**Method:** POST
+
+---
+
+#### Get Summary by Region
+**Endpoint:** `getSummaryByRegion`  
+**Type:** Query  
+**Hook:** `useGetSummaryByRegionQuery`  
+**URL:** `/get_plan_resource_allocation_details_by_region_and_date_range`  
+**Method:** POST
+
+---
+
+#### Get Summary by Estate
+**Endpoint:** `getSummaryByEstate`  
+**Type:** Query  
+**Hook:** `useGetSummaryByEstateQuery`  
+**URL:** `/get_plan_resource_allocation_details_by_estate_and_date_range`  
+**Method:** POST
+
+---
+
+### Requests (`requestsApi.js`)
+
+#### Get Pending Ad Hoc Requests
+**Endpoint:** `getPendingAdHocRequests`  
+**Type:** Query  
+**Hook:** `useGetPendingAdHocRequestsQuery`  
+**URL:** `/display_adhoc_plan_request_by_manager_app_pending`  
+**Method:** POST
+
+---
+
+#### Get Pending Reschedule Requests
+**Endpoint:** `getPendingRescheduleRequests`  
+**Type:** Query  
+**Hook:** `useGetPendingRescheduleRequestsQuery`  
+**URL:** `/find_all_pending_request_reschedule`  
+**Method:** POST
+
+---
+
+#### Update Ad Hoc Request
+**Endpoint:** `updateAdHocRequest`  
+**Type:** Mutation  
+**Hook:** `useUpdateAdHocRequestMutation`  
+**URL:** `/update_status_adhoc_plan_request_by_manager_app`  
+**Method:** POST
+
+**Parameters:**
+- `requestId` (number, required): Request ID
+- `datePlanned` (string, required): Planned date
+- `status` (string, required): Status
+
+---
+
+#### Update Reschedule Request
+**Endpoint:** `updateRescheduleRequest`  
+**Type:** Mutation  
+**Hook:** `useUpdateRescheduleRequestMutation`  
+**URL:** `/update_request_reschedule_date_by_manager`  
+**Method:** POST
+
+---
+
+### Assets (`assetsApi.js`)
+
+The assets API includes endpoints for managing drones, vehicles, generators, batteries, remote controls, and insurance. Refer to `src/api/services/assetsApi.js` for complete endpoint documentation.
+
+---
+
+### Group Assignments (`groupAssignmentsApi.js`)
+
+The group assignments API manages group-to-mission mappings. Refer to `src/api/services/groupAssignmentsApi.js` for complete endpoint documentation.
+
+---
+
+## RTK Query Features
+
+### Automatic Caching
+RTK Query automatically caches query results. Use `refetch()` to manually refresh data:
+
+```javascript
+const { data, refetch } = useGetAllEstatesQuery();
+// Later...
+refetch();
+```
+
+### Tag-based Cache Invalidation
+Mutations automatically invalidate related cache tags:
+
+```javascript
+// This mutation invalidates 'Plans' and 'Calendar' tags
+const [createPlan] = useCreatePlanMutation();
+```
+
+### Polling
+Automatically refetch data at intervals:
+
+```javascript
+const { data } = useGetAllEstatesQuery(undefined, {
+  pollingInterval: 5000, // Refetch every 5 seconds
+});
+```
+
+### Conditional Queries
+Skip queries based on conditions:
+
+```javascript
+const { data } = useGetEstateDetailsQuery(estateId, {
+  skip: !estateId, // Skip if estateId is falsy
+});
+```
+
+---
+
+## Error Handling
+
+RTK Query provides built-in error handling:
+
+```javascript
+const { data, error, isLoading, isError } = useGetAllEstatesQuery();
+
+if (isError) {
+  // Handle error
+  console.error('Error:', error);
+  // error.status - HTTP status code
+  // error.data - Error response data
+}
+```
+
+---
+
+## Legacy Reference
+
+> **Note:** The following section documents the legacy Axios-based API functions. These are kept for reference only. All new code should use RTK Query endpoints as documented above. For migration mapping, see `API_FUNCTION_MAPPING.md`.
+
+### Legacy Function Mapping
+
+The legacy `src/api/api.js` file contained Axios-based functions. These have been fully replaced by RTK Query endpoints. The HTTP contract (URLs, methods, request/response formats) remains the same, but the implementation now uses RTK Query.
+
+**Key Differences:**
+- Legacy: Direct Axios calls with manual error handling
+- RTK Query: Automatic caching, error handling, loading states, and cache invalidation
+
+**Migration Guide:**
+1. Replace legacy function imports with RTK Query hooks
+2. Use hooks in components for automatic re-rendering
+3. Use `dispatch(baseApi.endpoints.*.initiate())` in thunks/actions
+4. Leverage automatic cache invalidation instead of manual refetching
+
+---
+
+## Additional Resources
+
+- **RTK Query Documentation:** https://redux-toolkit.js.org/rtk-query/overview
+- **API Function Mapping:** See `API_FUNCTION_MAPPING.md` for legacy function to RTK Query endpoint mapping
+- **Service Files:** All service files are located in `src/api/services/`
+
+---
+
+## Support
+
+For questions or issues regarding the API:
+- Check the service file for the specific endpoint
+- Review `API_FUNCTION_MAPPING.md` for migration help
+- Consult RTK Query documentation for advanced usage patterns

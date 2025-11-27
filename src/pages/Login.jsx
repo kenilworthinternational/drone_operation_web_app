@@ -4,7 +4,7 @@ import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { verifyUserThunk, sendOTPThunk, loginUserThunk, clearError } from '../store/slices/authSlice';
 import '../styles/login.css';
 import { logger } from '../utils/logger';
-
+import LiquidEther from '../UI/LiquidEther';
 const Login = () => {
   const dispatch = useAppDispatch();
   const { loading, error, isAuthenticated } = useAppSelector((state) => state.auth);
@@ -42,14 +42,14 @@ const Login = () => {
   const handleOtpChange = (index, value) => {
     // Allow only digits
     if (!/^\d*$/.test(value)) return;
-    
+
     const newOtp = [...otp];
-    
+
     // Update current input
     if (value.length === 1) {
       newOtp[index] = value;
       setOtp(newOtp);
-      
+
       // Auto-focus next input
       if (index < 5) {
         const nextInput = document.getElementById(`otp-${index + 1}`);
@@ -61,7 +61,7 @@ const Login = () => {
       newOtp[index] = '';
       setOtp(newOtp);
     }
-    
+
     dispatch(clearError());
   };
 
@@ -78,15 +78,15 @@ const Login = () => {
   const handleOtpPaste = (e) => {
     e.preventDefault();
     const pastedData = e.clipboardData.getData('text').trim();
-    
+
     if (!/^\d{6}$/.test(pastedData)) {
       // Error will be shown via Redux error state
       return;
     }
-    
+
     const otpArray = pastedData.split('');
     setOtp(otpArray);
-    
+
     // Focus last input
     const lastInput = document.getElementById('otp-5');
     if (lastInput) {
@@ -106,20 +106,20 @@ const Login = () => {
     }
 
     dispatch(clearError());
-    
+
     // Verify user exists
     const verifyResult = await dispatch(verifyUserThunk(phoneNumber));
-    
+
     if (verifyUserThunk.fulfilled.match(verifyResult)) {
       // Generate OTP
       const otpCode = generateOTP();
       setGeneratedOTP(otpCode);
       logger.log('🔐 Generated OTP:', otpCode);
       logger.log('📱 Phone Number:', phoneNumber);
-      
+
       // Send OTP
       const sendResult = await dispatch(sendOTPThunk({ phoneNumber, otpCode }));
-      
+
       if (sendOTPThunk.fulfilled.match(sendResult)) {
         setShowOTPInput(true);
       }
@@ -129,11 +129,11 @@ const Login = () => {
   const handleOTPSubmit = async (e) => {
     e.preventDefault();
     const otpString = otp.join('').trim();
-    
+
     logger.log('🔍 OTP Submit Debug:');
     logger.log('  - Entered OTP:', otpString);
     logger.log('  - Generated OTP:', generatedOTP);
-    
+
     if (otpString.length !== 6) {
       logger.log('❌ OTP length validation failed');
       return;
@@ -150,7 +150,7 @@ const Login = () => {
     // Verify OTP matches the generated OTP (compare as strings)
     const enteredOTPStr = String(otpString);
     const generatedOTPStr = String(generatedOTP);
-    
+
     if (enteredOTPStr !== generatedOTPStr) {
       logger.log('❌ OTP mismatch - validation failed');
       // Clear OTP and refocus first input
@@ -163,14 +163,14 @@ const Login = () => {
       }, 100);
       return;
     }
-    
+
     logger.log('✅ OTP validation passed');
     dispatch(clearError());
-    
+
     // Login user after OTP verification
     logger.log('🔐 Calling loginUser API with phone:', phoneNumber);
     const loginResult = await dispatch(loginUserThunk(phoneNumber));
-    
+
     if (loginUserThunk.fulfilled.match(loginResult)) {
       logger.log('✅ Login successful');
       // Navigation will happen via useEffect when isAuthenticated becomes true
@@ -182,17 +182,17 @@ const Login = () => {
   const handleResendOTP = async () => {
     setCanResend(false);
     dispatch(clearError());
-    
+
     // Generate new OTP
     const otpCode = generateOTP();
     setGeneratedOTP(otpCode);
     logger.log('🔄 Resent OTP:', otpCode);
     // Clear previous OTP input
     setOtp(['', '', '', '', '', '']);
-    
+
     // Send OTP
     const sendResult = await dispatch(sendOTPThunk({ phoneNumber, otpCode }));
-    
+
     if (sendOTPThunk.fulfilled.match(sendResult)) {
       // Reset timer
       setResendTimer(60);
@@ -203,7 +203,7 @@ const Login = () => {
 
   useEffect(() => {
     let timerInterval;
-    
+
     if (showOTPInput && resendTimer > 0) {
       timerInterval = setInterval(() => {
         setResendTimer((prev) => {
@@ -215,7 +215,7 @@ const Login = () => {
         });
       }, 1000);
     }
-    
+
     return () => {
       if (timerInterval) {
         clearInterval(timerInterval);
@@ -232,15 +232,20 @@ const Login = () => {
 
   return (
     <div className="login-container">
-      <div className="left-side">
-        <img src="../assets/images/kenilworth.png" alt="Drone" className="drone-img" />
+      <div className="login-background">
+        <LiquidEther
+        />
       </div>
-      <div className="right-side-login">
-        <div className="login-box">
-          <div className="logo-container">
-            <img src="../assets/images/kenilowrthlogoDark.png" alt="Logo" className="logo" />
-            <h1 className="project-name">Drone Services Management System</h1>
-          </div>
+      <div className="login-content">
+        <div className="left-side">
+          <img src="../assets/images/kenilworth.png" alt="Drone" className="drone-img" />
+        </div>
+        <div className="right-side-login">
+          <div className="login-box">
+            <div className="logo-container">
+              <img src="../assets/images/kenilowrthlogoDark.png" alt="Logo" className="logo" />
+              <h1 className="project-name">Drone Services Management System</h1>
+            </div>
 
           {!showOTPInput ? (
             <form onSubmit={handlePhoneSubmit}>
@@ -288,9 +293,9 @@ const Login = () => {
                 </div>
                 <div className="resend-otp-container">
                   {canResend ? (
-                    <button 
-                      type="button" 
-                      className="resend-otp-btn" 
+                    <button
+                      type="button"
+                      className="resend-otp-btn"
                       onClick={handleResendOTP}
                       disabled={loading}
                     >
@@ -318,9 +323,8 @@ const Login = () => {
             </form>
           )}
 
-          {error && (
-            <p className="error-message">{error}</p>
-          )}
+            {error && <p className="error-message">{error}</p>}
+          </div>
         </div>
       </div>
     </div>

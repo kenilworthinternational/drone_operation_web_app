@@ -51,6 +51,7 @@
     "recharts": "^2.15.4",
     "redux": "^5.0.1",
     "source-map-loader": "^5.0.0",
+    "three": "^0.181.2",
     "three-fbx-loader": "^1.0.2",
     "web-vitals": "^4.2.4",
     "xlsx": "^0.18.5"

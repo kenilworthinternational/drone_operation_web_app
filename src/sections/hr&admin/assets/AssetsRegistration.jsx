@@ -9,8 +9,7 @@ import {
   selectLoading,
   selectActiveTab,
 } from '../../../store/slices/assetsSlice';
-
-const DEFAULT_SECTOR = 'Head Office';
+import { useGetWingsQuery } from '../../../api/services/assetsApi';
 
 const parsePurchasePrice = (value) => {
   if (value === undefined || value === null) return null;
@@ -19,6 +18,21 @@ const parsePurchasePrice = (value) => {
   const parsed = Number.parseFloat(cleaned);
   if (Number.isNaN(parsed)) return null;
   return Number(parsed.toFixed(2));
+};
+
+const parseWingId = (value) => {
+  if (value === undefined || value === null || value === '') return null;
+  const parsed = Number.parseInt(value, 10);
+  return Number.isNaN(parsed) ? null : String(parsed);
+};
+
+const FIELD_LABELS = {
+  wing_id: 'wing',
+};
+
+const formatFieldLabel = (fieldName) => {
+  if (!fieldName) return '';
+  return FIELD_LABELS[fieldName] || fieldName.replace(/_/g, ' ');
 };
 
 const equipmentInitialState = {
@@ -33,7 +47,8 @@ const equipmentInitialState = {
   insurance_type: '',
   warranty_period: '',
   operational_status: 'y',
-  activated: '1'
+  activated: '1',
+  wing_id: '',
 };
 
 const batteryInitialState = {
@@ -53,7 +68,8 @@ const vehicleInitialState = {
   revenue_license_expire_date: '',
   initial_mileage: '',
   operational_status: 'y',
-  activated: '1'
+  activated: '1',
+  wing_id: '',
 };
 
 const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
@@ -71,6 +87,28 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
   const insuranceOptions = useAppSelector(selectInsuranceTypes);
   const loading = useAppSelector(selectLoading);
   const insuranceLoading = loading.insurance;
+  const {
+    data: wingsResponse,
+    isLoading: wingsLoading,
+    isError: wingsError,
+    error: wingsErrorDetails,
+  } = useGetWingsQuery();
+
+  const wings = useMemo(() => {
+    if (!wingsResponse) return [];
+    if (Array.isArray(wingsResponse)) return wingsResponse;
+    if (Array.isArray(wingsResponse?.data)) return wingsResponse.data;
+    if (Array.isArray(wingsResponse?.wings)) return wingsResponse.wings;
+    return [];
+  }, [wingsResponse]);
+
+  const wingsErrorMessage = useMemo(() => {
+    if (!wingsError) return '';
+    if (typeof wingsErrorDetails === 'string') return wingsErrorDetails;
+    if (wingsErrorDetails?.data?.message) return wingsErrorDetails.data.message;
+    if (wingsErrorDetails?.message) return wingsErrorDetails.message;
+    return 'Unable to load wings.';
+  }, [wingsError, wingsErrorDetails]);
 
   // Sync with Redux activeTab when it changes (only if not in single mode)
   useEffect(() => {
@@ -151,6 +189,39 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
     });
   };
 
+  const renderWingField = (formType, formData, fullWidth = false) => (
+    <div className={`form-group-assets-reg ${fullWidth ? 'full-width-assets-reg' : ''}`}>
+      <label htmlFor={`${formType}-wing_id`}>
+        Wing <span className="required-assets-reg">*</span>
+      </label>
+      <select
+        id={`${formType}-wing_id`}
+        name="wing_id"
+        value={formData.wing_id || ''}
+        onChange={(e) => handleInputChange(e, formType)}
+        disabled={wingsLoading || wings.length === 0}
+        required
+      >
+        <option value="" disabled>
+          {wingsLoading ? 'Loading wings...' : 'Select a wing'}
+        </option>
+        {wings.map((wing) => (
+          <option key={wing.id} value={wing.id}>
+            {wing.wing}
+          </option>
+        ))}
+      </select>
+      {wingsError && (
+        <small className="form-field-helper-assets-reg error">
+          {wingsErrorMessage}
+        </small>
+      )}
+      {!wingsError && wingsLoading && (
+        <small className="form-field-helper-assets-reg">Loading wings...</small>
+      )}
+    </div>
+  );
+
   // Fetch insurance types on mount
   useEffect(() => {
     if (insuranceOptions.length === 0 && !insuranceLoading) {
@@ -161,7 +232,7 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
   const getRequiredFields = (tab, formData = {}) => {
     switch (tab) {
       case 'drones': {
-        const fields = ['tag', 'serial', 'make', 'model', 'manufacture_year', 'depreciation_period', 'have_insurance', 'warranty_period', 'operational_status', 'activated'];
+        const fields = ['tag', 'serial', 'make', 'model', 'manufacture_year', 'depreciation_period', 'have_insurance', 'warranty_period', 'operational_status', 'activated', 'wing_id'];
         if (formData.have_insurance === '1') {
           fields.push('insurance_type');
         }
@@ -169,10 +240,10 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
         return fields;
       }
       case 'vehicles':
-        return ['ownership', 'chassis_no', 'engine_no', 'vehicle_no', 'make', 'model', 'purchase_price', 'insurance_expire_date', 'revenue_license_expire_date', 'initial_mileage', 'operational_status', 'activated'];
+        return ['ownership', 'chassis_no', 'engine_no', 'vehicle_no', 'make', 'model', 'purchase_price', 'insurance_expire_date', 'revenue_license_expire_date', 'initial_mileage', 'operational_status', 'activated', 'wing_id'];
       case 'generators':
       case 'remoteControls': {
-        const fields = ['tag', 'serial', 'make', 'model', 'manufacture_year', 'depreciation_period', 'have_insurance', 'warranty_period', 'operational_status', 'activated'];
+        const fields = ['tag', 'serial', 'make', 'model', 'manufacture_year', 'depreciation_period', 'have_insurance', 'warranty_period', 'operational_status', 'activated', 'wing_id'];
         if (formData.have_insurance === '1') {
           fields.push('insurance_type');
         }
@@ -180,7 +251,7 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
         return fields;
       }
       case 'batteries': {
-        const fields = ['tag', 'serial', 'type', 'make', 'model', 'manufacture_year', 'depreciation_period', 'have_insurance', 'warranty_period', 'operational_status', 'activated'];
+        const fields = ['tag', 'serial', 'type', 'make', 'model', 'manufacture_year', 'depreciation_period', 'have_insurance', 'warranty_period', 'operational_status', 'activated', 'wing_id'];
         if (formData.have_insurance === '1') {
           fields.push('insurance_type');
         }
@@ -243,7 +314,8 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
     const missingFields = requiredFields.filter(field => !formData[field] || !formData[field].toString().trim());
     
     if (missingFields.length > 0) {
-      setMessage(`Please fill in all required fields: ${missingFields.join(', ')}`);
+      const readableMissingFields = missingFields.map(formatFieldLabel);
+      setMessage(`Please fill in all required fields: ${readableMissingFields.join(', ')}`);
       setMessageType('error');
       return;
     }
@@ -251,6 +323,13 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
     const normalizedPurchasePrice = parsePurchasePrice(formData.purchase_price);
     if (normalizedPurchasePrice === null) {
       setMessage('Please enter a valid purchase price.');
+      setMessageType('error');
+      return;
+    }
+
+    const wingId = parseWingId(formData.wing_id);
+    if (wingId === null) {
+      setMessage('Please select a wing.');
       setMessageType('error');
       return;
     }
@@ -285,12 +364,12 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
           manufacture_year: formatDate(formData.manufacture_year),
           depreciation_period: formData.depreciation_period,
           have_insurance: formData.have_insurance,
-          insurance_type: formData.have_insurance === '1' ? formData.insurance_type : '',
+          insurance_type: formData.have_insurance === '1' ? formData.insurance_type : '0',
           warranty_period: formData.warranty_period,
           operational_status: formData.operational_status,
           activated: formData.activated,
           purchase_price: normalizedPurchasePrice,
-          sector: DEFAULT_SECTOR
+          wing: wingId
         };
 
         const result = await dispatch(
@@ -320,7 +399,7 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
           initial_mileage: formData.initial_mileage,
           operational_status: formData.operational_status,
           activated: formData.activated,
-          sector: DEFAULT_SECTOR
+          wing: wingId
         };
 
         const result = await dispatch(
@@ -345,12 +424,12 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
           manufacture_year: formatDate(formData.manufacture_year),
           depreciation_period: formData.depreciation_period,
           have_insurance: formData.have_insurance,
-          insurance_type: formData.have_insurance === '1' ? formData.insurance_type : '',
+          insurance_type: formData.have_insurance === '1' ? formData.insurance_type : '0',
           warranty_period: formData.warranty_period,
           operational_status: formData.operational_status,
           activated: formData.activated,
           purchase_price: normalizedPurchasePrice,
-          sector: DEFAULT_SECTOR
+          wing: wingId
         };
 
         const result = await dispatch(
@@ -376,11 +455,12 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
           manufacture_year: formatDate(formData.manufacture_year),
           depreciation_period: formData.depreciation_period,
           have_insurance: formData.have_insurance,
-          insurance_type: formData.have_insurance === '1' ? formData.insurance_type : '',
+          insurance_type: formData.have_insurance === '1' ? formData.insurance_type : '0',
           warranty_period: formData.warranty_period,
           operational_status: formData.operational_status,
           activated: formData.activated,
-          purchase_price: normalizedPurchasePrice
+          purchase_price: normalizedPurchasePrice,
+          wing: wingId
         };
 
         const result = await dispatch(
@@ -405,12 +485,12 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
           manufacture_year: formatDate(formData.manufacture_year),
           depreciation_period: formData.depreciation_period,
           have_insurance: formData.have_insurance,
-          insurance_type: formData.have_insurance === '1' ? formData.insurance_type : '',
+          insurance_type: formData.have_insurance === '1' ? formData.insurance_type : '0',
           warranty_period: formData.warranty_period,
           operational_status: formData.operational_status,
           activated: formData.activated,
           purchase_price: normalizedPurchasePrice,
-          sector: DEFAULT_SECTOR
+          wing: wingId
         };
 
         const result = await dispatch(
@@ -462,6 +542,24 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
             required
           />
         </div>
+      </div>
+
+      <div className="form-row-assets-reg">
+        <div className="form-group-assets-reg">
+          <label htmlFor="drone_purchase_price">Purchase Price (LKR) <span className="required-assets-reg">*</span></label>
+          <input
+            type="number"
+            id="drone_purchase_price"
+            name="purchase_price"
+            value={droneFormData.purchase_price}
+            onChange={(e) => handleInputChange(e, 'drones')}
+            placeholder="Enter purchase price"
+            min="0"
+            step="0.01"
+            required
+          />
+        </div>
+        {renderWingField('drones', droneFormData)}
       </div>
 
       <div className="form-row-assets-reg">
@@ -605,23 +703,6 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
         </div>
       </div>
 
-      <div className="form-row-assets-reg">
-        <div className="form-group-assets-reg">
-          <label htmlFor="drone_purchase_price">Purchase Price (LKR) <span className="required-assets-reg">*</span></label>
-          <input
-            type="number"
-            id="drone_purchase_price"
-            name="purchase_price"
-            value={droneFormData.purchase_price}
-            onChange={(e) => handleInputChange(e, 'drones')}
-            placeholder="Enter purchase price"
-            min="0"
-            step="0.01"
-            required
-          />
-        </div>
-      </div>
-
       <div className="form-actions-assets-reg">
         <button type="submit" className="submit-btn-assets-reg" disabled={isLoading}>
           {isLoading ? 'Registering...' : 'Register Drone'}
@@ -662,6 +743,24 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
             required
           />
         </div>
+      </div>
+
+      <div className="form-row-assets-reg">
+        <div className="form-group-assets-reg">
+          <label htmlFor="vehicle_purchase_price">Purchase Price (LKR) <span className="required-assets-reg">*</span></label>
+          <input
+            type="number"
+            id="vehicle_purchase_price"
+            name="purchase_price"
+            value={vehicleFormData.purchase_price}
+            onChange={(e) => handleInputChange(e, 'vehicles')}
+            placeholder="Enter purchase price"
+            min="0"
+            step="0.01"
+            required
+          />
+        </div>
+        {renderWingField('vehicles', vehicleFormData)}
       </div>
 
       <div className="form-row-assets-reg">
@@ -774,23 +873,6 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
 
       <div className="form-row-assets-reg">
         <div className="form-group-assets-reg full-width-assets-reg">
-          <label htmlFor="vehicle_purchase_price">Purchase Price (LKR) <span className="required-assets-reg">*</span></label>
-          <input
-            type="number"
-            id="vehicle_purchase_price"
-            name="purchase_price"
-            value={vehicleFormData.purchase_price}
-            onChange={(e) => handleInputChange(e, 'vehicles')}
-            placeholder="Enter purchase price"
-            min="0"
-            step="0.01"
-            required
-          />
-        </div>
-      </div>
-
-      <div className="form-row-assets-reg">
-        <div className="form-group-assets-reg full-width-assets-reg">
           <label htmlFor="vehicle_activated">Activation Status <span className="required-assets-reg">*</span></label>
           <select
             id="vehicle_activated"
@@ -843,6 +925,24 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
             required
           />
         </div>
+      </div>
+
+      <div className="form-row-assets-reg">
+        <div className="form-group-assets-reg">
+          <label htmlFor="generator_purchase_price">Purchase Price (LKR) <span className="required-assets-reg">*</span></label>
+          <input
+            type="number"
+            id="generator_purchase_price"
+            name="purchase_price"
+            value={generatorFormData.purchase_price}
+            onChange={(e) => handleInputChange(e, 'generators')}
+            placeholder="Enter purchase price"
+            min="0"
+            step="0.01"
+            required
+          />
+        </div>
+        {renderWingField('generators', generatorFormData)}
       </div>
 
       <div className="form-row-assets-reg">
@@ -986,23 +1086,6 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
         </div>
       </div>
 
-      <div className="form-row-assets-reg">
-        <div className="form-group-assets-reg">
-          <label htmlFor="generator_purchase_price">Purchase Price (LKR) <span className="required-assets-reg">*</span></label>
-          <input
-            type="number"
-            id="generator_purchase_price"
-            name="purchase_price"
-            value={generatorFormData.purchase_price}
-            onChange={(e) => handleInputChange(e, 'generators')}
-            placeholder="Enter purchase price"
-            min="0"
-            step="0.01"
-            required
-          />
-        </div>
-      </div>
-
       <div className="form-actions-assets-reg">
         <button type="submit" className="submit-btn-assets-reg" disabled={isLoading}>
           {isLoading ? 'Registering...' : 'Register Generator'}
@@ -1041,6 +1124,24 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
             required
           />
         </div>
+      </div>
+
+      <div className="form-row-assets-reg">
+        <div className="form-group-assets-reg">
+          <label htmlFor="battery_purchase_price">Purchase Price (LKR) <span className="required-assets-reg">*</span></label>
+          <input
+            type="number"
+            id="battery_purchase_price"
+            name="purchase_price"
+            value={batteryFormData.purchase_price}
+            onChange={(e) => handleInputChange(e, 'batteries')}
+            placeholder="Enter purchase price"
+            min="0"
+            step="0.01"
+            required
+          />
+        </div>
+        {renderWingField('batteries', batteryFormData)}
       </div>
 
       <div className="form-row-assets-reg">
@@ -1199,23 +1300,6 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
         </div>
       </div>
 
-      <div className="form-row-assets-reg">
-        <div className="form-group-assets-reg">
-          <label htmlFor="battery_purchase_price">Purchase Price (LKR) <span className="required-assets-reg">*</span></label>
-          <input
-            type="number"
-            id="battery_purchase_price"
-            name="purchase_price"
-            value={batteryFormData.purchase_price}
-            onChange={(e) => handleInputChange(e, 'batteries')}
-            placeholder="Enter purchase price"
-            min="0"
-            step="0.01"
-            required
-          />
-        </div>
-      </div>
-
       <div className="form-actions-assets-reg">
         <button type="submit" className="submit-btn-assets-reg" disabled={isLoading}>
           {isLoading ? 'Registering...' : 'Register Battery'}
@@ -1254,6 +1338,24 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
             required
           />
         </div>
+      </div>
+
+      <div className="form-row-assets-reg">
+        <div className="form-group-assets-reg">
+          <label htmlFor="remote_purchase_price">Purchase Price (LKR) <span className="required-assets-reg">*</span></label>
+          <input
+            type="number"
+            id="remote_purchase_price"
+            name="purchase_price"
+            value={remoteControlFormData.purchase_price}
+            onChange={(e) => handleInputChange(e, 'remoteControls')}
+            placeholder="Enter purchase price"
+            min="0"
+            step="0.01"
+            required
+          />
+        </div>
+        {renderWingField('remoteControls', remoteControlFormData)}
       </div>
 
       <div className="form-row-assets-reg">
@@ -1394,23 +1496,6 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
             <option value="1">Active</option>
             <option value="0">Inactive</option>
           </select>
-        </div>
-      </div>
-
-      <div className="form-row-assets-reg">
-        <div className="form-group-assets-reg">
-          <label htmlFor="remote_purchase_price">Purchase Price (LKR) <span className="required-assets-reg">*</span></label>
-          <input
-            type="number"
-            id="remote_purchase_price"
-            name="purchase_price"
-            value={remoteControlFormData.purchase_price}
-            onChange={(e) => handleInputChange(e, 'remoteControls')}
-            placeholder="Enter purchase price"
-            min="0"
-            step="0.01"
-            required
-          />
         </div>
       </div>
 

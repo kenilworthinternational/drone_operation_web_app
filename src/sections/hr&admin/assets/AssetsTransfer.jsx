@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { FaPlane, FaCar, FaBolt, FaBatteryFull, FaGamepad, FaExchangeAlt, FaArrowLeft } from 'react-icons/fa';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import { fetchAssets, selectAssets } from '../../../store/slices/assetsSlice';
 import { baseApi } from '../../../api/services/allEndpoints';
+import { useGetWingsQuery } from '../../../api/services/assetsApi';
 import '../../../styles/assetsTransfer.css';
 
 const ASSET_TYPES = [
@@ -17,13 +18,85 @@ const AssetsTransfer = () => {
   const dispatch = useAppDispatch();
   const [selectedAssetType, setSelectedAssetType] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [sectors, setSectors] = useState([]);
-  const [showSectorModal, setShowSectorModal] = useState(false);
+  const [showWingModal, setShowWingModal] = useState(false);
   const [selectedAsset, setSelectedAsset] = useState(null);
-  const [selectedSectorId, setSelectedSectorId] = useState(null);
-  const [loadingSectors, setLoadingSectors] = useState(false);
+  const [selectedWingId, setSelectedWingId] = useState(null);
   const [updating, setUpdating] = useState(false);
   const itemsPerPage = 12;
+
+  const {
+    data: wingsResponse,
+    isLoading: wingsLoading,
+    isError: wingsError,
+    error: wingsErrorDetails,
+  } = useGetWingsQuery();
+
+  const wings = useMemo(() => {
+    if (!wingsResponse) return [];
+    if (Array.isArray(wingsResponse)) return wingsResponse;
+    if (Array.isArray(wingsResponse?.data)) return wingsResponse.data;
+    if (Array.isArray(wingsResponse?.wings)) return wingsResponse.wings;
+    return [];
+  }, [wingsResponse]);
+
+  const wingIdToName = useMemo(() => {
+    const map = new Map();
+    wings.forEach((wing) => {
+      if (wing?.id != null) {
+        map.set(String(wing.id), wing.wing || '');
+      }
+    });
+    return map;
+  }, [wings]);
+
+  const wingsErrorMessage = useMemo(() => {
+    if (!wingsError) return '';
+    if (typeof wingsErrorDetails === 'string') return wingsErrorDetails;
+    if (wingsErrorDetails?.data?.message) return wingsErrorDetails.data.message;
+    if (wingsErrorDetails?.error) return wingsErrorDetails.error;
+    if (wingsErrorDetails?.message) return wingsErrorDetails.message;
+    return 'Unable to load wings.';
+  }, [wingsError, wingsErrorDetails]);
+
+  const extractWingId = (asset) => {
+    const candidates = [asset?.wing_id, asset?.wingId, asset?.wingID, asset?.sector_id, asset?.sectorId];
+    for (const candidate of candidates) {
+      if (candidate === undefined || candidate === null || candidate === '') continue;
+      const parsed = Number.parseInt(candidate, 10);
+      if (!Number.isNaN(parsed)) {
+        return String(parsed);
+      }
+    }
+    return '';
+  };
+
+  const resolveWingValue = (asset) =>
+    asset?.wing ??
+    asset?.wing_name ??
+    asset?.wingName ??
+    asset?.wing_title ??
+    asset?.sector ??
+    asset?.sector_name ??
+    asset?.sectorName ??
+    asset?.sector_title ??
+    '';
+
+  const formatWingDisplay = (asset) => {
+    const wingText = resolveWingValue(asset);
+    const trimmed = wingText ? wingText.trim() : '';
+    const isNumericText = trimmed ? /^\d+$/.test(trimmed) : false;
+    if (trimmed && !isNumericText) {
+      return wingText;
+    }
+    const candidateId = extractWingId(asset) || (isNumericText ? trimmed : '');
+    if (candidateId) {
+      const resolved = wingIdToName.get(String(candidateId));
+      if (resolved) {
+        return resolved;
+      }
+    }
+    return trimmed || 'Not Available';
+  };
 
   // Get asset counts from Redux
   const drones = useAppSelector((state) => selectAssets(state, 'drones'));
@@ -82,36 +155,19 @@ const AssetsTransfer = () => {
     setCurrentPage(1);
   };
 
-  const handleSectorClick = async (asset) => {
+  const handleWingClick = (asset) => {
     setSelectedAsset(asset);
-    setLoadingSectors(true);
-    setShowSectorModal(true);
-    try {
-      const result = await dispatch(baseApi.endpoints.getSectors.initiate()).unwrap();
-      // Handle different response structures: direct array or wrapped in data property
-      let sectorsData = [];
-      if (Array.isArray(result)) {
-        sectorsData = result;
-      } else if (result?.data && Array.isArray(result.data)) {
-        sectorsData = result.data;
-      } else if (result?.sectors && Array.isArray(result.sectors)) {
-        sectorsData = result.sectors;
-      }
-      setSectors(sectorsData);
-    } catch (error) {
-      console.error('Error fetching sectors:', error);
-      setSectors([]);
-    } finally {
-      setLoadingSectors(false);
-    }
+    const currentWingId = extractWingId(asset);
+    setSelectedWingId(currentWingId || '');
+    setShowWingModal(true);
   };
 
-  const handleSectorSelect = (sectorId) => {
-    setSelectedSectorId(sectorId);
+  const handleWingSelect = (wingId) => {
+    setSelectedWingId(wingId);
   };
 
-  const handleSaveSector = async () => {
-    if (!selectedAsset || !selectedSectorId) return;
+  const handleSaveWing = async () => {
+    if (!selectedAsset || !selectedWingId) return;
 
     setUpdating(true);
     try {
@@ -139,28 +195,23 @@ const AssetsTransfer = () => {
       const result = await dispatch(
         mutation.initiate({
           id: selectedAsset.id,
-          sector_id: selectedSectorId,
+          wing_id: selectedWingId,
         })
       ).unwrap();
 
       if (result?.status === true) {
         // Refresh assets
         dispatch(fetchAssets(selectedAssetType));
-        setShowSectorModal(false);
+        setShowWingModal(false);
         setSelectedAsset(null);
-        setSelectedSectorId(null);
+        setSelectedWingId(null);
       }
     } catch (error) {
-      console.error('Error updating sector:', error);
-      alert('Failed to update sector. Please try again.');
+      console.error('Error updating wing:', error);
+      alert('Failed to update wing. Please try again.');
     } finally {
       setUpdating(false);
     }
-  };
-
-  const formatSectorDisplay = (asset) => {
-    const sector = asset?.sector ?? asset?.sector_name ?? asset?.sectorName ?? asset?.sector_title ?? '';
-    return sector || 'Not Available';
   };
 
   const renderTableHeader = () => {
@@ -170,7 +221,7 @@ const AssetsTransfer = () => {
           <th>Vehicle No</th>
           <th>Make</th>
           <th>Model</th>
-          <th>Sector</th>
+          <th>Wing</th>
         </tr>
       );
     }
@@ -179,7 +230,7 @@ const AssetsTransfer = () => {
         <th>Tag</th>
         <th>Model</th>
         <th>Make</th>
-        <th>Sector</th>
+        <th>Wing</th>
       </tr>
     );
   };
@@ -195,9 +246,9 @@ const AssetsTransfer = () => {
             <button
               type="button"
               className="sector-button"
-              onClick={() => handleSectorClick(asset)}
+              onClick={() => handleWingClick(asset)}
             >
-              {formatSectorDisplay(asset)}
+              {formatWingDisplay(asset)}
             </button>
           </td>
         </tr>
@@ -212,9 +263,9 @@ const AssetsTransfer = () => {
           <button
             type="button"
             className="sector-button"
-            onClick={() => handleSectorClick(asset)}
+            onClick={() => handleWingClick(asset)}
           >
-            {formatSectorDisplay(asset)}
+            {formatWingDisplay(asset)}
           </button>
         </td>
       </tr>
@@ -257,33 +308,41 @@ const AssetsTransfer = () => {
           </table>
         </div>
 
-        {/* Sector Selection Modal */}
-        {showSectorModal && (
-          <div className="sector-modal-overlay" onClick={() => setShowSectorModal(false)}>
+        {/* Wing Selection Modal */}
+        {showWingModal && (
+          <div className="sector-modal-overlay" onClick={() => {
+            setShowWingModal(false);
+            setSelectedWingId(null);
+          }}>
             <div className="sector-modal" onClick={(e) => e.stopPropagation()}>
               <div className="sector-modal-header">
-                <h3>Select Sector</h3>
+                <h3>Select Wing</h3>
                 <button
                   type="button"
                   className="close-button"
-                  onClick={() => setShowSectorModal(false)}
+                  onClick={() => {
+                    setShowWingModal(false);
+                    setSelectedWingId(null);
+                  }}
                 >
                   ×
                 </button>
               </div>
               <div className="sector-modal-content">
-                {loadingSectors ? (
-                  <div className="loading">Loading sectors...</div>
+                {wingsLoading ? (
+                  <div className="loading">Loading wings...</div>
+                ) : wingsError ? (
+                  <div className="loading error">{wingsErrorMessage}</div>
                 ) : (
                   <div className="sector-list">
-                    {sectors.map((sector) => (
+                    {wings.map((wing) => (
                       <button
-                        key={sector.id}
+                        key={wing.id}
                         type="button"
-                        className={`sector-option ${selectedSectorId === sector.id ? 'selected' : ''}`}
-                        onClick={() => handleSectorSelect(sector.id)}
+                        className={`sector-option ${selectedWingId === String(wing.id) ? 'selected' : ''}`}
+                        onClick={() => handleWingSelect(String(wing.id))}
                       >
-                        {sector.sector}
+                        {wing.wing}
                       </button>
                     ))}
                   </div>
@@ -294,8 +353,8 @@ const AssetsTransfer = () => {
                   type="button"
                   className="cancel-button"
                   onClick={() => {
-                    setShowSectorModal(false);
-                    setSelectedSectorId(null);
+                    setShowWingModal(false);
+                    setSelectedWingId(null);
                   }}
                 >
                   Cancel
@@ -303,8 +362,8 @@ const AssetsTransfer = () => {
                 <button
                   type="button"
                   className="save-button"
-                  onClick={handleSaveSector}
-                  disabled={!selectedSectorId || updating}
+                  onClick={handleSaveWing}
+                  disabled={!selectedWingId || updating}
                 >
                   {updating ? 'Saving...' : 'Save'}
                 </button>

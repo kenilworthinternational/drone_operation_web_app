@@ -36,6 +36,9 @@ import EmployeeRegistration from './sections/hr&admin/EmployeeRegistration';
 import Employees from './sections/hr&admin/Employees';
 import JDManagement from './sections/hr&admin/JDManagement';
 import EmployeeAssignment from './sections/hr&admin/EmployeeAssignment';
+import MonthlyRoaster from './sections/hr&admin/roaster/MonthlyRoaster';
+import RoasterPlanning from './sections/hr&admin/roaster/RoasterPlanning';
+import ResourceAllocation from './sections/fleet/ResourceAllocation';
 import Users from './sections/ict/users/Users';
 import AuthControls from './sections/ict/authentication/AuthControls';
 
@@ -406,6 +409,30 @@ function App() {
             element={
               <ProtectedRoute>
                 <EmployeeAssignment />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="attendance/monthly-roaster"
+            element={
+              <ProtectedRoute>
+                <MonthlyRoaster />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="attendance/roaster-planning"
+            element={
+              <ProtectedRoute>
+                <RoasterPlanning />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="fleet"
+            element={
+              <ProtectedRoute>
+                <ResourceAllocation />
               </ProtectedRoute>
             }
           />

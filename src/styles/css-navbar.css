@@ -315,6 +315,35 @@
 .nav-category-btn:not(.expanded) + .nav-sublist .nav-item:nth-child(14) { animation-delay: 0.7s; }
 .nav-category-btn:not(.expanded) + .nav-sublist .nav-item:nth-child(15) { animation-delay: 0.75s; }
 
+.nav-subgroup {
+    padding: 4px 12px;
+}
+
+.nav-subgroup.active {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+}
+
+.nav-subgroup-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    padding: 6px 4px;
+    color: #f5f5f5;
+}
+
+.nav-subgroup-list {
+    list-style: none;
+    margin: 4px 0 8px 28px;
+    padding: 0;
+}
+
+.nav-subgroup-list .nav-link {
+    margin-left: 0;
+    width: 100%;
+}
+
 @keyframes submenuItemSlideIn {
     0% {
         opacity: 0;

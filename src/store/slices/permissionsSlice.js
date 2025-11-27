@@ -7,6 +7,7 @@ const ALL_ROLES = ['ceo', 'md', 'mgr', 'ops', 'dops', 'fd', 'io', 'wt'];
 const createDefaultState = () => ({
   categories: {
     Corporate: ['ceo', 'md', 'dops'],
+    'Planning and Monitoring': ['md', 'mgr'],
     Management: ['md', 'mgr', 'dops'],
     OpsRoom: ['md', 'mgr', 'ops', 'dops'],
     Finance: ['md', 'mgr', 'fd', 'dops'],

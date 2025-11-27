@@ -257,7 +257,7 @@ const JDManagement = () => {
                   className="jd-edit-job-button-jd-mgmt"
                   onClick={handleEditJob}
                 >
-                  Edit Job
+                  Edit Designation
                 </button>
               </div>
 

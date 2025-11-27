@@ -44,6 +44,14 @@ const PlansWithWeather = () => {
 
   const [selectedDate, setSelectedDate] = useState(getTodayDate());
 
+  const openNativeDatePicker = (event) => {
+    const input = event?.currentTarget;
+    if (typeof input?.showPicker === 'function') {
+      event.preventDefault();
+      input.showPicker();
+    }
+  };
+
   // Fetch plans for the selected date
   const { data: plansData, isLoading: plansLoading, error: plansError } = useQuery({
     queryKey: ['plansByDate', selectedDate],
@@ -197,6 +205,12 @@ const PlansWithWeather = () => {
             type="date"
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
+            onClick={openNativeDatePicker}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                openNativeDatePicker(event);
+              }
+            }}
             className="plans-weather-date-input"
           />
         </div>

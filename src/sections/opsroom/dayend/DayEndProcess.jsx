@@ -283,10 +283,13 @@ const DayEndProcess = () => {
       setLoadingFields((prev) => ({ ...prev, [fieldId]: true }));
       try {
         const taskResult = await dispatch(
-          baseApi.endpoints.getTasksByPlanAndField.initiate({
-            planId: selectedMission.id,
-            fieldId,
-          })
+          baseApi.endpoints.getTasksByPlanAndField.initiate(
+            {
+              planId: selectedMission.id,
+              fieldId,
+            },
+            { forceRefetch: true }
+          )
         );
         const response = taskResult.data || {};
         if (response.tasks && response.tasks.length > 0) {
@@ -362,12 +365,15 @@ const DayEndProcess = () => {
         }
       }
       
-      const taskResult = await dispatch(
-        baseApi.endpoints.getTasksByPlanAndField.initiate({
-          planId: selectedMission.id,
-          fieldId,
-        })
-      );
+        const taskResult = await dispatch(
+          baseApi.endpoints.getTasksByPlanAndField.initiate(
+            {
+              planId: selectedMission.id,
+              fieldId,
+            },
+            { forceRefetch: true }
+          )
+        );
       const freshData = taskResult.data || {};
       const freshTask = freshData.tasks?.find((t) => t.task_id === taskData.task_id) || taskData;
       setCurrentTask({ ...freshTask, field_id: fieldId });
@@ -544,10 +550,13 @@ const DayEndProcess = () => {
         toast.success('DJI data submitted successfully!');
         try {
           const updatedResult = await dispatch(
-            baseApi.endpoints.getTasksByPlanAndField.initiate({
-              planId: selectedMission.id,
-              fieldId: currentTask.field_id,
-            })
+            baseApi.endpoints.getTasksByPlanAndField.initiate(
+              {
+                planId: selectedMission.id,
+                fieldId: currentTask.field_id,
+              },
+              { forceRefetch: true }
+            )
           );
           const updatedData = updatedResult.data || {};
           const previousTasks = fieldTasks[currentTask.field_id]?.tasks || [];

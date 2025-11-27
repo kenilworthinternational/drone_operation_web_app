@@ -152,6 +152,16 @@ export const assetsApi = baseApi.injectEndpoints({
       providesTags: ['Insurance'],
     }),
 
+    // Wings
+    getWings: builder.query({
+      query: () => ({
+        url: 'view_wing',
+        method: 'POST',
+        body: {},
+      }),
+      providesTags: ['Wings'],
+    }),
+
     // Sector Updates
     updateAssetsSectorDrone: builder.mutation({
       query: (data) => ({
@@ -217,6 +227,7 @@ export const {
   useCreateBatteryMutation,
   useUpdateBatteryMutation,
   useGetInsuranceTypesQuery,
+  useGetWingsQuery,
   useUpdateAssetsSectorDroneMutation,
   useUpdateAssetsSectorVehicleMutation,
   useUpdateAssetsSectorGeneratorMutation,
