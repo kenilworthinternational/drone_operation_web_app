@@ -181,7 +181,7 @@ mysql://username:password@host:port/database
 
 Example:
 ```
-mysql://kenilworth_user:your_password@mysql.kenilworth.international.com:3306/kenilworth_db
+mysql://kenilworth_user:your_password@184.168.110.65:3306/kenilworth_db
 ```
 
 **Important:** 
@@ -338,7 +338,7 @@ NODE_ENV=production
 PORT=3000
 
 # Database (GoDaddy MySQL - Remote Connection)
-DB_HOST=mysql.kenilworth.international.com
+DB_HOST=184.168.110.65
 DB_PORT=3306
 DB_USER=your_godaddy_db_user
 DB_PASSWORD=your_godaddy_db_password
@@ -365,7 +365,7 @@ NODE_ENV=test
 PORT=3001
 
 # Database (GoDaddy MySQL - can use same or separate test DB)
-DB_HOST=mysql.kenilworth.international.com
+DB_HOST=184.168.110.65
 DB_PORT=3306
 DB_USER=your_godaddy_db_user
 DB_PASSWORD=your_godaddy_db_password
