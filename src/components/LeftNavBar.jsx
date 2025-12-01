@@ -30,6 +30,12 @@ import {
   FaCloudSunRain,
   FaCogs,
   FaCalendarCheck,
+  FaWarehouse,
+  FaStore,
+  FaShoppingCart,
+  FaTruck,
+  FaFileInvoice,
+  FaClipboardCheck,
 } from 'react-icons/fa';
 import '../styles/css-navbar.css';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
@@ -119,10 +125,21 @@ const categories = [
     ],
   },
   {
+    title: 'Stock and Assets Management',
+    icon: FaWarehouse,
+    children: [
+      { path: '/home/stock-assets/supplier-registration', label: 'Supplier Management', icon: FaHandshake },
+      { path: '/home/stock-assets/inventory-items-registration', label: 'Inventory Items Registration', icon: FaBoxes },
+      { path: '/home/stock-assets/procurement-process', label: 'Procurement Process', icon: FaShoppingCart },
+      { path: '/home/stock-assets/central-stores', label: 'Central Stores', icon: FaStore },
+      { path: '/home/stock-assets/asset-transfer', label: 'Asset/Item/Service Transfer', icon: FaTruck },
+      { path: '/home/stock-assets/asset-request', label: 'Asset/Item/Service Request', icon: FaFileInvoice },
+    ],
+  },
+  {
     title: 'HR and Admin',
     icon: FaUserShield,
     children: [
-      { path: '/home/assetsManagement', label: 'Assets Management', icon: FaBoxes },
       { path: '/home/employeeRegistration', label: 'Employee Registration', icon: FaUserTie },
       { path: '/home/employees', label: 'Employees', icon: FaUsers },
       { path: '/home/jdManagement', label: 'JD Management', icon: FaClipboardList },
@@ -247,10 +264,21 @@ const getAllowedPaths = (visibility = {}) => {
     );
   }
 
+  // Stock and Assets Management paths
+  if (visibility['Stock and Assets Management']) {
+    allowedPaths.push(
+      '/home/stock-assets/supplier-registration',
+      '/home/stock-assets/inventory-items-registration',
+      '/home/stock-assets/procurement-process',
+      '/home/stock-assets/central-stores',
+      '/home/stock-assets/asset-transfer',
+      '/home/stock-assets/asset-request'
+    );
+  }
+
   // HR and Admin paths
   if (visibility['HR and Admin']) {
     allowedPaths.push(
-      '/home/assetsManagement',
       '/home/employeeRegistration',
       '/home/employees',
       '/home/jdManagement',
@@ -288,6 +316,7 @@ const LeftNavBar = ({ showSidebar = false, onClose = () => {}, onCollapseChange 
       Inventory: true,
       Workshop: true,
       'Fleet Management': true,
+      'Stock and Assets Management': true,
       'HR and Admin': true,
       'ICT - System Admin': true,
     };

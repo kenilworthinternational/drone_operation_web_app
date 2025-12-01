@@ -31,7 +31,6 @@ import PlanCalendar from './sections/opsroom/calendar/PlanCalendar';
 import RequestsQueueMain from './sections/opsroom/requests/RequestsQueueMain';
 import RequestProceed from './sections/opsroom/requests/RequestProceed';
 import PlansWithWeather from './sections/opsroom/plans/PlansWithWeather';
-import AssetsManagement from './sections/hr&admin/assets/AssetsManagement';
 import EmployeeRegistration from './sections/hr&admin/EmployeeRegistration';
 import Employees from './sections/hr&admin/Employees';
 import JDManagement from './sections/hr&admin/JDManagement';
@@ -41,6 +40,12 @@ import RoasterPlanning from './sections/hr&admin/roaster/RoasterPlanning';
 import ResourceAllocation from './sections/fleet/ResourceAllocation';
 import Users from './sections/ict/users/Users';
 import AuthControls from './sections/ict/authentication/AuthControls';
+import SupplierRegistration from './sections/stock-assets/SupplierRegistration';
+import InventoryItemsRegistration from './sections/stock-assets/InventoryItemsRegistration';
+import ProcurementProcess from './sections/stock-assets/ProcurementProcess';
+import CentralStores from './sections/stock-assets/CentralStores';
+import AssetTransfer from './sections/stock-assets/AssetTransfer';
+import AssetRequest from './sections/stock-assets/AssetRequest';
 
 import { useAppSelector } from './store/hooks';
 
@@ -373,14 +378,6 @@ function App() {
             }
           />
           <Route
-            path="assetsManagement"
-            element={
-              <ProtectedRoute>
-                <AssetsManagement />
-              </ProtectedRoute>
-            }
-          />
-          <Route
             path="employeeRegistration"
             element={
               <ProtectedRoute>
@@ -449,6 +446,54 @@ function App() {
             element={
               <ProtectedRoute>
                 <AuthControls />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="stock-assets/supplier-registration"
+            element={
+              <ProtectedRoute>
+                <SupplierRegistration />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="stock-assets/inventory-items-registration"
+            element={
+              <ProtectedRoute>
+                <InventoryItemsRegistration />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="stock-assets/procurement-process"
+            element={
+              <ProtectedRoute>
+                <ProcurementProcess />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="stock-assets/central-stores"
+            element={
+              <ProtectedRoute>
+                <CentralStores />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="stock-assets/asset-transfer"
+            element={
+              <ProtectedRoute>
+                <AssetTransfer />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="stock-assets/asset-request"
+            element={
+              <ProtectedRoute>
+                <AssetRequest />
               </ProtectedRoute>
             }
           />

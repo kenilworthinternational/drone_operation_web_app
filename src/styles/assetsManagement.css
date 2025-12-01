@@ -1,9 +1,54 @@
 .assets-management-container {
-  padding: 0;
+  padding: 20px;
   width: 100%;
-  max-width: 100%;
-  margin: 0;
+  max-width: 1200px;
+  margin: 0 auto;
   box-sizing: border-box;
+}
+
+.assets-management-content {
+  background: #fff;
+  padding: 40px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.heading-assets-management {
+  font-size: 28px;
+  font-weight: 600;
+  color: #004B71;
+  margin: 0 0 20px 0;
+}
+
+.info-text-assets-management {
+  font-size: 16px;
+  color: #666;
+  margin-bottom: 20px;
+}
+
+.links-section-assets-management {
+  text-align: left;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.links-section-assets-management p {
+  font-size: 16px;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.links-section-assets-management ul {
+  list-style-type: disc;
+  padding-left: 30px;
+  color: #666;
+}
+
+.links-section-assets-management li {
+  margin-bottom: 8px;
+  font-size: 14px;
 }
 
 /* Main Tabs Container */

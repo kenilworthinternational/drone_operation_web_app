@@ -63,6 +63,8 @@ export const baseApi = createApi({
     'Reports', 'ChartData', 'TaskReports', 'PilotPerformance',
     // Assets
     'Assets', 'Vehicles', 'Generators', 'Batteries', 'RemoteControls', 'Insurance',
+    // Stock and Assets Management
+    'Suppliers', 'MainCategories', 'SubCategories', 'InventoryItems',
     // Finance
     'Brokers', 'PilotRevenue', 'DefaultValues',
     // Dropdowns
