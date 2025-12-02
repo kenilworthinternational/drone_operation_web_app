@@ -4,8 +4,10 @@ import '../../styles/inventoryItemsRegistration.css';
 import {
   useGetMainCategoriesQuery,
   useCreateMainCategoryMutation,
+  useGetLastMainCategoryCodeQuery,
   useGetSubCategoriesQuery,
   useCreateSubCategoryMutation,
+  useGetLastSubCategoryCodeQuery,
   useGetInventoryItemsQuery,
   useCreateInventoryItemMutation,
   useUpdateInventoryItemMutation,
@@ -17,6 +19,10 @@ const InventoryItemsRegistration = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMainCategory, setSelectedMainCategory] = useState('');
   const [selectedSubCategory, setSelectedSubCategory] = useState('');
+  // Filter states for Registered Item List
+  const [filterMainCategory, setFilterMainCategory] = useState('');
+  const [filterSubCategory, setFilterSubCategory] = useState('');
+  const [filterItemCategory, setFilterItemCategory] = useState('');
   const [showMainCategoryModal, setShowMainCategoryModal] = useState(false);
   const [showSubCategoryModal, setShowSubCategoryModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
@@ -65,7 +71,15 @@ const InventoryItemsRegistration = () => {
   const { data: subCategoriesResponse, refetch: refetchSubCategories } = useGetSubCategoriesQuery(
     selectedMainCategory ? { main_category_id: selectedMainCategory } : {}
   );
+  // Fetch all sub categories for filtering (when filterMainCategory is selected)
+  const { data: allSubCategoriesResponse } = useGetSubCategoriesQuery(
+    filterMainCategory ? { main_category_id: filterMainCategory } : {}
+  );
   const { data: itemsResponse, isLoading, error, refetch: refetchItems } = useGetInventoryItemsQuery({});
+  
+  // Get last category codes
+  const { data: lastMainCategoryCodeResponse, refetch: refetchLastMainCode } = useGetLastMainCategoryCodeQuery();
+  const { data: lastSubCategoryCodeResponse, refetch: refetchLastSubCode } = useGetLastSubCategoryCodeQuery();
   const [createMainCategory] = useCreateMainCategoryMutation();
   const [createSubCategory] = useCreateSubCategoryMutation();
   const [createInventoryItem] = useCreateInventoryItemMutation();
@@ -73,20 +87,40 @@ const InventoryItemsRegistration = () => {
 
   const mainCategories = mainCategoriesResponse?.data || [];
   const subCategories = subCategoriesResponse?.data || [];
+  const allSubCategories = allSubCategoriesResponse?.data || [];
   const items = itemsResponse?.data || [];
 
-  // Filter items
+  // Filter items based on search term and filters
   const filteredItems = useMemo(() => {
-    if (!searchTerm.trim()) {
-      return items;
+    let filtered = items;
+
+    // Apply Main Category filter
+    if (filterMainCategory) {
+      filtered = filtered.filter((item) => item.main_category_id === parseInt(filterMainCategory));
     }
-    return items.filter((item) =>
-      item.item_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.item_code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.main_category_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.sub_category_name?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [items, searchTerm]);
+
+    // Apply Sub Category filter
+    if (filterSubCategory) {
+      filtered = filtered.filter((item) => item.sub_category_id === parseInt(filterSubCategory));
+    }
+
+    // Apply Item Category filter
+    if (filterItemCategory) {
+      filtered = filtered.filter((item) => item.item_category === filterItemCategory);
+    }
+
+    // Apply search term filter
+    if (searchTerm.trim()) {
+      filtered = filtered.filter((item) =>
+        item.item_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.item_code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.main_category_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.sub_category_name?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    return filtered;
+  }, [items, searchTerm, filterMainCategory, filterSubCategory, filterItemCategory]);
 
   // Auto-clear messages
   useEffect(() => {
@@ -105,12 +139,86 @@ const InventoryItemsRegistration = () => {
     setItemForm((prev) => ({ ...prev, sub_category_id: '' }));
   }, [selectedMainCategory]);
 
+  // Update sub category filter when main category filter changes
+  useEffect(() => {
+    setFilterSubCategory('');
+  }, [filterMainCategory]);
+
+  // Generate next category code
+  const generateNextMainCategoryCode = (lastCode) => {
+    if (!lastCode) return 'MAIN001';
+    const match = lastCode.match(/^MAIN(\d+)$/);
+    if (match) {
+      const num = parseInt(match[1], 10);
+      const nextNum = num + 1;
+      return `MAIN${String(nextNum).padStart(3, '0')}`;
+    }
+    return 'MAIN001';
+  };
+
+  const generateNextSubCategoryCode = (lastCode) => {
+    if (!lastCode) return 'SUB0001';
+    const match = lastCode.match(/^SUB(\d+)$/);
+    if (match) {
+      const num = parseInt(match[1], 10);
+      const nextNum = num + 1;
+      return `SUB${String(nextNum).padStart(4, '0')}`;
+    }
+    return 'SUB0001';
+  };
+
+  // Handle Main Category Modal Open
+  useEffect(() => {
+    if (showMainCategoryModal) {
+      refetchLastMainCode();
+    }
+  }, [showMainCategoryModal, refetchLastMainCode]);
+
+  // Handle Sub Category Modal Open
+  useEffect(() => {
+    if (showSubCategoryModal) {
+      refetchLastSubCode();
+    }
+  }, [showSubCategoryModal, refetchLastSubCode]);
+
+  // Auto-fill estimated main category code
+  useEffect(() => {
+    if (showMainCategoryModal && lastMainCategoryCodeResponse?.data?.last_code !== undefined) {
+      const lastCode = lastMainCategoryCodeResponse.data.last_code;
+      const estimatedCode = generateNextMainCategoryCode(lastCode);
+      setMainCategoryForm((prev) => ({
+        ...prev,
+        category_code: prev.category_code || estimatedCode,
+      }));
+    }
+  }, [showMainCategoryModal, lastMainCategoryCodeResponse]);
+
+  // Auto-fill estimated sub category code
+  useEffect(() => {
+    if (showSubCategoryModal && lastSubCategoryCodeResponse?.data?.last_code !== undefined) {
+      const lastCode = lastSubCategoryCodeResponse.data.last_code;
+      const estimatedCode = generateNextSubCategoryCode(lastCode);
+      setSubCategoryForm((prev) => ({
+        ...prev,
+        sub_category_code: prev.sub_category_code || estimatedCode,
+      }));
+    }
+  }, [showSubCategoryModal, lastSubCategoryCodeResponse]);
+
   // Handle Main Category Creation
   const handleCreateMainCategory = async (e) => {
     e.preventDefault();
     try {
+      // Auto-generate code if not provided
+      let categoryCode = mainCategoryForm.category_code;
+      if (!categoryCode || categoryCode.trim() === '') {
+        const lastCode = lastMainCategoryCodeResponse?.data?.last_code;
+        categoryCode = generateNextMainCategoryCode(lastCode);
+      }
+      
       const result = await createMainCategory({
         ...mainCategoryForm,
+        category_code: categoryCode,
         created_by: userData.id || null,
       }).unwrap();
       if (result.status) {
@@ -124,6 +232,7 @@ const InventoryItemsRegistration = () => {
           status: 'active',
         });
         refetchMainCategories();
+        refetchLastMainCode();
       }
     } catch (error) {
       setMessage(error?.data?.message || 'Failed to create main category');
@@ -140,8 +249,16 @@ const InventoryItemsRegistration = () => {
       return;
     }
     try {
+      // Auto-generate code if not provided
+      let subCategoryCode = subCategoryForm.sub_category_code;
+      if (!subCategoryCode || subCategoryCode.trim() === '') {
+        const lastCode = lastSubCategoryCodeResponse?.data?.last_code;
+        subCategoryCode = generateNextSubCategoryCode(lastCode);
+      }
+      
       const result = await createSubCategory({
         ...subCategoryForm,
+        sub_category_code: subCategoryCode,
         created_by: userData.id || null,
       }).unwrap();
       if (result.status) {
@@ -156,6 +273,7 @@ const InventoryItemsRegistration = () => {
           status: 'active',
         });
         refetchSubCategories();
+        refetchLastSubCode();
       }
     } catch (error) {
       setMessage(error?.data?.message || 'Failed to create sub category');
@@ -591,17 +709,79 @@ const InventoryItemsRegistration = () => {
           <div className="registered-items-section-inventory-items">
             <div className="section-header-inventory-items">
               <h2 className="section-title-inventory-items">Registered Item List</h2>
-          <div className="search-container-inventory-items">
-            <label className="search-label-inventory-items">Search Item:</label>
-            <input
-              type="text"
-              className="search-input-inventory-items"
-              placeholder="Search"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-        </div>
+              <div className="filters-container-inventory-items">
+                <div className="filter-group-inventory-items">
+                  <label className="filter-label-inventory-items">Main Category:</label>
+                  <select
+                    className="filter-select-inventory-items"
+                    value={filterMainCategory}
+                    onChange={(e) => setFilterMainCategory(e.target.value)}
+                  >
+                    <option value="">All Categories</option>
+                    {mainCategories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.category_name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="filter-group-inventory-items">
+                  <label className="filter-label-inventory-items">Sub Category:</label>
+                  <select
+                    className="filter-select-inventory-items"
+                    value={filterSubCategory}
+                    onChange={(e) => setFilterSubCategory(e.target.value)}
+                    disabled={!filterMainCategory}
+                  >
+                    <option value="">All Sub Categories</option>
+                    {allSubCategories
+                      .filter((sub) => sub.main_category_id === parseInt(filterMainCategory))
+                      .map((sub) => (
+                        <option key={sub.id} value={sub.id}>
+                          {sub.sub_category_name}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+                <div className="filter-group-inventory-items">
+                  <label className="filter-label-inventory-items">Item Category:</label>
+                  <select
+                    className="filter-select-inventory-items"
+                    value={filterItemCategory}
+                    onChange={(e) => setFilterItemCategory(e.target.value)}
+                  >
+                    <option value="">All Types</option>
+                    <option value="inventory_item">Inventory Item</option>
+                    <option value="stock_item">Stock Item</option>
+                  </select>
+                </div>
+                <div className="search-container-inventory-items">
+                  <label className="search-label-inventory-items">Search Item:</label>
+                  <input
+                    type="text"
+                    className="search-input-inventory-items"
+                    placeholder="Search"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+                {(filterMainCategory || filterSubCategory || filterItemCategory || searchTerm) && (
+                  <button
+                    type="button"
+                    className="btn-clear-filters-inventory-items"
+                    onClick={() => {
+                      setFilterMainCategory('');
+                      setFilterSubCategory('');
+                      setFilterItemCategory('');
+                      setSearchTerm('');
+                    }}
+                    title="Clear All Filters"
+                  >
+                    <FaTimes /> Clear Filters
+                  </button>
+                )}
+              </div>
+            </div>
 
         {isLoading ? (
           <div className="loading-inventory-items">Loading items...</div>
@@ -678,6 +858,11 @@ const InventoryItemsRegistration = () => {
               <div className="form-group-inventory-items-registration">
                 <label className="label-inventory-items-registration" htmlFor="main_category_code">
                   Category Code <span className="required-inventory-items-registration">*</span>
+                  {lastMainCategoryCodeResponse?.data?.last_code && (
+                    <span className="estimated-code-hint" style={{ fontSize: '12px', color: '#666', marginLeft: '8px', fontWeight: 'normal' }}>
+                      (Last: {lastMainCategoryCodeResponse.data.last_code}, Estimated: {generateNextMainCategoryCode(lastMainCategoryCodeResponse.data.last_code)})
+                    </span>
+                  )}
                 </label>
                 <input
                   type="text"
@@ -685,6 +870,7 @@ const InventoryItemsRegistration = () => {
                   className="input-inventory-items-registration"
                   value={mainCategoryForm.category_code}
                   onChange={(e) => setMainCategoryForm((prev) => ({ ...prev, category_code: e.target.value }))}
+                  placeholder={lastMainCategoryCodeResponse?.data?.last_code ? generateNextMainCategoryCode(lastMainCategoryCodeResponse.data.last_code) : 'MAIN001'}
                   required
                 />
               </div>
@@ -767,6 +953,11 @@ const InventoryItemsRegistration = () => {
               <div className="form-group-inventory-items-registration">
                 <label className="label-inventory-items-registration" htmlFor="sub_category_code">
                   Sub Category Code <span className="required-inventory-items-registration">*</span>
+                  {lastSubCategoryCodeResponse?.data?.last_code && (
+                    <span className="estimated-code-hint" style={{ fontSize: '12px', color: '#666', marginLeft: '8px', fontWeight: 'normal' }}>
+                      (Last: {lastSubCategoryCodeResponse.data.last_code}, Estimated: {generateNextSubCategoryCode(lastSubCategoryCodeResponse.data.last_code)})
+                    </span>
+                  )}
                 </label>
                 <input
                   type="text"
@@ -774,6 +965,7 @@ const InventoryItemsRegistration = () => {
                   className="input-inventory-items-registration"
                   value={subCategoryForm.sub_category_code}
                   onChange={(e) => setSubCategoryForm((prev) => ({ ...prev, sub_category_code: e.target.value }))}
+                  placeholder={lastSubCategoryCodeResponse?.data?.last_code ? generateNextSubCategoryCode(lastSubCategoryCodeResponse.data.last_code) : 'SUB0001'}
                   required
                 />
               </div>

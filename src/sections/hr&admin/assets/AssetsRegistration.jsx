@@ -9,7 +9,7 @@ import {
   selectLoading,
   selectActiveTab,
 } from '../../../store/slices/assetsSlice';
-import { useGetWingsQuery } from '../../../api/services/assetsApi';
+import { useGetWingsQuery, useGetBatteryTypesQuery } from '../../../api/services/assetsApi';
 
 const parsePurchasePrice = (value) => {
   if (value === undefined || value === null) return null;
@@ -94,6 +94,12 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
     error: wingsErrorDetails,
   } = useGetWingsQuery();
 
+  const {
+    data: batteryTypesResponse,
+    isLoading: batteryTypesLoading,
+    isError: batteryTypesError,
+  } = useGetBatteryTypesQuery();
+
   const wings = useMemo(() => {
     if (!wingsResponse) return [];
     if (Array.isArray(wingsResponse)) return wingsResponse;
@@ -101,6 +107,16 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
     if (Array.isArray(wingsResponse?.wings)) return wingsResponse.wings;
     return [];
   }, [wingsResponse]);
+
+  const batteryTypes = useMemo(() => {
+    if (!batteryTypesResponse) return [];
+    if (batteryTypesResponse?.status === 'true' || batteryTypesResponse?.status === true) {
+      return batteryTypesResponse?.types || [];
+    }
+    if (Array.isArray(batteryTypesResponse)) return batteryTypesResponse;
+    if (Array.isArray(batteryTypesResponse?.data)) return batteryTypesResponse.data;
+    return [];
+  }, [batteryTypesResponse]);
 
   const wingsErrorMessage = useMemo(() => {
     if (!wingsError) return '';
@@ -1147,15 +1163,28 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
       <div className="form-row-assets-reg">
         <div className="form-group-assets-reg">
           <label htmlFor="battery_type">Type <span className="required-assets-reg">*</span></label>
-          <input
-            type="text"
+          <select
             id="battery_type"
             name="type"
             value={batteryFormData.type}
             onChange={(e) => handleInputChange(e, 'batteries')}
-            placeholder="Enter battery type"
             required
-          />
+            disabled={batteryTypesLoading}
+          >
+            <option value="">Select Battery Type</option>
+            {batteryTypes
+              .filter((bt) => bt.activated === 1 || bt.activated === '1')
+              .map((bt) => (
+                <option key={bt.id} value={bt.id}>
+                  {bt.type}
+                </option>
+              ))}
+          </select>
+          {batteryTypesError && (
+            <span className="error-text-assets-reg" style={{ fontSize: '12px', color: '#d32f2f' }}>
+              Failed to load battery types
+            </span>
+          )}
         </div>
         <div className="form-group-assets-reg">
           <label htmlFor="battery_make">Make <span className="required-assets-reg">*</span></label>

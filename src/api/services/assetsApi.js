@@ -152,6 +152,16 @@ export const assetsApi = baseApi.injectEndpoints({
       providesTags: ['Insurance'],
     }),
 
+    // Battery Types
+    getBatteryTypes: builder.query({
+      query: () => ({
+        url: 'view_battery_type',
+        method: 'POST',
+        body: {},
+      }),
+      providesTags: ['Batteries'],
+    }),
+
     // Wings
     getWings: builder.query({
       query: () => ({
@@ -227,6 +237,7 @@ export const {
   useCreateBatteryMutation,
   useUpdateBatteryMutation,
   useGetInsuranceTypesQuery,
+  useGetBatteryTypesQuery,
   useGetWingsQuery,
   useUpdateAssetsSectorDroneMutation,
   useUpdateAssetsSectorVehicleMutation,

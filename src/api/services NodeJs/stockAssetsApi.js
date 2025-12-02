@@ -187,6 +187,21 @@ export const stockAssetsApi = baseApi.injectEndpoints({
       ],
     }),
 
+    getLastMainCategoryCode: builder.query({
+      queryFn: async () => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: '/api/stock-assets/main-categories/last-code',
+            method: 'POST',
+            body: {},
+          },
+          {},
+          {}
+        );
+        return result;
+      },
+    }),
+
 
     // =====================================================
     // SUB CATEGORIES
@@ -256,6 +271,21 @@ export const stockAssetsApi = baseApi.injectEndpoints({
         { type: 'SubCategories', id: data?.id },
         'SubCategories'
       ],
+    }),
+
+    getLastSubCategoryCode: builder.query({
+      queryFn: async () => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: '/api/stock-assets/sub-categories/last-code',
+            method: 'POST',
+            body: {},
+          },
+          {},
+          {}
+        );
+        return result;
+      },
     }),
 
 
@@ -344,11 +374,13 @@ export const {
   useGetMainCategoryQuery,
   useCreateMainCategoryMutation,
   useUpdateMainCategoryMutation,
+  useGetLastMainCategoryCodeQuery,
   // Sub Categories
   useGetSubCategoriesQuery,
   useGetSubCategoryQuery,
   useCreateSubCategoryMutation,
   useUpdateSubCategoryMutation,
+  useGetLastSubCategoryCodeQuery,
   // Inventory Items
   useGetInventoryItemsQuery,
   useGetInventoryItemQuery,

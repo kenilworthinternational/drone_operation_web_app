@@ -14,7 +14,7 @@ import {
 } from 'react-icons/fa';
 import '../../../styles/assets.css';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
-import { useGetWingsQuery } from '../../../api/services/assetsApi';
+import { useGetWingsQuery, useGetBatteryTypesQuery } from '../../../api/services/assetsApi';
 import {
   fetchInsuranceTypes,
   fetchAssets as fetchAssetsThunk,
@@ -191,6 +191,12 @@ const resolveInsuranceName = (insuranceOptions, id) => {
   return option ? option.type : String(id);
 };
 
+const resolveBatteryTypeName = (batteryTypes, id) => {
+  if (!id) return '-';
+  const type = batteryTypes.find((item) => String(item.id) === String(id));
+  return type ? type.type : String(id);
+};
+
 const singularLabel = (label) => (label.endsWith('s') ? label.slice(0, -1) : label);
 
 const formatOwnership = (value) => {
@@ -232,6 +238,12 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
     error: wingsErrorDetails,
   } = useGetWingsQuery();
 
+  const {
+    data: batteryTypesResponse,
+    isLoading: batteryTypesLoading,
+    isError: batteryTypesError,
+  } = useGetBatteryTypesQuery();
+
   const wings = useMemo(() => {
     if (!wingsResponse) return [];
     if (Array.isArray(wingsResponse)) return wingsResponse;
@@ -239,6 +251,16 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
     if (Array.isArray(wingsResponse?.wings)) return wingsResponse.wings;
     return [];
   }, [wingsResponse]);
+
+  const batteryTypes = useMemo(() => {
+    if (!batteryTypesResponse) return [];
+    if (batteryTypesResponse?.status === 'true' || batteryTypesResponse?.status === true) {
+      return batteryTypesResponse?.types || [];
+    }
+    if (Array.isArray(batteryTypesResponse)) return batteryTypesResponse;
+    if (Array.isArray(batteryTypesResponse?.data)) return batteryTypesResponse.data;
+    return [];
+  }, [batteryTypesResponse]);
 
   const wingIdToName = useMemo(() => {
     const map = new Map();
@@ -777,12 +799,15 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
       : 'No';
     const purchasePriceDisplay = formatCurrency(asset?.purchase_price);
     const wingDisplay = formatWingDisplay(asset);
+    const batteryTypeDisplay = isBatteryTab 
+      ? resolveBatteryTypeName(batteryTypes, asset?.type || asset?.type_id) 
+      : null;
 
     return (
       <tr key={asset?.id ?? asset?.tag}>
         <td>{asset?.tag || '-'}</td>
         <td>{asset?.serial || '-'}</td>
-        {isBatteryTab && <td>{asset?.type || '-'}</td>}
+        {isBatteryTab && <td>{batteryTypeDisplay || '-'}</td>}
         <td>{asset?.make || '-'}</td>
         <td>{asset?.model || '-'}</td>
         <td>{purchasePriceDisplay}</td>
@@ -835,7 +860,7 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
             { label: 'Tag', value: selectedAsset.tag },
             { label: 'Serial', value: selectedAsset.serial },
             ...(selectedAssetType === 'batteries'
-              ? [{ label: 'Type', value: selectedAsset.type }]
+              ? [{ label: 'Type', value: resolveBatteryTypeName(batteryTypes, selectedAsset.type || selectedAsset.type_id) }]
               : []),
             { label: 'Make', value: selectedAsset.make },
             { label: 'Model', value: selectedAsset.model },
@@ -1184,14 +1209,28 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
                       <div className="form-row-assets">
                         <div className="form-group-assets">
                           <label htmlFor="type">Type <span className="required-indicator-assets">*</span></label>
-                          <input
-                            type="text"
+                          <select
                             id="type"
                             name="type"
                             value={formData.type}
                             onChange={handleFormChange}
                             required
-                          />
+                            disabled={batteryTypesLoading}
+                          >
+                            <option value="">Select Battery Type</option>
+                            {batteryTypes
+                              .filter((bt) => bt.activated === 1 || bt.activated === '1')
+                              .map((bt) => (
+                                <option key={bt.id} value={bt.id}>
+                                  {bt.type}
+                                </option>
+                              ))}
+                          </select>
+                          {batteryTypesError && (
+                            <span className="error-text-assets" style={{ fontSize: '12px', color: '#d32f2f' }}>
+                              Failed to load battery types
+                            </span>
+                          )}
                         </div>
                       </div>
                     )}
