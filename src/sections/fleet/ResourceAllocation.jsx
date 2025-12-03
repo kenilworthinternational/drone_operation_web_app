@@ -6,6 +6,7 @@ import {
   useGetFleetGeneratorsQuery,
   useGetFleetDronesQuery,
   useGetFleetPilotsWithTeamsQuery,
+  useCreateFleetTeamMutation,
   useGetFleetTeamEquipmentQuery,
   useGetTempFleetAllocationsByDateQuery,
   useAssignFleetRemoteControlMutation,
@@ -29,6 +30,8 @@ const ResourceAllocation = () => {
   const [availabilityStatusFilter, setAvailabilityStatusFilter] = useState('all');
   const [availabilityCategoryFilter, setAvailabilityCategoryFilter] = useState('all');
   const [selectedBatteryType, setSelectedBatteryType] = useState(null);
+  const [showCreateTeamModal, setShowCreateTeamModal] = useState(false);
+  const [newTeamName, setNewTeamName] = useState('');
 
   // Fetch equipment data
   const { data: remoteControlsData, isLoading: loadingRC } = useGetFleetRemoteControlsQuery({ 
@@ -44,7 +47,8 @@ const ResourceAllocation = () => {
   const { data: dronesData, isLoading: loadingDrones } = useGetFleetDronesQuery({ 
     available: availabilityStatusFilter === 'not_assigned' ? 'true' : undefined 
   });
-  const { data: pilotsData, isLoading: loadingPilots } = useGetFleetPilotsWithTeamsQuery();
+  const { data: pilotsData, isLoading: loadingPilots, refetch: refetchPilots } = useGetFleetPilotsWithTeamsQuery();
+  const [createTeam] = useCreateFleetTeamMutation();
   const { data: batteryTypesData } = useGetBatteryTypesQuery();
 
   // Get team equipment if pilot/team is selected
@@ -99,10 +103,15 @@ const ResourceAllocation = () => {
           fullWidth: true,
           serials: drones.map(drone => ({
             id: drone.id,
-            code: drone.serial || drone.tag || `DR-${drone.id}`,
+            tag: drone.tag || `TAG-${drone.id}`,
+            serial: drone.serial || '',
+            code: drone.tag || drone.serial || `DR-${drone.id}`,
             status: drone.is_assigned ? 'Assigned' : 'Not Assigned',
-            note: drone.is_assigned ? (drone.assigned_team_name ? `Assigned to ${drone.assigned_team_name}` : 'Assigned') : 'Ready',
+            note: drone.is_assigned 
+              ? (drone.assigned_pilot_names ? `Assigned - ${drone.assigned_pilot_names}` : (drone.assigned_team_name ? `Assigned - ${drone.assigned_team_name}` : 'Assigned'))
+              : 'Ready',
             team: drone.assigned_team_name,
+            pilot: drone.assigned_pilot_names,
           })),
         }],
       });
@@ -117,10 +126,15 @@ const ResourceAllocation = () => {
           fullWidth: false,
           serials: remoteControls.map(rc => ({
             id: rc.id,
-            code: rc.serial || rc.tag || `RC-${rc.id}`,
+            tag: rc.tag || `TAG-${rc.id}`,
+            serial: rc.serial || '',
+            code: rc.tag || rc.serial || `RC-${rc.id}`,
             status: rc.is_assigned ? 'Assigned' : 'Not Assigned',
-            note: rc.is_assigned ? (rc.assigned_team_name ? `Assigned to ${rc.assigned_team_name}` : 'Assigned') : 'Ready',
+            note: rc.is_assigned 
+              ? (rc.assigned_pilot_names ? `Assigned - ${rc.assigned_pilot_names}` : (rc.assigned_team_name ? `Assigned - ${rc.assigned_team_name}` : 'Assigned'))
+              : 'Ready',
             team: rc.assigned_team_name,
+            pilot: rc.assigned_pilot_names,
           })),
         }],
       });
@@ -132,10 +146,15 @@ const ResourceAllocation = () => {
       fullWidth: false,
       serials: batteriesByType[typeName].map(battery => ({
         id: battery.id,
-        code: battery.serial || battery.tag || `BAT-${battery.id}`,
+        tag: battery.tag || `TAG-${battery.id}`,
+        serial: battery.serial || '',
+        code: battery.tag || battery.serial || `BAT-${battery.id}`,
         status: battery.is_assigned ? 'Assigned' : 'Not Assigned',
-        note: battery.is_assigned ? (battery.assigned_team_name ? `Assigned to ${battery.assigned_team_name}` : 'Assigned') : 'Ready',
+        note: battery.is_assigned 
+          ? (battery.assigned_pilot_names ? `Assigned - ${battery.assigned_pilot_names}` : (battery.assigned_team_name ? `Assigned - ${battery.assigned_team_name}` : 'Assigned'))
+          : 'Ready',
         team: battery.assigned_team_name,
+        pilot: battery.assigned_pilot_names,
       })),
     }));
 
@@ -155,10 +174,15 @@ const ResourceAllocation = () => {
           fullWidth: false,
           serials: generators.map(gen => ({
             id: gen.id,
-            code: gen.serial || gen.tag || `GEN-${gen.id}`,
+            tag: gen.tag || `TAG-${gen.id}`,
+            serial: gen.serial || '',
+            code: gen.tag || gen.serial || `GEN-${gen.id}`,
             status: gen.is_assigned ? 'Assigned' : 'Not Assigned',
-            note: gen.is_assigned ? (gen.assigned_team_name ? `Assigned to ${gen.assigned_team_name}` : 'Assigned') : 'Ready',
+            note: gen.is_assigned 
+              ? (gen.assigned_pilot_names ? `Assigned - ${gen.assigned_pilot_names}` : (gen.assigned_team_name ? `Assigned - ${gen.assigned_team_name}` : 'Assigned'))
+              : 'Ready',
             team: gen.assigned_team_name,
+            pilot: gen.assigned_pilot_names,
           })),
         }],
       });
@@ -202,26 +226,161 @@ const ResourceAllocation = () => {
       const pilot = pilots.find(p => p.id === parseInt(selectedPilot));
       if (pilot && pilot.team_id) {
         setSelectedTeamId(pilot.team_id);
+        setShowCreateTeamModal(false);
       } else {
         setSelectedTeamId('');
+        setSelectedSerials({});
+        // Show modal if pilot has no team
+        if (pilot) {
+          setShowCreateTeamModal(true);
+        }
       }
     } else {
       setSelectedTeamId('');
+      setSelectedSerials({});
+      setShowCreateTeamModal(false);
     }
   }, [selectedPilot, pilots]);
 
+  // Handle team creation
+  const handleCreateTeam = async () => {
+    if (!newTeamName.trim() || !selectedPilot) {
+      alert('Please enter a team name');
+      return;
+    }
+
+    try {
+      const result = await createTeam({
+        team_name: newTeamName.trim(),
+        pilot_id: parseInt(selectedPilot),
+      }).unwrap();
+
+      if (result.status) {
+        alert('Team created successfully!');
+        setShowCreateTeamModal(false);
+        setNewTeamName('');
+        // Refetch pilots to get updated team info
+        await refetchPilots();
+        // The useEffect will automatically set the team_id when pilots are refetched
+      }
+    } catch (error) {
+      console.error('Error creating team:', error);
+      alert(error?.data?.message || 'Failed to create team. Please try again.');
+    }
+  };
+
+  // Store permanent allocations separately
+  const [permanentAllocations, setPermanentAllocations] = useState({});
+
+  // Pre-populate dropdowns with team's current equipment (only for permanent allocation)
+  useEffect(() => {
+    if (teamEquipmentData?.data && selectedTeamId && !isTempAllocation) {
+      const equipment = teamEquipmentData.data;
+      const newSelectedSerials = {};
+      const permanent = {};
+
+      // Pre-populate Drone
+      if (equipment.drones && equipment.drones.length > 0) {
+        newSelectedSerials['Drone'] = [equipment.drones[0].equipment_id];
+        permanent['Drone'] = equipment.drones.map(d => d.equipment_id);
+      }
+
+      // Pre-populate Remote Controller
+      if (equipment.remote_controls && equipment.remote_controls.length > 0) {
+        newSelectedSerials['Remote Controller (RC)'] = [equipment.remote_controls[0].equipment_id];
+        permanent['Remote Controller (RC)'] = equipment.remote_controls.map(rc => rc.equipment_id);
+      }
+
+      // Pre-populate Generator
+      if (equipment.generators && equipment.generators.length > 0) {
+        newSelectedSerials['Generator'] = [equipment.generators[0].equipment_id];
+        permanent['Generator'] = equipment.generators.map(g => g.equipment_id);
+      }
+
+      // Pre-populate Batteries by type
+      if (equipment.batteries && equipment.batteries.length > 0) {
+        const droneBatteries = [];
+        const rcBatteries = [];
+        const drtkBatteries = [];
+
+        equipment.batteries.forEach(battery => {
+          const typeName = battery.battery_type_name || '';
+          if (typeName === 'Drone Battery') {
+            droneBatteries.push(battery.equipment_id);
+          } else if (typeName === 'RC Battery') {
+            rcBatteries.push(battery.equipment_id);
+          } else if (typeName === 'DRTK Battery') {
+            drtkBatteries.push(battery.equipment_id);
+          }
+        });
+
+        if (droneBatteries.length > 0) {
+          newSelectedSerials['Drone Battery'] = droneBatteries;
+          permanent['Drone Battery'] = droneBatteries;
+        }
+        if (rcBatteries.length > 0) {
+          newSelectedSerials['RC Battery'] = rcBatteries;
+          permanent['RC Battery'] = rcBatteries;
+        }
+        if (drtkBatteries.length > 0) {
+          newSelectedSerials['DRTK Battery'] = drtkBatteries;
+          permanent['DRTK Battery'] = drtkBatteries;
+        }
+      }
+
+      setSelectedSerials(newSelectedSerials);
+      setPermanentAllocations(permanent);
+    } else if (!selectedTeamId || isTempAllocation) {
+      // Clear selections when switching to temp allocation or no team selected
+      if (isTempAllocation) {
+        setSelectedSerials({});
+      } else {
+        setSelectedSerials({});
+        setPermanentAllocations({});
+      }
+    }
+  }, [teamEquipmentData, selectedTeamId, isTempAllocation]);
+
   // Get available equipment options for allocation
   const getAvailableEquipment = (equipmentType) => {
+    // For temp allocation, exclude permanently allocated equipment
+    const permanentIds = isTempAllocation ? (permanentAllocations[equipmentType] || []) : [];
+    
+    const isCurrentTeam = (equipment) => {
+      return equipment.assigned_team_id === parseInt(selectedTeamId);
+    };
+
+    const isPermanentlyAllocated = (equipmentId) => {
+      return permanentIds.includes(equipmentId);
+    };
+
     switch (equipmentType) {
       case 'Remote Controller (RC)':
-        return remoteControls.filter(rc => !rc.is_assigned).map(rc => ({
-          value: rc.id,
-          label: `${rc.serial || rc.tag || `RC-${rc.id}`} - ${rc.make || ''} ${rc.model || ''}`.trim(),
-        }));
+        return remoteControls
+          .filter(rc => {
+            if (isTempAllocation) {
+              // For temp: only show unassigned equipment (exclude permanent allocations)
+              return !rc.is_assigned && !isPermanentlyAllocated(rc.id);
+            } else {
+              // For permanent: show unassigned OR currently assigned to this team
+              return !rc.is_assigned || isCurrentTeam(rc);
+            }
+          })
+          .map(rc => ({
+            value: rc.id,
+            label: `${rc.serial || rc.tag || `RC-${rc.id}`} - ${rc.make || ''} ${rc.model || ''}`.trim(),
+          }));
       case 'Drone Battery':
         const droneType = batteryTypes.find(bt => bt.type === 'Drone Battery');
         return batteries
-          .filter(b => !b.is_assigned && b.type === droneType?.id)
+          .filter(b => {
+            if (b.type !== droneType?.id) return false;
+            if (isTempAllocation) {
+              return !b.is_assigned && !isPermanentlyAllocated(b.id);
+            } else {
+              return !b.is_assigned || isCurrentTeam(b);
+            }
+          })
           .map(b => ({
             value: b.id,
             label: `${b.serial || b.tag || `BAT-${b.id}`}`.trim(),
@@ -229,7 +388,14 @@ const ResourceAllocation = () => {
       case 'RC Battery':
         const rcType = batteryTypes.find(bt => bt.type === 'RC Battery');
         return batteries
-          .filter(b => !b.is_assigned && b.type === rcType?.id)
+          .filter(b => {
+            if (b.type !== rcType?.id) return false;
+            if (isTempAllocation) {
+              return !b.is_assigned && !isPermanentlyAllocated(b.id);
+            } else {
+              return !b.is_assigned || isCurrentTeam(b);
+            }
+          })
           .map(b => ({
             value: b.id,
             label: `${b.serial || b.tag || `BAT-${b.id}`}`.trim(),
@@ -237,21 +403,44 @@ const ResourceAllocation = () => {
       case 'DRTK Battery':
         const drtkType = batteryTypes.find(bt => bt.type === 'DRTK Battery');
         return batteries
-          .filter(b => !b.is_assigned && b.type === drtkType?.id)
+          .filter(b => {
+            if (b.type !== drtkType?.id) return false;
+            if (isTempAllocation) {
+              return !b.is_assigned && !isPermanentlyAllocated(b.id);
+            } else {
+              return !b.is_assigned || isCurrentTeam(b);
+            }
+          })
           .map(b => ({
             value: b.id,
             label: `${b.serial || b.tag || `BAT-${b.id}`}`.trim(),
           }));
       case 'Generator':
-        return generators.filter(g => !g.is_assigned).map(g => ({
-          value: g.id,
-          label: `${g.serial || g.tag || `GEN-${g.id}`} - ${g.make || ''} ${g.model || ''}`.trim(),
-        }));
+        return generators
+          .filter(g => {
+            if (isTempAllocation) {
+              return !g.is_assigned && !isPermanentlyAllocated(g.id);
+            } else {
+              return !g.is_assigned || isCurrentTeam(g);
+            }
+          })
+          .map(g => ({
+            value: g.id,
+            label: `${g.serial || g.tag || `GEN-${g.id}`} - ${g.make || ''} ${g.model || ''}`.trim(),
+          }));
       case 'Drone':
-        return drones.filter(d => !d.is_assigned).map(d => ({
-          value: d.id,
-          label: `${d.serial || d.tag || `DR-${d.id}`} - ${d.make || ''} ${d.model || ''}`.trim(),
-        }));
+        return drones
+          .filter(d => {
+            if (isTempAllocation) {
+              return !d.is_assigned && !isPermanentlyAllocated(d.id);
+            } else {
+              return !d.is_assigned || isCurrentTeam(d);
+            }
+          })
+          .map(d => ({
+            value: d.id,
+            label: `${d.serial || d.tag || `DR-${d.id}`} - ${d.make || ''} ${d.model || ''}`.trim(),
+          }));
       default:
         return [];
     }
@@ -512,10 +701,14 @@ const ResourceAllocation = () => {
                               ) : (
                                 item.serials.map((serial) => (
                                   <div key={`${item.label}-${serial.id}`} className="availability-serial-row">
-                                    <span className="availability-serial-code">{serial.code}</span>
+                                    <div className="availability-serial-code-wrapper">
+                                      <span className="availability-serial-code">{serial.tag || serial.code}</span>
+                                      {serial.serial && (
+                                        <span className="availability-serial-number">{serial.serial}</span>
+                                      )}
+                                    </div>
                                     <span className={`availability-status ${serial.status === 'Not Assigned' ? 'status-not-assigned' : 'status-assigned'}`}>
-                                      {serial.status}
-                                      {serial.team && ` - ${serial.team}`}
+                                      {serial.note || serial.status}
                                     </span>
                                   </div>
                                 ))
@@ -533,7 +726,76 @@ const ResourceAllocation = () => {
         </div>
       ) : (
         <div className="allocation-container-fleet">
-          <div className="allocation-filters-fleet">
+          {/* Create Team Modal */}
+          {showCreateTeamModal && (
+            <div className="create-team-modal-overlay-fleet" onClick={() => setShowCreateTeamModal(false)}>
+              <div className="create-team-modal-fleet" onClick={(e) => e.stopPropagation()}>
+                <div className="create-team-modal-header-fleet">
+                  <h3>Create Equipment Group</h3>
+                  <button 
+                    className="create-team-modal-close-fleet"
+                    onClick={() => {
+                      setShowCreateTeamModal(false);
+                      setSelectedPilot('');
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
+                <div className="create-team-modal-body-fleet">
+                  <p className="create-team-modal-info-fleet">
+                    The selected pilot doesn't have a team. Please create an equipment group (team) to allocate resources.
+                  </p>
+                  <div className="create-team-modal-field-fleet">
+                    <label htmlFor="team-name-input" className="create-team-modal-label-fleet">
+                      Equipment Group Name *
+                    </label>
+                    <input
+                      id="team-name-input"
+                      type="text"
+                      className="create-team-modal-input-fleet"
+                      value={newTeamName}
+                      onChange={(e) => setNewTeamName(e.target.value)}
+                      placeholder="Enter equipment group name"
+                      autoFocus
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          handleCreateTeam();
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
+                <div className="create-team-modal-footer-fleet">
+                  <button
+                    className="create-team-modal-cancel-fleet"
+                    onClick={() => {
+                      setShowCreateTeamModal(false);
+                      setSelectedPilot('');
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="create-team-modal-create-fleet"
+                    onClick={handleCreateTeam}
+                    disabled={!newTeamName.trim()}
+                  >
+                    Create
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Hide allocation section if pilot has no team */}
+          {!selectedTeamId && !showCreateTeamModal ? (
+            <div className="no-team-message-fleet">
+              <p>Please select a pilot with a team to allocate equipment.</p>
+            </div>
+          ) : (
+            <>
+              <div className="allocation-filters-fleet">
             <div className="filter-field-fleet">
               <label className="filter-label-fleet" htmlFor="allocation-pilot">
                 Select Pilot
@@ -608,61 +870,111 @@ const ResourceAllocation = () => {
           </div>
 
           <div className="allocation-controls-fleet">
-            <div className="allocation-grid-fleet">
-              {allocationEquipmentList.map((asset, idx) => {
-                const availableOptions = getAvailableEquipment(asset);
-                return (
-                  <div key={idx} className={`allocation-row-fleet ${isBatteryAsset(asset) ? 'battery-row-fleet' : ''}`}>
-                    <div className="allocation-header-fleet">
-                      <label className="allocation-label-fleet">{asset}</label>
-                    </div>
-                    {isBatteryAsset(asset) && (
-                      <button
-                        type="button"
-                        className="add-serial-btn-fleet add-serial-btn-floating-fleet"
-                        onClick={() => handleAddSerial(asset)}
-                        aria-label="Add battery part"
-                      >
-                        +
-                      </button>
-                    )}
-                    <div className={`allocation-inputs-fleet ${isBatteryAsset(asset) ? 'battery-inputs-fleet' : ''}`}>
-                      {getSerialValues(asset, isBatteryAsset(asset)).map((value, serialIdx) => (
-                        <div key={`${asset}-serial-${serialIdx}`} className="serial-select-wrapper-fleet">
-                          {isBatteryAsset(asset) && (
-                            <span className="serial-chip-fleet">{`Part ${String(serialIdx + 1).padStart(2, '0')}`}</span>
-                          )}
-                          <select
-                            className="serial-select-fleet"
-                            value={value}
-                            onChange={(e) => handleSerialChange(asset, serialIdx, e.target.value)}
-                            disabled={!selectedPilot}
-                          >
-                            <option value="">Select {asset}</option>
-                            {availableOptions.map((option) => (
-                              <option key={option.value} value={option.value}>
-                                {option.label}
-                              </option>
-                            ))}
-                          </select>
-                          {isBatteryAsset(asset) && serialIdx > 0 && (
-                            <button
-                              type="button"
-                              className="remove-serial-btn-fleet"
-                              onClick={() => handleRemoveSerial(asset, serialIdx)}
-                              aria-label={`Remove part ${serialIdx + 1}`}
-                            >
-                              ×
-                            </button>
-                          )}
+            {isTempAllocation && Object.keys(permanentAllocations).length > 0 && (
+              <div className="permanent-allocations-section-fleet">
+                <div className="permanent-allocations-header-fleet">
+                  <h4>Current Permanent Allocations</h4>
+                  <span className="permanent-allocations-note-fleet">(These will remain unchanged)</span>
+                </div>
+                <div className="permanent-allocations-grid-fleet">
+                  {allocationEquipmentList.map((asset, idx) => {
+                    const permanentItems = permanentAllocations[asset] || [];
+                    if (permanentItems.length === 0) return null;
+                    
+                    return (
+                      <div key={`permanent-${idx}-${asset}`} className="permanent-allocation-item-fleet">
+                        <label className="permanent-allocation-label-fleet">{asset}:</label>
+                        <div className="permanent-allocation-values-fleet">
+                          {permanentItems.map((itemId, itemIdx) => {
+                            const equipment = 
+                              asset === 'Drone' ? drones.find(d => d.id === itemId) :
+                              asset === 'Remote Controller (RC)' ? remoteControls.find(rc => rc.id === itemId) :
+                              asset === 'Generator' ? generators.find(g => g.id === itemId) :
+                              batteries.find(b => b.id === itemId);
+                            
+                            const displayName = equipment 
+                              ? `${equipment.serial || equipment.tag || `ID-${itemId}`}`
+                              : `ID-${itemId}`;
+                            
+                            return (
+                              <span key={`perm-${asset}-${itemIdx}`} className="permanent-allocation-badge-fleet">
+                                {displayName}
+                              </span>
+                            );
+                          })}
                         </div>
-                      ))}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            
+            <div className={`allocation-section-fleet ${isTempAllocation ? 'temp-allocation-section-fleet' : ''}`}>
+              {isTempAllocation && (
+                <div className="temp-allocation-header-fleet">
+                  <h4>Add Temporary Equipment</h4>
+                  <span className="temp-allocation-note-fleet">Select additional equipment for temporary use</span>
+                </div>
+              )}
+              <div className="allocation-grid-fleet">
+                {allocationEquipmentList.map((asset, idx) => {
+                  const availableOptions = getAvailableEquipment(asset);
+                  return (
+                    <div key={`equipment-${idx}-${asset}`} className={`allocation-row-fleet ${isBatteryAsset(asset) ? 'battery-row-fleet' : ''}`}>
+                      <div className="allocation-header-fleet">
+                        <label className="allocation-label-fleet">{asset}</label>
+                      </div>
+                      {isBatteryAsset(asset) && (
+                        <button
+                          type="button"
+                          className="add-serial-btn-fleet add-serial-btn-floating-fleet"
+                          onClick={() => handleAddSerial(asset)}
+                          aria-label="Add battery part"
+                        >
+                          +
+                        </button>
+                      )}
+                      <div className={`allocation-inputs-fleet ${isBatteryAsset(asset) ? 'battery-inputs-fleet' : ''}`}>
+                        {getSerialValues(asset, isBatteryAsset(asset)).map((value, serialIdx) => (
+                          <div key={`${asset}-serial-${serialIdx}`} className="serial-select-wrapper-fleet">
+                            {isBatteryAsset(asset) && (
+                              <span className="serial-chip-fleet">{`Part ${String(serialIdx + 1).padStart(2, '0')}`}</span>
+                            )}
+                            <select
+                              className="serial-select-fleet"
+                              value={value}
+                              onChange={(e) => handleSerialChange(asset, serialIdx, e.target.value)}
+                              disabled={!selectedPilot}
+                            >
+                              <option value="">Select {asset}</option>
+                              {availableOptions.map((option) => (
+                                <option key={`${asset}-${serialIdx}-${option.value}`} value={option.value}>
+                                  {option.label}
+                                </option>
+                              ))}
+                            </select>
+                            {isBatteryAsset(asset) && serialIdx > 0 && (
+                              <button
+                                type="button"
+                                className="remove-serial-btn-fleet"
+                                onClick={() => handleRemoveSerial(asset, serialIdx)}
+                                aria-label={`Remove part ${serialIdx + 1}`}
+                              >
+                                ×
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           </div>
+            </>
+          )}
         </div>
       )}
     </div>
