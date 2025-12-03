@@ -9,22 +9,22 @@ import { baseApi } from '../baseApi';
 
 // Import and inject Node.js backend service endpoints
 import './stockAssetsApi';
-import './teamEquipmentApi';
+import './fleetEquipmentApi';
 
 // Export the complete API
 export { baseApi };
 
 // Re-export all hooks from Node.js backend services
 export * from './stockAssetsApi';
-export * from './teamEquipmentApi';
+export * from './fleetEquipmentApi';
 
 /**
  * Node.js Backend Services:
  * - Stock Assets Management (Suppliers, Categories, Inventory Items)
- * - Team Equipment Management (Remote Controls, Batteries, Generators, Drones)
- * - Temporary Allocations
+ * - Fleet Equipment Management (Remote Controls, Batteries, Generators, Drones)
+ * - Temporary Equipment Allocations
  * 
  * Usage:
- * import { useGetSuppliersQuery, useGetRemoteControlsQuery, useGetPilotsWithTeamsQuery } from '../api/services NodeJs/allEndpoints';
+ * import { useGetSuppliersQuery, useGetFleetRemoteControlsQuery, useGetFleetPilotsWithTeamsQuery } from '../api/services NodeJs/allEndpoints';
  */
 
