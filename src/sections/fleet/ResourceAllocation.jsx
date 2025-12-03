@@ -1,160 +1,323 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import '../../styles/resourceAllocation.css';
-
-const sampleAssets = [
-  'Drone with spraying system',
-  'Drone Battery',
-  'Remote Controller (RC)',
-  'RC Charging Dock',
-  'RC Charging / cable',
-  'Generator',
-  'Charging station',
-  'Spreading system',
-  'DRTK',
-  'DRTK Battery',
-  'DRTK Charging Dock',
-];
-
-const pilotOptions = [
-  { value: '', label: 'Select issued pilot' },
-  { value: 'pilot-01', label: 'Pilot 01 — Jane K.' },
-  { value: 'pilot-02', label: 'Pilot 02 — Anil P.' },
-  { value: 'pilot-03', label: 'Pilot 03 — Sameera D.' },
-];
-
-const serialNumbers = ['Select Serial Number', 'SN-001', 'SN-002', 'SN-003', 'SN-004'];
-
-const availabilityCategories = [
-  {
-    title: 'Drones & Attachments',
-    items: [
-      {
-        label: 'Drone with spraying system',
-        fullWidth: true,
-        serials: [
-          { code: 'DR-SP-001', status: 'Not Assigned', note: 'Ready' },
-          { code: 'DR-SP-002', status: 'Not Assigned', note: 'Ready' },
-          { code: 'DR-SP-003', status: 'Assigned', note: 'Assigned until 25/11/2025' },
-          { code: 'DR-SP-004', status: 'Not Assigned', note: 'Ready' },
-        ],
-      },
-      {
-        label: 'Spreading system',
-        fullWidth: true,
-        serials: [
-          { code: 'SP-ATT-001', status: 'Not Assigned', note: 'Ready' },
-          { code: 'SP-ATT-002', status: 'Assigned', note: 'Assigned until 26/11/2025' },
-          { code: 'SP-ATT-003', status: 'Not Assigned', note: 'Ready' },
-        ],
-      },
-    ],
-  },
-  {
-    title: 'Remote Controllers & Cables',
-    items: [
-      {
-        label: 'Remote Controller (RC)',
-        fullWidth: false,
-        serials: [
-          { code: 'RC-001', status: 'Not Assigned', note: 'Ready' },
-          { code: 'RC-004', status: 'Assigned', note: 'Assigned until 23/11/2025' },
-        ],
-      },
-      {
-        label: 'RC Charging / cable',
-        fullWidth: false,
-        serials: [
-          { code: 'RC-CAB-001', status: 'Not Assigned', note: 'Ready' },
-          { code: 'RC-CAB-002', status: 'Not Assigned', note: 'Ready' },
-          { code: 'RC-CAB-003', status: 'Assigned', note: 'Assigned until 21/11/2025' },
-        ],
-      },
-    ],
-  },
-  {
-    title: 'Batteries',
-    items: [
-      {
-        label: 'Drone Battery',
-        fullWidth: false,
-        serials: [
-          { code: 'DB-001', status: 'Not Assigned', note: 'Ready' },
-          { code: 'DB-002', status: 'Not Assigned', note: 'Ready' },
-          { code: 'DB-003', status: 'Assigned', note: 'Assigned' },
-        ],
-      },
-      {
-        label: 'DRTK Battery',
-        fullWidth: false,
-        serials: [
-          { code: 'DRTK-B-001', status: 'Not Assigned', note: 'Ready' },
-          { code: 'DRTK-B-002', status: 'Assigned', note: 'Assigned until 28/11/2025' },
-        ],
-      },
-    ],
-  },
-  {
-    title: 'Charging Docks & Stations',
-    items: [
-      {
-        label: 'RC Charging Dock',
-        fullWidth: false,
-        serials: [
-          { code: 'RC-DOCK-01', status: 'Not Assigned', note: 'Ready' },
-          { code: 'RC-DOCK-02', status: 'Not Assigned', note: 'Ready' },
-        ],
-      },
-      {
-        label: 'Charging station',
-        fullWidth: false,
-        serials: [
-          { code: 'CH-ST-01', status: 'Assigned', note: 'Assigned until 19/11/2025' },
-          { code: 'CH-ST-02', status: 'Not Assigned', note: 'Ready' },
-        ],
-      },
-      {
-        label: 'DRTK Charging Dock',
-        fullWidth: false,
-        serials: [
-          { code: 'DRTK-DOCK-01', status: 'Not Assigned', note: 'Ready' },
-          { code: 'DRTK-DOCK-02', status: 'Assigned', note: 'Assigned' },
-        ],
-      },
-    ],
-  },
-  {
-    title: 'Other Equipment',
-    items: [
-      {
-        label: 'Generator',
-        fullWidth: false,
-        serials: [
-          { code: 'GEN-01', status: 'Not Assigned', note: 'Ready' },
-          { code: 'GEN-02', status: 'Assigned', note: 'Assigned' },
-        ],
-      },
-      {
-        label: 'DRTK',
-        fullWidth: false,
-        serials: [
-          { code: 'DRTK-01', status: 'Not Assigned', note: 'Ready' },
-          { code: 'DRTK-02', status: 'Assigned', note: 'Assigned until 20/11/2025' },
-        ],
-      },
-    ],
-  },
-];
-
-const categoryOptions = ['all', ...availabilityCategories.map((cat) => cat.title)];
+import {
+  useGetRemoteControlsQuery,
+  useGetBatteriesQuery,
+  useGetGeneratorsQuery,
+  useGetDronesQuery,
+  useGetPilotsWithTeamsQuery,
+  useGetTeamEquipmentQuery,
+  useGetTempAllocationsByDateQuery,
+  useAssignRemoteControlMutation,
+  useAssignBatteryMutation,
+  useAssignGeneratorMutation,
+  useAssignDroneMutation,
+  useCreateTempRemoteControlMutation,
+  useCreateTempBatteryMutation,
+  useCreateTempGeneratorMutation,
+  useCreateTempDroneMutation,
+} from '../../api/services NodeJs/allEndpoints';
+import { useGetBatteryTypesQuery } from '../../api/services/allEndpoints';
 
 const ResourceAllocation = () => {
-  const [activeTab, setActiveTab] = useState('availability'); // 'availability' | 'allocation'
+  const [activeTab, setActiveTab] = useState('availability');
   const [allocationDate, setAllocationDate] = useState('');
   const [selectedPilot, setSelectedPilot] = useState('');
+  const [selectedTeamId, setSelectedTeamId] = useState('');
   const [isTempAllocation, setIsTempAllocation] = useState(false);
   const [selectedSerials, setSelectedSerials] = useState({});
-  const [availabilityStatusFilter, setAvailabilityStatusFilter] = useState('all'); // all | assigned | not_assigned
+  const [availabilityStatusFilter, setAvailabilityStatusFilter] = useState('all');
   const [availabilityCategoryFilter, setAvailabilityCategoryFilter] = useState('all');
+  const [selectedBatteryType, setSelectedBatteryType] = useState(null);
+
+  // Fetch equipment data
+  const { data: remoteControlsData, isLoading: loadingRC } = useGetRemoteControlsQuery({ available: availabilityStatusFilter === 'not_assigned' ? 'true' : undefined });
+  const { data: batteriesData, isLoading: loadingBatteries } = useGetBatteriesQuery({ 
+    available: availabilityStatusFilter === 'not_assigned' ? 'true' : undefined,
+    type: selectedBatteryType || undefined,
+  });
+  const { data: generatorsData, isLoading: loadingGenerators } = useGetGeneratorsQuery({ available: availabilityStatusFilter === 'not_assigned' ? 'true' : undefined });
+  const { data: dronesData, isLoading: loadingDrones } = useGetDronesQuery({ available: availabilityStatusFilter === 'not_assigned' ? 'true' : undefined });
+  const { data: pilotsData, isLoading: loadingPilots } = useGetPilotsWithTeamsQuery();
+  const { data: batteryTypesData } = useGetBatteryTypesQuery();
+
+  // Get team equipment if pilot/team is selected
+  const { data: teamEquipmentData } = useGetTeamEquipmentQuery(selectedTeamId, { skip: !selectedTeamId });
+  
+  // Get temporary allocations if date is selected
+  const { data: tempAllocationsData } = useGetTempAllocationsByDateQuery(allocationDate, { skip: !allocationDate || !isTempAllocation });
+
+  // Mutations
+  const [assignRemoteControl] = useAssignRemoteControlMutation();
+  const [assignBattery] = useAssignBatteryMutation();
+  const [assignGenerator] = useAssignGeneratorMutation();
+  const [assignDrone] = useAssignDroneMutation();
+  const [createTempRemoteControl] = useCreateTempRemoteControlMutation();
+  const [createTempBattery] = useCreateTempBatteryMutation();
+  const [createTempGenerator] = useCreateTempGeneratorMutation();
+  const [createTempDrone] = useCreateTempDroneMutation();
+
+  // Extract data from API responses
+  const remoteControls = remoteControlsData?.data || [];
+  const batteries = batteriesData?.data || [];
+  const generators = generatorsData?.data || [];
+  const drones = dronesData?.data || [];
+  const pilots = pilotsData?.data || [];
+  const batteryTypes = batteryTypesData?.data || [];
+  const teamEquipment = teamEquipmentData?.data || {};
+  const tempAllocations = tempAllocationsData?.data || {};
+
+  // Group batteries by type
+  const batteriesByType = useMemo(() => {
+    const grouped = {};
+    batteries.forEach(battery => {
+      const typeName = battery.battery_type_name || 'Unknown';
+      if (!grouped[typeName]) {
+        grouped[typeName] = [];
+      }
+      grouped[typeName].push(battery);
+    });
+    return grouped;
+  }, [batteries]);
+
+  // Build availability categories from real data
+  const availabilityCategories = useMemo(() => {
+    const categories = [];
+
+    // Drones
+    if (drones.length > 0 || availabilityStatusFilter === 'all') {
+      categories.push({
+        title: 'Drones & Attachments',
+        items: [{
+          label: 'Drone',
+          fullWidth: true,
+          serials: drones.map(drone => ({
+            id: drone.id,
+            code: drone.serial || drone.tag || `DR-${drone.id}`,
+            status: drone.is_assigned ? 'Assigned' : 'Not Assigned',
+            note: drone.is_assigned ? (drone.assigned_team_name ? `Assigned to ${drone.assigned_team_name}` : 'Assigned') : 'Ready',
+            team: drone.assigned_team_name,
+          })),
+        }],
+      });
+    }
+
+    // Remote Controls
+    if (remoteControls.length > 0 || availabilityStatusFilter === 'all') {
+      categories.push({
+        title: 'Remote Controllers & Cables',
+        items: [{
+          label: 'Remote Controller (RC)',
+          fullWidth: false,
+          serials: remoteControls.map(rc => ({
+            id: rc.id,
+            code: rc.serial || rc.tag || `RC-${rc.id}`,
+            status: rc.is_assigned ? 'Assigned' : 'Not Assigned',
+            note: rc.is_assigned ? (rc.assigned_team_name ? `Assigned to ${rc.assigned_team_name}` : 'Assigned') : 'Ready',
+            team: rc.assigned_team_name,
+          })),
+        }],
+      });
+    }
+
+    // Batteries (grouped by type)
+    const batteryItems = Object.keys(batteriesByType).map(typeName => ({
+      label: typeName,
+      fullWidth: false,
+      serials: batteriesByType[typeName].map(battery => ({
+        id: battery.id,
+        code: battery.serial || battery.tag || `BAT-${battery.id}`,
+        status: battery.is_assigned ? 'Assigned' : 'Not Assigned',
+        note: battery.is_assigned ? (battery.assigned_team_name ? `Assigned to ${battery.assigned_team_name}` : 'Assigned') : 'Ready',
+        team: battery.assigned_team_name,
+      })),
+    }));
+
+    if (batteryItems.length > 0 || availabilityStatusFilter === 'all') {
+      categories.push({
+        title: 'Batteries',
+        items: batteryItems,
+      });
+    }
+
+    // Generators
+    if (generators.length > 0 || availabilityStatusFilter === 'all') {
+      categories.push({
+        title: 'Other Equipment',
+        items: [{
+          label: 'Generator',
+          fullWidth: false,
+          serials: generators.map(gen => ({
+            id: gen.id,
+            code: gen.serial || gen.tag || `GEN-${gen.id}`,
+            status: gen.is_assigned ? 'Assigned' : 'Not Assigned',
+            note: gen.is_assigned ? (gen.assigned_team_name ? `Assigned to ${gen.assigned_team_name}` : 'Assigned') : 'Ready',
+            team: gen.assigned_team_name,
+          })),
+        }],
+      });
+    }
+
+    return categories;
+  }, [drones, remoteControls, batteriesByType, generators, availabilityStatusFilter]);
+
+  // Filter availability data
+  const filteredAvailabilityData = useMemo(() => {
+    return availabilityCategories
+      .map((category) => {
+        const filteredItems = category.items
+          .map((item) => {
+            const filteredSerials = item.serials.filter((serial) => {
+              if (availabilityStatusFilter === 'all') return true;
+              if (availabilityStatusFilter === 'assigned') {
+                return serial.status === 'Assigned';
+              }
+              return serial.status === 'Not Assigned';
+            });
+            return { ...item, serials: filteredSerials };
+          })
+          .filter((item) => item.serials.length > 0);
+
+        if (filteredItems.length === 0) return null;
+        return { ...category, items: filteredItems };
+      })
+      .filter(
+        (category) =>
+          category &&
+          (availabilityCategoryFilter === 'all' || category.title === availabilityCategoryFilter)
+      );
+  }, [availabilityCategories, availabilityStatusFilter, availabilityCategoryFilter]);
+
+  const categoryOptions = ['all', ...availabilityCategories.map((cat) => cat.title)];
+
+  // Handle pilot selection
+  useEffect(() => {
+    if (selectedPilot) {
+      const pilot = pilots.find(p => p.id === parseInt(selectedPilot));
+      if (pilot && pilot.team_id) {
+        setSelectedTeamId(pilot.team_id);
+      } else {
+        setSelectedTeamId('');
+      }
+    } else {
+      setSelectedTeamId('');
+    }
+  }, [selectedPilot, pilots]);
+
+  // Get available equipment options for allocation
+  const getAvailableEquipment = (equipmentType, batteryType = null) => {
+    switch (equipmentType) {
+      case 'Remote Controller (RC)':
+        return remoteControls.filter(rc => !rc.is_assigned).map(rc => ({
+          value: rc.id,
+          label: `${rc.serial || rc.tag || `RC-${rc.id}`} (${rc.make || ''} ${rc.model || ''})`.trim(),
+        }));
+      case 'Drone Battery':
+      case 'RC Battery':
+      case 'DRTK Battery':
+        const typeId = batteryTypes.find(bt => bt.type === equipmentType.replace(' Battery', ''))?.id;
+        return batteries
+          .filter(b => !b.is_assigned && (!typeId || b.type === typeId))
+          .map(b => ({
+            value: b.id,
+            label: `${b.serial || b.tag || `BAT-${b.id}`} (${b.battery_type_name || ''})`.trim(),
+          }));
+      case 'Generator':
+        return generators.filter(g => !g.is_assigned).map(g => ({
+          value: g.id,
+          label: `${g.serial || g.tag || `GEN-${g.id}`} (${g.make || ''} ${g.model || ''})`.trim(),
+        }));
+      case 'Drone':
+        return drones.filter(d => !d.is_assigned).map(d => ({
+          value: d.id,
+          label: `${d.serial || d.tag || `DR-${d.id}`} (${d.make || ''} ${d.model || ''})`.trim(),
+        }));
+      default:
+        return [];
+    }
+  };
+
+  // Handle allocation
+  const handleAllocate = async () => {
+    if (!selectedTeamId || !selectedPilot) {
+      alert('Please select a pilot first');
+      return;
+    }
+
+    try {
+      const allocations = [];
+      
+      // Process each selected equipment
+      for (const [assetName, equipmentIds] of Object.entries(selectedSerials)) {
+        if (!equipmentIds || equipmentIds.length === 0) continue;
+
+        const ids = Array.isArray(equipmentIds) ? equipmentIds.filter(id => id) : [equipmentIds].filter(id => id);
+        
+        for (const equipmentId of ids) {
+          if (!equipmentId) continue;
+
+          const allocationData = {
+            team_id: selectedTeamId,
+            assigned_by: null, // Will be set by backend from token
+          };
+
+          if (isTempAllocation && allocationDate) {
+            allocationData.allocation_date = allocationDate;
+          }
+
+          if (assetName.includes('Remote Controller') || assetName.includes('RC')) {
+            allocationData.remote_control_id = equipmentId;
+            if (isTempAllocation) {
+              await createTempRemoteControl(allocationData).unwrap();
+            } else {
+              await assignRemoteControl(allocationData).unwrap();
+            }
+          } else if (assetName.includes('Battery')) {
+            allocationData.battery_id = equipmentId;
+            if (isTempAllocation) {
+              await createTempBattery(allocationData).unwrap();
+            } else {
+              await assignBattery(allocationData).unwrap();
+            }
+          } else if (assetName.includes('Generator')) {
+            allocationData.generator_id = equipmentId;
+            if (isTempAllocation) {
+              await createTempGenerator(allocationData).unwrap();
+            } else {
+              await assignGenerator(allocationData).unwrap();
+            }
+          } else if (assetName.includes('Drone')) {
+            allocationData.drone_id = equipmentId;
+            if (isTempAllocation) {
+              await createTempDrone(allocationData).unwrap();
+            } else {
+              await assignDrone(allocationData).unwrap();
+            }
+          }
+        }
+      }
+
+      alert('Equipment allocated successfully!');
+      // Reset form
+      setSelectedSerials({});
+      setSelectedPilot('');
+      setAllocationDate('');
+      setIsTempAllocation(false);
+    } catch (error) {
+      console.error('Error allocating equipment:', error);
+      alert('Failed to allocate equipment. Please try again.');
+    }
+  };
+
+  // Equipment list for allocation tab
+  const allocationEquipmentList = [
+    'Drone',
+    'Remote Controller (RC)',
+    'Drone Battery',
+    'RC Battery',
+    'DRTK Battery',
+    'Generator',
+  ];
 
   const handleSerialChange = (asset, index, value) => {
     setSelectedSerials((prev) => {
@@ -201,33 +364,10 @@ const ResourceAllocation = () => {
     });
   };
 
-  const filteredAvailabilityData = availabilityCategories
-    .map((category) => {
-      const filteredItems = category.items
-        .map((item) => {
-          const filteredSerials = item.serials.filter((serial) => {
-            if (availabilityStatusFilter === 'all') return true;
-            if (availabilityStatusFilter === 'assigned') {
-              return serial.status === 'Assigned';
-            }
-            return serial.status === 'Not Assigned';
-          });
-          return { ...item, serials: filteredSerials };
-        })
-        .filter((item) => item.serials.length > 0);
-
-      if (filteredItems.length === 0) return null;
-      return { ...category, items: filteredItems };
-    })
-    .filter(
-      (category) =>
-        category &&
-        (availabilityCategoryFilter === 'all' || category.title === availabilityCategoryFilter)
-    );
+  const isLoading = loadingRC || loadingBatteries || loadingGenerators || loadingDrones || loadingPilots;
 
   return (
     <div className="page-fleet">
-
       <div className="resource-tabs-container-fleet">
         {[
           { key: 'availability', label: 'Availability' },
@@ -286,47 +426,72 @@ const ResourceAllocation = () => {
                 </span>
               </div>
             </div>
+            {availabilityCategoryFilter === 'Batteries' && (
+              <div className="availability-category-filter">
+                <label htmlFor="battery-type-filter">Battery Type</label>
+                <div className="filter-input-wrapper-fleet filter-select-wrapper-fleet">
+                  <select
+                    id="battery-type-filter"
+                    className="filter-select-fleet"
+                    value={selectedBatteryType || ''}
+                    onChange={(e) => setSelectedBatteryType(e.target.value || null)}
+                  >
+                    <option value="">All Types</option>
+                    {batteryTypes.map((type) => (
+                      <option key={type.id} value={type.id}>
+                        {type.type}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
           </div>
 
-          <div className="availability-categories-fleet">
-            {filteredAvailabilityData.map((category) => (
-              <section
-                key={category?.title}
-                className="availability-category-fleet"
-              >
-                <header className="availability-category-header">
-                  <h3>{category?.title}</h3>
-                </header>
-                <div className="availability-category-content">
-                  {category?.items?.map((item) => (
-                    <div
-                      key={item.label}
-                      className={`availability-item-fleet${item.fullWidth ? ' single-column' : ''}`}
-                    >
-                      <div className="availability-item-header">
-                        <div>
-                          <p className="availability-item-label">{item.label}</p>
+          {isLoading ? (
+            <div style={{ padding: '2rem', textAlign: 'center' }}>Loading equipment data...</div>
+          ) : (
+            <div className="availability-categories-fleet">
+              {filteredAvailabilityData.map((category) => (
+                <section
+                  key={category?.title}
+                  className="availability-category-fleet"
+                >
+                  <header className="availability-category-header">
+                    <h3>{category?.title}</h3>
+                  </header>
+                  <div className="availability-category-content">
+                    {category?.items?.map((item) => (
+                      <div
+                        key={item.label}
+                        className={`availability-item-fleet${item.fullWidth ? ' single-column' : ''}`}
+                      >
+                        <div className="availability-item-header">
+                          <div>
+                            <p className="availability-item-label">{item.label}</p>
+                          </div>
+                        </div>
+                        <div className="availability-serial-box">
+                          <div className="availability-serial-title">Available Serial Numbers</div>
+                          <div className="availability-serial-list">
+                            {item.serials.map((serial) => (
+                              <div key={`${item.label}-${serial.id}`} className="availability-serial-row">
+                                <span className="availability-serial-code">{serial.code}</span>
+                                <span className={`availability-status ${serial.status === 'Not Assigned' ? 'status-not-assigned' : 'status-assigned'}`}>
+                                  {serial.status}
+                                  {serial.team && ` - ${serial.team}`}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       </div>
-                      <div className="availability-serial-box">
-                        <div className="availability-serial-title">Available Serial Numbers</div>
-                        <div className="availability-serial-list">
-                          {item.serials.map((serial) => (
-                            <div key={`${item.label}-${serial.code}`} className="availability-serial-row">
-                              <span className="availability-serial-code">{serial.code}</span>
-                              <span className={`availability-status ${serial.status === 'Not Assigned' ? 'status-not-assigned' : 'status-assigned'}`}>
-                                {serial.status}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            ))}
-          </div>
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </div>
+          )}
         </div>
       ) : (
         <div className="allocation-container-fleet">
@@ -342,9 +507,10 @@ const ResourceAllocation = () => {
                   value={selectedPilot}
                   onChange={(e) => setSelectedPilot(e.target.value)}
                 >
-                  {pilotOptions.map((pilot) => (
-                    <option key={pilot.value || 'placeholder'} value={pilot.value} disabled={pilot.value === ''}>
-                      {pilot.label}
+                  <option value="">-- Select a pilot --</option>
+                  {pilots.map((pilot) => (
+                    <option key={pilot.id} value={pilot.id}>
+                      {pilot.name} {pilot.team_name ? `- ${pilot.team_name}` : '(No Team)'}
                     </option>
                   ))}
                 </select>
@@ -393,28 +559,36 @@ const ResourceAllocation = () => {
                   </span>
                 </label>
               </div>
-              <button className="allocate-btn-fleet allocate-inline-btn-fleet">Allocate</button>
+              <button 
+                className="allocate-btn-fleet allocate-inline-btn-fleet"
+                onClick={handleAllocate}
+                disabled={!selectedPilot || (isTempAllocation && !allocationDate)}
+              >
+                Allocate
+              </button>
             </div>
           </div>
 
           <div className="allocation-controls-fleet">
             <div className="allocation-grid-fleet">
-              {sampleAssets.map((asset, idx) => (
-                <div key={idx} className={`allocation-row-fleet ${isBatteryAsset(asset) ? 'battery-row-fleet' : ''}`}>
-                  <div className="allocation-header-fleet">
-                    <label className="allocation-label-fleet">{asset}</label>
-                  </div>
-                  {isBatteryAsset(asset) && (
-                    <button
-                      type="button"
-                      className="add-serial-btn-fleet add-serial-btn-floating-fleet"
-                      onClick={() => handleAddSerial(asset)}
-                      aria-label="Add battery part"
-                    >
-                      +
-                    </button>
-                  )}
-                  <div className={`allocation-inputs-fleet ${isBatteryAsset(asset) ? 'battery-inputs-fleet' : ''}`}>
+              {allocationEquipmentList.map((asset, idx) => {
+                const availableOptions = getAvailableEquipment(asset);
+                return (
+                  <div key={idx} className={`allocation-row-fleet ${isBatteryAsset(asset) ? 'battery-row-fleet' : ''}`}>
+                    <div className="allocation-header-fleet">
+                      <label className="allocation-label-fleet">{asset}</label>
+                    </div>
+                    {isBatteryAsset(asset) && (
+                      <button
+                        type="button"
+                        className="add-serial-btn-fleet add-serial-btn-floating-fleet"
+                        onClick={() => handleAddSerial(asset)}
+                        aria-label="Add battery part"
+                      >
+                        +
+                      </button>
+                    )}
+                    <div className={`allocation-inputs-fleet ${isBatteryAsset(asset) ? 'battery-inputs-fleet' : ''}`}>
                       {getSerialValues(asset, isBatteryAsset(asset)).map((value, serialIdx) => (
                         <div key={`${asset}-serial-${serialIdx}`} className="serial-select-wrapper-fleet">
                           {isBatteryAsset(asset) && (
@@ -424,34 +598,32 @@ const ResourceAllocation = () => {
                             className="serial-select-fleet"
                             value={value}
                             onChange={(e) => handleSerialChange(asset, serialIdx, e.target.value)}
+                            disabled={!selectedPilot}
                           >
-                            {serialNumbers.map((serial) => (
-                              <option
-                                key={`${asset}-${serial}-${serialIdx}`}
-                                value={serial === 'Select Serial Number' ? '' : serial}
-                                disabled={serial === 'Select Serial Number'}
-                              >
-                                {serial}
+                            <option value="">Select {asset}</option>
+                            {availableOptions.map((option) => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
                               </option>
                             ))}
                           </select>
-                        {isBatteryAsset(asset) && serialIdx > 0 && (
-                          <button
-                            type="button"
-                            className="remove-serial-btn-fleet"
-                            onClick={() => handleRemoveSerial(asset, serialIdx)}
-                            aria-label={`Remove part ${serialIdx + 1}`}
-                          >
-                            ×
-                          </button>
-                        )}
+                          {isBatteryAsset(asset) && serialIdx > 0 && (
+                            <button
+                              type="button"
+                              className="remove-serial-btn-fleet"
+                              onClick={() => handleRemoveSerial(asset, serialIdx)}
+                              aria-label={`Remove part ${serialIdx + 1}`}
+                            >
+                              ×
+                            </button>
+                          )}
                         </div>
                       ))}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
-
           </div>
         </div>
       )}
