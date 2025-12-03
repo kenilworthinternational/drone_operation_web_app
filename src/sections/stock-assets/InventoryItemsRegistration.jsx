@@ -181,26 +181,54 @@ const InventoryItemsRegistration = () => {
     }
   }, [showSubCategoryModal, refetchLastSubCode]);
 
-  // Auto-fill estimated main category code
+  // Auto-fill estimated main category code (read-only)
   useEffect(() => {
-    if (showMainCategoryModal && lastMainCategoryCodeResponse?.data?.last_code !== undefined) {
-      const lastCode = lastMainCategoryCodeResponse.data.last_code;
-      const estimatedCode = generateNextMainCategoryCode(lastCode);
+    if (showMainCategoryModal) {
+      if (lastMainCategoryCodeResponse?.data?.last_code !== undefined) {
+        const lastCode = lastMainCategoryCodeResponse.data.last_code;
+        const estimatedCode = generateNextMainCategoryCode(lastCode);
+        setMainCategoryForm((prev) => ({
+          ...prev,
+          category_code: estimatedCode,
+        }));
+      } else {
+        // If no last code, set to MAIN001
+        setMainCategoryForm((prev) => ({
+          ...prev,
+          category_code: 'MAIN001',
+        }));
+      }
+    } else {
+      // Reset when modal closes
       setMainCategoryForm((prev) => ({
         ...prev,
-        category_code: prev.category_code || estimatedCode,
+        category_code: '',
       }));
     }
   }, [showMainCategoryModal, lastMainCategoryCodeResponse]);
 
-  // Auto-fill estimated sub category code
+  // Auto-fill estimated sub category code (read-only)
   useEffect(() => {
-    if (showSubCategoryModal && lastSubCategoryCodeResponse?.data?.last_code !== undefined) {
-      const lastCode = lastSubCategoryCodeResponse.data.last_code;
-      const estimatedCode = generateNextSubCategoryCode(lastCode);
+    if (showSubCategoryModal) {
+      if (lastSubCategoryCodeResponse?.data?.last_code !== undefined) {
+        const lastCode = lastSubCategoryCodeResponse.data.last_code;
+        const estimatedCode = generateNextSubCategoryCode(lastCode);
+        setSubCategoryForm((prev) => ({
+          ...prev,
+          sub_category_code: estimatedCode,
+        }));
+      } else {
+        // If no last code, set to SUB0001
+        setSubCategoryForm((prev) => ({
+          ...prev,
+          sub_category_code: 'SUB0001',
+        }));
+      }
+    } else {
+      // Reset when modal closes
       setSubCategoryForm((prev) => ({
         ...prev,
-        sub_category_code: prev.sub_category_code || estimatedCode,
+        sub_category_code: '',
       }));
     }
   }, [showSubCategoryModal, lastSubCategoryCodeResponse]);
@@ -209,16 +237,9 @@ const InventoryItemsRegistration = () => {
   const handleCreateMainCategory = async (e) => {
     e.preventDefault();
     try {
-      // Auto-generate code if not provided
-      let categoryCode = mainCategoryForm.category_code;
-      if (!categoryCode || categoryCode.trim() === '') {
-        const lastCode = lastMainCategoryCodeResponse?.data?.last_code;
-        categoryCode = generateNextMainCategoryCode(lastCode);
-      }
-      
+      // Code is auto-generated and read-only, so use it directly
       const result = await createMainCategory({
         ...mainCategoryForm,
-        category_code: categoryCode,
         created_by: userData.id || null,
       }).unwrap();
       if (result.status) {
@@ -249,16 +270,9 @@ const InventoryItemsRegistration = () => {
       return;
     }
     try {
-      // Auto-generate code if not provided
-      let subCategoryCode = subCategoryForm.sub_category_code;
-      if (!subCategoryCode || subCategoryCode.trim() === '') {
-        const lastCode = lastSubCategoryCodeResponse?.data?.last_code;
-        subCategoryCode = generateNextSubCategoryCode(lastCode);
-      }
-      
+      // Code is auto-generated and read-only, so use it directly
       const result = await createSubCategory({
         ...subCategoryForm,
-        sub_category_code: subCategoryCode,
         created_by: userData.id || null,
       }).unwrap();
       if (result.status) {
@@ -858,19 +872,18 @@ const InventoryItemsRegistration = () => {
               <div className="form-group-inventory-items-registration">
                 <label className="label-inventory-items-registration" htmlFor="main_category_code">
                   Category Code <span className="required-inventory-items-registration">*</span>
-                  {lastMainCategoryCodeResponse?.data?.last_code && (
-                    <span className="estimated-code-hint" style={{ fontSize: '12px', color: '#666', marginLeft: '8px', fontWeight: 'normal' }}>
-                      (Last: {lastMainCategoryCodeResponse.data.last_code}, Estimated: {generateNextMainCategoryCode(lastMainCategoryCodeResponse.data.last_code)})
-                    </span>
-                  )}
+                  <span className="estimated-code-hint" style={{ fontSize: '12px', color: '#666', marginLeft: '8px', fontWeight: 'normal' }}>
+                    (Auto-generated)
+                  </span>
                 </label>
                 <input
                   type="text"
                   id="main_category_code"
                   className="input-inventory-items-registration"
-                  value={mainCategoryForm.category_code}
-                  onChange={(e) => setMainCategoryForm((prev) => ({ ...prev, category_code: e.target.value }))}
-                  placeholder={lastMainCategoryCodeResponse?.data?.last_code ? generateNextMainCategoryCode(lastMainCategoryCodeResponse.data.last_code) : 'MAIN001'}
+                  value={mainCategoryForm.category_code || ''}
+                  readOnly
+                  disabled
+                  style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed' }}
                   required
                 />
               </div>
@@ -953,19 +966,18 @@ const InventoryItemsRegistration = () => {
               <div className="form-group-inventory-items-registration">
                 <label className="label-inventory-items-registration" htmlFor="sub_category_code">
                   Sub Category Code <span className="required-inventory-items-registration">*</span>
-                  {lastSubCategoryCodeResponse?.data?.last_code && (
-                    <span className="estimated-code-hint" style={{ fontSize: '12px', color: '#666', marginLeft: '8px', fontWeight: 'normal' }}>
-                      (Last: {lastSubCategoryCodeResponse.data.last_code}, Estimated: {generateNextSubCategoryCode(lastSubCategoryCodeResponse.data.last_code)})
-                    </span>
-                  )}
+                  <span className="estimated-code-hint" style={{ fontSize: '12px', color: '#666', marginLeft: '8px', fontWeight: 'normal' }}>
+                    (Auto-generated)
+                  </span>
                 </label>
                 <input
                   type="text"
                   id="sub_category_code"
                   className="input-inventory-items-registration"
-                  value={subCategoryForm.sub_category_code}
-                  onChange={(e) => setSubCategoryForm((prev) => ({ ...prev, sub_category_code: e.target.value }))}
-                  placeholder={lastSubCategoryCodeResponse?.data?.last_code ? generateNextSubCategoryCode(lastSubCategoryCodeResponse.data.last_code) : 'SUB0001'}
+                  value={subCategoryForm.sub_category_code || ''}
+                  readOnly
+                  disabled
+                  style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed' }}
                   required
                 />
               </div>
