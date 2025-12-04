@@ -10,6 +10,7 @@ import { baseApi } from '../baseApi';
 // Import and inject Node.js backend service endpoints
 import './stockAssetsApi';
 import './fleetEquipmentApi';
+import './pilotAssignmentApi';
 
 // Export the complete API
 export { baseApi };
@@ -17,6 +18,7 @@ export { baseApi };
 // Re-export all hooks from Node.js backend services
 export * from './stockAssetsApi';
 export * from './fleetEquipmentApi';
+export * from './pilotAssignmentApi';
 
 /**
  * Node.js Backend Services:

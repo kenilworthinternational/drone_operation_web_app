@@ -151,19 +151,52 @@
   box-shadow: none;
 }
 
+/* Drone Info Display */
+.pilot-assignment-drone-info-pilotsassign {
+  background-color: #e7f3ff;
+  border: 1px solid #b3d9ff;
+  border-radius: 6px;
+  padding: 12px 20px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pilot-assignment-drone-label-pilotsassign {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0066cc;
+}
+
+.pilot-assignment-drone-value-pilotsassign {
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+}
+
 /* Main Content */
 .pilot-assignment-content-pilotsassign {
   background-color: #ffffff;
   padding: 25px;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.pilot-assignment-section-pilotsassign {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
 }
 
 .pilot-assignment-section-title-pilotsassign {
   font-size: 22px;
   font-weight: 700;
   color: #1a1a1a;
-  margin: 0 0 20px 0;
+  margin: 0;
 }
 
 /* Plans Grid */
@@ -176,12 +209,12 @@
 .pilot-assignment-plan-card-pilotsassign {
   background-color: #ffffff;
   border: 2px solid #dee2e6;
-  border-radius: 8px;
-  padding: 20px;
+  border-radius: 6px;
+  padding: 12px 15px;
   cursor: pointer;
   transition: all 0.2s;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  min-height: 80px;
+  min-height: 60px;
   display: flex;
   align-items: center;
 }
@@ -207,6 +240,37 @@
   background-color: #f3e8ff;
 }
 
+.pilot-assignment-plan-card-pilotsassign.pilot-assignment-plan-assigned-pilotsassign {
+  border-color: #28a745;
+  background-color: #d4edda;
+  opacity: 0.8;
+}
+
+.pilot-assignment-plan-card-pilotsassign.pilot-assignment-plan-assigned-pilotsassign:hover {
+  border-color: #28a745;
+  transform: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Loading and Empty States */
+.pilot-assignment-loading-pilotsassign {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 40px;
+  color: #666;
+  font-size: 14px;
+}
+
+.pilot-assignment-empty-pilotsassign {
+  text-align: center;
+  padding: 40px;
+  color: #999;
+  font-size: 14px;
+  font-style: italic;
+}
+
 .pilot-assignment-plan-content-pilotsassign {
   display: flex;
   justify-content: space-between;
@@ -215,11 +279,25 @@
   gap: 15px;
 }
 
+.pilot-assignment-plan-info-pilotsassign {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
 .pilot-assignment-plan-id-pilotsassign {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
   color: #333;
-  flex: 1;
+  line-height: 1.3;
+}
+
+.pilot-assignment-plan-pilot-pilotsassign {
+  font-size: 11px;
+  font-weight: 500;
+  color: #28a745;
+  line-height: 1.2;
 }
 
 .pilot-assignment-checkbox-wrapper-pilotsassign {
