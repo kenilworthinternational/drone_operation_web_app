@@ -405,7 +405,7 @@ const PilotAssignment = () => {
               ) : teamsData?.data && teamsData.data.length > 0 ? (
                 <div className="pilot-assignment-teams-grid-pilotsassign">
                   {teamsData.data.map((team) => (
-                    <div key={team.team_id} className="pilot-assignment-team-card-pilotsassign">
+                    <div key={`team-${team.team_id}`} className="pilot-assignment-team-card-pilotsassign">
                       <div className="pilot-assignment-team-header-pilotsassign">
                         <h3 className="pilot-assignment-team-name-pilotsassign">{team.team_name}</h3>
                       </div>
@@ -417,7 +417,7 @@ const PilotAssignment = () => {
                           {team.pilots && team.pilots.length > 0 ? (
                             <div className="pilot-assignment-team-items-pilotsassign">
                               {team.pilots.map((pilot) => (
-                                <div key={pilot.id} className="pilot-assignment-team-item-pilotsassign">
+                                <div key={`team-${team.team_id}-pilot-${pilot.id}`} className="pilot-assignment-team-item-pilotsassign">
                                   <span className="pilot-assignment-team-item-icon-pilotsassign">👤</span>
                                   <span className="pilot-assignment-team-item-text-pilotsassign">{pilot.name}</span>
                                 </div>
@@ -434,7 +434,7 @@ const PilotAssignment = () => {
                           {team.permanent_drones && team.permanent_drones.length > 0 ? (
                             <div className="pilot-assignment-team-items-pilotsassign">
                               {team.permanent_drones.map((drone) => (
-                                <div key={drone.drone_id} className="pilot-assignment-team-item-pilotsassign">
+                                <div key={`team-${team.team_id}-permanent-drone-${drone.drone_id}`} className="pilot-assignment-team-item-pilotsassign">
                                   <span className="pilot-assignment-team-item-icon-pilotsassign">🚁</span>
                                   <span className="pilot-assignment-team-item-text-pilotsassign">
                                     {drone.drone_tag || drone.serial}
@@ -455,7 +455,7 @@ const PilotAssignment = () => {
                             </h4>
                             <div className="pilot-assignment-team-items-pilotsassign">
                               {team.temp_drones.map((drone) => (
-                                <div key={drone.drone_id} className="pilot-assignment-team-item-pilotsassign pilot-assignment-team-temp-item-pilotsassign">
+                                <div key={`team-${team.team_id}-temp-drone-${drone.drone_id}`} className="pilot-assignment-team-item-pilotsassign pilot-assignment-team-temp-item-pilotsassign">
                                   <span className="pilot-assignment-team-item-icon-pilotsassign">🚁</span>
                                   <span className="pilot-assignment-team-item-text-pilotsassign">
                                     {drone.drone_tag || drone.serial}

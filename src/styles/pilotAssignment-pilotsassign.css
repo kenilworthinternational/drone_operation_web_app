@@ -426,13 +426,13 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 24px;
+  padding: 16px 20px;
   border-bottom: 2px solid #e9ecef;
   background-color: #f8f9fa;
 }
 
 .pilot-assignment-teams-modal-title-pilotsassign {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 700;
   color: #1a1a1a;
   margin: 0;
@@ -461,7 +461,7 @@
 }
 
 .pilot-assignment-teams-modal-content-pilotsassign {
-  padding: 24px;
+  padding: 16px;
   overflow-y: auto;
   flex: 1;
 }
@@ -471,40 +471,40 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 60px 20px;
-  gap: 16px;
+  padding: 40px 20px;
+  gap: 12px;
   color: #6c757d;
 }
 
 .pilot-assignment-teams-grid-pilotsassign {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
 }
 
 .pilot-assignment-team-card-pilotsassign {
   background-color: #ffffff;
-  border: 2px solid #e9ecef;
-  border-radius: 10px;
-  padding: 20px;
+  border: 1.5px solid #e9ecef;
+  border-radius: 8px;
+  padding: 14px;
   transition: all 0.2s;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .pilot-assignment-team-card-pilotsassign:hover {
   border-color: #003057;
-  box-shadow: 0 4px 12px rgba(0, 48, 87, 0.15);
-  transform: translateY(-2px);
+  box-shadow: 0 3px 8px rgba(0, 48, 87, 0.12);
+  transform: translateY(-1px);
 }
 
 .pilot-assignment-team-header-pilotsassign {
-  margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 2px solid #e9ecef;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1.5px solid #e9ecef;
 }
 
 .pilot-assignment-team-name-pilotsassign {
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 700;
   color: #003057;
   margin: 0;
@@ -513,17 +513,17 @@
 .pilot-assignment-team-content-pilotsassign {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .pilot-assignment-team-section-pilotsassign {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .pilot-assignment-team-section-title-pilotsassign {
-  font-size: 14px;
+  font-size: 11px;
   font-weight: 600;
   color: #495057;
   margin: 0;
@@ -538,17 +538,17 @@
 .pilot-assignment-team-items-pilotsassign {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .pilot-assignment-team-item-pilotsassign {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
+  gap: 8px;
+  padding: 7px 10px;
   background-color: #f8f9fa;
-  border-radius: 6px;
-  border-left: 3px solid #003057;
+  border-radius: 5px;
+  border-left: 2px solid #003057;
   transition: all 0.2s;
 }
 
@@ -568,13 +568,13 @@
 }
 
 .pilot-assignment-team-item-icon-pilotsassign {
-  font-size: 18px;
-  width: 24px;
+  font-size: 14px;
+  width: 20px;
   text-align: center;
 }
 
 .pilot-assignment-team-item-text-pilotsassign {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 500;
   color: #1a1a1a;
   flex: 1;
@@ -583,27 +583,27 @@
 .pilot-assignment-team-temp-badge-pilotsassign {
   background-color: #ff6b35;
   color: #ffffff;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 700;
-  padding: 4px 8px;
-  border-radius: 4px;
+  padding: 3px 6px;
+  border-radius: 3px;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
 }
 
 .pilot-assignment-team-empty-pilotsassign {
-  font-size: 13px;
+  font-size: 11px;
   color: #6c757d;
   font-style: italic;
-  padding: 8px 12px;
+  padding: 6px 10px;
   background-color: #f8f9fa;
-  border-radius: 6px;
-  border-left: 3px solid #dee2e6;
+  border-radius: 5px;
+  border-left: 2px solid #dee2e6;
 }
 
 .pilot-assignment-teams-empty-pilotsassign {
   text-align: center;
-  padding: 60px 20px;
+  padding: 40px 20px;
   color: #6c757d;
-  font-size: 16px;
+  font-size: 14px;
 }
