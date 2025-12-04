@@ -76,7 +76,8 @@ const ResourceAllocation = () => {
   const batteries = batteriesData?.data || [];
   const generators = generatorsData?.data || [];
   const drones = dronesData?.data || [];
-  const pilots = pilotsData?.data || [];
+  // Memoize pilots to prevent infinite loop in useEffect
+  const pilots = useMemo(() => pilotsData?.data || [], [pilotsData?.data]);
   const batteryTypes = batteryTypesData?.data || [];
 
   // Group batteries by type
@@ -692,9 +693,9 @@ const ResourceAllocation = () => {
                       <h3>{category?.title}</h3>
                     </header>
                     <div className="availability-category-content">
-                      {category?.items?.map((item) => (
+                      {category?.items?.map((item, itemIndex) => (
                         <div
-                          key={item.label}
+                          key={`${category.title}-${item.label}-${itemIndex}`}
                           className={`availability-item-fleet${item.fullWidth ? ' single-column' : ''}`}
                         >
                           <div className="availability-item-header">
@@ -706,12 +707,12 @@ const ResourceAllocation = () => {
                             <div className="availability-serial-title">Available Serial Numbers</div>
                             <div className="availability-serial-list">
                               {item.serials.length === 0 ? (
-                                <div style={{ padding: '1rem', color: '#999', textAlign: 'center' }}>
+                                <div key={`empty-${category.title}-${item.label}-${itemIndex}`} style={{ padding: '1rem', color: '#999', textAlign: 'center' }}>
                                   No items available
                                 </div>
                               ) : (
-                                item.serials.map((serial) => (
-                                  <div key={`${item.label}-${serial.id}`} className="availability-serial-row">
+                                item.serials.map((serial, serialIndex) => (
+                                  <div key={`${category.title}-${item.label}-${serial.id}-${serialIndex}`} className="availability-serial-row">
                                     <div className="availability-serial-code-wrapper">
                                       <span className="availability-serial-code">{serial.tag || serial.code}</span>
                                       {serial.serial && (

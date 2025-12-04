@@ -7,6 +7,7 @@ import {
   useGetPilotAssignmentPilotsQuery,
   useGetPilotAssignmentDroneQuery,
   useCreatePilotAssignmentMutation,
+  useGetAllTeamsQuery,
 } from '../../../api/services NodeJs/allEndpoints';
 import '../../../styles/pilotAssignment-pilotsassign.css';
 
@@ -19,6 +20,7 @@ const PilotAssignment = () => {
   const [selectedPlans, setSelectedPlans] = useState([]);
   const [selectedMissions, setSelectedMissions] = useState([]);
   const [droneInfo, setDroneInfo] = useState(null);
+  const [showTeamsModal, setShowTeamsModal] = useState(false);
 
   // Get user data for assigned_by
   const userData = JSON.parse(localStorage.getItem('userData') || '{}');
@@ -32,6 +34,7 @@ const PilotAssignment = () => {
     { skip: !selectedTeamId || !selectedDate }
   );
   const [createAssignment, { isLoading: creatingAssignment }] = useCreatePilotAssignmentMutation();
+  const { data: teamsData, isLoading: loadingTeams } = useGetAllTeamsQuery(selectedDate, { skip: !selectedDate || !showTeamsModal });
 
   const plans = plansData?.data || [];
   const missions = missionsData?.data || [];
@@ -191,7 +194,12 @@ const PilotAssignment = () => {
         
         <h1 className="pilot-assignment-title-pilotsassign">Pilot Assignment</h1>
         
-        <div className="pilot-assignment-header-spacer-pilotsassign"></div>
+        <button 
+          className="pilot-assignment-teams-btn-pilotsassign"
+          onClick={() => setShowTeamsModal(true)}
+        >
+          Teams
+        </button>
       </div>
 
       {/* Top Control Bar */}
@@ -373,6 +381,102 @@ const PilotAssignment = () => {
           )}
         </div>
       </div>
+
+      {/* Teams Modal */}
+      {showTeamsModal && (
+        <div className="pilot-assignment-teams-modal-overlay-pilotsassign" onClick={() => setShowTeamsModal(false)}>
+          <div className="pilot-assignment-teams-modal-pilotsassign" onClick={(e) => e.stopPropagation()}>
+            <div className="pilot-assignment-teams-modal-header-pilotsassign">
+              <h2 className="pilot-assignment-teams-modal-title-pilotsassign">Teams Overview</h2>
+              <button 
+                className="pilot-assignment-teams-modal-close-pilotsassign"
+                onClick={() => setShowTeamsModal(false)}
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="pilot-assignment-teams-modal-content-pilotsassign">
+              {loadingTeams ? (
+                <div className="pilot-assignment-teams-loading-pilotsassign">
+                  <Bars height="40" width="40" color="#003057" ariaLabel="bars-loading" visible={true} />
+                  <span>Loading teams...</span>
+                </div>
+              ) : teamsData?.data && teamsData.data.length > 0 ? (
+                <div className="pilot-assignment-teams-grid-pilotsassign">
+                  {teamsData.data.map((team) => (
+                    <div key={team.team_id} className="pilot-assignment-team-card-pilotsassign">
+                      <div className="pilot-assignment-team-header-pilotsassign">
+                        <h3 className="pilot-assignment-team-name-pilotsassign">{team.team_name}</h3>
+                      </div>
+                      
+                      <div className="pilot-assignment-team-content-pilotsassign">
+                        {/* Pilots Section */}
+                        <div className="pilot-assignment-team-section-pilotsassign">
+                          <h4 className="pilot-assignment-team-section-title-pilotsassign">Pilots</h4>
+                          {team.pilots && team.pilots.length > 0 ? (
+                            <div className="pilot-assignment-team-items-pilotsassign">
+                              {team.pilots.map((pilot) => (
+                                <div key={pilot.id} className="pilot-assignment-team-item-pilotsassign">
+                                  <span className="pilot-assignment-team-item-icon-pilotsassign">👤</span>
+                                  <span className="pilot-assignment-team-item-text-pilotsassign">{pilot.name}</span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="pilot-assignment-team-empty-pilotsassign">No pilots assigned</div>
+                          )}
+                        </div>
+
+                        {/* Permanent Drones Section */}
+                        <div className="pilot-assignment-team-section-pilotsassign">
+                          <h4 className="pilot-assignment-team-section-title-pilotsassign">Permanent Drones</h4>
+                          {team.permanent_drones && team.permanent_drones.length > 0 ? (
+                            <div className="pilot-assignment-team-items-pilotsassign">
+                              {team.permanent_drones.map((drone) => (
+                                <div key={drone.drone_id} className="pilot-assignment-team-item-pilotsassign">
+                                  <span className="pilot-assignment-team-item-icon-pilotsassign">🚁</span>
+                                  <span className="pilot-assignment-team-item-text-pilotsassign">
+                                    {drone.drone_tag || drone.serial}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="pilot-assignment-team-empty-pilotsassign">No permanent drones</div>
+                          )}
+                        </div>
+
+                        {/* Temp Drones Section */}
+                        {team.temp_drones && team.temp_drones.length > 0 && (
+                          <div className="pilot-assignment-team-section-pilotsassign">
+                            <h4 className="pilot-assignment-team-section-title-pilotsassign pilot-assignment-team-temp-title-pilotsassign">
+                              Temporary Drones ({selectedDate})
+                            </h4>
+                            <div className="pilot-assignment-team-items-pilotsassign">
+                              {team.temp_drones.map((drone) => (
+                                <div key={drone.drone_id} className="pilot-assignment-team-item-pilotsassign pilot-assignment-team-temp-item-pilotsassign">
+                                  <span className="pilot-assignment-team-item-icon-pilotsassign">🚁</span>
+                                  <span className="pilot-assignment-team-item-text-pilotsassign">
+                                    {drone.drone_tag || drone.serial}
+                                  </span>
+                                  <span className="pilot-assignment-team-temp-badge-pilotsassign">Temp</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="pilot-assignment-teams-empty-pilotsassign">No teams available</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

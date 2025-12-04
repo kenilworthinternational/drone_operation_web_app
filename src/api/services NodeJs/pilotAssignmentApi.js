@@ -154,6 +154,25 @@ export const pilotAssignmentApi = baseApi.injectEndpoints({
       },
       providesTags: (result, error, assignment_id) => [{ type: 'PilotAssignment', id: assignment_id }],
     }),
+
+    // =====================================================
+    // GET ALL TEAMS WITH PILOTS AND DRONES
+    // =====================================================
+    getAllTeams: builder.query({
+      queryFn: async (date) => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: '/api/pilot-assignment/teams',
+            method: 'POST',
+            body: { date },
+          },
+          {},
+          {}
+        );
+        return result;
+      },
+      providesTags: ['PilotAssignmentTeams'],
+    }),
   }),
 });
 
@@ -164,5 +183,6 @@ export const {
   useGetPilotAssignmentDroneQuery,
   useCreatePilotAssignmentMutation,
   useGetPilotAssignmentByIdQuery,
+  useGetAllTeamsQuery,
 } = pilotAssignmentApi;
 

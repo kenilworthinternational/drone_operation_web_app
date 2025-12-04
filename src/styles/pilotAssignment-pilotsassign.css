@@ -370,3 +370,240 @@
     text-align: left;
   }
 }
+
+/* Teams Button */
+.pilot-assignment-teams-btn-pilotsassign {
+  background-color: #003057;
+  color: #ffffff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.pilot-assignment-teams-btn-pilotsassign:hover {
+  background-color: #004080;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 48, 87, 0.3);
+}
+
+.pilot-assignment-teams-btn-pilotsassign:active {
+  transform: translateY(0);
+}
+
+/* Teams Modal */
+.pilot-assignment-teams-modal-overlay-pilotsassign {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.pilot-assignment-teams-modal-pilotsassign {
+  background-color: #ffffff;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 1200px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+}
+
+.pilot-assignment-teams-modal-header-pilotsassign {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 2px solid #e9ecef;
+  background-color: #f8f9fa;
+}
+
+.pilot-assignment-teams-modal-title-pilotsassign {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0;
+}
+
+.pilot-assignment-teams-modal-close-pilotsassign {
+  background: none;
+  border: none;
+  font-size: 32px;
+  color: #6c757d;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s;
+  line-height: 1;
+}
+
+.pilot-assignment-teams-modal-close-pilotsassign:hover {
+  background-color: #e9ecef;
+  color: #1a1a1a;
+}
+
+.pilot-assignment-teams-modal-content-pilotsassign {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.pilot-assignment-teams-loading-pilotsassign {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  gap: 16px;
+  color: #6c757d;
+}
+
+.pilot-assignment-teams-grid-pilotsassign {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+}
+
+.pilot-assignment-team-card-pilotsassign {
+  background-color: #ffffff;
+  border: 2px solid #e9ecef;
+  border-radius: 10px;
+  padding: 20px;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.pilot-assignment-team-card-pilotsassign:hover {
+  border-color: #003057;
+  box-shadow: 0 4px 12px rgba(0, 48, 87, 0.15);
+  transform: translateY(-2px);
+}
+
+.pilot-assignment-team-header-pilotsassign {
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #e9ecef;
+}
+
+.pilot-assignment-team-name-pilotsassign {
+  font-size: 20px;
+  font-weight: 700;
+  color: #003057;
+  margin: 0;
+}
+
+.pilot-assignment-team-content-pilotsassign {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.pilot-assignment-team-section-pilotsassign {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pilot-assignment-team-section-title-pilotsassign {
+  font-size: 14px;
+  font-weight: 600;
+  color: #495057;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pilot-assignment-team-temp-title-pilotsassign {
+  color: #ff6b35;
+}
+
+.pilot-assignment-team-items-pilotsassign {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pilot-assignment-team-item-pilotsassign {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background-color: #f8f9fa;
+  border-radius: 6px;
+  border-left: 3px solid #003057;
+  transition: all 0.2s;
+}
+
+.pilot-assignment-team-item-pilotsassign:hover {
+  background-color: #e9ecef;
+  border-left-color: #004080;
+}
+
+.pilot-assignment-team-temp-item-pilotsassign {
+  border-left-color: #ff6b35;
+  background-color: #fff5f2;
+}
+
+.pilot-assignment-team-temp-item-pilotsassign:hover {
+  background-color: #ffe8e0;
+  border-left-color: #ff8555;
+}
+
+.pilot-assignment-team-item-icon-pilotsassign {
+  font-size: 18px;
+  width: 24px;
+  text-align: center;
+}
+
+.pilot-assignment-team-item-text-pilotsassign {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1a1a1a;
+  flex: 1;
+}
+
+.pilot-assignment-team-temp-badge-pilotsassign {
+  background-color: #ff6b35;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pilot-assignment-team-empty-pilotsassign {
+  font-size: 13px;
+  color: #6c757d;
+  font-style: italic;
+  padding: 8px 12px;
+  background-color: #f8f9fa;
+  border-radius: 6px;
+  border-left: 3px solid #dee2e6;
+}
+
+.pilot-assignment-teams-empty-pilotsassign {
+  text-align: center;
+  padding: 60px 20px;
+  color: #6c757d;
+  font-size: 16px;
+}
