@@ -31,6 +31,7 @@ import PlanCalendar from './sections/opsroom/calendar/PlanCalendar';
 import RequestsQueueMain from './sections/opsroom/requests/RequestsQueueMain';
 import RequestProceed from './sections/opsroom/requests/RequestProceed';
 import PlansWithWeather from './sections/opsroom/plans/PlansWithWeather';
+import PilotAssignment from './sections/opsroom/pilot-assigment/PilotAssignment';
 import EmployeeRegistration from './sections/hr&admin/EmployeeRegistration';
 import Employees from './sections/hr&admin/Employees';
 import JDManagement from './sections/hr&admin/JDManagement';
@@ -366,6 +367,14 @@ function App() {
             element={
               <ProtectedRoute>
                   <RequestsQueueMain />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="pilotAssignment"
+            element={
+              <ProtectedRoute>
+                <PilotAssignment />
               </ProtectedRoute>
             }
           />

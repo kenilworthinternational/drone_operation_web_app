@@ -343,19 +343,27 @@ const WorkflowDashboard = () => {
           <h2 className="section-title-action-com">Action Needed</h2>
           
           <div className="action-queue-com">
-            <div className="action-card-com" onClick={() => navigate('/home/requestsQueue')} style={{ cursor: 'pointer' }}>
-              <span className="action-title-com">Plantation Add-hoc Request Queue</span>
-              <span className="action-plans-com">Plans {adhocCount} »</span>
-            </div>
-            
-            <div className="action-card-com" onClick={() => navigate('/home/requestsQueue')} style={{ cursor: 'pointer' }}>
-              <span className="action-title-com">Plantation Reschedule Request Queue</span>
-              <span className="action-plans-com">Plans {rescheduleCount} »</span>
-            </div>
-            
-            <div className="action-card-com" onClick={() => navigate('/home/requestsQueue')} style={{ cursor: 'pointer' }}>
-              <span className="action-title-com">Non-Plantation Plan Request Queue</span>
-              <span className="action-plans-com">Plans {nonpCount} »</span>
+            {/* Queue Box - Single Red Box with 3 Items */}
+            <div className="queue-box-card-com">
+              <div className="queue-box-card-header-com">
+                <span className="queue-box-card-title-com">Queue</span>
+              </div>
+              <div className="queue-box-card-items-com">
+                <div className="queue-box-card-item-com" onClick={() => navigate('/home/requestsQueue')} style={{ cursor: 'pointer' }}>
+                  <span className="queue-box-card-item-title-com">Add-hoc Plans</span>
+                  <span className="queue-box-card-item-count-com">Plans {adhocCount} »</span>
+                </div>
+                
+                <div className="queue-box-card-item-com" onClick={() => navigate('/home/requestsQueue')} style={{ cursor: 'pointer' }}>
+                  <span className="queue-box-card-item-title-com">Reschedule Request Plans</span>
+                  <span className="queue-box-card-item-count-com">Plans {rescheduleCount} »</span>
+                </div>
+                
+                <div className="queue-box-card-item-com" onClick={() => navigate('/home/requestsQueue')} style={{ cursor: 'pointer' }}>
+                  <span className="queue-box-card-item-title-com">NP Request Plans</span>
+                  <span className="queue-box-card-item-count-com">Plans {nonpCount} »</span>
+                </div>
+              </div>
             </div>
             
             <div className="action-card-com">
@@ -363,8 +371,8 @@ const WorkflowDashboard = () => {
               <span className="action-plans-com">Plans 08 »</span>
             </div>
             
-            <div className="action-card-com">
-              <span className="action-title-com">Assigned Plans</span>
+            <div className="action-card-com" onClick={() => navigate('/home/pilotAssignment')} style={{ cursor: 'pointer' }}>
+              <span className="action-title-com">Pilot Assignment</span>
               <span className="action-plans-com">Plans 10 »</span>
             </div>
             

@@ -1,0 +1,294 @@
+/* Pilot Assignment Container */
+.pilot-assignment-container-pilotsassign {
+  padding: 20px;
+  background-color: #f5f5f5;
+  min-height: calc(100vh - 80px);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Header Section */
+.pilot-assignment-header-pilotsassign {
+  background-color: #ffffff;
+  padding: 15px 20px;
+  margin-bottom: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.pilot-assignment-back-btn-pilotsassign {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #333;
+  transition: color 0.2s;
+  border-radius: 4px;
+}
+
+.pilot-assignment-back-btn-pilotsassign:hover {
+  color: #007bff;
+  background-color: #f8f9fa;
+}
+
+.pilot-assignment-back-icon-pilotsassign {
+  display: block;
+}
+
+.pilot-assignment-title-pilotsassign {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0;
+  flex: 1;
+  text-align: center;
+}
+
+.pilot-assignment-header-spacer-pilotsassign {
+  width: 40px; /* Same width as back button to center title */
+}
+
+/* Top Control Bar */
+.pilot-assignment-controls-bar-pilotsassign {
+  background-color: #ffffff;
+  padding: 20px;
+  margin-bottom: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.pilot-assignment-control-group-pilotsassign {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 200px;
+}
+
+.pilot-assignment-control-label-pilotsassign {
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  white-space: nowrap;
+  min-width: fit-content;
+}
+
+.pilot-assignment-date-input-pilotsassign,
+.pilot-assignment-pilot-select-pilotsassign,
+.pilot-assignment-assignment-id-pilotsassign {
+  padding: 10px 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.pilot-assignment-date-input-pilotsassign:focus,
+.pilot-assignment-pilot-select-pilotsassign:focus,
+.pilot-assignment-assignment-id-pilotsassign:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.pilot-assignment-assignment-id-pilotsassign {
+  background-color: #f8f9fa;
+  color: #6c757d;
+  cursor: not-allowed;
+}
+
+.pilot-assignment-pilot-select-pilotsassign {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23333' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 35px;
+}
+
+.pilot-assignment-deploy-btn-pilotsassign {
+  padding: 10px 30px;
+  background-color: #28a745;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+  white-space: nowrap;
+  box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3);
+}
+
+.pilot-assignment-deploy-btn-pilotsassign:hover:not(:disabled) {
+  background-color: #218838;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(40, 167, 69, 0.4);
+}
+
+.pilot-assignment-deploy-btn-pilotsassign:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.pilot-assignment-deploy-btn-pilotsassign:disabled {
+  background-color: #d1d5db;
+  color: #9ca3af;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Main Content */
+.pilot-assignment-content-pilotsassign {
+  background-color: #ffffff;
+  padding: 25px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.pilot-assignment-section-title-pilotsassign {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0 0 20px 0;
+}
+
+/* Plans Grid */
+.pilot-assignment-plans-grid-pilotsassign {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 15px;
+}
+
+.pilot-assignment-plan-card-pilotsassign {
+  background-color: #ffffff;
+  border: 2px solid #dee2e6;
+  border-radius: 8px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  min-height: 80px;
+  display: flex;
+  align-items: center;
+}
+
+.pilot-assignment-plan-card-pilotsassign:hover {
+  border-color: #007bff;
+  box-shadow: 0 4px 8px rgba(0, 123, 255, 0.15);
+  transform: translateY(-2px);
+}
+
+.pilot-assignment-plan-card-pilotsassign.pilot-assignment-plan-selected-pilotsassign {
+  border-color: #007bff;
+  background-color: #f0f7ff;
+  box-shadow: 0 4px 8px rgba(0, 123, 255, 0.2);
+}
+
+.pilot-assignment-plan-card-pilotsassign.pilot-assignment-plan-incomplete-pilotsassign {
+  border-color: #6f42c1;
+}
+
+.pilot-assignment-plan-card-pilotsassign.pilot-assignment-plan-incomplete-pilotsassign.pilot-assignment-plan-selected-pilotsassign {
+  border-color: #6f42c1;
+  background-color: #f3e8ff;
+}
+
+.pilot-assignment-plan-content-pilotsassign {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  gap: 15px;
+}
+
+.pilot-assignment-plan-id-pilotsassign {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  flex: 1;
+}
+
+.pilot-assignment-checkbox-wrapper-pilotsassign {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.pilot-assignment-checkbox-pilotsassign {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: #007bff;
+  flex-shrink: 0;
+}
+
+.pilot-assignment-checkbox-pilotsassign:checked {
+  accent-color: #007bff;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .pilot-assignment-controls-bar-pilotsassign {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .pilot-assignment-control-group-pilotsassign {
+    width: 100%;
+  }
+  
+  .pilot-assignment-deploy-btn-pilotsassign {
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .pilot-assignment-container-pilotsassign {
+    padding: 10px;
+  }
+  
+  .pilot-assignment-title-pilotsassign {
+    font-size: 24px;
+  }
+  
+  .pilot-assignment-plans-grid-pilotsassign {
+    grid-template-columns: 1fr;
+  }
+  
+  .pilot-assignment-header-pilotsassign {
+    padding: 12px 15px;
+  }
+  
+  .pilot-assignment-content-pilotsassign {
+    padding: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .pilot-assignment-title-pilotsassign {
+    font-size: 20px;
+  }
+  
+  .pilot-assignment-header-spacer-pilotsassign {
+    display: none;
+  }
+  
+  .pilot-assignment-title-pilotsassign {
+    text-align: left;
+  }
+}

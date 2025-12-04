@@ -880,6 +880,11 @@
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-width: 100px;
 }
 
 .create-team-modal-create-fleet:hover:not(:disabled) {
@@ -887,9 +892,37 @@
 }
 
 .create-team-modal-create-fleet:disabled {
+    cursor: not-allowed;
+}
+
+.create-team-modal-create-fleet:disabled:not(.create-team-done-fleet) {
     background: #d1d5db;
     color: #9ca3af;
-    cursor: not-allowed;
+}
+
+.create-team-loading-spinner-fleet {
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #ffffff;
+    border-radius: 50%;
+    animation: create-team-spin 0.6s linear infinite;
+}
+
+@keyframes create-team-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.create-team-modal-create-fleet:has-text("Done!") {
+    background: #10b981;
+}
+
+/* Done state styling */
+.create-team-modal-create-fleet:disabled.create-team-done-fleet {
+    background: #10b981;
+    color: #ffffff;
 }
 
 /* No Team Message */

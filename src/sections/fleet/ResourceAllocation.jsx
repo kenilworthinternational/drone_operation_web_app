@@ -32,6 +32,8 @@ const ResourceAllocation = () => {
   const [selectedBatteryType, setSelectedBatteryType] = useState(null);
   const [showCreateTeamModal, setShowCreateTeamModal] = useState(false);
   const [newTeamName, setNewTeamName] = useState('');
+  const [isCreatingTeam, setIsCreatingTeam] = useState(false);
+  const [teamCreationStatus, setTeamCreationStatus] = useState(''); // 'creating', 'done', ''
 
   // Fetch equipment data
   const { data: remoteControlsData, isLoading: loadingRC } = useGetFleetRemoteControlsQuery({ 
@@ -245,9 +247,11 @@ const ResourceAllocation = () => {
   // Handle team creation
   const handleCreateTeam = async () => {
     if (!newTeamName.trim() || !selectedPilot) {
-      alert('Please enter a team name');
       return;
     }
+
+    setIsCreatingTeam(true);
+    setTeamCreationStatus('creating');
 
     try {
       const result = await createTeam({
@@ -256,15 +260,22 @@ const ResourceAllocation = () => {
       }).unwrap();
 
       if (result.status) {
-        alert('Team created successfully!');
-        setShowCreateTeamModal(false);
-        setNewTeamName('');
-        // Refetch pilots to get updated team info
-        await refetchPilots();
-        // The useEffect will automatically set the team_id when pilots are refetched
+        setTeamCreationStatus('done');
+        // Wait a moment to show "Done!" status
+        setTimeout(async () => {
+          setShowCreateTeamModal(false);
+          setNewTeamName('');
+          setTeamCreationStatus('');
+          setIsCreatingTeam(false);
+          // Refetch pilots to get updated team info
+          await refetchPilots();
+          // The useEffect will automatically set the team_id when pilots are refetched
+        }, 1500);
       }
     } catch (error) {
       console.error('Error creating team:', error);
+      setIsCreatingTeam(false);
+      setTeamCreationStatus('');
       alert(error?.data?.message || 'Failed to create team. Please try again.');
     }
   };
@@ -728,7 +739,15 @@ const ResourceAllocation = () => {
         <div className="allocation-container-fleet">
           {/* Create Team Modal */}
           {showCreateTeamModal && (
-            <div className="create-team-modal-overlay-fleet" onClick={() => setShowCreateTeamModal(false)}>
+            <div className="create-team-modal-overlay-fleet" onClick={() => {
+              if (!isCreatingTeam && teamCreationStatus !== 'done') {
+                setShowCreateTeamModal(false);
+                setSelectedPilot('');
+                setNewTeamName('');
+                setIsCreatingTeam(false);
+                setTeamCreationStatus('');
+              }
+            }}>
               <div className="create-team-modal-fleet" onClick={(e) => e.stopPropagation()}>
                 <div className="create-team-modal-header-fleet">
                   <h3>Create Equipment Group</h3>
@@ -737,6 +756,9 @@ const ResourceAllocation = () => {
                     onClick={() => {
                       setShowCreateTeamModal(false);
                       setSelectedPilot('');
+                      setNewTeamName('');
+                      setIsCreatingTeam(false);
+                      setTeamCreationStatus('');
                     }}
                   >
                     ×
@@ -770,32 +792,41 @@ const ResourceAllocation = () => {
                   <button
                     className="create-team-modal-cancel-fleet"
                     onClick={() => {
-                      setShowCreateTeamModal(false);
-                      setSelectedPilot('');
+                      if (!isCreatingTeam && teamCreationStatus !== 'done') {
+                        setShowCreateTeamModal(false);
+                        setSelectedPilot('');
+                        setNewTeamName('');
+                        setIsCreatingTeam(false);
+                        setTeamCreationStatus('');
+                      }
                     }}
+                    disabled={isCreatingTeam || teamCreationStatus === 'done'}
                   >
                     Cancel
                   </button>
                   <button
-                    className="create-team-modal-create-fleet"
+                    className={`create-team-modal-create-fleet ${teamCreationStatus === 'done' ? 'create-team-done-fleet' : ''}`}
                     onClick={handleCreateTeam}
-                    disabled={!newTeamName.trim()}
+                    disabled={!newTeamName.trim() || isCreatingTeam || teamCreationStatus === 'done'}
                   >
-                    Create
+                    {teamCreationStatus === 'creating' ? (
+                      <>
+                        <span className="create-team-loading-spinner-fleet"></span>
+                        Creating...
+                      </>
+                    ) : teamCreationStatus === 'done' ? (
+                      'Done!'
+                    ) : (
+                      'Create'
+                    )}
                   </button>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Hide allocation section if pilot has no team */}
-          {!selectedTeamId && !showCreateTeamModal ? (
-            <div className="no-team-message-fleet">
-              <p>Please select a pilot with a team to allocate equipment.</p>
-            </div>
-          ) : (
-            <>
-              <div className="allocation-filters-fleet">
+          {/* Pilot selection - always visible */}
+          <div className="allocation-filters-fleet">
             <div className="filter-field-fleet">
               <label className="filter-label-fleet" htmlFor="allocation-pilot">
                 Select Pilot
@@ -806,13 +837,20 @@ const ResourceAllocation = () => {
                   className="filter-select-fleet"
                   value={selectedPilot}
                   onChange={(e) => setSelectedPilot(e.target.value)}
+                  disabled={loadingPilots}
                 >
                   <option value="">-- Select a pilot --</option>
-                  {pilots.map((pilot) => (
-                    <option key={pilot.id} value={pilot.id}>
-                      {pilot.name}{pilot.team_name ? ` - ${pilot.team_name}` : ' (No Team)'}
-                    </option>
-                  ))}
+                  {loadingPilots ? (
+                    <option value="" disabled>Loading pilots...</option>
+                  ) : pilots.length === 0 ? (
+                    <option value="" disabled>No pilots available</option>
+                  ) : (
+                    pilots.map((pilot) => (
+                      <option key={pilot.id} value={pilot.id}>
+                        {pilot.name}{pilot.team_name ? ` - ${pilot.team_name}` : ' (No Team)'}
+                      </option>
+                    ))
+                  )}
                 </select>
                 <span className="filter-select-icon-fleet" aria-hidden="true">
                   ˅
@@ -869,7 +907,13 @@ const ResourceAllocation = () => {
             </div>
           </div>
 
-          <div className="allocation-controls-fleet">
+          {/* Hide allocation section if pilot has no team */}
+          {!selectedTeamId && !showCreateTeamModal ? (
+            <div className="no-team-message-fleet">
+              <p>Please select a pilot with a team to allocate equipment.</p>
+            </div>
+          ) : (
+            <div className="allocation-controls-fleet">
             {isTempAllocation && Object.keys(permanentAllocations).length > 0 && (
               <div className="permanent-allocations-section-fleet">
                 <div className="permanent-allocations-header-fleet">
@@ -973,7 +1017,6 @@ const ResourceAllocation = () => {
               </div>
             </div>
           </div>
-            </>
           )}
         </div>
       )}
