@@ -70,6 +70,39 @@ const PilotAssignment = () => {
     }
   }, [selectedPilot, pilots]);
 
+  // Initialize selected plans and missions with already assigned items (only if team matches)
+  useEffect(() => {
+    if (plans.length > 0 && selectedTeamId) {
+      const assignedPlanIds = plans
+        .filter(plan => {
+          const isAssigned = plan.is_assigned === 1 || plan.is_assigned === true;
+          const teamMatches = plan.assigned_team_id && parseInt(plan.assigned_team_id) === parseInt(selectedTeamId);
+          return isAssigned && teamMatches;
+        })
+        .map(plan => plan.id);
+      setSelectedPlans(assignedPlanIds);
+    } else if (plans.length > 0 && !selectedTeamId) {
+      // If no team selected, clear selections
+      setSelectedPlans([]);
+    }
+  }, [plans, selectedTeamId]);
+
+  useEffect(() => {
+    if (missions.length > 0 && selectedTeamId) {
+      const assignedMissionIds = missions
+        .filter(mission => {
+          const isAssigned = mission.is_assigned === 1 || mission.is_assigned === true;
+          const teamMatches = mission.assigned_team_id && parseInt(mission.assigned_team_id) === parseInt(selectedTeamId);
+          return isAssigned && teamMatches;
+        })
+        .map(mission => mission.id);
+      setSelectedMissions(assignedMissionIds);
+    } else if (missions.length > 0 && !selectedTeamId) {
+      // If no team selected, clear selections
+      setSelectedMissions([]);
+    }
+  }, [missions, selectedTeamId]);
+
   const handlePilotChange = (pilotId) => {
     setSelectedPilot(pilotId);
     setSelectedPlans([]);
@@ -240,37 +273,42 @@ const PilotAssignment = () => {
               {plans.length === 0 ? (
                 <div className="pilot-assignment-empty-pilotsassign">No plans available for this date</div>
               ) : (
-                plans.map(plan => (
-                  <div 
-                    key={plan.id} 
-                    className={`pilot-assignment-plan-card-pilotsassign ${
-                      plan.is_assigned ? 'pilot-assignment-plan-assigned-pilotsassign' : ''
-                    } ${selectedPlans.includes(plan.id) ? 'pilot-assignment-plan-selected-pilotsassign' : ''}`}
-                    onClick={() => !plan.is_assigned && handlePlanToggle(plan.id)}
-                    style={{ cursor: plan.is_assigned ? 'not-allowed' : 'pointer' }}
-                  >
-                    <div className="pilot-assignment-plan-content-pilotsassign">
-                      <div className="pilot-assignment-plan-info-pilotsassign">
-                        <span className="pilot-assignment-plan-id-pilotsassign">
-                          {plan.plan_display_name || plan.estate_name || (plan.id ? `Plan ${plan.id}` : 'Plan')}
-                        </span>
-                        {(plan.is_assigned === 1 || plan.is_assigned === true) && plan.assigned_pilot_name && (
-                          <span className="pilot-assignment-plan-pilot-pilotsassign">Assigned: {plan.assigned_pilot_name}</span>
-                        )}
-                      </div>
-                      <div className="pilot-assignment-checkbox-wrapper-pilotsassign">
-                        <input
-                          type="checkbox"
-                          className="pilot-assignment-checkbox-pilotsassign"
-                          checked={selectedPlans.includes(plan.id)}
-                          onChange={() => !plan.is_assigned && handlePlanToggle(plan.id)}
-                          onClick={(e) => e.stopPropagation()}
-                          disabled={plan.is_assigned}
-                        />
+                plans.map(plan => {
+                  // Check if selected team matches assigned team (for editing)
+                  const canEdit = !plan.is_assigned || (plan.assigned_team_id && parseInt(plan.assigned_team_id) === parseInt(selectedTeamId));
+                  
+                  return (
+                    <div 
+                      key={plan.id} 
+                      className={`pilot-assignment-plan-card-pilotsassign ${
+                        plan.is_assigned ? 'pilot-assignment-plan-assigned-pilotsassign' : ''
+                      } ${selectedPlans.includes(plan.id) ? 'pilot-assignment-plan-selected-pilotsassign' : ''}`}
+                      onClick={() => canEdit && handlePlanToggle(plan.id)}
+                      style={{ cursor: canEdit ? 'pointer' : 'not-allowed' }}
+                    >
+                      <div className="pilot-assignment-plan-content-pilotsassign">
+                        <div className="pilot-assignment-plan-info-pilotsassign">
+                          <span className="pilot-assignment-plan-id-pilotsassign">
+                            {plan.plan_display_name || plan.estate_name || (plan.id ? `Plan ${plan.id}` : 'Plan')}
+                          </span>
+                          {(plan.is_assigned === 1 || plan.is_assigned === true) && plan.assigned_pilot_name && (
+                            <span className="pilot-assignment-plan-pilot-pilotsassign">Assigned: {plan.assigned_pilot_name}</span>
+                          )}
+                        </div>
+                        <div className="pilot-assignment-checkbox-wrapper-pilotsassign">
+                          <input
+                            type="checkbox"
+                            className="pilot-assignment-checkbox-pilotsassign"
+                            checked={selectedPlans.includes(plan.id)}
+                            onChange={() => canEdit && handlePlanToggle(plan.id)}
+                            onClick={(e) => e.stopPropagation()}
+                            disabled={!canEdit}
+                          />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           )}
@@ -290,41 +328,46 @@ const PilotAssignment = () => {
               {missions.length === 0 ? (
                 <div className="pilot-assignment-empty-pilotsassign">No missions available for this date</div>
               ) : (
-                missions.map(mission => (
-                  <div 
-                    key={mission.id} 
-                    className={`pilot-assignment-plan-card-pilotsassign ${
-                      mission.is_assigned ? 'pilot-assignment-plan-assigned-pilotsassign' : ''
-                    } ${selectedMissions.includes(mission.id) ? 'pilot-assignment-plan-selected-pilotsassign' : ''}`}
-                    onClick={() => !mission.is_assigned && handleMissionToggle(mission.id)}
-                    style={{ cursor: mission.is_assigned ? 'not-allowed' : 'pointer' }}
-                  >
-                    <div className="pilot-assignment-plan-content-pilotsassign">
-                      <div className="pilot-assignment-plan-info-pilotsassign">
-                        <span className="pilot-assignment-plan-id-pilotsassign">
-                          {mission.mission_display_name || 
-                            (mission.farmer_name 
-                              ? `${mission.farmer_name}${mission.gnd_name && mission.gnd_name !== '0' && mission.gnd_name !== 0 ? ` - ${mission.gnd_name}` : mission.gnd && mission.gnd !== '0' && mission.gnd !== 0 && mission.gnd !== '' ? ` - ${mission.gnd}` : ''}`
-                              : (mission.id ? `Mission ${mission.id}` : 'Mission'))
-                          }
-                        </span>
-                        {mission.is_assigned === 1 && mission.assigned_pilot_name && (
-                          <span className="pilot-assignment-plan-pilot-pilotsassign">Assigned: {mission.assigned_pilot_name}</span>
-                        )}
-                      </div>
-                      <div className="pilot-assignment-checkbox-wrapper-pilotsassign">
-                        <input
-                          type="checkbox"
-                          className="pilot-assignment-checkbox-pilotsassign"
-                          checked={selectedMissions.includes(mission.id)}
-                          onChange={() => !mission.is_assigned && handleMissionToggle(mission.id)}
-                          onClick={(e) => e.stopPropagation()}
-                          disabled={mission.is_assigned}
-                        />
+                missions.map(mission => {
+                  // Check if selected team matches assigned team (for editing)
+                  const canEdit = !mission.is_assigned || (mission.assigned_team_id && parseInt(mission.assigned_team_id) === parseInt(selectedTeamId));
+                  
+                  return (
+                    <div 
+                      key={mission.id} 
+                      className={`pilot-assignment-plan-card-pilotsassign ${
+                        mission.is_assigned ? 'pilot-assignment-plan-assigned-pilotsassign' : ''
+                      } ${selectedMissions.includes(mission.id) ? 'pilot-assignment-plan-selected-pilotsassign' : ''}`}
+                      onClick={() => canEdit && handleMissionToggle(mission.id)}
+                      style={{ cursor: canEdit ? 'pointer' : 'not-allowed' }}
+                    >
+                      <div className="pilot-assignment-plan-content-pilotsassign">
+                        <div className="pilot-assignment-plan-info-pilotsassign">
+                          <span className="pilot-assignment-plan-id-pilotsassign">
+                            {mission.mission_display_name || 
+                              (mission.farmer_name 
+                                ? `${mission.farmer_name}${mission.gnd_name && mission.gnd_name !== '0' && mission.gnd_name !== 0 ? ` - ${mission.gnd_name}` : mission.gnd && mission.gnd !== '0' && mission.gnd !== 0 && mission.gnd !== '' ? ` - ${mission.gnd}` : ''}`
+                                : (mission.id ? `Mission ${mission.id}` : 'Mission'))
+                            }
+                          </span>
+                          {mission.is_assigned === 1 && mission.assigned_pilot_name && (
+                            <span className="pilot-assignment-plan-pilot-pilotsassign">Assigned: {mission.assigned_pilot_name}</span>
+                          )}
+                        </div>
+                        <div className="pilot-assignment-checkbox-wrapper-pilotsassign">
+                          <input
+                            type="checkbox"
+                            className="pilot-assignment-checkbox-pilotsassign"
+                            checked={selectedMissions.includes(mission.id)}
+                            onChange={() => canEdit && handleMissionToggle(mission.id)}
+                            onClick={(e) => e.stopPropagation()}
+                            disabled={!canEdit}
+                          />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           )}
