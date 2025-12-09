@@ -32,6 +32,7 @@ import RequestsQueueMain from './sections/opsroom/requests/RequestsQueueMain';
 import RequestProceed from './sections/opsroom/requests/RequestProceed';
 import PlansWithWeather from './sections/opsroom/plans/PlansWithWeather';
 import PilotAssignment from './sections/opsroom/pilot-assigment/PilotAssignment';
+import TodayPlans from './sections/opsroom/today-plans/TodayPlans';
 import EmployeeRegistration from './sections/hr&admin/EmployeeRegistration';
 import Employees from './sections/hr&admin/Employees';
 import JDManagement from './sections/hr&admin/JDManagement';
@@ -39,6 +40,10 @@ import EmployeeAssignment from './sections/hr&admin/EmployeeAssignment';
 import MonthlyRoaster from './sections/hr&admin/roaster/MonthlyRoaster';
 import RoasterPlanning from './sections/hr&admin/roaster/RoasterPlanning';
 import ResourceAllocation from './sections/fleet/ResourceAllocation';
+import DjiMapUpload from './sections/opsroom/dji/DjiMapUpload';
+import ManagerApprovalQueue from './sections/opsroom/manager-approval/ManagerApprovalQueue';
+import PendingPaymentQueue from './sections/opsroom/pending-payment/PendingPaymentQueue';
+import DroneUnlockingQueue from './sections/opsroom/drone-unlocking/DroneUnlockingQueue';
 import Users from './sections/ict/users/Users';
 import AuthControls from './sections/ict/authentication/AuthControls';
 import SupplierRegistration from './sections/stock-assets/SupplierRegistration';
@@ -375,6 +380,46 @@ function App() {
             element={
               <ProtectedRoute>
                 <PilotAssignment />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="djiMapUpload"
+            element={
+              <ProtectedRoute>
+                <DjiMapUpload />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="managerApprovalQueue"
+            element={
+              <ProtectedRoute>
+                <ManagerApprovalQueue />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="pendingPaymentQueue"
+            element={
+              <ProtectedRoute>
+                <PendingPaymentQueue />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="droneUnlockingQueue"
+            element={
+              <ProtectedRoute>
+                <DroneUnlockingQueue />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="todayPlans"
+            element={
+              <ProtectedRoute>
+                <TodayPlans />
               </ProtectedRoute>
             }
           />

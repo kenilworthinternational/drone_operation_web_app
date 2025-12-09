@@ -81,9 +81,10 @@
 .availability-filters-toolbar {
     display: flex;
     flex-wrap: wrap;
+    align-items: center;
     justify-content: space-between;
     gap: 16px;
-    padding: 8px;
+    padding: 12px 16px;
     border: 1px solid #e4ebf3;
     border-radius: 12px;
     background: #f9fbfe;
@@ -91,6 +92,7 @@
 
 .availability-status-filter {
     display: flex;
+    align-items: center;
     gap: 8px;
     flex-wrap: wrap;
 }
@@ -125,7 +127,9 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    min-width: 220px;
+    flex: 1;
+    min-width: 180px;
+    max-width: 250px;
 }
 
 .availability-category-filter label {
@@ -134,6 +138,62 @@
     color: #4b5563;
     margin: 0;
     white-space: nowrap;
+}
+
+.filter-toggle-wrapper-fleet {
+    display: flex;
+    align-items: center;
+}
+
+.filter-toggle-label-fleet {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.filter-toggle-input-fleet {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.filter-toggle-slider-fleet {
+    position: relative;
+    width: 48px;
+    height: 24px;
+    background-color: #004B71;
+    border-radius: 24px;
+    transition: background-color 0.3s;
+}
+
+.filter-toggle-slider-fleet::before {
+    content: '';
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    left: 3px;
+    top: 3px;
+    background-color: white;
+    border-radius: 50%;
+    transition: transform 0.3s;
+}
+
+.filter-toggle-input-fleet:checked + .filter-toggle-slider-fleet {
+    background-color: #0066a3;
+}
+
+.filter-toggle-input-fleet:checked + .filter-toggle-slider-fleet::before {
+    transform: translateX(24px);
+}
+
+.filter-toggle-text-fleet {
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+    min-width: 80px;
 }
 
 .availability-categories-fleet {
@@ -937,7 +997,86 @@
     margin: 0;
 }
 
+/* Temp Allocations Box Grid View */
+.temp-allocations-grid-fleet {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    padding: 20px 0;
+}
+
+.temp-allocation-box-fleet {
+    background: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: box-shadow 0.2s ease;
+}
+
+.temp-allocation-box-fleet:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.temp-allocation-box-header-fleet {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 12px;
+    margin-bottom: 12px;
+    border-bottom: 2px solid #004B71;
+}
+
+.temp-allocation-pilot-name-fleet {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #1f2d3d;
+}
+
+.temp-allocation-date-fleet {
+    font-size: 14px;
+    color: #666;
+    font-weight: 500;
+}
+
+.temp-allocation-equipment-list-fleet {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.temp-allocation-equipment-item-fleet {
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border-left: 3px solid #004B71;
+}
+
+.temp-equipment-details-fleet {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.temp-equipment-type-tag-fleet {
+    font-size: 14px;
+    font-weight: 500;
+    color: #1f2d3d;
+    line-height: 1.4;
+}
+
+.temp-equipment-serial-fleet {
+    font-size: 11px;
+    color: #666;
+    margin-top: 2px;
+}
+
 @media (max-width: 900px) {
+    .temp-allocations-grid-fleet {
+        grid-template-columns: 1fr;
+    }
+    
     .allocation-row-fleet {
         padding: 10px 12px;
     }

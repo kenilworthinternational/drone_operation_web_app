@@ -161,6 +161,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-wrap: wrap;
 }
 
 .pilot-assignment-drone-label-pilotsassign {
@@ -173,6 +174,18 @@
   font-size: 14px;
   font-weight: 500;
   color: #333;
+}
+
+.pilot-assignment-drone-separator-pilotsassign {
+  font-size: 14px;
+  font-weight: 500;
+  color: #666;
+  margin: 0 5px;
+}
+
+.pilot-assignment-drone-temp-pilotsassign {
+  color: #ff6b00;
+  font-weight: 600;
 }
 
 /* Main Content */

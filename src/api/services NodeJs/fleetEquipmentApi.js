@@ -305,15 +305,18 @@ export const fleetEquipmentApi = baseApi.injectEndpoints({
     }),
 
     // =====================================================
-    // TEMPORARY ALLOCATIONS
+    // TEMPORARY ALLOCATIONS (UNIFIED)
     // =====================================================
 
-    // Create temp remote control
-    createTempFleetRemoteControl: builder.mutation({
+    // Create temp allocation (unified for all item types)
+    // Body: { team_id, item_type, item_id, allocation_date }
+    // item_type: 'battery' | 'drone' | 'generator' | 'member' | 'remote_control'
+    // item_id: ID of the item (battery_id, drone_id, generator_id, user_id, or remote_control_id)
+    createTempFleetAllocation: builder.mutation({
       queryFn: async (data) => {
         const result = await nodeBackendBaseQuery(
           {
-            url: '/api/fleet-equipment/temp/remote-control',
+            url: '/api/fleet-equipment/temp/create',
             method: 'POST',
             body: data,
           },
@@ -322,75 +325,63 @@ export const fleetEquipmentApi = baseApi.injectEndpoints({
         );
         return result;
       },
-      invalidatesTags: ['RemoteControls', 'Teams'],
-    }),
-
-    // Create temp battery
-    createTempFleetBattery: builder.mutation({
-      queryFn: async (data) => {
-        const result = await nodeBackendBaseQuery(
-          {
-            url: '/api/fleet-equipment/temp/battery',
-            method: 'POST',
-            body: data,
-          },
-          {},
-          {}
-        );
-        return result;
+      invalidatesTags: (result, error, data) => {
+        // Invalidate all Teams tags to ensure temp allocation queries refetch
+        return [
+          { type: 'Teams', id: 'LIST' },
+          { type: 'Teams', id: `temp-${data.allocation_date}-${data.team_id}` },
+          { type: 'Teams', id: `temp-${data.allocation_date}-all` },
+          'RemoteControls', 
+          'Batteries', 
+          'Generators', 
+          'Drones'
+        ];
       },
-      invalidatesTags: ['Batteries', 'Teams'],
-    }),
-
-    // Create temp generator
-    createTempFleetGenerator: builder.mutation({
-      queryFn: async (data) => {
-        const result = await nodeBackendBaseQuery(
-          {
-            url: '/api/fleet-equipment/temp/generator',
-            method: 'POST',
-            body: data,
-          },
-          {},
-          {}
-        );
-        return result;
-      },
-      invalidatesTags: ['Generators', 'Teams'],
-    }),
-
-    // Create temp drone
-    createTempFleetDrone: builder.mutation({
-      queryFn: async (data) => {
-        const result = await nodeBackendBaseQuery(
-          {
-            url: '/api/fleet-equipment/temp/drone',
-            method: 'POST',
-            body: data,
-          },
-          {},
-          {}
-        );
-        return result;
-      },
-      invalidatesTags: ['Drones', 'Teams'],
     }),
 
     // Get temp allocations by date
+    // date can be a string or an object with { date, team_id }
     getTempFleetAllocationsByDate: builder.query({
-      queryFn: async (date) => {
+      queryFn: async (params) => {
+        const date = typeof params === 'string' ? params : params.date;
+        const teamId = typeof params === 'object' ? params.team_id : null;
+        
         const result = await nodeBackendBaseQuery(
           {
-            url: `/api/fleet-equipment/temp/date/${date}`,
+            url: `/api/fleet-equipment/temp/date/${date}${teamId ? `?team_id=${teamId}` : ''}`,
             method: 'POST',
-            body: {},
+            body: teamId ? { team_id: teamId } : {},
           },
           {},
           {}
         );
         return result;
       },
-      providesTags: (result, error, date) => [{ type: 'Teams', id: `temp-${date}` }],
+      providesTags: (result, error, params) => {
+        const date = typeof params === 'string' ? params : params.date;
+        const teamId = typeof params === 'object' ? params.team_id : null;
+        return [{ type: 'Teams', id: `temp-${date}-${teamId || 'all'}` }];
+      },
+    }),
+
+    // Get temp allocations by month
+    // params: { month (YYYY-MM), team_id (optional), pilot_id (optional) }
+    getTempFleetAllocationsByMonth: builder.query({
+      queryFn: async (params) => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: '/api/fleet-equipment/temp/month',
+            method: 'POST',
+            body: params,
+          },
+          {},
+          {}
+        );
+        return result;
+      },
+      providesTags: (result, error, params) => {
+        return [{ type: 'Teams', id: `temp-month-${params.month}-${params.team_id || params.pilot_id || 'all'}` }];
+      },
     }),
 
     // Cancel temp allocation
@@ -430,12 +421,10 @@ export const {
   useGetFleetPilotsWithTeamsQuery,
   useCreateFleetTeamMutation,
   useGetFleetTeamEquipmentQuery,
-  // Temporary allocations
-  useCreateTempFleetRemoteControlMutation,
-  useCreateTempFleetBatteryMutation,
-  useCreateTempFleetGeneratorMutation,
-  useCreateTempFleetDroneMutation,
+  // Temporary allocations (unified)
+  useCreateTempFleetAllocationMutation,
   useGetTempFleetAllocationsByDateQuery,
+  useGetTempFleetAllocationsByMonthQuery,
   useCancelTempFleetAllocationMutation,
 } = fleetEquipmentApi;
 

@@ -9,14 +9,12 @@ import {
   useCreateFleetTeamMutation,
   useGetFleetTeamEquipmentQuery,
   useGetTempFleetAllocationsByDateQuery,
+  useGetTempFleetAllocationsByMonthQuery,
   useAssignFleetRemoteControlMutation,
   useAssignFleetBatteryMutation,
   useAssignFleetGeneratorMutation,
   useAssignFleetDroneMutation,
-  useCreateTempFleetRemoteControlMutation,
-  useCreateTempFleetBatteryMutation,
-  useCreateTempFleetGeneratorMutation,
-  useCreateTempFleetDroneMutation,
+  useCreateTempFleetAllocationMutation,
 } from '../../api/services NodeJs/allEndpoints';
 import { useGetBatteryTypesQuery } from '../../api/services/allEndpoints';
 
@@ -30,55 +28,95 @@ const ResourceAllocation = () => {
   const [availabilityStatusFilter, setAvailabilityStatusFilter] = useState('all');
   const [availabilityCategoryFilter, setAvailabilityCategoryFilter] = useState('all');
   const [selectedBatteryType, setSelectedBatteryType] = useState(null);
+  const [selectedPilotFilter, setSelectedPilotFilter] = useState('');
+  const [isViewingTemp, setIsViewingTemp] = useState(false);
+  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM format
   const [showCreateTeamModal, setShowCreateTeamModal] = useState(false);
   const [newTeamName, setNewTeamName] = useState('');
   const [isCreatingTeam, setIsCreatingTeam] = useState(false);
   const [teamCreationStatus, setTeamCreationStatus] = useState(''); // 'creating', 'done', ''
 
-  // Fetch equipment data
+  // Fetch pilots data first
+  const { data: pilotsData, isLoading: loadingPilots, refetch: refetchPilots } = useGetFleetPilotsWithTeamsQuery();
+  
+  // Fetch equipment data (only for permanent view)
+  const selectedPilotTeamId = selectedPilotFilter && pilotsData?.data 
+    ? pilotsData.data.find(p => p.id === parseInt(selectedPilotFilter))?.team_id 
+    : null;
   const { data: remoteControlsData, isLoading: loadingRC } = useGetFleetRemoteControlsQuery({ 
-    available: availabilityStatusFilter === 'not_assigned' ? 'true' : undefined 
-  });
+    available: availabilityStatusFilter === 'not_assigned' ? 'true' : undefined,
+    team_id: selectedPilotTeamId || undefined,
+  }, { skip: isViewingTemp });
   const { data: batteriesData, isLoading: loadingBatteries } = useGetFleetBatteriesQuery({ 
     available: availabilityStatusFilter === 'not_assigned' ? 'true' : undefined,
     type: selectedBatteryType || undefined,
-  });
+    team_id: selectedPilotTeamId || undefined,
+  }, { skip: isViewingTemp });
   const { data: generatorsData, isLoading: loadingGenerators } = useGetFleetGeneratorsQuery({ 
-    available: availabilityStatusFilter === 'not_assigned' ? 'true' : undefined 
-  });
+    available: availabilityStatusFilter === 'not_assigned' ? 'true' : undefined,
+    team_id: selectedPilotTeamId || undefined,
+  }, { skip: isViewingTemp });
   const { data: dronesData, isLoading: loadingDrones } = useGetFleetDronesQuery({ 
-    available: availabilityStatusFilter === 'not_assigned' ? 'true' : undefined 
-  });
-  const { data: pilotsData, isLoading: loadingPilots, refetch: refetchPilots } = useGetFleetPilotsWithTeamsQuery();
+    available: availabilityStatusFilter === 'not_assigned' ? 'true' : undefined,
+    team_id: selectedPilotTeamId || undefined,
+  }, { skip: isViewingTemp });
+
+  // Fetch temp allocations by month
+  const { data: tempAllocationsByMonthData, isLoading: loadingTempAllocations } = useGetTempFleetAllocationsByMonthQuery(
+    {
+      month: selectedMonth,
+      pilot_id: selectedPilotFilter ? parseInt(selectedPilotFilter) : null,
+    },
+    { skip: !isViewingTemp || !selectedMonth }
+  );
   const [createTeam] = useCreateFleetTeamMutation();
   const { data: batteryTypesData } = useGetBatteryTypesQuery();
 
   // Get team equipment if pilot/team is selected
   const { data: teamEquipmentData } = useGetFleetTeamEquipmentQuery(selectedTeamId, { skip: !selectedTeamId });
   
-  // Get temporary allocations if date is selected
-  const { data: tempAllocationsData } = useGetTempFleetAllocationsByDateQuery(allocationDate, { 
-    skip: !allocationDate || !isTempAllocation 
-  });
+  // Get temporary allocations if date and team are selected
+  // Format date to YYYY-MM-DD if needed (reuse existing formatDateOnly function)
+  const formattedAllocationDate = allocationDate ? formatDateOnly(allocationDate) : '';
+  const tempAllocationParams = (formattedAllocationDate && selectedTeamId && isTempAllocation) 
+    ? { date: formattedAllocationDate, team_id: selectedTeamId } 
+    : null;
+  
+  const { data: tempAllocationsData, refetch: refetchTempAllocations } = useGetTempFleetAllocationsByDateQuery(
+    tempAllocationParams || formattedAllocationDate || '', 
+    { 
+      skip: !formattedAllocationDate || !isTempAllocation || !selectedTeamId
+    }
+  );
 
   // Mutations
   const [assignRemoteControl] = useAssignFleetRemoteControlMutation();
   const [assignBattery] = useAssignFleetBatteryMutation();
   const [assignGenerator] = useAssignFleetGeneratorMutation();
   const [assignDrone] = useAssignFleetDroneMutation();
-  const [createTempRemoteControl] = useCreateTempFleetRemoteControlMutation();
-  const [createTempBattery] = useCreateTempFleetBatteryMutation();
-  const [createTempGenerator] = useCreateTempFleetGeneratorMutation();
-  const [createTempDrone] = useCreateTempFleetDroneMutation();
+  const [createTempAllocation] = useCreateTempFleetAllocationMutation();
 
   // Extract data from API responses
-  const remoteControls = remoteControlsData?.data || [];
-  const batteries = batteriesData?.data || [];
-  const generators = generatorsData?.data || [];
-  const drones = dronesData?.data || [];
+  const remoteControls = isViewingTemp ? (tempAllocationsByMonthData?.data?.remote_controls || []) : (remoteControlsData?.data || []);
+  const batteries = isViewingTemp ? (tempAllocationsByMonthData?.data?.batteries || []) : (batteriesData?.data || []);
+  const generators = isViewingTemp ? (tempAllocationsByMonthData?.data?.generators || []) : (generatorsData?.data || []);
+  const drones = isViewingTemp ? (tempAllocationsByMonthData?.data?.drones || []) : (dronesData?.data || []);
   // Memoize pilots to prevent infinite loop in useEffect
   const pilots = useMemo(() => pilotsData?.data || [], [pilotsData?.data]);
   const batteryTypes = batteryTypesData?.data || [];
+  
+  const isLoading = isViewingTemp ? loadingTempAllocations : (loadingRC || loadingBatteries || loadingGenerators || loadingDrones);
+
+  // Helper function to format date (handles both DATE and DATETIME strings)
+  const formatDateOnly = (dateString) => {
+    if (!dateString) return '';
+    // If it's a full timestamp, extract just the date part
+    if (dateString.includes('T')) {
+      return dateString.split('T')[0];
+    }
+    // If it's already in YYYY-MM-DD format, return as is
+    return dateString.substring(0, 10);
+  };
 
   // Group batteries by type
   const batteriesByType = useMemo(() => {
@@ -93,8 +131,59 @@ const ResourceAllocation = () => {
     return grouped;
   }, [batteries]);
 
-  // Build availability categories from real data
+  // Group temp allocations by Pilot-Date (for box grid view)
+  const tempAllocationsByPilotDate = useMemo(() => {
+    if (!isViewingTemp) return [];
+    
+    const grouped = {};
+    
+    // Combine all equipment types
+    const allItems = [
+      ...drones.map(d => ({ ...d, type: 'drone', typeLabel: 'Drone' })),
+      ...remoteControls.map(rc => ({ ...rc, type: 'remote_control', typeLabel: 'Remote Control' })),
+      ...batteries.map(b => ({ ...b, type: 'battery', typeLabel: `Battery (${b.battery_type_name || 'Unknown'})` })),
+      ...generators.map(g => ({ ...g, type: 'generator', typeLabel: 'Generator' })),
+    ];
+    
+    // Group by pilot_name and allocation_date
+    allItems.forEach(item => {
+      const pilotName = item.pilot_name || item.team_name || 'Unknown';
+      const date = formatDateOnly(item.allocation_date);
+      const key = `${pilotName}|${date}`;
+      
+      if (!grouped[key]) {
+        grouped[key] = {
+          pilotName,
+          date,
+          teamName: item.team_name || '',
+          items: [],
+        };
+      }
+      
+      grouped[key].items.push({
+        id: item.equipment_id,
+        tag: item.tag || `TAG-${item.equipment_id}`,
+        serial: item.serial || '',
+        code: item.tag || item.serial || `${item.type.toUpperCase()}-${item.equipment_id}`,
+        type: item.type,
+        typeLabel: item.typeLabel,
+        status: 'Temp Allocated',
+      });
+    });
+    
+    return Object.values(grouped).sort((a, b) => {
+      // Sort by date first, then by pilot name
+      if (a.date !== b.date) {
+        return a.date.localeCompare(b.date);
+      }
+      return a.pilotName.localeCompare(b.pilotName);
+    });
+  }, [drones, remoteControls, batteries, generators, isViewingTemp, formatDateOnly]);
+
+  // Build availability categories from real data (for permanent view only)
   const availabilityCategories = useMemo(() => {
+    if (isViewingTemp) return []; // Return empty for temp view, we'll use box grid instead
+    
     const categories = [];
 
     // Drones
@@ -192,7 +281,7 @@ const ResourceAllocation = () => {
     }
 
     return categories;
-  }, [drones, remoteControls, batteriesByType, generators, availabilityStatusFilter]);
+  }, [drones, remoteControls, batteriesByType, generators, isViewingTemp, availabilityStatusFilter]);
 
   // Filter availability data
   const filteredAvailabilityData = useMemo(() => {
@@ -244,6 +333,69 @@ const ResourceAllocation = () => {
       setShowCreateTeamModal(false);
     }
   }, [selectedPilot, pilots]);
+
+  // Populate selectedSerials with existing temp allocations when date and team are selected
+  useEffect(() => {
+    if (isTempAllocation && formattedAllocationDate && selectedTeamId && tempAllocationsData?.data) {
+      const existingAllocations = tempAllocationsData.data;
+      console.log('[ResourceAllocation] Loading existing temp allocations:', existingAllocations);
+      const newSelectedSerials = {};
+
+      // Process each equipment type
+      ['drones', 'batteries', 'generators', 'remote_controls'].forEach(type => {
+        const allocations = existingAllocations[type] || [];
+        console.log(`[ResourceAllocation] Processing ${type}:`, allocations);
+        allocations.forEach(allocation => {
+          const equipmentId = allocation.equipment_id;
+          
+          // Map item types to asset names
+          let assetName = '';
+          if (type === 'drones') {
+            assetName = 'Drone';
+          } else if (type === 'batteries') {
+            // Determine battery type from battery_type_name or serial
+            const batteryType = allocation.battery_type_name || '';
+            if (batteryType.toLowerCase().includes('drone')) {
+              assetName = 'Drone Battery';
+            } else if (batteryType.toLowerCase().includes('rc')) {
+              assetName = 'RC Battery';
+            } else if (batteryType.toLowerCase().includes('drtk')) {
+              assetName = 'DRTK Battery';
+            } else {
+              assetName = 'Battery';
+            }
+          } else if (type === 'generators') {
+            assetName = 'Generator';
+          } else if (type === 'remote_controls') {
+            assetName = 'Remote Controller (RC)';
+          }
+
+          if (assetName) {
+            if (!newSelectedSerials[assetName]) {
+              newSelectedSerials[assetName] = [];
+            }
+            // Add equipment ID if not already present
+            if (!newSelectedSerials[assetName].includes(equipmentId)) {
+              newSelectedSerials[assetName].push(equipmentId);
+            }
+          }
+        });
+      });
+
+      console.log('[ResourceAllocation] Populated selectedSerials:', newSelectedSerials);
+
+      // Only update if there are changes to avoid infinite loops
+      const currentKeys = Object.keys(selectedSerials).sort().join(',');
+      const newKeys = Object.keys(newSelectedSerials).sort().join(',');
+      if (currentKeys !== newKeys || JSON.stringify(selectedSerials) !== JSON.stringify(newSelectedSerials)) {
+        setSelectedSerials(newSelectedSerials);
+      }
+    } else if (!isTempAllocation && Object.keys(selectedSerials).length > 0) {
+      // Clear selections when temp allocation is disabled
+      setSelectedSerials({});
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isTempAllocation, formattedAllocationDate, selectedTeamId, tempAllocationsData?.data]);
 
   // Handle team creation
   const handleCreateTeam = async () => {
@@ -378,10 +530,15 @@ const ResourceAllocation = () => {
               return !rc.is_assigned || isCurrentTeam(rc);
             }
           })
-          .map(rc => ({
-            value: rc.id,
-            label: `${rc.serial || rc.tag || `RC-${rc.id}`} - ${rc.make || ''} ${rc.model || ''}`.trim(),
-          }));
+          .map(rc => {
+            const tag = rc.tag || `RC-${rc.id}`;
+            const serial = rc.serial ? ` (${rc.serial})` : '';
+            const makeModel = rc.make || rc.model ? ` - ${rc.make || ''} ${rc.model || ''}`.trim() : '';
+            return {
+              value: rc.id,
+              label: `${tag}${serial}${makeModel}`,
+            };
+          });
       case 'Drone Battery':
         const droneType = batteryTypes.find(bt => bt.type === 'Drone Battery');
         return batteries
@@ -393,10 +550,14 @@ const ResourceAllocation = () => {
               return !b.is_assigned || isCurrentTeam(b);
             }
           })
-          .map(b => ({
-            value: b.id,
-            label: `${b.serial || b.tag || `BAT-${b.id}`}`.trim(),
-          }));
+          .map(b => {
+            const tag = b.tag || `BAT-${b.id}`;
+            const serial = b.serial ? ` (${b.serial})` : '';
+            return {
+              value: b.id,
+              label: `${tag}${serial}`,
+            };
+          });
       case 'RC Battery':
         const rcType = batteryTypes.find(bt => bt.type === 'RC Battery');
         return batteries
@@ -408,10 +569,14 @@ const ResourceAllocation = () => {
               return !b.is_assigned || isCurrentTeam(b);
             }
           })
-          .map(b => ({
-            value: b.id,
-            label: `${b.serial || b.tag || `BAT-${b.id}`}`.trim(),
-          }));
+          .map(b => {
+            const tag = b.tag || `BAT-${b.id}`;
+            const serial = b.serial ? ` (${b.serial})` : '';
+            return {
+              value: b.id,
+              label: `${tag}${serial}`,
+            };
+          });
       case 'DRTK Battery':
         const drtkType = batteryTypes.find(bt => bt.type === 'DRTK Battery');
         return batteries
@@ -423,10 +588,14 @@ const ResourceAllocation = () => {
               return !b.is_assigned || isCurrentTeam(b);
             }
           })
-          .map(b => ({
-            value: b.id,
-            label: `${b.serial || b.tag || `BAT-${b.id}`}`.trim(),
-          }));
+          .map(b => {
+            const tag = b.tag || `BAT-${b.id}`;
+            const serial = b.serial ? ` (${b.serial})` : '';
+            return {
+              value: b.id,
+              label: `${tag}${serial}`,
+            };
+          });
       case 'Generator':
         return generators
           .filter(g => {
@@ -436,10 +605,15 @@ const ResourceAllocation = () => {
               return !g.is_assigned || isCurrentTeam(g);
             }
           })
-          .map(g => ({
-            value: g.id,
-            label: `${g.serial || g.tag || `GEN-${g.id}`} - ${g.make || ''} ${g.model || ''}`.trim(),
-          }));
+          .map(g => {
+            const tag = g.tag || `GEN-${g.id}`;
+            const serial = g.serial ? ` (${g.serial})` : '';
+            const makeModel = g.make || g.model ? ` - ${g.make || ''} ${g.model || ''}`.trim() : '';
+            return {
+              value: g.id,
+              label: `${tag}${serial}${makeModel}`,
+            };
+          });
       case 'Drone':
         return drones
           .filter(d => {
@@ -449,10 +623,15 @@ const ResourceAllocation = () => {
               return !d.is_assigned || isCurrentTeam(d);
             }
           })
-          .map(d => ({
-            value: d.id,
-            label: `${d.serial || d.tag || `DR-${d.id}`} - ${d.make || ''} ${d.model || ''}`.trim(),
-          }));
+          .map(d => {
+            const tag = d.tag || `DR-${d.id}`;
+            const serial = d.serial ? ` (${d.serial})` : '';
+            const makeModel = d.make || d.model ? ` - ${d.make || ''} ${d.model || ''}`.trim() : '';
+            return {
+              value: d.id,
+              label: `${tag}${serial}${makeModel}`,
+            };
+          });
       default:
         return [];
     }
@@ -488,45 +667,74 @@ const ResourceAllocation = () => {
             allocationData.allocation_date = allocationDate;
           }
 
+          // Determine item type and item_id based on asset name
+          let itemType = null;
+          let itemId = null;
+
           if (assetName.includes('Remote Controller') || assetName.includes('RC')) {
-            allocationData.remote_control_id = equipmentId;
-            if (isTempAllocation) {
-              await createTempRemoteControl(allocationData).unwrap();
-            } else {
+            itemType = 'remote_control';
+            itemId = equipmentId;
+            if (!isTempAllocation) {
+              allocationData.remote_control_id = equipmentId;
               await assignRemoteControl(allocationData).unwrap();
             }
           } else if (assetName.includes('Battery')) {
-            allocationData.battery_id = equipmentId;
-            if (isTempAllocation) {
-              await createTempBattery(allocationData).unwrap();
-            } else {
+            itemType = 'battery';
+            itemId = equipmentId;
+            if (!isTempAllocation) {
+              allocationData.battery_id = equipmentId;
               await assignBattery(allocationData).unwrap();
             }
           } else if (assetName.includes('Generator')) {
-            allocationData.generator_id = equipmentId;
-            if (isTempAllocation) {
-              await createTempGenerator(allocationData).unwrap();
-            } else {
+            itemType = 'generator';
+            itemId = equipmentId;
+            if (!isTempAllocation) {
+              allocationData.generator_id = equipmentId;
               await assignGenerator(allocationData).unwrap();
             }
           } else if (assetName.includes('Drone')) {
-            allocationData.drone_id = equipmentId;
-            if (isTempAllocation) {
-              await createTempDrone(allocationData).unwrap();
-            } else {
+            itemType = 'drone';
+            itemId = equipmentId;
+            if (!isTempAllocation) {
+              allocationData.drone_id = equipmentId;
               await assignDrone(allocationData).unwrap();
             }
+          }
+
+          // Use unified temp allocation function
+          if (isTempAllocation && itemType && itemId) {
+            // Ensure date is in YYYY-MM-DD format (extract date part if datetime string)
+            let formattedDate = allocationDate;
+            if (allocationDate && allocationDate.includes('T')) {
+              formattedDate = allocationDate.split('T')[0];
+            } else if (allocationDate && allocationDate.length > 10) {
+              formattedDate = allocationDate.substring(0, 10);
+            }
+            
+            await createTempAllocation({
+              team_id: selectedTeamId,
+              item_type: itemType,
+              item_id: itemId,
+              allocation_date: formattedDate,
+            }).unwrap();
           }
         }
       }
 
       alert('Equipment allocated successfully!');
-      // Reset form
-      setSelectedSerials({});
-      setSelectedPilot('');
-      setSelectedTeamId('');
-      setAllocationDate('');
-      setIsTempAllocation(false);
+      
+      // Refetch temp allocations if it was a temp allocation
+      if (isTempAllocation && formattedAllocationDate && selectedTeamId) {
+        console.log('[ResourceAllocation] Refetching temp allocations after allocation');
+        await refetchTempAllocations();
+      } else {
+        // Reset form only for permanent allocations
+        setSelectedSerials({});
+        setSelectedPilot('');
+        setSelectedTeamId('');
+        setAllocationDate('');
+        setIsTempAllocation(false);
+      }
     } catch (error) {
       console.error('Error allocating equipment:', error);
       alert('Failed to allocate equipment. Please try again.');
@@ -588,8 +796,6 @@ const ResourceAllocation = () => {
     });
   };
 
-  const isLoading = loadingRC || loadingBatteries || loadingGenerators || loadingDrones || loadingPilots;
-
   return (
     <div className="page-fleet">
       <div className="resource-tabs-container-fleet">
@@ -612,36 +818,61 @@ const ResourceAllocation = () => {
       {activeTab === 'availability' ? (
         <div className="availability-panel-fleet">
           <div className="availability-filters-toolbar">
-            <div className="availability-status-filter">
-              {[
-                { key: 'all', label: 'All' },
-                { key: 'not_assigned', label: 'Not Assigned' },
-                { key: 'assigned', label: 'Assigned' },
-              ].map((option) => (
-                <button
-                  key={option.key}
-                  type="button"
-                  className={`availability-status-chip ${
-                    availabilityStatusFilter === option.key ? 'active' : ''
-                  }`}
-                  onClick={() => setAvailabilityStatusFilter(option.key)}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
+            {!isViewingTemp && (
+              <>
+                <div className="availability-status-filter">
+                  {[
+                    { key: 'all', label: 'All' },
+                    { key: 'not_assigned', label: 'Not Assigned' },
+                    { key: 'assigned', label: 'Assigned' },
+                  ].map((option) => (
+                    <button
+                      key={option.key}
+                      type="button"
+                      className={`availability-status-chip ${
+                        availabilityStatusFilter === option.key ? 'active' : ''
+                      }`}
+                      onClick={() => setAvailabilityStatusFilter(option.key)}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+                <div className="availability-category-filter">
+                  <label htmlFor="availability-category">Category</label>
+                  <div className="filter-input-wrapper-fleet filter-select-wrapper-fleet">
+                    <select
+                      id="availability-category"
+                      className="filter-select-fleet"
+                      value={availabilityCategoryFilter}
+                      onChange={(e) => setAvailabilityCategoryFilter(e.target.value)}
+                    >
+                      {categoryOptions.map((option) => (
+                        <option key={option} value={option}>
+                          {option === 'all' ? 'All Categories' : option}
+                        </option>
+                      ))}
+                    </select>
+                    <span className="filter-select-icon-fleet" aria-hidden="true">
+                      ˅
+                    </span>
+                  </div>
+                </div>
+              </>
+            )}
             <div className="availability-category-filter">
-              <label htmlFor="availability-category">Category</label>
+              <label htmlFor="pilot-filter">Pilot</label>
               <div className="filter-input-wrapper-fleet filter-select-wrapper-fleet">
                 <select
-                  id="availability-category"
+                  id="pilot-filter"
                   className="filter-select-fleet"
-                  value={availabilityCategoryFilter}
-                  onChange={(e) => setAvailabilityCategoryFilter(e.target.value)}
+                  value={selectedPilotFilter}
+                  onChange={(e) => setSelectedPilotFilter(e.target.value)}
                 >
-                  {categoryOptions.map((option) => (
-                    <option key={option} value={option}>
-                      {option === 'all' ? 'All Categories' : option}
+                  <option value="">All Pilots</option>
+                  {pilots.map((pilot) => (
+                    <option key={pilot.id} value={pilot.id}>
+                      {pilot.name} {pilot.team_name ? `- ${pilot.team_name}` : ''}
                     </option>
                   ))}
                 </select>
@@ -650,7 +881,35 @@ const ResourceAllocation = () => {
                 </span>
               </div>
             </div>
-            {availabilityCategoryFilter === 'Batteries' && (
+            {isViewingTemp && (
+              <div className="availability-category-filter">
+                <label htmlFor="month-filter">Month</label>
+                <div className="filter-input-wrapper-fleet filter-select-wrapper-fleet">
+                  <input
+                    type="month"
+                    id="month-filter"
+                    className="filter-select-fleet"
+                    value={selectedMonth}
+                    onChange={(e) => setSelectedMonth(e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
+            <div className="availability-category-filter" style={{ marginLeft: 'auto' }}>
+              <div className="filter-toggle-wrapper-fleet">
+                <label className="filter-toggle-label-fleet">
+                  <input
+                    type="checkbox"
+                    checked={isViewingTemp}
+                    onChange={(e) => setIsViewingTemp(e.target.checked)}
+                    className="filter-toggle-input-fleet"
+                  />
+                  <span className="filter-toggle-slider-fleet"></span>
+                  <span className="filter-toggle-text-fleet">{isViewingTemp ? 'Temporary' : 'Permanent'}</span>
+                </label>
+              </div>
+            </div>
+            {!isViewingTemp && availabilityCategoryFilter === 'Batteries' && (
               <div className="availability-category-filter">
                 <label htmlFor="battery-type-filter">Battery Type</label>
                 <div className="filter-input-wrapper-fleet filter-select-wrapper-fleet">
@@ -677,6 +936,37 @@ const ResourceAllocation = () => {
 
           {isLoading ? (
             <div style={{ padding: '2rem', textAlign: 'center' }}>Loading equipment data...</div>
+          ) : isViewingTemp ? (
+            <div className="temp-allocations-grid-fleet">
+              {tempAllocationsByPilotDate.length === 0 ? (
+                <div style={{ padding: '2rem', textAlign: 'center', color: '#666' }}>
+                  No temporary allocations found for the selected month.
+                </div>
+              ) : (
+                tempAllocationsByPilotDate.map((pilotDateGroup, index) => (
+                  <div key={`${pilotDateGroup.pilotName}-${pilotDateGroup.date}-${index}`} className="temp-allocation-box-fleet">
+                    <div className="temp-allocation-box-header-fleet">
+                      <h3 className="temp-allocation-pilot-name-fleet">{pilotDateGroup.pilotName}</h3>
+                      <span className="temp-allocation-date-fleet">{pilotDateGroup.date}</span>
+                    </div>
+                    <div className="temp-allocation-equipment-list-fleet">
+                      {pilotDateGroup.items.map((item, itemIndex) => (
+                        <div key={`${item.id}-${itemIndex}`} className="temp-allocation-equipment-item-fleet">
+                          <div className="temp-equipment-details-fleet">
+                            <span className="temp-equipment-type-tag-fleet">
+                              {item.typeLabel.toUpperCase()}: {item.tag || item.code}
+                            </span>
+                            {item.serial && (
+                              <span className="temp-equipment-serial-fleet">{item.serial}</span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           ) : (
             <div className="availability-categories-fleet">
               {filteredAvailabilityData.length === 0 ? (

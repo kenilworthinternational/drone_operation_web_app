@@ -1,0 +1,370 @@
+.manager-approval-queue-container-managerqueue {
+  padding: 20px;
+  background: #f5f5f5;
+  min-height: 100vh;
+}
+
+.manager-approval-queue-header-managerqueue {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.manager-approval-queue-header-managerqueue h1 {
+  margin: 0;
+  font-size: 24px;
+  color: #1f2d3d;
+  flex: 1;
+}
+
+.back-btn-manager-approval-managerqueue {
+  padding: 8px 16px;
+  background: #004B71;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+.back-btn-manager-approval-managerqueue:hover {
+  background: #0066a3;
+}
+
+.queue-info-manager-approval-managerqueue {
+  display: flex;
+  gap: 20px;
+  font-size: 14px;
+  color: #666;
+}
+
+.queue-info-manager-approval-managerqueue span {
+  font-weight: 600;
+}
+
+.manager-approval-queue-content-managerqueue {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.loading-container-manager-approval-managerqueue,
+.error-container-manager-approval-managerqueue,
+.empty-container-manager-approval-managerqueue {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+}
+
+.error-container-manager-approval-managerqueue {
+  color: #dc3545;
+}
+
+/* Plans Grid */
+.plans-grid-managerqueue {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+/* Plan Card */
+.plan-card-managerqueue {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.2s, transform 0.2s;
+  display: flex;
+  flex-direction: column;
+}
+
+.plan-card-managerqueue:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+.plan-card-header-managerqueue {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.plan-id-managerqueue {
+  font-size: 16px;
+  font-weight: 600;
+  color: #004B71;
+}
+
+.status-badge-manager-approval-managerqueue {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-block;
+}
+
+.status-badge-manager-approval-managerqueue.pending {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.plan-card-body-managerqueue {
+  flex: 1;
+  margin-bottom: 12px;
+}
+
+.plan-estate-managerqueue {
+  font-size: 18px;
+  color: #1f2d3d;
+  margin-bottom: 12px;
+}
+
+.plan-manager-managerqueue {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14px;
+}
+
+.plan-manager-loading-managerqueue {
+  font-size: 14px;
+  color: #666;
+  font-style: italic;
+}
+
+.manager-label-managerqueue {
+  font-weight: 600;
+  color: #666;
+}
+
+.manager-name-managerqueue {
+  color: #1f2d3d;
+  font-weight: 500;
+}
+
+.manager-mobile-managerqueue {
+  color: #004B71;
+  font-weight: 500;
+}
+
+.plan-card-footer-managerqueue {
+  padding-top: 12px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.contact-btn-managerqueue {
+  width: 100%;
+  padding: 10px;
+  background: #004B71;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background 0.2s;
+}
+
+.contact-btn-managerqueue:hover:not(:disabled) {
+  background: #0066a3;
+}
+
+.contact-btn-managerqueue:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+/* Contact Popup */
+.contact-popup-overlay-managerqueue {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.contact-popup-content-managerqueue {
+  background: white;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.contact-popup-header-managerqueue {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.contact-popup-header-managerqueue h2 {
+  margin: 0;
+  font-size: 20px;
+  color: #1f2d3d;
+}
+
+.contact-popup-close-managerqueue {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #666;
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background 0.2s;
+}
+
+.contact-popup-close-managerqueue:hover {
+  background: #f0f0f0;
+}
+
+.contact-popup-body-managerqueue {
+  padding: 20px;
+}
+
+.contact-estate-info-managerqueue {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.contact-estate-info-managerqueue strong {
+  font-size: 18px;
+  color: #1f2d3d;
+}
+
+.contact-estate-info-managerqueue span {
+  font-size: 14px;
+  color: #666;
+}
+
+.contact-loading-managerqueue {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+}
+
+.contact-empty-managerqueue {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+  font-style: italic;
+}
+
+.contact-section-managerqueue {
+  margin-bottom: 24px;
+}
+
+.contact-section-managerqueue:last-child {
+  margin-bottom: 0;
+}
+
+.contact-section-managerqueue h3 {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  color: #004B71;
+  font-weight: 600;
+}
+
+.contact-item-managerqueue {
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+.contact-item-managerqueue:last-child {
+  margin-bottom: 0;
+}
+
+.contact-name-managerqueue {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.contact-name-managerqueue strong {
+  font-size: 14px;
+  color: #1f2d3d;
+}
+
+.contact-appointment-managerqueue {
+  font-size: 12px;
+  color: #666;
+  background: #e9ecef;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.contact-mobile-managerqueue {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: #004B71;
+  font-weight: 500;
+}
+
+.contact-divisions-managerqueue {
+  font-size: 12px;
+  color: #666;
+  margin-top: 6px;
+  font-style: italic;
+}
+
+@media (max-width: 768px) {
+  .manager-approval-queue-header-managerqueue {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .queue-info-manager-approval-managerqueue {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .plans-grid-managerqueue {
+    grid-template-columns: 1fr;
+  }
+
+  .contact-popup-content-managerqueue {
+    max-width: 100%;
+    margin: 10px;
+  }
+}

@@ -80,6 +80,44 @@ export const pilotAssignmentApi = baseApi.injectEndpoints({
     }),
 
     // =====================================================
+    // GET MISSIONS PENDING PAYMENT
+    // =====================================================
+    getMissionsPendingPayment: builder.query({
+      queryFn: async () => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: '/api/pilot-assignment/missions-pending-payment',
+            method: 'POST',
+            body: {},
+          },
+          {},
+          {}
+        );
+        return result;
+      },
+      providesTags: ['PilotAssignmentMissions'],
+    }),
+
+    // =====================================================
+    // GET RESOURCE ASSIGNMENT COUNT
+    // =====================================================
+    getResourceAssignmentCount: builder.query({
+      queryFn: async (date) => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: '/api/pilot-assignment/resource-assignment-count',
+            method: 'POST',
+            body: { date },
+          },
+          {},
+          {}
+        );
+        return result;
+      },
+      providesTags: ['ResourceAssignmentCount'],
+    }),
+
+    // =====================================================
     // GET PILOTS WITH TEAMS
     // =====================================================
     getPilotAssignmentPilots: builder.query({
@@ -173,16 +211,94 @@ export const pilotAssignmentApi = baseApi.injectEndpoints({
       },
       providesTags: ['PilotAssignmentTeams'],
     }),
+
+    // =====================================================
+    // GET TODAY'S PLANS AND MISSIONS WITH RESOURCE ALLOCATION
+    // =====================================================
+    getTodayPlansAndMissions: builder.query({
+      queryFn: async (date) => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: '/api/pilot-assignment/today',
+            method: 'POST',
+            body: { date },
+          },
+          {},
+          {}
+        );
+        return result;
+      },
+      providesTags: ['TodayPlansAndMissions'],
+    }),
+
+    // =====================================================
+    // DRONE UNLOCKING QUEUE
+    // =====================================================
+    getDroneUnlockingQueue: builder.query({
+      queryFn: async () => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: '/api/pilot-assignment/drone-unlocking-queue',
+            method: 'POST',
+            body: {},
+          },
+          {},
+          {}
+        );
+        return result;
+      },
+      providesTags: ['DroneUnlockingQueue'],
+    }),
+
+    // Update plan drone unlock status
+    updatePlanDroneUnlock: builder.mutation({
+      queryFn: async ({ planId, unlockStatus }) => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: `/api/pilot-assignment/drone-unlock/plan/${planId}`,
+            method: 'PUT',
+            body: { unlockStatus },
+          },
+          {},
+          {}
+        );
+        return result;
+      },
+      invalidatesTags: ['DroneUnlockingQueue'],
+    }),
+
+    // Update mission drone unlock status
+    updateMissionDroneUnlock: builder.mutation({
+      queryFn: async ({ missionId, unlockStatus }) => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: `/api/pilot-assignment/drone-unlock/mission/${missionId}`,
+            method: 'PUT',
+            body: { unlockStatus },
+          },
+          {},
+          {}
+        );
+        return result;
+      },
+      invalidatesTags: ['DroneUnlockingQueue'],
+    }),
   }),
 });
 
 export const {
   useGetPilotAssignmentPlansQuery,
   useGetPilotAssignmentMissionsQuery,
+  useGetMissionsPendingPaymentQuery,
+  useGetResourceAssignmentCountQuery,
   useGetPilotAssignmentPilotsQuery,
   useGetPilotAssignmentDroneQuery,
   useCreatePilotAssignmentMutation,
   useGetPilotAssignmentByIdQuery,
   useGetAllTeamsQuery,
+  useGetTodayPlansAndMissionsQuery,
+  useGetDroneUnlockingQueueQuery,
+  useUpdatePlanDroneUnlockMutation,
+  useUpdateMissionDroneUnlockMutation,
 } = pilotAssignmentApi;
 

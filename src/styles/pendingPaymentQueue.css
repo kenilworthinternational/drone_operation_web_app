@@ -1,0 +1,198 @@
+.pending-payment-queue-container-paymentqueue {
+  padding: 15px;
+  background: #f5f5f5;
+  min-height: 100vh;
+}
+
+.pending-payment-queue-header-paymentqueue {
+  background: white;
+  padding: 12px 16px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.pending-payment-queue-header-paymentqueue h1 {
+  margin: 0;
+  font-size: 20px;
+  color: #1f2d3d;
+  flex: 1;
+}
+
+.back-btn-pending-payment-paymentqueue {
+  padding: 6px 12px;
+  background: #004B71;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background 0.2s;
+}
+
+.back-btn-pending-payment-paymentqueue:hover {
+  background: #0066a3;
+}
+
+.queue-info-pending-payment-paymentqueue {
+  display: flex;
+  gap: 15px;
+  font-size: 13px;
+  color: #666;
+}
+
+.queue-info-pending-payment-paymentqueue span {
+  font-weight: 600;
+}
+
+.pending-payment-queue-content-paymentqueue {
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.loading-container-pending-payment-paymentqueue,
+.error-container-pending-payment-paymentqueue,
+.empty-container-pending-payment-paymentqueue {
+  text-align: center;
+  padding: 30px;
+  color: #666;
+}
+
+.error-container-pending-payment-paymentqueue {
+  color: #dc3545;
+}
+
+/* Missions Grid */
+.missions-grid-paymentqueue {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+/* Mission Card */
+.mission-card-paymentqueue {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.2s, transform 0.2s;
+  display: flex;
+  flex-direction: column;
+}
+
+.mission-card-paymentqueue:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+.mission-card-header-paymentqueue {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.mission-id-paymentqueue {
+  font-size: 15px;
+  font-weight: 600;
+  color: #004B71;
+}
+
+.status-badge-pending-payment-paymentqueue {
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  display: inline-block;
+}
+
+.status-badge-pending-payment-paymentqueue.pending {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.mission-card-body-paymentqueue {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mission-farmer-pilot-row-paymentqueue {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.mission-farmer-paymentqueue,
+.mission-pilot-paymentqueue {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.mission-area-paymentqueue {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.mission-label-paymentqueue {
+  font-size: 11px;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.mission-value-paymentqueue {
+  font-size: 13px;
+  color: #1f2d3d;
+}
+
+.mission-value-paymentqueue strong {
+  font-weight: 600;
+  color: #1f2d3d;
+}
+
+.mission-contact-paymentqueue {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: #004B71;
+  font-weight: 500;
+  margin-top: 1px;
+}
+
+.mission-contact-paymentqueue svg {
+  font-size: 11px;
+}
+
+@media (max-width: 768px) {
+  .pending-payment-queue-header-paymentqueue {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .queue-info-pending-payment-paymentqueue {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .missions-grid-paymentqueue {
+    grid-template-columns: 1fr;
+  }
+}
+

@@ -85,7 +85,6 @@ const categories = [
       // { path: '/home/missions', label: 'Completed Missions', icon: FaCheckCircle },
       // { path: '/home/summeryView', label: 'Allocated Resources', icon: FaEye },
       { path: '/home/calenderView/opsroom', label: 'Mission Calendar', icon: FaCalendarAlt },
-      { path: '/home/dayEndProcess', label: 'Day End Process', icon: FaClock },
       { path: '/home/fieldHistory', label: 'Field History', icon: FaHistory },
       // { path: '/home/managerRescheduler', label: 'Manager Request', icon: FaCalendarPlus, showPendingCount: true },
       { path: '/home/reports/ops', label: 'Reports', icon: FaFileAlt },
@@ -228,7 +227,6 @@ const getAllowedPaths = (visibility = {}) => {
       '/home/missions',
       '/home/summeryView',
       '/home/calenderView/opsroom',
-      '/home/dayEndProcess',
       '/home/fieldHistory',
       // '/home/managerRescheduler',
       '/home/reports/ops'
@@ -498,7 +496,7 @@ const LeftNavBar = ({ showSidebar = false, onClose = () => {}, onCollapseChange 
                       );
                     }
                     const activeAliases = {
-                      '/home/workflowDashboard': ['/home/opsroomPlanCalendar', '/home/requestsQueue', '/home/requestProceed'],
+                      '/home/workflowDashboard': ['/home/opsroomPlanCalendar', '/home/requestsQueue', '/home/requestProceed', '/home/dayEndProcess', '/home/todayPlans'],
                     };
                     const aliases = activeAliases[item.path] || [];
                     const isActive = (

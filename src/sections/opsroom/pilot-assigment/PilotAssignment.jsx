@@ -13,7 +13,13 @@ import '../../../styles/pilotAssignment-pilotsassign.css';
 
 const PilotAssignment = () => {
   const navigate = useNavigate();
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  // Set default date to tomorrow
+  const getTomorrowDate = () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+  };
+  const [selectedDate, setSelectedDate] = useState(getTomorrowDate());
   const [selectedPilot, setSelectedPilot] = useState('');
   const [selectedTeamId, setSelectedTeamId] = useState('');
   const [assignmentId, setAssignmentId] = useState('');
@@ -192,7 +198,7 @@ const PilotAssignment = () => {
           </svg>
         </button>
         
-        <h1 className="pilot-assignment-title-pilotsassign">Pilot Assignment</h1>
+        <h1 className="pilot-assignment-title-pilotsassign">Resource Assignment Queue</h1>
         
         <button 
           className="pilot-assignment-teams-btn-pilotsassign"
@@ -258,10 +264,35 @@ const PilotAssignment = () => {
       {/* Drone Info Display */}
       {droneInfo && (
         <div className="pilot-assignment-drone-info-pilotsassign">
-          <span className="pilot-assignment-drone-label-pilotsassign">Assigned Drone:</span>
-          <span className="pilot-assignment-drone-value-pilotsassign">
-            {droneInfo.drone_tag || droneInfo.serial}
-          </span>
+          {/* New format: permanent_drone and temp_drone */}
+          {droneInfo.permanent_drone && (
+            <>
+              <span className="pilot-assignment-drone-label-pilotsassign">Permanent Drone:</span>
+              <span className="pilot-assignment-drone-value-pilotsassign">
+                {droneInfo.permanent_drone.drone_tag || droneInfo.permanent_drone.serial}
+              </span>
+            </>
+          )}
+          {droneInfo.temp_drone && (
+            <>
+              {droneInfo.permanent_drone && (
+                <span className="pilot-assignment-drone-separator-pilotsassign"> | </span>
+              )}
+              <span className="pilot-assignment-drone-label-pilotsassign">Temp Drone:</span>
+              <span className="pilot-assignment-drone-value-pilotsassign pilot-assignment-drone-temp-pilotsassign">
+                {droneInfo.temp_drone.drone_tag || droneInfo.temp_drone.serial}
+              </span>
+            </>
+          )}
+          {/* Backward compatibility: old format with just drone_tag */}
+          {!droneInfo.permanent_drone && !droneInfo.temp_drone && droneInfo.drone_tag && (
+            <>
+              <span className="pilot-assignment-drone-label-pilotsassign">Assigned Drone:</span>
+              <span className={`pilot-assignment-drone-value-pilotsassign ${droneInfo.is_temp ? 'pilot-assignment-drone-temp-pilotsassign' : ''}`}>
+                {droneInfo.drone_tag || droneInfo.serial}
+              </span>
+            </>
+          )}
         </div>
       )}
 

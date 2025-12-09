@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import '../../../styles/dayendprocess.css';
 import { FaCalendarAlt, FaRegArrowAltCircleRight, FaArrowCircleDown, FaArrowCircleUp, FaCheck, FaTimes, FaMinus } from 'react-icons/fa';
@@ -9,6 +10,8 @@ import { baseApi } from '../../../api/services/allEndpoints';
 import { useAppDispatch } from '../../../store/hooks';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { useGetUnlinkedDjiImagesQuery, useGetAllDjiImagesQuery, useLinkDjiImageToTaskMutation } from '../../../api/services NodeJs/djiImagesApi';
+import { useUpdateOpsTaskStatusMutation, useGetPlansWithCompletionStatsQuery } from '../../../api/services NodeJs/dayEndProcessApi';
 
 const CustomDateInput = React.forwardRef(({ value, onClick }, ref) => (
   <div className="custom-date-input" ref={ref} onClick={onClick}>
@@ -18,6 +21,7 @@ const CustomDateInput = React.forwardRef(({ value, onClick }, ref) => (
 ));
 
 const DayEndProcess = () => {
+  const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const [missions, setMissions] = useState([]);
   const [selectedMission, setSelectedMission] = useState(null);
@@ -29,28 +33,35 @@ const DayEndProcess = () => {
   const [expandedFields, setExpandedFields] = useState([]);
   const today = new Date();
   const [selectedDate, setSelectedDate] = useState(today);
-  const [showSubtaskPopup, setShowSubtaskPopup] = useState(false);
-  const [currentSubtaskIndex, setCurrentSubtaskIndex] = useState(0);
-  const [subtasks, setSubtasks] = useState([]);
   const [showTaskPopup, setShowTaskPopup] = useState(false);
   const [currentTask, setCurrentTask] = useState(null);
   const [currentField, setCurrentField] = useState(null);
-  const [currentRejectingSubtask, setCurrentRejectingSubtask] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const userData = JSON.parse(localStorage.getItem('userData')) || {};
   const [selectedMissionId, setSelectedMissionId] = useState(null);
   const [djiData, setDjiData] = useState({
-    dji_image: null,
+    dji_image_id: null, // Changed from dji_image file to dji_image_id
     dji_field_area: '',
     dji_spraying_area: '',
     dji_spraying_litres: '',
     dji_flying_duration: '',
     dji_no_of_flights: '',
   });
-  const [rejectionReasons, setRejectionReasons] = useState([]);
-  const [showRejectionPopup, setShowRejectionPopup] = useState(false);
-  const [selectedReason, setSelectedReason] = useState(null);
-  const [customReason, setCustomReason] = useState('');
+  
+  // Get all DJI images for selected date (to show both linked and unlinked)
+  const selectedDateStr = selectedDate.toISOString().split('T')[0];
+  const { data: allDjiImagesData } = useGetAllDjiImagesQuery({ date: selectedDateStr });
+  const allDjiImages = allDjiImagesData?.data || [];
+  
+  // Separate linked and unlinked images
+  const unlinkedDjiImages = allDjiImages.filter(img => !img.linked_task || img.linked_task === 0);
+  const linkedDjiImages = allDjiImages.filter(img => img.linked_task && img.linked_task !== 0);
+  
+  // Link DJI image mutation
+  const [linkDjiImage] = useLinkDjiImageToTaskMutation();
+  
+  // Update ops_task_status mutation
+  const [updateOpsTaskStatus] = useUpdateOpsTaskStatusMutation();
   // State for image modal
   const [selectedImage, setSelectedImage] = useState(null);
   const [rotation, setRotation] = useState(0);
@@ -188,18 +199,60 @@ const DayEndProcess = () => {
           filteredMissionArray = allPlans.filter(plan => plan.operator === userData.id);
         }
         
-        const missionOptions = filteredMissionArray.map((plan) => ({
-          id: plan.id,
-          group: `${plan.estate}(${(plan.estate_id)}) - ${plan.area} Ha`,
-          completed: plan.completed,
-          activated: plan.activated,
-          team_assigned: plan.team_assigned,
-          operator_name: plan.operator_name,
-          total_sub_task: plan.total_sub_task,
-          total_sub_task_ops_room_approved_subs: plan.total_sub_task_ops_room_approved_subs,
-          total_sub_task_ops_room_pending_subs: plan.total_sub_task_ops_room_pending_subs,
-          total_sub_task_ops_room_rejected_subs: plan.total_sub_task_ops_room_rejected_subs,
-        }));
+        // Fetch completion stats for all plans
+        let completionStatsMap = {};
+        try {
+          // Get Node.js backend URL based on environment
+          const hostname = window.location.hostname;
+          let backendUrl = 'https://dsms-web-api-dev.kenilworthinternational.com';
+          if (hostname.includes('test')) {
+            backendUrl = 'https://dsms-api-test.kenilworth.international.com';
+          } else if (!hostname.includes('dev') && !hostname.includes('localhost')) {
+            backendUrl = 'https://dsms-api.kenilworth.international.com';
+          }
+          
+          const token = userData.token;
+          const response = await fetch(`${backendUrl}/api/day-end-process/plans-completion-stats`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({ date: formattedDate }),
+          });
+          const result = await response.json();
+          if (result.status === true && result.data) {
+            result.data.forEach(stat => {
+              completionStatsMap[stat.planId] = stat;
+            });
+          }
+        } catch (error) {
+          console.error('Error fetching completion stats:', error);
+          // Continue without stats if fetch fails
+        }
+        
+        const missionOptions = filteredMissionArray.map((plan) => {
+          const stats = completionStatsMap[plan.id] || { 
+            totalFields: 0, 
+            completedFields: 0, 
+            pendingFields: 0, 
+            completionPercentage: 0 
+          };
+          
+          return {
+            id: plan.id,
+            group: `${plan.estate}(${(plan.estate_id)}) - ${plan.area} Ha`,
+            completed: plan.completed,
+            activated: plan.activated,
+            team_assigned: plan.team_assigned,
+            operator_name: plan.operator_name,
+            total_sub_task: plan.total_sub_task,
+            total_sub_task_ops_room_approved_subs: plan.total_sub_task_ops_room_approved_subs,
+            total_sub_task_ops_room_pending_subs: plan.total_sub_task_ops_room_pending_subs,
+            total_sub_task_ops_room_rejected_subs: plan.total_sub_task_ops_room_rejected_subs,
+            completionStats: stats,
+          };
+        });
         
         setMissions(missionOptions);
       } else {
@@ -343,14 +396,6 @@ const DayEndProcess = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleApproveClick = (subTasks) => {
-    if (subTasks && subTasks.length > 0) {
-      setSubtasks(subTasks);
-      setCurrentSubtaskIndex(0);
-      setShowSubtaskPopup(true);
-    }
-  };
-
   const handleTaskApproveClick = async (fieldId, taskData) => {
     try {
       // Find the correct field from the mission data
@@ -379,7 +424,7 @@ const DayEndProcess = () => {
       setCurrentTask({ ...freshTask, field_id: fieldId });
       setCurrentField(fieldInfo);
       setDjiData({
-        dji_image: freshTask.dji_image || null,
+        dji_image_id: null, // Will be selected from dropdown (only unlinked images available)
         dji_field_area: freshTask.dji_field_area || '',
         dji_spraying_area: freshTask.dji_spraying_area || '',
         dji_spraying_litres: freshTask.dji_spraying_litres || '',
@@ -391,9 +436,7 @@ const DayEndProcess = () => {
       setCropImagePreview("");
       // Reset file inputs
       const cropImageInput = document.getElementById('crop-image-upload');
-      const djiImageInput = document.getElementById('dji-image-upload');
       if (cropImageInput) cropImageInput.value = '';
-      if (djiImageInput) djiImageInput.value = '';
       
       // Fetch existing report data to show button color immediately
       try {
@@ -419,12 +462,6 @@ const DayEndProcess = () => {
     }
   };
 
-  const handleSubtaskPopupClose = () => {
-    setShowSubtaskPopup(false);
-    setSubtasks([]);
-    setCurrentSubtaskIndex(0);
-  };
-
   const handleTaskPopupClose = () => {
     setShowTaskPopup(false);
     setCurrentField(null);
@@ -434,23 +471,11 @@ const DayEndProcess = () => {
     setCropImagePreview("");
     // Reset file inputs
     const cropImageInput = document.getElementById('crop-image-upload');
-    const djiImageInput = document.getElementById('dji-image-upload');
     if (cropImageInput) cropImageInput.value = '';
-    if (djiImageInput) djiImageInput.value = '';
+    // Reset DJI image selection
+    setDjiData((prev) => ({ ...prev, dji_image_id: null }));
     // Reset existing report data when closing the task popup
     setExistingReportData(null);
-  };
-
-  const handleNextSubtask = () => {
-    if (currentSubtaskIndex < subtasks.length - 1) {
-      setCurrentSubtaskIndex((prev) => prev + 1);
-    }
-  };
-
-  const handlePreviousSubtask = () => {
-    if (currentSubtaskIndex > 0) {
-      setCurrentSubtaskIndex((prev) => prev - 1);
-    }
   };
 
   const StatusToggle = ({ status, onChange }) => {
@@ -460,24 +485,7 @@ const DayEndProcess = () => {
       return 'center';
     };
 
-    const handleClick = async (newStatus) => {
-      if (newStatus === 'r') {
-        try {
-          const reasonsResult = await dispatch(baseApi.endpoints.getRejectReasons.initiate());
-          const reasonsResponse = reasonsResult.data;
-          if (Array.isArray(reasonsResponse)) {
-            setRejectionReasons(reasonsResponse);
-            setCurrentRejectingSubtask(subtasks[currentSubtaskIndex]);
-            setShowRejectionPopup(true);
-          } else {
-            console.warn('Unexpected response format:', reasonsResponse);
-            toast.error('Invalid rejection reasons format');
-          }
-        } catch (error) {
-          console.error('Rejection reasons fetch error:', error);
-          toast.error('Failed to load rejection reasons');
-        }
-      }
+    const handleClick = (newStatus) => {
       onChange(newStatus);
     };
 
@@ -505,10 +513,52 @@ const DayEndProcess = () => {
     );
   };
 
-  const handleImageUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setDjiData((prev) => ({ ...prev, dji_image: file }));
+  // Get image URL for selected DJI image
+  const getDjiImageUrl = () => {
+    // If a DJI image is selected from dropdown
+    if (djiData.dji_image_id) {
+      const selectedImage = allDjiImages.find(img => img.id === parseInt(djiData.dji_image_id));
+      if (selectedImage) {
+        const baseUrl = 'https://dsms-web-api-dev.kenilworthinternational.com';
+        return `${baseUrl}/api/dji-images/file/${selectedImage.image_filename}`;
+      }
+    }
+    // If task already has a linked DJI image (from old system)
+    if (currentTask?.dji_image) {
+      return currentTask.dji_image;
+    }
+    return null;
+  };
+  
+  // Fetch DJI image file as Blob for upload to old API
+  const fetchDjiImageFile = async (imageId) => {
+    try {
+      const selectedImage = allDjiImages.find(img => img.id === parseInt(imageId));
+      if (!selectedImage) return null;
+      
+      const baseUrl = 'https://dsms-web-api-dev.kenilworthinternational.com';
+      const imageUrl = `${baseUrl}/api/dji-images/file/${selectedImage.image_filename}`;
+      
+      const userData = JSON.parse(localStorage.getItem('userData')) || {};
+      const token = userData.token;
+      
+      const response = await fetch(imageUrl, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch image');
+      }
+      
+      const blob = await response.blob();
+      // Create a File object from the blob with the original filename
+      const file = new File([blob], selectedImage.image_filename, { type: blob.type });
+      return file;
+    } catch (error) {
+      console.error('Error fetching DJI image file:', error);
+      return null;
     }
   };
 
@@ -537,16 +587,83 @@ const DayEndProcess = () => {
       formData.append('dji_spraying_litres', formatNumber(djiData.dji_spraying_litres));
       formData.append('dji_flying_duration', formatNumber(djiData.dji_flying_duration));
       formData.append('dji_no_of_flights', formatNumber(djiData.dji_no_of_flights));
-      if (djiData.dji_image instanceof File) {
-        formData.append('image', djiData.dji_image);
+      
+      // Fetch and upload DJI image file to old API if image is selected
+      if (djiData.dji_image_id) {
+        const imageFile = await fetchDjiImageFile(djiData.dji_image_id);
+        if (imageFile) {
+          formData.append('image', imageFile);
+        } else {
+          toast.warning('Selected DJI image could not be loaded. Proceeding without image.');
+        }
       }
+      
       // Only append crop image if a file is selected and is a File instance
       if (cropImage && cropImage instanceof File) {
         formData.append('image_crop', cropImage);
       }
+      
       const submitResult = await dispatch(baseApi.endpoints.submitDJIRecord.initiate(formData));
       const response = submitResult.data;
       if (response?.success || response?.status === 'true') {
+        // Update ops_task_status to 's' (success) in field_pilot_and_drones
+        try {
+          await updateOpsTaskStatus({
+            taskId: currentTask.task_id,
+            status: 's'
+          }).unwrap();
+          
+          // Refresh completion stats for the plan
+          if (selectedMission && selectedMission.id) {
+            const hostname = window.location.hostname;
+            let backendUrl = 'https://dsms-web-api-dev.kenilworthinternational.com';
+            if (hostname.includes('test')) {
+              backendUrl = 'https://dsms-api-test.kenilworth.international.com';
+            } else if (!hostname.includes('dev') && !hostname.includes('localhost')) {
+              backendUrl = 'https://dsms-api.kenilworth.international.com';
+            }
+            
+            const formattedDate = selectedDate.toLocaleDateString('en-CA');
+            const statsResponse = await fetch(`${backendUrl}/api/day-end-process/plans-completion-stats`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${userData.token}`,
+              },
+              body: JSON.stringify({ date: formattedDate }),
+            });
+            const statsResult = await statsResponse.json();
+            if (statsResult.status === true && statsResult.data) {
+              const updatedStats = statsResult.data.find(stat => stat.planId === selectedMission.id);
+              if (updatedStats) {
+                setMissions(prevMissions => 
+                  prevMissions.map(mission => 
+                    mission.id === selectedMission.id 
+                      ? { ...mission, completionStats: updatedStats }
+                      : mission
+                  )
+                );
+              }
+            }
+          }
+        } catch (updateError) {
+          console.error('Error updating ops_task_status:', updateError);
+          // Don't fail the whole submission if this update fails
+        }
+        
+        // Link DJI image to task after successful submission to old API
+        if (djiData.dji_image_id) {
+          try {
+            await linkDjiImage({
+              imageId: parseInt(djiData.dji_image_id),
+              taskId: currentTask.task_id
+            }).unwrap();
+          } catch (linkError) {
+            console.error('Error linking DJI image:', linkError);
+            // Don't fail the whole submission if linking fails
+            toast.warning('DJI data submitted, but failed to link image. Please link manually.');
+          }
+        }
         toast.success('DJI data submitted successfully!');
         try {
           const updatedResult = await dispatch(
@@ -591,69 +708,6 @@ const DayEndProcess = () => {
     }
   };
 
-  const RejectionReasonPopup = ({ currentSubtask, onClose, onSubmit }) => {
-    if (!currentSubtask) {
-      console.error('No subtask provided to RejectionReasonPopup');
-      return null;
-    }
-    return (
-      <div className="rejection-popup-overlay" onClick={onClose}>
-        <div className="rejection-popup-content" onClick={(e) => e.stopPropagation()}>
-          <h3>Select Rejection Reason</h3>
-          <select
-            value={selectedReason?.id || ''}
-            onChange={(e) => setSelectedReason(rejectionReasons.find((r) => r.id === e.target.value))}
-          >
-            <option value="">Select a reason</option>
-            {rejectionReasons.map((reason) => (
-              <option key={reason.id} value={reason.id}>{reason.reason}</option>
-            ))}
-          </select>
-          {selectedReason?.id === 1 && (
-            <textarea
-              placeholder="Enter custom reason"
-              value={customReason}
-              onChange={(e) => setCustomReason(e.target.value)}
-            />
-          )}
-          <button
-            onClick={async () => {
-              if (!selectedReason) {
-                toast.error('Please select a reason');
-                return;
-              }
-              if (selectedReason.id === 1 && !customReason.trim()) {
-                toast.error('Please enter a custom reason');
-                return;
-              }
-              const logResult = await dispatch(
-                baseApi.endpoints.logSubtaskStatus.initiate({
-                  subtask: currentSubtask.sub_task_id,
-                  status: 'r',
-                  reasonId: selectedReason.id,
-                  reasonText: selectedReason.id === 1 ? customReason : selectedReason.reason,
-                })
-              );
-              const logData = logResult.data || {};
-              if (logData.status === 'true' || logData.success === true) {
-                onSubmit({
-                  ...currentSubtask,
-                  sub_task_reject_reason_text: selectedReason.id === 1 ? customReason : selectedReason.reason,
-                  sub_task_rejected_person_name: userData.name,
-                  sub_task_reject_ops_room: 'r',
-                });
-                onClose();
-              } else {
-                toast.error(logData.message || 'Failed to submit reason');
-              }
-            }}
-          >
-            Submit Reason
-          </button>
-        </div>
-      </div>
-    );
-  };
 
   useEffect(() => {
     if (showReportPopup && currentTask) {
@@ -709,8 +763,16 @@ const DayEndProcess = () => {
 
   return (
     <div className="dayendprocess">
-      <div className="left-dayend">
-        <div className="date-area-dayendprocess">
+      <div className="dayendprocess-header">
+        <button 
+          className="dayendprocess-back-btn" 
+          onClick={() => navigate('/home/workflowDashboard')}
+          title="Go back to Workflow Dashboard"
+        >
+          <span className="back-btn-icon-dayend">←</span>
+        </button>
+        <h1 className="dayendprocess-title">Day End Process</h1>
+        <div className="date-area-dayendprocess-header">
           <label>Plan Date: </label>
           <DatePicker
             selected={selectedDate}
@@ -719,6 +781,9 @@ const DayEndProcess = () => {
             customInput={<CustomDateInput />}
           />
         </div>
+      </div>
+      <div className="dayendprocess-content">
+        <div className="left-dayend">
         <div className="dayendprocess-missions-list">
           {loadingMissions ? (
             <Bars height="50" width="50" color="#004B71" ariaLabel="loading" />
@@ -756,16 +821,16 @@ const DayEndProcess = () => {
                   onClick={() => handleContainerClick(mission.id)}
                 >
                   <div className="mission-container-left">
-                    <p><strong>Estate:</strong> {mission.group} - ({mission.id})</p>
-                    <p><strong>Ops: </strong>{mission.operator_name && mission.operator_name.trim() !== '' ? mission.operator_name : 'Not Assigned'}</p>
-                    <p className="mission-status-opsdayend">
-                      <span className="status-label-opsdayend">Ops Room:</span>
-                      <span className="status-group-opsdayend">
-                        <span className="status-badge-opsdayend approved-opsdayend">✓ {mission.total_sub_task_ops_room_approved_subs}</span>
-                        <span className="status-badge-opsdayend pending-opsdayend">⏳ {mission.total_sub_task_ops_room_pending_subs}</span>
-                        <span className="status-badge-opsdayend rejected-opsdayend">✗ {mission.total_sub_task_ops_room_rejected_subs}</span>
-                      </span>
-                    </p>
+                    <p><strong>{mission.group} - ({mission.id})</strong> </p>
+                    <p><strong>Ops Assignment: </strong>{mission.operator_name && mission.operator_name.trim() !== '' ? mission.operator_name : 'Not Assigned'}</p>
+                    {mission.completionStats && mission.completionStats.totalFields > 0 && (
+                      <div className="ops-completion-stats-dayend">
+                        <span className="ops-completion-label-dayend">OPS Completed - {mission.completionStats.completionPercentage}%</span>
+                        <span className="ops-completion-detail-dayend">
+                          ({mission.completionStats.completedFields}/{mission.completionStats.totalFields})
+                        </span>
+                      </div>
+                    )}
                     <div className="completion-checkbox" onClick={(e) => e.stopPropagation()}>
                       <label className="dir-opstext">
                         Dir-Ops Approval
@@ -823,14 +888,16 @@ const DayEndProcess = () => {
         </div>
       </div>
       <div className="right-dayend">
-        {loadingMissionDetails ? (
+        {loadingMissionDetails && (
           <Bars height="50" width="50" color="#004B71" ariaLabel="loading" />
-        ) : selectedMission ? (
+        )}
+        {(!loadingMissionDetails && selectedMission) ? (
           <div className="mission-details-container">
             <h3>
               {selectedMission?.estateName ?? 'Unknown Estate'} - {calculateTotalExtent()} Ha
             </h3>
-            {selectedMission.divisions.map((division) => (
+            {selectedMission.divisions && selectedMission.divisions.length > 0 ? (
+              selectedMission.divisions.map((division) => (
               <div key={division.divisionId} className="division-container">
                 <div
                   className="division-header"
@@ -903,18 +970,20 @@ const DayEndProcess = () => {
                                 {task.expanded && (
                                   <div className="tasks-all">
                                     <div className="task-content">
-                                      <div className="task-text">
-                                        <p>Task ID: {task.task_id}</p>
-                                        <p>Field Area: {parseFloat(task.task_fieldArea || 0).toFixed(2)} Ha</p>
-                                        <p>Sprayed Area: {parseFloat(task.task_sprayedArea || 0).toFixed(2)}</p>
-                                        <p>Obstacle Area: {parseFloat(task.task_obstacleArea || 0).toFixed(2)}</p>
-                                      </div>
-                                      <div className="task-text">
-                                        <p>Margin Area: {parseFloat(task.task_marginArea || 0).toFixed(2)}</p>
-                                        <p>Liters Used: {parseFloat(task.task_sprayedLiters || 0).toFixed(2)}</p>
-                                        <p>Status: {task.task_status_text}</p>
-                                        <p>Pilot: {task.pilot}</p>
-                                        <p>Drone: {task.drone_tag}</p>
+                                      <div className="task-content-left">
+                                        <div className="task-text">
+                                          <p>Task ID: {task.task_id}</p>
+                                          <p>Field Area: {parseFloat(task.task_fieldArea || 0).toFixed(2)} Ha</p>
+                                          <p>Sprayed Area: {parseFloat(task.task_sprayedArea || 0).toFixed(2)}</p>
+                                          <p>Obstacle Area: {parseFloat(task.task_obstacleArea || 0).toFixed(2)}</p>
+                                        </div>
+                                        <div className="task-text">
+                                          <p>Margin Area: {parseFloat(task.task_marginArea || 0).toFixed(2)}</p>
+                                          <p>Liters Used: {parseFloat(task.task_sprayedLiters || 0).toFixed(2)}</p>
+                                          <p>Status: {task.task_status_text}</p>
+                                          <p>Pilot: {task.pilot}</p>
+                                          <p>Drone: {task.drone_tag}</p>
+                                        </div>
                                       </div>
                                       <div className="task-image-container">
                                         <img
@@ -932,23 +1001,6 @@ const DayEndProcess = () => {
                                       >
                                         Task
                                       </button>
-                                      <button
-                                        className="confirm-button-dayend"
-                                        onClick={() => handleApproveClick(task.sub_tasks || [])}
-                                        style={{
-                                          backgroundColor:
-                                            task.sub_tasks?.filter((sub) => sub.sub_task_reject_ops_room !== 'p').length === task.sub_tasks?.length
-                                              ? '#4DAA00FF'
-                                              : task.sub_tasks?.filter((sub) => sub.sub_task_reject_ops_room !== 'p').length === 0
-                                                ? '#AD4000FF'
-                                                : '#004B71',
-                                          color: 'white',
-                                        }}
-                                      >
-                                        SubTasks (
-                                        {task.sub_tasks?.filter((sub) => sub.sub_task_reject_ops_room !== 'p').length || 0}/
-                                        {task.sub_tasks?.length || 0})
-                                      </button>
                                     </div>
                                   </div>
                                 )}
@@ -961,11 +1013,12 @@ const DayEndProcess = () => {
                   </div>
                 )}
               </div>
-            ))}
+            ))
+            ) : (
+              <div className="placeholder-text">Select a mission to view details</div>
+            )}
           </div>
-        ) : (
-          <div className="placeholder-text">Select a mission to view details</div>
-        )}
+        ) : null}
       </div>
       {/* Full-screen image modal - Using Portal to render outside component hierarchy */}
         {selectedImage && createPortal(
@@ -995,169 +1048,33 @@ const DayEndProcess = () => {
           </div>,
           document.body
         )}
-        {/* Subtask popup */}
-        {showSubtaskPopup && subtasks.length > 0 && (
-          <div className="subtask-popup-overlay" onClick={handleSubtaskPopupClose}>
-            <div className="subtask-popup-content" onClick={(e) => e.stopPropagation()}>
-              <button className="close-button" onClick={handleSubtaskPopupClose}>✖</button>
-              <div className="subtask-image-container">
-                <img
-                  src={subtasks[currentSubtaskIndex].sub_task_image || '/assets/images/no-plan-found.png'}
-                  alt="Subtask"
-                  className="subtask-popup-image"
-                  onClick={() => openImage(subtasks[currentSubtaskIndex].sub_task_image)}
-                  onError={(e) => {
-                    e.target.onerror = null;
-                    e.target.src = '/assets/images/no-plan-found.png';
-                  }}
-                />
-              </div>
-              <div className="subtask-details">
-                <div className="dayend-topapproval">
-                  <span><strong>Approval :</strong></span>
-                  <StatusToggle
-                    status={subtasks[currentSubtaskIndex].sub_task_reject_ops_room}
-                    onChange={async (newStatus) => {
-                      try {
-                        const currentSubtask = subtasks[currentSubtaskIndex];
-                        const updatedSubtasks = [...subtasks];
-                        updatedSubtasks[currentSubtaskIndex].sub_task_reject_ops_room = newStatus;
-                        setSubtasks(updatedSubtasks);
-                        const approveResult = await dispatch(
-                          baseApi.endpoints.updateSubtaskApproval.initiate({
-                            subtask: currentSubtask.sub_task_id,
-                            status: newStatus,
-                          })
-                        );
-                        if (newStatus === 'a') {
-                          try {
-                            const logResult = await dispatch(
-                              baseApi.endpoints.logSubtaskStatus.initiate({
-                                subtask: currentSubtask.sub_task_id,
-                                status: 'a',
-                                reasonId: 0,
-                                reasonText: 'Approved',
-                              })
-                            );
-                            const logData = logResult.data || {};
-                            if (logData.status !== 'true' && logData.success !== true) {
-                              throw new Error('Approval logging failed');
-                            }
-                          } catch (error) {
-                            console.error('Error logging approval:', error);
-                          }
-                        } else {
-                          setExistingReportData(null);
-                        }
-                      } catch (error) {
-                        console.error('Update error:', error);
-                        setSubtasks([...subtasks]);
-                        toast.error(`Update failed: ${error.message || 'Unknown error'}`);
-                      }
-                    }}
-                  />
-                </div>
-                <div className="subtask-status-details">
-                  {subtasks[currentSubtaskIndex].sub_task_reject_ops_room === 'r' && (
-                    <div className="rejection-info">
-                      <p><strong>Reason:</strong> {subtasks[currentSubtaskIndex].sub_task_reject_reason_text}</p>
-                      <p><strong>By:</strong> {subtasks[currentSubtaskIndex].sub_task_rejected_person_name}</p>
-                    </div>
-                  )}
-                  {subtasks[currentSubtaskIndex].sub_task_reject_ops_room === 'a' && (
-                    <div className="approval-info">
-                      <p><strong>Approval:</strong> {subtasks[currentSubtaskIndex].sub_task_reject_reason_text || 'Approved'}</p>
-                      <p><strong>By:</strong> {subtasks[currentSubtaskIndex].sub_task_rejected_person_name}</p>
-                    </div>
-                  )}
-                </div>
-                <div className="subtask-detail-columns">
-                  <div className="subtask-detail-column">
-                    <p><strong>Subtask ID:</strong> {subtasks[currentSubtaskIndex].sub_task_id}</p>
-                    <p><strong>Field Area:</strong> {subtasks[currentSubtaskIndex].sub_task_fieldArea} Ha</p>
-                    <p><strong>Liters Used:</strong> {subtasks[currentSubtaskIndex].sub_task_sprayedLiters}</p>
-                    <p><strong>Status:</strong> {subtasks[currentSubtaskIndex].sub_task_status_text}</p>
-                  </div>
-                  <div className="subtask-detail-column">
-                    <p><strong>Obstacle Area:</strong> {subtasks[currentSubtaskIndex].sub_task_obstacleArea} Ha</p>
-                    <p><strong>Sprayed Area:</strong> {subtasks[currentSubtaskIndex].sub_task_sprayedArea} Ha</p>
-                    <p><strong>Margin Area:</strong> {subtasks[currentSubtaskIndex].sub_task_marginArea} Ha</p>
-                  </div>
-                </div>
-                <h4>Subtask {currentSubtaskIndex + 1} of {subtasks.length}</h4>
-              </div>
-              <div className="subtask-navigation">
-                {currentSubtaskIndex > 0 && (
-                  <button className="nav-button prev-button" onClick={handlePreviousSubtask}>
-                    Previous
-                  </button>
-                )}
-                {currentSubtaskIndex < subtasks.length - 1 ? (
-                  <button className="nav-button next-button" onClick={handleNextSubtask}>
-                    Next
-                  </button>
-                ) : (
-                  <button className="nav-button finish-button" onClick={handleSubtaskPopupClose}>
-                    Finish Review
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-        {/* Rejection popup */}
-        {showRejectionPopup && (
-          <RejectionReasonPopup
-            currentSubtask={currentRejectingSubtask}
-            onClose={() => {
-              setShowRejectionPopup(false);
-              setSelectedReason(null);
-              setCustomReason('');
-            }}
-            onSubmit={(updatedSubtask) => {
-              const updatedSubtasks = subtasks.map((st) =>
-                st.sub_task_id === updatedSubtask.sub_task_id
-                  ? {
-                    ...st,
-                    sub_task_reject_reason_text: updatedSubtask.sub_task_reject_reason_text,
-                    sub_task_rejected_person_name: updatedSubtask.sub_task_rejected_person_name,
-                    sub_task_reject_ops_room: 'r',
-                  }
-                  : st
-              );
-              setSubtasks(updatedSubtasks);
-            }}
-          />
-        )}
         {showTaskPopup && currentTask && (
           <div className="task-popup-overlay" onClick={handleTaskPopupClose}>
             <div className="task-popup-content" onClick={(e) => e.stopPropagation()}>
-              <button className="close-button" onClick={handleTaskPopupClose}>✖</button>
               <div className="task-popup-header">
                 <div className="task-popup-header-top">
-                <h3>{currentField?.field_name || 'Unknown Field'} - TaskID: {currentTask.task_id} | Field Area: {currentField?.field_area || currentTask.task_fieldArea || 'N/A'} Ha</h3>
-                <button
-                  className="submit-button2"
-                  style={{
-                    background: existingReportData
-                      ? existingReportData.status === 'a'
-                        ? '#2fc653'
-                        : existingReportData.status === 'r'
-                        ? '#ff4d4f'
-                        : existingReportData.status === 'p'
-                        ? '#948F62FF'
-                        : '#004B71'
-                      : '#004B71',
-                    color: '#fff',
-                    border: existingReportData ? '1.5px solid #888' : undefined,
-                  }}
-                  onClick={() => setShowReportPopup(true)}
-                >
-                  Report
-                </button>
+                  <h3>{currentField?.field_name || 'Unknown Field'} - TaskID: {currentTask.task_id} | {currentField?.field_area || currentTask.task_fieldArea || 'N/A'} Ha</h3>
+                  <button
+                    className="submit-button2"
+                    style={{
+                      background: existingReportData
+                        ? existingReportData.status === 'a'
+                          ? '#2fc653'
+                          : existingReportData.status === 'r'
+                          ? '#ff4d4f'
+                          : existingReportData.status === 'p'
+                          ? '#948F62FF'
+                          : '#004B71'
+                        : '#004B71',
+                      color: '#fff',
+                      border: existingReportData ? '1.5px solid #888' : undefined,
+                    }}
+                    onClick={() => setShowReportPopup(true)}
+                  >
+                    Report
+                  </button>
+                  <button className="close-button" onClick={handleTaskPopupClose}>✖</button>
                 </div>
-                
-                
                 <div className="task-top-line">
                   <span className="status-badge">Status: {currentTask.task_status_text}</span>
                   <span>Drone: {currentTask.drone_tag}</span>
@@ -1166,7 +1083,8 @@ const DayEndProcess = () => {
                 </div>
               </div>
               <div className="task-popup-body">
-              <div className="image-card image-card-full">
+                <div className="task-images-section">
+                  <div className="image-card-full">
                     <h4>Task Image</h4>
                     <img
                       src={currentTask.task_image || '/assets/images/no-plan-found.png'}
@@ -1175,61 +1093,85 @@ const DayEndProcess = () => {
                       onClick={() => openImage(currentTask.task_image)}
                     />
                   </div>
-                <div className="data-row">
-                  
-                  <div className="image-card2">
-                    <h4>DJI Image</h4>
-                    <img
-                      src={
-                        djiData.dji_image
-                          ? (typeof djiData.dji_image === 'string'
-                              ? djiData.dji_image
-                              : URL.createObjectURL(djiData.dji_image))
-                          : '/assets/images/no-plan-found.png'
-                      }
-                      alt="DJI"
-                      className="popup-image"
-                      onClick={() =>
-                        openImage(
-                          typeof djiData.dji_image === 'string'
-                            ? djiData.dji_image
-                            : URL.createObjectURL(djiData.dji_image)
-                        )
-                      }
-                    />
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      id="dji-image-upload"
-                      style={{ marginTop: 8 }}
-                    />
-                  </div>
-                  <div className="image-card2">
-                    <h4>Crop Image</h4>
-                    <img
-                      src={
-                        cropImagePreview ||
-                        currentTask.image_crop ||
-                        '/assets/images/no-plan-found.png'
-                      }
-                      alt="Crop"
-                      className="popup-image"
-                      onClick={() =>
-                        openImage(
+                  <div className="image-cards-row">
+                    <div className="image-card2">
+                      <h4>DJI Image</h4>
+                      <img
+                        src={getDjiImageUrl() || '/assets/images/no-plan-found.png'}
+                        alt="DJI"
+                        className="popup-image"
+                        onClick={() => {
+                          const url = getDjiImageUrl();
+                          if (url) openImage(url);
+                        }}
+                      />
+                      <select
+                        value={djiData.dji_image_id || ''}
+                        onChange={(e) => {
+                          // Only allow selection of unlinked images
+                          const selectedValue = e.target.value;
+                          if (selectedValue && !unlinkedDjiImages.find(img => img.id.toString() === selectedValue)) {
+                            return; // Prevent selection of linked images
+                          }
+                          setDjiData((prev) => ({
+                            ...prev,
+                            dji_image_id: selectedValue || null,
+                          }));
+                        }}
+                        className="dji-image-select"
+                        style={{
+                          width: '100%',
+                          padding: '8px',
+                          marginTop: '8px',
+                          borderRadius: '4px',
+                          border: '1px solid #ddd',
+                        }}
+                      >
+                        <option value="">Select DJI Image</option>
+                        {/* Show unlinked images (selectable) */}
+                        {unlinkedDjiImages.map((image) => (
+                          <option key={image.id} value={image.id}>
+                            {image.auto_generated_id} {image.is_plantation === 1 ? `(${image.estate_name} - ${image.field_name})` : `(NIC: ${image.nic})`}
+                          </option>
+                        ))}
+                        {/* Show linked images (disabled, not selectable) */}
+                        {linkedDjiImages.length > 0 && (
+                          <optgroup label="Already Used (Not Available)">
+                            {linkedDjiImages.map((image) => (
+                              <option key={image.id} value={image.id} disabled style={{ color: '#999', fontStyle: 'italic' }}>
+                                {image.auto_generated_id} {image.is_plantation === 1 ? `(${image.estate_name} - ${image.field_name})` : `(NIC: ${image.nic})`} - Used
+                              </option>
+                            ))}
+                          </optgroup>
+                        )}
+                      </select>
+                    </div>
+                    <div className="image-card2">
+                      <h4>Crop Image</h4>
+                      <img
+                        src={
                           cropImagePreview ||
                           currentTask.image_crop ||
                           '/assets/images/no-plan-found.png'
-                        )
-                      }
-                    />
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleCropImageUpload}
-                      id="crop-image-upload"
-                      style={{ marginTop: 8 }}
-                    />
+                        }
+                        alt="Crop"
+                        className="popup-image"
+                        onClick={() =>
+                          openImage(
+                            cropImagePreview ||
+                            currentTask.image_crop ||
+                            '/assets/images/no-plan-found.png'
+                          )
+                        }
+                      />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleCropImageUpload}
+                        id="crop-image-upload"
+                        className="image-upload-input"
+                      />
+                    </div>
                   </div>
                 </div>
                 <div className="data-grid">
@@ -1334,23 +1276,21 @@ const DayEndProcess = () => {
                       />
                     </div>
                   </div>
-                  <div className="data-row">
-                    <div className="data-item">
-                      <button
-                        className="submit-button"
-                        onClick={handleSubmit}
-                        disabled={
-                          isSubmitting ||
-                          !djiData.dji_flying_duration ||
-                          !djiData.dji_no_of_flights ||
-                          !djiData.dji_field_area ||
-                          !djiData.dji_spraying_litres ||
-                          !djiData.dji_spraying_area
-                        }
-                      >
-                        {isSubmitting ? 'Submitting...' : 'Submit DJI Data'}
-                      </button>
-                    </div>
+                  <div className="data-row submit-row">
+                    <button
+                      className="submit-button"
+                      onClick={handleSubmit}
+                      disabled={
+                        isSubmitting ||
+                        !djiData.dji_flying_duration ||
+                        !djiData.dji_no_of_flights ||
+                        !djiData.dji_field_area ||
+                        !djiData.dji_spraying_litres ||
+                        !djiData.dji_spraying_area
+                      }
+                    >
+                      {isSubmitting ? 'Submitting...' : 'Submit DJI Data'}
+                    </button>
                   </div>
                 </div>
               </div>
@@ -1538,6 +1478,7 @@ const DayEndProcess = () => {
             </div>
           </div>
         )}
+      </div>
     </div>
   );
 };

@@ -1,29 +1,85 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { baseApi } from '../../../api/services/allEndpoints';
 import { useAppDispatch } from '../../../store/hooks';
+import { FaSync } from 'react-icons/fa';
+import {
+  useGetMissionsPendingPaymentQuery,
+  useGetDroneUnlockingQueueQuery,
+  useGetResourceAssignmentCountQuery,
+} from '../../../api/services NodeJs/pilotAssignmentApi';
+import { useGetPlansPendingDayEndCountQuery } from '../../../api/services NodeJs/dayEndProcessApi';
+import { useGetTodayDjiImagesCountQuery } from '../../../api/services NodeJs/djiImagesApi';
 import '../../../styles/workflowDashboard-com.css';
 
 const WorkflowDashboard = () => {
   const dispatch = useAppDispatch();
+  const queryClient = useQueryClient();
   const [dateRange, setDateRange] = useState('2025.03.03 - 2025.03.07');
   const [selectedAction, setSelectedAction] = useState('Spray');
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const navigate = useNavigate();
+
+  // Get tomorrow's date for manager approval queue
+  const getTomorrowDate = () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+  };
+
+  // Get today's date for resource assignment queue
+  const getTodayDate = () => {
+    const today = new Date();
+    return today.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+  };
 
   // Use React Query to fetch counts with intelligent caching and deduplication
   const { data: counts, isLoading } = useQuery({
     queryKey: ['workflowDashboard', 'counts'],
     queryFn: async () => {
-      // Fetch all three counts in parallel (faster than sequential)
-      const [adhocResult, rescheduleResult, nonpResult] = await Promise.all([
+      const tomorrowDate = getTomorrowDate();
+      // Fetch all four counts in parallel (faster than sequential)
+      const [adhocResult, rescheduleResult, nonpResult, plansResult] = await Promise.all([
         dispatch(baseApi.endpoints.getPendingAdHocRequests.initiate()),
         dispatch(baseApi.endpoints.getPendingRescheduleRequestsByManager.initiate()),
         dispatch(baseApi.endpoints.getPendingNonPlantationMissions.initiate()),
+        dispatch(baseApi.endpoints.getPlansByDate.initiate(tomorrowDate)),
       ]);
       const adhocData = adhocResult.data;
       const rescheduleData = rescheduleResult.data;
       const nonpData = nonpResult.data;
+      const plansData = plansResult.data;
+
+      // Filter plans for manager approval: activated=1 AND manager_approval=0
+      let managerApprovalCount = 0;
+      
+      // Handle different response structures
+      let plansArray = [];
+      if (plansData && Array.isArray(plansData)) {
+        plansArray = plansData;
+      } else if (plansData && typeof plansData === 'object' && plansData.status === 'true') {
+        // If it's an object with status and numeric keys
+        plansArray = Object.keys(plansData)
+          .filter(key => !isNaN(key) && key !== 'status' && key !== 'count')
+          .map(key => plansData[key]);
+      } else if (plansData && typeof plansData === 'object') {
+        // Try to extract plans from object
+        plansArray = Object.keys(plansData)
+          .filter(key => !isNaN(key))
+          .map(key => plansData[key]);
+      }
+      
+      if (plansArray.length > 0) {
+        managerApprovalCount = plansArray.filter(plan => {
+          const activated = Number(plan.activated) === 1 || plan.activated === '1';
+          const managerApproval = Number(plan.manager_approval) === 0 || 
+                                  plan.manager_approval === '0' || 
+                                  plan.manager_approval === null ||
+                                  plan.manager_approval === undefined;
+          return activated && managerApproval;
+        }).length;
+      }
 
       // Process and return the counts
       return {
@@ -32,6 +88,7 @@ const WorkflowDashboard = () => {
         nonp: nonpData?.status === 'true' 
           ? (nonpData.count || (nonpData['0']?.length || 0)) 
           : 0,
+        managerApproval: managerApprovalCount,
       };
     },
     staleTime: 2 * 60 * 1000, // 2 minutes - data is fresh for 2 minutes
@@ -46,10 +103,53 @@ const WorkflowDashboard = () => {
     },
   });
 
+  // Get pending payment missions count
+  const { data: pendingPaymentData, refetch: refetchPendingPayment } = useGetMissionsPendingPaymentQuery();
+  const pendingPaymentCount = pendingPaymentData?.data?.length || 0;
+
+  // Get drone unlocking queue count
+  const { data: droneUnlockingData, refetch: refetchDroneUnlocking } = useGetDroneUnlockingQueueQuery();
+  const droneUnlockingCount = (droneUnlockingData?.data?.plans?.length || 0) + 
+                              (droneUnlockingData?.data?.missions?.length || 0);
+
+  // Get plans pending day end process count
+  const { data: dayEndProcessData, refetch: refetchDayEndProcess } = useGetPlansPendingDayEndCountQuery();
+  const dayEndProcessCount = dayEndProcessData?.data?.count || 0;
+
+  // Get DJI images uploaded today count
+  const { data: djiImagesCountData, refetch: refetchDjiImages } = useGetTodayDjiImagesCountQuery();
+  const djiImagesCount = djiImagesCountData?.data?.count || 0;
+
+  // Get resource assignment count for tomorrow
+  const tomorrowDate = getTomorrowDate();
+  const { data: resourceAssignmentData, refetch: refetchResourceAssignment } = useGetResourceAssignmentCountQuery(tomorrowDate);
+  const resourceAssignmentCount = resourceAssignmentData?.data?.total || 0;
+
+  // Refresh all counts handler
+  const handleRefreshAll = async () => {
+    setIsRefreshing(true);
+    try {
+      // Refetch all queries in parallel
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['workflowDashboard', 'counts'] }),
+        refetchPendingPayment(),
+        refetchDroneUnlocking(),
+        refetchDayEndProcess(),
+        refetchDjiImages(),
+        refetchResourceAssignment(),
+      ]);
+    } catch (error) {
+      console.error('Error refreshing counts:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   // Extract counts with fallback to 0
   const adhocCount = counts?.adhoc || 0;
   const rescheduleCount = counts?.reschedule || 0;
   const nonpCount = counts?.nonp || 0;
+  const managerApprovalCount = counts?.managerApproval || 0;
 
   return (
     <div className="workflow-dashboard-com">
@@ -340,7 +440,17 @@ const WorkflowDashboard = () => {
 
         {/* Middle Section - Action Needed */}
         <div className="action-section-com">
-          <h2 className="section-title-action-com">Action Needed</h2>
+          <div className="action-section-header-com">
+            <h2 className="section-title-action-com">Action Needed</h2>
+            <button 
+              className="refresh-button-action-com"
+              onClick={handleRefreshAll}
+              disabled={isRefreshing}
+              title="Refresh all counts"
+            >
+              <FaSync className={isRefreshing ? 'refresh-icon-spinning-com' : 'refresh-icon-com'} />
+            </button>
+          </div>
           
           <div className="action-queue-com">
             {/* Queue Box - Single Red Box with 3 Items */}
@@ -366,29 +476,34 @@ const WorkflowDashboard = () => {
               </div>
             </div>
             
-            <div className="action-card-com">
+            <div className="action-card-com" onClick={() => navigate('/home/managerApprovalQueue')} style={{ cursor: 'pointer' }}>
               <span className="action-title-com">Plantation Manager Approval Queue</span>
-              <span className="action-plans-com">Plans 08 »</span>
+              <span className="action-plans-com">Plans {managerApprovalCount} »</span>
             </div>
             
             <div className="action-card-com" onClick={() => navigate('/home/pilotAssignment')} style={{ cursor: 'pointer' }}>
-              <span className="action-title-com">Pilot Assignment</span>
-              <span className="action-plans-com">Plans 10 »</span>
+              <span className="action-title-com">Resource Assignment Queue</span>
+              <span className="action-plans-com">Items {resourceAssignmentCount} »</span>
             </div>
             
-            <div className="action-card-com">
+            <div className="action-card-com" onClick={() => navigate('/home/pendingPaymentQueue')} style={{ cursor: 'pointer' }}>
               <span className="action-title-com">Pending Payment Queue</span>
-              <span className="action-plans-com">Plans 25 »</span>
+              <span className="action-plans-com">Missions {pendingPaymentCount} »</span>
             </div>
             
-            <div className="action-card-com">
+            <div className="action-card-com" onClick={() => navigate('/home/droneUnlockingQueue')} style={{ cursor: 'pointer' }}>
               <span className="action-title-com">Pending Drone Unlocking Queue</span>
-              <span className="action-plans-com">Plans 25 »</span>
+              <span className="action-plans-com">Items {droneUnlockingCount} »</span>
             </div>
             
-            <div className="action-card-com">
+            <div className="action-card-com" onClick={() => navigate('/home/dayEndProcess')} style={{ cursor: 'pointer' }}>
               <span className="action-title-com">Plans Pending for Day End Process</span>
-              <span className="action-plans-com">Plans 25 »</span>
+              <span className="action-plans-com">Plans {dayEndProcessCount} »</span>
+            </div>
+            
+            <div className="action-card-com" onClick={() => navigate('/home/djiMapUpload')} style={{ cursor: 'pointer' }}>
+              <span className="action-title-com">DJI Map Upload</span>
+              <span className="action-plans-com">Maps {djiImagesCount} »</span>
             </div>
           </div>
         </div>
@@ -459,10 +574,16 @@ const WorkflowDashboard = () => {
             </table>
           </div>
 
-          <button className="calendar-btn-com" onClick={() => navigate('/home/opsroomPlanCalendar')}>
-            <span className="calendar-btn-icon-com">📅</span>
-            View Plan Calendar
-          </button>
+          <div className="calendar-buttons-container-com">
+            <button className="calendar-btn-com" onClick={() => navigate('/home/opsroomPlanCalendar')}>
+              <span className="calendar-btn-icon-com">📅</span>
+              View Plan Calendar
+            </button>
+            <button className="calendar-btn-com today-plans-btn-com" onClick={() => navigate('/home/todayPlans')}>
+              <span className="calendar-btn-icon-com">📋</span>
+              View Today Plans
+            </button>
+          </div>
         </div>
       </div>
     </div>
