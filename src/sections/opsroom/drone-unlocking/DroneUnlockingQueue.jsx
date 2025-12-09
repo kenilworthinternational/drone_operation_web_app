@@ -55,7 +55,26 @@ const DroneUnlockingQueue = () => {
       refetch();
     } catch (error) {
       console.error('Error toggling lock:', error);
-      toast.error(`Failed to ${item.drone_unlock === 1 ? 'lock' : 'unlock'} drone`);
+      
+      // Extract error message from response
+      const errorMessage = error?.data?.message || 
+                          error?.data?.error || 
+                          error?.message || 
+                          `Failed to ${item.drone_unlock === 1 ? 'lock' : 'unlock'} drone`;
+      
+      // Show specific error message
+      if (errorMessage.includes('pre-check list') || errorMessage.includes('Pilot must complete')) {
+        toast.error(errorMessage, {
+          autoClose: 5000, // Show for 5 seconds
+          style: { 
+            backgroundColor: '#ff6b6b',
+            color: '#fff',
+            fontSize: '14px'
+          }
+        });
+      } else {
+        toast.error(errorMessage);
+      }
     }
   };
 
@@ -112,7 +131,9 @@ const DroneUnlockingQueue = () => {
                 {allItems.map((item) => {
                   const isUnlocked = item.drone_unlock === 1;
                   const isUpdating = updatingPlan || updatingMission;
-                  const buttonDisabled = !item.isEnabled || isUpdating;
+                  const preCheckCompleted = item.pre_check_list === 1;
+                  // Disable unlock button if: not enabled, updating, or trying to unlock without pre-check
+                  const buttonDisabled = !item.isEnabled || isUpdating || (!isUnlocked && !preCheckCompleted);
 
                   return (
                     <tr key={`${item.type}-${item.id}`} className="table-row-unlockqueue">
@@ -139,6 +160,9 @@ const DroneUnlockingQueue = () => {
                             <span className={`status-badge-small-unlockqueue ${item.team_assigned === 1 ? 'assigned' : 'not-assigned'}`}>
                               {item.team_assigned === 1 ? 'Assigned' : 'Not Assigned'}
                             </span>
+                            <span className={`status-badge-small-unlockqueue ${item.pre_check_list === 1 ? 'pre-check-complete' : 'pre-check-pending'}`}>
+                              {item.pre_check_list === 1 ? 'Pre Check' : 'No Pre Check'}
+                            </span>
                           </div>
                         ) : (
                           <div className="status-details-unlockqueue">
@@ -147,6 +171,9 @@ const DroneUnlockingQueue = () => {
                             </span>
                             <span className={`status-badge-small-unlockqueue ${item.team_assigned === 1 ? 'assigned' : 'not-assigned'}`}>
                               {item.team_assigned === 1 ? 'Assigned' : 'Not Assigned'}
+                            </span>
+                            <span className={`status-badge-small-unlockqueue ${item.pre_check_list === 1 ? 'pre-check-complete' : 'pre-check-pending'}`}>
+                              {item.pre_check_list === 1 ? 'Pre Check' : 'No Pre Check'}
                             </span>
                           </div>
                         )}
@@ -161,6 +188,15 @@ const DroneUnlockingQueue = () => {
                           className={`lock-unlock-btn-unlockqueue ${isUnlocked ? 'unlocked' : 'locked'} ${buttonDisabled ? 'disabled' : ''}`}
                           onClick={() => handleToggleLock(item)}
                           disabled={buttonDisabled}
+                          title={
+                            !item.isEnabled 
+                              ? 'Requirements not met (Manager approval/Team assignment or Payment/Team assignment)'
+                              : !preCheckCompleted && !isUnlocked
+                                ? 'Cannot unlock: Pilot must complete pre-check list first'
+                              : isUnlocked 
+                                ? 'Click to lock the drone'
+                                : 'Click to unlock the drone'
+                          }
                         >
                           {isUnlocked ? '🔓 Lock' : '🔒 Unlock'}
                         </button>

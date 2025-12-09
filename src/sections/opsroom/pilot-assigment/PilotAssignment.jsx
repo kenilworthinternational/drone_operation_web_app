@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bars } from 'react-loader-spinner';
 import {
@@ -79,43 +79,71 @@ const PilotAssignment = () => {
     }
   }, [selectedPilot, pilots]);
 
-  // Initialize selected plans and missions with already assigned items (only if team matches)
-  useEffect(() => {
+  // Compute assigned plan IDs based on current plans and team
+  const assignedPlanIds = useMemo(() => {
     if (plans.length > 0 && selectedTeamId) {
-      const assignedPlanIds = plans
+      return plans
         .filter(plan => {
           const isAssigned = plan.is_assigned === 1 || plan.is_assigned === true;
           const teamMatches = plan.assigned_team_id && parseInt(plan.assigned_team_id) === parseInt(selectedTeamId);
           return isAssigned && teamMatches;
         })
         .map(plan => plan.id);
-      setSelectedPlans(assignedPlanIds);
-    } else if (plans.length > 0 && !selectedTeamId) {
-      // If no team selected, clear selections
-      setSelectedPlans([]);
     }
+    return [];
   }, [plans, selectedTeamId]);
 
-  useEffect(() => {
+  // Compute assigned mission IDs based on current missions and team
+  const assignedMissionIds = useMemo(() => {
     if (missions.length > 0 && selectedTeamId) {
-      const assignedMissionIds = missions
+      return missions
         .filter(mission => {
           const isAssigned = mission.is_assigned === 1 || mission.is_assigned === true;
           const teamMatches = mission.assigned_team_id && parseInt(mission.assigned_team_id) === parseInt(selectedTeamId);
           return isAssigned && teamMatches;
         })
         .map(mission => mission.id);
-      setSelectedMissions(assignedMissionIds);
-    } else if (missions.length > 0 && !selectedTeamId) {
-      // If no team selected, clear selections
-      setSelectedMissions([]);
     }
+    return [];
   }, [missions, selectedTeamId]);
+
+  // Track previous team/date to detect when to reset selections
+  const prevTeamAndDate = useRef({ teamId: null, date: null });
+
+  // Initialize selected plans with already assigned items (only if team/date changed)
+  useEffect(() => {
+    const teamChanged = prevTeamAndDate.current.teamId !== selectedTeamId;
+    const dateChanged = prevTeamAndDate.current.date !== selectedDate;
+    
+    if (teamChanged || dateChanged) {
+      if (selectedTeamId && assignedPlanIds.length > 0) {
+        setSelectedPlans(assignedPlanIds);
+      } else if (!selectedTeamId) {
+        setSelectedPlans([]);
+      }
+      prevTeamAndDate.current = { teamId: selectedTeamId, date: selectedDate };
+    }
+  }, [selectedTeamId, selectedDate, assignedPlanIds]);
+
+  // Initialize selected missions with already assigned items (only if team/date changed)
+  useEffect(() => {
+    const teamChanged = prevTeamAndDate.current.teamId !== selectedTeamId;
+    const dateChanged = prevTeamAndDate.current.date !== selectedDate;
+    
+    if (teamChanged || dateChanged) {
+      if (selectedTeamId && assignedMissionIds.length > 0) {
+        setSelectedMissions(assignedMissionIds);
+      } else if (!selectedTeamId) {
+        setSelectedMissions([]);
+      }
+    }
+  }, [selectedTeamId, selectedDate, assignedMissionIds]);
 
   const handlePilotChange = (pilotId) => {
     setSelectedPilot(pilotId);
-    setSelectedPlans([]);
-    setSelectedMissions([]);
+    // Don't clear selections here - let useEffect handle pre-checking assigned plans
+    // setSelectedPlans([]);
+    // setSelectedMissions([]);
   };
 
   const handlePlanToggle = (planId) => {
@@ -140,10 +168,11 @@ const PilotAssignment = () => {
       return;
     }
 
-    if (selectedPlans.length === 0 && selectedMissions.length === 0) {
-      alert('Please select at least one plan or mission');
-      return;
-    }
+    // Allow deploying even with no selections - this will remove assignments
+    // if (selectedPlans.length === 0 && selectedMissions.length === 0) {
+    //   alert('Please select at least one plan or mission');
+    //   return;
+    // }
 
     if (!droneInfo || !droneInfo.drone_id) {
       alert('No drone available for this team. Please assign a drone to the team first.');
@@ -218,8 +247,9 @@ const PilotAssignment = () => {
             value={selectedDate}
             onChange={(e) => {
               setSelectedDate(e.target.value);
-              setSelectedPlans([]);
-              setSelectedMissions([]);
+              // Don't clear selections here - let useEffect handle pre-checking assigned plans
+              // setSelectedPlans([]);
+              // setSelectedMissions([]);
             }}
           />
         </div>
@@ -255,7 +285,7 @@ const PilotAssignment = () => {
         <button 
           className="pilot-assignment-deploy-btn-pilotsassign"
           onClick={handleDeploy}
-          disabled={!selectedDate || !selectedPilot || (selectedPlans.length === 0 && selectedMissions.length === 0) || creatingAssignment}
+          disabled={!selectedDate || !selectedPilot || creatingAssignment}
         >
           {creatingAssignment ? 'Deploying...' : 'Deploy'}
         </button>

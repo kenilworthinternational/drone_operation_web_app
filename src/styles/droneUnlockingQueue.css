@@ -149,7 +149,7 @@
 }
 
 .table-cell-status-unlockqueue {
-  width: 200px;
+  width: 280px;
 }
 
 .status-details-unlockqueue {
@@ -178,6 +178,16 @@
 .status-badge-small-unlockqueue.pending,
 .status-badge-small-unlockqueue.not-assigned {
   background: #fff3cd;
+  color: #856404;
+}
+
+.status-badge-small-unlockqueue.pre-check-complete {
+  background: #cfe2ff;
+  color: #084298;
+}
+
+.status-badge-small-unlockqueue.pre-check-pending {
+  background: #ffeaa7;
   color: #856404;
 }
 
