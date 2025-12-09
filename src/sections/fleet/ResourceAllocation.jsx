@@ -72,6 +72,18 @@ const ResourceAllocation = () => {
   const [createTeam] = useCreateFleetTeamMutation();
   const { data: batteryTypesData } = useGetBatteryTypesQuery();
 
+  // Helper function to format date (handles both DATE and DATETIME strings)
+  // Must be defined before use
+  const formatDateOnly = (dateString) => {
+    if (!dateString) return '';
+    // If it's a full timestamp, extract just the date part
+    if (dateString.includes('T')) {
+      return dateString.split('T')[0];
+    }
+    // If it's already in YYYY-MM-DD format, return as is
+    return dateString.substring(0, 10);
+  };
+
   // Get team equipment if pilot/team is selected
   const { data: teamEquipmentData } = useGetFleetTeamEquipmentQuery(selectedTeamId, { skip: !selectedTeamId });
   
@@ -106,17 +118,6 @@ const ResourceAllocation = () => {
   const batteryTypes = batteryTypesData?.data || [];
   
   const isLoading = isViewingTemp ? loadingTempAllocations : (loadingRC || loadingBatteries || loadingGenerators || loadingDrones);
-
-  // Helper function to format date (handles both DATE and DATETIME strings)
-  const formatDateOnly = (dateString) => {
-    if (!dateString) return '';
-    // If it's a full timestamp, extract just the date part
-    if (dateString.includes('T')) {
-      return dateString.split('T')[0];
-    }
-    // If it's already in YYYY-MM-DD format, return as is
-    return dateString.substring(0, 10);
-  };
 
   // Group batteries by type
   const batteriesByType = useMemo(() => {
@@ -436,28 +437,22 @@ const ResourceAllocation = () => {
   // Store permanent allocations separately
   const [permanentAllocations, setPermanentAllocations] = useState({});
 
-  // Pre-populate dropdowns with team's current equipment (only for permanent allocation)
+  // Always populate permanent allocations when team equipment is available (for both permanent and temp allocation)
   useEffect(() => {
-    if (teamEquipmentData?.data && selectedTeamId && !isTempAllocation) {
+    if (teamEquipmentData?.data && selectedTeamId) {
       const equipment = teamEquipmentData.data;
-      const newSelectedSerials = {};
       const permanent = {};
 
-      // Pre-populate Drone
+      // Store permanent allocations
       if (equipment.drones && equipment.drones.length > 0) {
-        newSelectedSerials['Drone'] = [equipment.drones[0].equipment_id];
         permanent['Drone'] = equipment.drones.map(d => d.equipment_id);
       }
 
-      // Pre-populate Remote Controller
       if (equipment.remote_controls && equipment.remote_controls.length > 0) {
-        newSelectedSerials['Remote Controller (RC)'] = [equipment.remote_controls[0].equipment_id];
         permanent['Remote Controller (RC)'] = equipment.remote_controls.map(rc => rc.equipment_id);
       }
 
-      // Pre-populate Generator
       if (equipment.generators && equipment.generators.length > 0) {
-        newSelectedSerials['Generator'] = [equipment.generators[0].equipment_id];
         permanent['Generator'] = equipment.generators.map(g => g.equipment_id);
       }
 
@@ -479,29 +474,76 @@ const ResourceAllocation = () => {
         });
 
         if (droneBatteries.length > 0) {
-          newSelectedSerials['Drone Battery'] = droneBatteries;
           permanent['Drone Battery'] = droneBatteries;
         }
         if (rcBatteries.length > 0) {
-          newSelectedSerials['RC Battery'] = rcBatteries;
           permanent['RC Battery'] = rcBatteries;
         }
         if (drtkBatteries.length > 0) {
-          newSelectedSerials['DRTK Battery'] = drtkBatteries;
           permanent['DRTK Battery'] = drtkBatteries;
         }
       }
 
-      setSelectedSerials(newSelectedSerials);
       setPermanentAllocations(permanent);
-    } else if (!selectedTeamId || isTempAllocation) {
-      // Clear selections when switching to temp allocation or no team selected
-      if (isTempAllocation) {
-        setSelectedSerials({});
-      } else {
-        setSelectedSerials({});
-        setPermanentAllocations({});
+    } else {
+      // Clear permanent allocations when no team selected
+      setPermanentAllocations({});
+    }
+  }, [teamEquipmentData, selectedTeamId]);
+
+  // Pre-populate selectedSerials with permanent equipment (only for permanent allocation, not temp)
+  useEffect(() => {
+    if (teamEquipmentData?.data && selectedTeamId && !isTempAllocation) {
+      const equipment = teamEquipmentData.data;
+      const newSelectedSerials = {};
+
+      // Pre-populate Drone
+      if (equipment.drones && equipment.drones.length > 0) {
+        newSelectedSerials['Drone'] = [equipment.drones[0].equipment_id];
       }
+
+      // Pre-populate Remote Controller
+      if (equipment.remote_controls && equipment.remote_controls.length > 0) {
+        newSelectedSerials['Remote Controller (RC)'] = [equipment.remote_controls[0].equipment_id];
+      }
+
+      // Pre-populate Generator
+      if (equipment.generators && equipment.generators.length > 0) {
+        newSelectedSerials['Generator'] = [equipment.generators[0].equipment_id];
+      }
+
+      // Pre-populate Batteries by type
+      if (equipment.batteries && equipment.batteries.length > 0) {
+        const droneBatteries = [];
+        const rcBatteries = [];
+        const drtkBatteries = [];
+
+        equipment.batteries.forEach(battery => {
+          const typeName = battery.battery_type_name || '';
+          if (typeName === 'Drone Battery') {
+            droneBatteries.push(battery.equipment_id);
+          } else if (typeName === 'RC Battery') {
+            rcBatteries.push(battery.equipment_id);
+          } else if (typeName === 'DRTK Battery') {
+            drtkBatteries.push(battery.equipment_id);
+          }
+        });
+
+        if (droneBatteries.length > 0) {
+          newSelectedSerials['Drone Battery'] = droneBatteries;
+        }
+        if (rcBatteries.length > 0) {
+          newSelectedSerials['RC Battery'] = rcBatteries;
+        }
+        if (drtkBatteries.length > 0) {
+          newSelectedSerials['DRTK Battery'] = drtkBatteries;
+        }
+      }
+
+      setSelectedSerials(newSelectedSerials);
+    } else if (!isTempAllocation && !selectedTeamId) {
+      // Clear selections when switching away from permanent allocation and no team selected
+      setSelectedSerials({});
     }
   }, [teamEquipmentData, selectedTeamId, isTempAllocation]);
 
