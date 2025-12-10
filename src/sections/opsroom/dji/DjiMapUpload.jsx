@@ -221,6 +221,29 @@ const DjiMapUpload = () => {
     }
     return '';
   };
+
+  // Helper function to format date for display (extracts just YYYY-MM-DD from ISO string)
+  const formatDateForDisplay = (dateString) => {
+    if (!dateString) return '';
+    // If already in YYYY-MM-DD format, return as is
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+      return dateString;
+    }
+    // If it's an ISO date string, extract just the date part
+    if (dateString.includes('T')) {
+      return dateString.split('T')[0];
+    }
+    // Try to parse as Date and format
+    try {
+      const date = new Date(dateString);
+      if (!isNaN(date.getTime())) {
+        return date.toISOString().split('T')[0];
+      }
+    } catch (e) {
+      // If parsing fails, return empty string
+    }
+    return dateString; // Return original if can't parse
+  };
   
   // Handle image selection
   const handleImageSelect = (image) => {
@@ -343,7 +366,7 @@ const DjiMapUpload = () => {
           className="dji-back-btn" 
           onClick={() => navigate('/home/workflowDashboard')}
         >
-          ← Back
+          ←
         </button>
         <h1>DJI Map Upload</h1>
       </div>
@@ -389,7 +412,7 @@ const DjiMapUpload = () => {
                       <span>NIC: {image.nic}</span>
                     )}
                   </div>
-                  <div className="dji-image-item-date">{image.upload_date}</div>
+                  <div className="dji-image-item-date">{formatDateForDisplay(image.upload_date)}</div>
                 </div>
               ))
             )}
@@ -451,7 +474,7 @@ const DjiMapUpload = () => {
                     </div>
                     <div className="dji-info-row">
                       <label>Date:</label>
-                      <span>{selectedImage.upload_date}</span>
+                      <span>{formatDateForDisplay(selectedImage.upload_date)}</span>
                     </div>
                     <div className="dji-info-row">
                       <label>Type:</label>

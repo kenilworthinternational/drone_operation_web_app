@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { baseApi } from '../../../api/services/allEndpoints';
 import { useAppDispatch } from '../../../store/hooks';
@@ -20,6 +20,7 @@ const WorkflowDashboard = () => {
   const [selectedAction, setSelectedAction] = useState('Spray');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const navigate = useNavigate();
+  const routerLocation = useLocation();
 
   // Get tomorrow's date for manager approval queue
   const getTomorrowDate = () => {
@@ -35,7 +36,7 @@ const WorkflowDashboard = () => {
   };
 
   // Use React Query to fetch counts with intelligent caching and deduplication
-  const { data: counts, isLoading } = useQuery({
+  const { data: counts, isLoading, refetch: refetchCounts } = useQuery({
     queryKey: ['workflowDashboard', 'counts'],
     queryFn: async () => {
       const tomorrowDate = getTomorrowDate();
@@ -131,7 +132,7 @@ const WorkflowDashboard = () => {
     try {
       // Refetch all queries in parallel
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['workflowDashboard', 'counts'] }),
+        refetchCounts(), // Use refetch function instead of invalidateQueries
         refetchPendingPayment(),
         refetchDroneUnlocking(),
         refetchDayEndProcess(),
@@ -144,6 +145,31 @@ const WorkflowDashboard = () => {
       setIsRefreshing(false);
     }
   };
+
+  // Auto-refresh all counts when component mounts or when navigating back to this page
+  useEffect(() => {
+    // Refetch all queries when the component mounts or when location changes to this page
+    const refreshAllData = async () => {
+      try {
+        await Promise.all([
+          refetchCounts(),
+          refetchPendingPayment(),
+          refetchDroneUnlocking(),
+          refetchDayEndProcess(),
+          refetchDjiImages(),
+          refetchResourceAssignment(),
+        ]);
+      } catch (error) {
+        console.error('Error auto-refreshing counts:', error);
+      }
+    };
+
+    // Only refresh if we're on the workflow dashboard route
+    if (routerLocation.pathname === '/home/workflowDashboard') {
+      refreshAllData();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [routerLocation.pathname]); // Refresh when route changes to this page
 
   // Extract counts with fallback to 0
   const adhocCount = counts?.adhoc || 0;
