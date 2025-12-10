@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
+import Select from 'react-select';
 import { FaCalendarAlt, FaTimes, FaUpload, FaEdit, FaTrash } from 'react-icons/fa';
 import { toast } from 'react-toastify';
+import { Bars } from 'react-loader-spinner';
 import { 
   useGetAllDjiImagesQuery, 
   useUploadDjiImageMutation, 
@@ -44,7 +46,6 @@ const DjiMapUpload = () => {
   
   // Form state for plantation
   const [plantationForm, setPlantationForm] = useState({
-    date: new Date().toISOString().split('T')[0],
     estateId: '',
     estateName: '',
     fieldId: '',
@@ -53,7 +54,6 @@ const DjiMapUpload = () => {
   
   // Form state for non-plantation
   const [nonPlantationForm, setNonPlantationForm] = useState({
-    date: new Date().toISOString().split('T')[0],
     nic: '',
   });
   
@@ -93,8 +93,9 @@ const DjiMapUpload = () => {
   
   // Calculate auto-generated ID
   const calculateAutoId = () => {
+    const selectedDateStr = selectedDate.toISOString().split('T')[0];
     if (activeTab === 'plantation') {
-      if (!plantationForm.date || !plantationForm.estateId || !plantationForm.fieldId) {
+      if (!selectedDateStr || !plantationForm.estateId || !plantationForm.fieldId) {
         return '';
       }
       const estateSlug = plantationForm.estateName 
@@ -103,12 +104,12 @@ const DjiMapUpload = () => {
       const fieldSlug = plantationForm.fieldName 
         ? plantationForm.fieldName.replace(/\s+/g, '-').toLowerCase() 
         : `field-${plantationForm.fieldId}`;
-      return `${plantationForm.date}-${estateSlug}-${fieldSlug}-01`;
+      return `${selectedDateStr}-${estateSlug}-${fieldSlug}-01`;
     } else {
-      if (!nonPlantationForm.date || !nonPlantationForm.nic) {
+      if (!selectedDateStr || !nonPlantationForm.nic) {
         return '';
       }
-      return `${nonPlantationForm.date}-${nonPlantationForm.nic}-01`;
+      return `${selectedDateStr}-${nonPlantationForm.nic}-01`;
     }
   };
   
@@ -157,25 +158,47 @@ const DjiMapUpload = () => {
     try {
       const formData = new FormData();
       formData.append('image', selectedFile);
+      const selectedDateStr = selectedDate.toISOString().split('T')[0];
       
       if (activeTab === 'plantation') {
-        formData.append('uploadDate', plantationForm.date);
+        formData.append('uploadDate', selectedDateStr);
         formData.append('isPlantation', 'true');
         formData.append('estateId', plantationForm.estateId);
         formData.append('estateName', plantationForm.estateName);
         formData.append('fieldId', plantationForm.fieldId);
         formData.append('fieldName', plantationForm.fieldName);
       } else {
-        formData.append('uploadDate', nonPlantationForm.date);
+        formData.append('uploadDate', selectedDateStr);
         formData.append('isPlantation', 'false');
         formData.append('nic', nonPlantationForm.nic);
       }
       
-      await uploadImage(formData).unwrap();
+      const result = await uploadImage(formData).unwrap();
+      const uploadedImageId = result?.data?.id;
+      
       toast.success('DJI image uploaded successfully');
       setShowAddModal(false);
       resetForm();
-      refetchImages();
+      
+      // Refetch images and select the newly uploaded image
+      const refetchResult = await refetchImages();
+      const newImages = refetchResult?.data?.data || [];
+      
+      // Find and select the newly uploaded image
+      if (uploadedImageId) {
+        const newImage = newImages.find(img => img.id === uploadedImageId);
+        if (newImage) {
+          // Small delay to ensure DOM is updated
+          setTimeout(() => {
+            handleImageSelect(newImage);
+            // Scroll to the new image in the list
+            const imageElement = document.querySelector(`[data-image-id="${uploadedImageId}"]`);
+            if (imageElement) {
+              imageElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+          }, 100);
+        }
+      }
     } catch (error) {
       toast.error(error?.data?.error || 'Failed to upload image');
     }
@@ -184,14 +207,12 @@ const DjiMapUpload = () => {
   // Reset form
   const resetForm = () => {
     setPlantationForm({
-      date: new Date().toISOString().split('T')[0],
       estateId: '',
       estateName: '',
       fieldId: '',
       fieldName: '',
     });
     setNonPlantationForm({
-      date: new Date().toISOString().split('T')[0],
       nic: '',
     });
     setSelectedFile(null);
@@ -398,6 +419,7 @@ const DjiMapUpload = () => {
               images.map((image) => (
                 <div
                   key={image.id}
+                  data-image-id={image.id}
                   className={`dji-image-item ${selectedImage?.id === image.id ? 'active' : ''}`}
                   onClick={() => handleImageSelect(image)}
                 >
@@ -467,7 +489,7 @@ const DjiMapUpload = () => {
               
               {!isEditMode ? (
                 <>
-                  <div className="dji-image-info">
+                  <div className="dji-image-info" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                     <div className="dji-info-row">
                       <label>Auto-Generated ID:</label>
                       <span>{selectedImage.auto_generated_id}</span>
@@ -555,49 +577,93 @@ const DjiMapUpload = () => {
                       <>
                         <div className="dji-form-group">
                           <label>Estate *</label>
-                          <select
-                            value={editForm.estateId}
-                            onChange={(e) => {
-                              const estate = estates.find(est => est.id === parseInt(e.target.value));
-                              setEditForm({
-                                ...editForm,
-                                estateId: e.target.value,
-                                estateName: estate?.estate || '',
-                                fieldId: '',
-                                fieldName: '',
-                              });
+                          <Select
+                            value={estates.find(est => est.id.toString() === editForm.estateId) ? {
+                              value: editForm.estateId,
+                              label: editForm.estateName || 'Select Estate'
+                            } : null}
+                            onChange={(selectedOption) => {
+                              if (selectedOption) {
+                                const estate = estates.find(est => est.id.toString() === selectedOption.value);
+                                setEditForm({
+                                  ...editForm,
+                                  estateId: selectedOption.value,
+                                  estateName: estate?.estate || '',
+                                  fieldId: '',
+                                  fieldName: '',
+                                });
+                              } else {
+                                setEditForm({
+                                  ...editForm,
+                                  estateId: '',
+                                  estateName: '',
+                                  fieldId: '',
+                                  fieldName: '',
+                                });
+                              }
                             }}
-                          >
-                            <option value="">Select Estate</option>
-                            {estates.map((estate) => (
-                              <option key={estate.id} value={estate.id}>
-                                {estate.estate}
-                              </option>
-                            ))}
-                          </select>
+                            options={estates.map(estate => ({
+                              value: estate.id.toString(),
+                              label: estate.estate
+                            }))}
+                            placeholder="Select Estate"
+                            isSearchable={true}
+                            isClearable={true}
+                            styles={{
+                              control: (base) => ({
+                                ...base,
+                                minHeight: '38px',
+                                borderColor: '#ddd',
+                                '&:hover': {
+                                  borderColor: '#999'
+                                }
+                              })
+                            }}
+                          />
                         </div>
                         
                         <div className="dji-form-group">
                           <label>Field *</label>
-                          <select
-                            value={editForm.fieldId}
-                            onChange={(e) => {
-                              const field = allFields.find(f => f.field_id === parseInt(e.target.value));
-                              setEditForm({
-                                ...editForm,
-                                fieldId: e.target.value,
-                                fieldName: field?.field_name || '',
-                              });
+                          <Select
+                            value={allFields.find(f => f.field_id.toString() === editForm.fieldId) ? {
+                              value: editForm.fieldId,
+                              label: editForm.fieldName || 'Select Field'
+                            } : null}
+                            onChange={(selectedOption) => {
+                              if (selectedOption) {
+                                const field = allFields.find(f => f.field_id.toString() === selectedOption.value);
+                                setEditForm({
+                                  ...editForm,
+                                  fieldId: selectedOption.value,
+                                  fieldName: field?.field_name || '',
+                                });
+                              } else {
+                                setEditForm({
+                                  ...editForm,
+                                  fieldId: '',
+                                  fieldName: '',
+                                });
+                              }
                             }}
-                            disabled={!editForm.estateId}
-                          >
-                            <option value="">Select Field</option>
-                            {allFields.map((field) => (
-                              <option key={field.field_id} value={field.field_id}>
-                                {field.field_name} ({field.division_name})
-                              </option>
-                            ))}
-                          </select>
+                            options={allFields.map(field => ({
+                              value: field.field_id.toString(),
+                              label: `${field.field_name}${field.divisionName ? ` (${field.divisionName})` : ''}`
+                            }))}
+                            placeholder="Select Field"
+                            isSearchable={true}
+                            isClearable={true}
+                            isDisabled={!editForm.estateId}
+                            styles={{
+                              control: (base) => ({
+                                ...base,
+                                minHeight: '38px',
+                                borderColor: '#ddd',
+                                '&:hover': {
+                                  borderColor: '#999'
+                                }
+                              })
+                            }}
+                          />
                         </div>
                       </>
                     ) : (
@@ -643,16 +709,53 @@ const DjiMapUpload = () => {
       
       {/* Add Modal */}
       {showAddModal && createPortal(
-        <div className="dji-modal-overlay" onClick={() => setShowAddModal(false)}>
-          <div className="dji-modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="dji-modal-overlay" onClick={() => !uploading && setShowAddModal(false)}>
+          <div className="dji-modal-content" onClick={(e) => e.stopPropagation()} style={{ position: 'relative', overflow: 'visible' }}>
+            {/* Loading Overlay */}
+            {uploading && (
+              <div style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
+                zIndex: 1000,
+                borderRadius: '8px'
+              }}>
+                <Bars
+                  height="60"
+                  width="60"
+                  color="#4180B9"
+                  ariaLabel="uploading"
+                  visible={true}
+                />
+                <p style={{ marginTop: '20px', fontSize: '16px', color: '#4180B9', fontWeight: '500' }}>
+                  Uploading image...
+                </p>
+              </div>
+            )}
             <div className="dji-modal-header">
-              <h2>Upload DJI Map Image</h2>
+              <div>
+                <h2>Upload DJI Map Image</h2>
+                <div style={{ marginTop: '8px', fontSize: '14px', color: '#666' }}>
+                  Date: {selectedDate.toISOString().split('T')[0]}
+                </div>
+              </div>
               <button 
                 className="dji-modal-close"
                 onClick={() => {
-                  setShowAddModal(false);
-                  resetForm();
+                  if (!uploading) {
+                    setShowAddModal(false);
+                    resetForm();
+                  }
                 }}
+                disabled={uploading}
+                style={{ opacity: uploading ? 0.5 : 1, cursor: uploading ? 'not-allowed' : 'pointer' }}
               >
                 <FaTimes />
               </button>
@@ -673,114 +776,142 @@ const DjiMapUpload = () => {
               </button>
             </div>
             
-            <div className="dji-modal-body">
-              {activeTab === 'plantation' ? (
-                <div className="dji-form">
-                  <div className="dji-form-group">
-                    <label>Date *</label>
-                    <input
-                      type="date"
-                      value={plantationForm.date}
-                      onChange={(e) => setPlantationForm({ ...plantationForm, date: e.target.value })}
-                    />
-                  </div>
-                  
-                  <div className="dji-form-group">
-                    <label>Estate *</label>
-                    <select
-                      value={plantationForm.estateId}
-                      onChange={(e) => {
-                        const estate = estates.find(est => est.id === parseInt(e.target.value));
-                        setPlantationForm({
-                          ...plantationForm,
-                          estateId: e.target.value,
-                          estateName: estate?.estate || '',
-                          fieldId: '',
-                          fieldName: '',
-                        });
-                      }}
-                    >
-                      <option value="">Select Estate</option>
-                      {estates.map((estate) => (
-                        <option key={estate.id} value={estate.id}>
-                          {estate.estate}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  
-                  <div className="dji-form-group">
-                    <label>Field *</label>
-                    <select
-                      value={plantationForm.fieldId}
-                      onChange={(e) => {
-                        const field = allFields.find(f => f.field_id === parseInt(e.target.value));
-                        setPlantationForm({
-                          ...plantationForm,
-                          fieldId: e.target.value,
-                          fieldName: field?.field_name || '',
-                        });
-                      }}
-                      disabled={!plantationForm.estateId}
-                    >
-                      <option value="">Select Field</option>
-                      {allFields.map((field) => (
-                        <option key={field.field_id} value={field.field_id}>
-                          {field.field_name} ({field.division_name})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  
-                  {autoGeneratedId && (
-                    <div className="dji-auto-id">
-                      <label>Auto-Generated ID:</label>
-                      <span>{autoGeneratedId}</span>
+            <div className="dji-modal-body" style={{ overflow: 'visible', overflowY: 'visible' }}>
+              <div className="dji-form" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                {activeTab === 'plantation' ? (
+                  <>
+                    <div className="dji-form-group">
+                      <label>Estate *</label>
+                      <Select
+                        value={estates.find(est => est.id.toString() === plantationForm.estateId) ? {
+                          value: plantationForm.estateId,
+                          label: plantationForm.estateName || 'Select Estate'
+                        } : null}
+                        onChange={(selectedOption) => {
+                          if (selectedOption) {
+                            const estate = estates.find(est => est.id.toString() === selectedOption.value);
+                            setPlantationForm({
+                              ...plantationForm,
+                              estateId: selectedOption.value,
+                              estateName: estate?.estate || '',
+                              fieldId: '',
+                              fieldName: '',
+                            });
+                          } else {
+                            setPlantationForm({
+                              ...plantationForm,
+                              estateId: '',
+                              estateName: '',
+                              fieldId: '',
+                              fieldName: '',
+                            });
+                          }
+                        }}
+                        options={estates.map(estate => ({
+                          value: estate.id.toString(),
+                          label: estate.estate
+                        }))}
+                        placeholder="Select Estate"
+                        isSearchable={true}
+                        isClearable={true}
+                        styles={{
+                          control: (base) => ({
+                            ...base,
+                            minHeight: '38px',
+                            borderColor: '#ddd',
+                            '&:hover': {
+                              borderColor: '#999'
+                            }
+                          })
+                        }}
+                      />
                     </div>
-                  )}
-                </div>
-              ) : (
-                <div className="dji-form">
-                  <div className="dji-form-group">
-                    <label>Date *</label>
-                    <input
-                      type="date"
-                      value={nonPlantationForm.date}
-                      onChange={(e) => setNonPlantationForm({ ...nonPlantationForm, date: e.target.value })}
-                    />
-                  </div>
-                  
-                  <div className="dji-form-group">
-                    <label>NIC *</label>
-                    <input
-                      type="text"
-                      value={nonPlantationForm.nic}
-                      onChange={(e) => setNonPlantationForm({ ...nonPlantationForm, nic: e.target.value })}
-                      placeholder="Enter NIC number"
-                    />
-                  </div>
-                  
-                  {autoGeneratedId && (
-                    <div className="dji-auto-id">
-                      <label>Auto-Generated ID:</label>
-                      <span>{autoGeneratedId}</span>
+                    
+                    <div className="dji-form-group">
+                      <label>Field *</label>
+                      <Select
+                        value={allFields.find(f => f.field_id.toString() === plantationForm.fieldId) ? {
+                          value: plantationForm.fieldId,
+                          label: plantationForm.fieldName || 'Select Field'
+                        } : null}
+                        onChange={(selectedOption) => {
+                          if (selectedOption) {
+                            const field = allFields.find(f => f.field_id.toString() === selectedOption.value);
+                            setPlantationForm({
+                              ...plantationForm,
+                              fieldId: selectedOption.value,
+                              fieldName: field?.field_name || '',
+                            });
+                          } else {
+                            setPlantationForm({
+                              ...plantationForm,
+                              fieldId: '',
+                              fieldName: '',
+                            });
+                          }
+                        }}
+                        options={allFields.map(field => ({
+                          value: field.field_id.toString(),
+                          label: `${field.field_name}${field.divisionName ? ` (${field.divisionName})` : ''}`
+                        }))}
+                        placeholder="Select Field"
+                        isSearchable={true}
+                        isClearable={true}
+                        isDisabled={!plantationForm.estateId}
+                        styles={{
+                          control: (base) => ({
+                            ...base,
+                            minHeight: '38px',
+                            borderColor: '#ddd',
+                            '&:hover': {
+                              borderColor: '#999'
+                            }
+                          })
+                        }}
+                      />
                     </div>
-                  )}
-                </div>
-              )}
-              
-              <div className="dji-form-group">
-                <label>Upload Image *</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                />
-                {previewUrl && (
-                  <div className="dji-preview">
-                    <img src={previewUrl} alt="Preview" />
-                  </div>
+                    
+                    {autoGeneratedId && (
+                      <div className="dji-auto-id" style={{ gridColumn: '1 / -1' }}>
+                        <label>Auto-Generated ID:</label>
+                        <span>{autoGeneratedId}</span>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <div className="dji-form-group">
+                      <label>NIC *</label>
+                      <input
+                        type="text"
+                        value={nonPlantationForm.nic}
+                        onChange={(e) => setNonPlantationForm({ ...nonPlantationForm, nic: e.target.value })}
+                        placeholder="Enter NIC number"
+                      />
+                    </div>
+                    
+                    {autoGeneratedId && (
+                      <div className="dji-auto-id" style={{ gridColumn: '1 / -1' }}>
+                        <label>Auto-Generated ID:</label>
+                        <span>{autoGeneratedId}</span>
+                      </div>
+                    )}
+                  </>
                 )}
+                
+                <div className="dji-form-group" style={{ gridColumn: '1 / -1' }}>
+                  <label>Upload Image *</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                  />
+                  {previewUrl && (
+                    <div className="dji-preview">
+                      <img src={previewUrl} alt="Preview" />
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
             
@@ -788,9 +919,12 @@ const DjiMapUpload = () => {
               <button
                 className="dji-cancel-btn"
                 onClick={() => {
-                  setShowAddModal(false);
-                  resetForm();
+                  if (!uploading) {
+                    setShowAddModal(false);
+                    resetForm();
+                  }
                 }}
+                disabled={uploading}
               >
                 Cancel
               </button>
@@ -798,8 +932,23 @@ const DjiMapUpload = () => {
                 className="dji-submit-btn"
                 onClick={handleSubmit}
                 disabled={uploading || !selectedFile}
+                style={{ position: 'relative' }}
               >
-                {uploading ? 'Uploading...' : 'Upload'}
+                {uploading ? (
+                  <>
+                    <Bars
+                      height="20"
+                      width="20"
+                      color="#ffffff"
+                      ariaLabel="uploading"
+                      visible={true}
+                      wrapperStyle={{ display: 'inline-block', marginRight: '8px', verticalAlign: 'middle' }}
+                    />
+                    Uploading...
+                  </>
+                ) : (
+                  'Upload'
+                )}
               </button>
             </div>
           </div>
