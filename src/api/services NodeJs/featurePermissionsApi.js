@@ -1,0 +1,215 @@
+import { baseApi } from '../baseApi';
+import { nodeBackendBaseQuery } from './nodeBackendConfig';
+
+export const featurePermissionsApi = baseApi.injectEndpoints({
+  endpoints: (builder) => ({
+    // Get all feature permissions
+    getFeaturePermissions: builder.query({
+      queryFn: async (filters = {}) => {
+        try {
+          const queryParams = new URLSearchParams(filters).toString();
+          const result = await nodeBackendBaseQuery(
+            {
+              url: `/api/feature-permissions?${queryParams}`,
+              method: 'GET',
+            },
+            {},
+            {}
+          );
+          if (result.error) {
+            return { error: result.error };
+          }
+          const permissions = result.data?.data || result.data || [];
+          return { data: permissions };
+        } catch (error) {
+          return { error: { status: 'FETCH_ERROR', error: error.message } };
+        }
+      },
+      providesTags: ['FeaturePermissions'],
+    }),
+
+    // Get permissions grouped by category and job role
+    getGroupedPermissions: builder.query({
+      queryFn: async () => {
+        try {
+          const result = await nodeBackendBaseQuery(
+            {
+              url: '/api/feature-permissions/grouped',
+              method: 'GET',
+            },
+            {},
+            {}
+          );
+          if (result.error) {
+            return { error: result.error };
+          }
+          const grouped = result.data?.data || result.data || {};
+          return { data: grouped };
+        } catch (error) {
+          return { error: { status: 'FETCH_ERROR', error: error.message } };
+        }
+      },
+      providesTags: ['FeaturePermissions'],
+    }),
+
+    // Get permissions for current user
+    // Returns: { categories: { category: [featureCodes] }, paths: { path: true/false } }
+    getMyPermissions: builder.query({
+      queryFn: async () => {
+        try {
+          const result = await nodeBackendBaseQuery(
+            {
+              url: '/api/feature-permissions/my-permissions',
+              method: 'GET',
+            },
+            {},
+            {}
+          );
+          if (result.error) {
+            return { error: result.error };
+          }
+          // Backend returns: { status: true, data: { categories: {...}, paths: {...} } }
+          const permissions = result.data?.data || result.data || { categories: {}, paths: {} };
+          return { data: permissions };
+        } catch (error) {
+          return { error: { status: 'FETCH_ERROR', error: error.message } };
+        }
+      },
+      providesTags: ['MyPermissions'],
+    }),
+
+    // Get all feature definitions
+    getFeatureDefinitions: builder.query({
+      queryFn: async (filters = {}) => {
+        try {
+          const queryParams = new URLSearchParams(filters).toString();
+          const result = await nodeBackendBaseQuery(
+            {
+              url: `/api/feature-permissions/definitions?${queryParams}`,
+              method: 'GET',
+            },
+            {},
+            {}
+          );
+          if (result.error) {
+            return { error: result.error };
+          }
+          // Backend returns: { status: true, data: [...] }
+          const definitions = result.data?.data || result.data || [];
+          return { data: definitions };
+        } catch (error) {
+          return { error: { status: 'FETCH_ERROR', error: error.message } };
+        }
+      },
+      providesTags: ['FeatureDefinitions'],
+    }),
+
+    // Get all job roles
+    getJobRoles: builder.query({
+      queryFn: async () => {
+        try {
+          const result = await nodeBackendBaseQuery(
+            {
+              url: '/api/feature-permissions/job-roles',
+              method: 'GET',
+            },
+            {},
+            {}
+          );
+          if (result.error) {
+            return { error: result.error };
+          }
+          const jobRoles = result.data?.data || result.data || [];
+          return { data: jobRoles };
+        } catch (error) {
+          return { error: { status: 'FETCH_ERROR', error: error.message } };
+        }
+      },
+      providesTags: ['JobRoles'],
+    }),
+
+    // Create or update feature permission
+    upsertFeaturePermission: builder.mutation({
+      queryFn: async (data) => {
+        try {
+          const result = await nodeBackendBaseQuery(
+            {
+              url: '/api/feature-permissions',
+              method: 'POST',
+              body: data,
+            },
+            {},
+            {}
+          );
+          if (result.error) {
+            return { error: result.error };
+          }
+          const permission = result.data?.data || result.data || null;
+          return { data: permission };
+        } catch (error) {
+          return { error: { status: 'FETCH_ERROR', error: error.message } };
+        }
+      },
+      invalidatesTags: ['FeaturePermissions', 'GroupedPermissions', 'MyPermissions'],
+    }),
+
+    // Bulk update permissions for a category
+    bulkUpdateCategoryPermissions: builder.mutation({
+      queryFn: async ({ category, permissions }) => {
+        try {
+          const result = await nodeBackendBaseQuery(
+            {
+              url: '/api/feature-permissions/bulk-update',
+              method: 'POST',
+              body: { category, permissions },
+            },
+            {},
+            {}
+          );
+          if (result.error) {
+            return { error: result.error };
+          }
+          return { data: result.data };
+        } catch (error) {
+          return { error: { status: 'FETCH_ERROR', error: error.message } };
+        }
+      },
+      invalidatesTags: ['FeaturePermissions', 'GroupedPermissions', 'MyPermissions'],
+    }),
+
+    // Delete feature permission
+    deleteFeaturePermission: builder.mutation({
+      queryFn: async (id) => {
+        try {
+          const result = await nodeBackendBaseQuery(
+            {
+              url: `/api/feature-permissions/${id}`,
+              method: 'DELETE',
+            },
+            {},
+            {}
+          );
+          if (result.error) {
+            return { error: result.error };
+          }
+          return { data: { id } };
+        } catch (error) {
+          return { error: { status: 'FETCH_ERROR', error: error.message } };
+        }
+      },
+      invalidatesTags: ['FeaturePermissions', 'GroupedPermissions'],
+    }),
+  }),
+});
+
+export const {
+  useGetFeaturePermissionsQuery,
+  useGetGroupedPermissionsQuery,
+  useGetMyPermissionsQuery,
+  useGetFeatureDefinitionsQuery,
+  useGetJobRolesQuery,
+  useUpsertFeaturePermissionMutation,
+  useBulkUpdateCategoryPermissionsMutation,
+  useDeleteFeaturePermissionMutation,
+} = featurePermissionsApi;
+

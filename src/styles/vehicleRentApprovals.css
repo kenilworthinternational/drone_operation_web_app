@@ -1,0 +1,117 @@
+/* Vehicle Rent Approvals - HR & Admin Section */
+.vehicle-rent-approvals-container {
+  width: 100%;
+  height: 100%;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.vehicle-rent-approvals-header {
+  margin-bottom: 24px;
+}
+
+.vehicle-rent-approvals-header h1 {
+  font-size: 28px;
+  font-weight: 600;
+  color: #1a202c;
+  margin: 0 0 8px 0;
+}
+
+.vehicle-rent-approvals-header p {
+  font-size: 14px;
+  color: #64748b;
+  margin: 0;
+}
+
+.vehicle-rent-approvals-content {
+  width: 100%;
+  min-height: 400px;
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Smooth transitions for cards */
+.vehicle-rent-approvals-container .MuiCard-root {
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.vehicle-rent-approvals-container .MuiCard-root:hover {
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Table row hover effects */
+.vehicle-rent-approvals-container .MuiTableRow-root {
+  transition: background-color 0.2s ease-in-out;
+}
+
+/* Button hover effects */
+.vehicle-rent-approvals-container .MuiButton-root {
+  transition: all 0.2s ease-in-out;
+}
+
+.vehicle-rent-approvals-container .MuiButton-root:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Chip animations */
+.vehicle-rent-approvals-container .MuiChip-root {
+  transition: transform 0.2s ease-in-out;
+}
+
+.vehicle-rent-approvals-container .MuiChip-root:hover {
+  transform: scale(1.05);
+}
+
+/* Stats card animations */
+.vehicle-rent-approvals-container .vehicle-rent-approvals-stats-card {
+  transition: transform 0.3s ease-in-out;
+}
+
+.vehicle-rent-approvals-container .vehicle-rent-approvals-stats-card:hover {
+  transform: translateY(-4px);
+}
+
+/* Dialog styling */
+.vehicle-rent-approvals-container .MuiDialog-paper {
+  border-radius: 8px;
+}
+
+/* TextField styling */
+.vehicle-rent-approvals-container .MuiTextField-root {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Icon button hover */
+.vehicle-rent-approvals-container .MuiIconButton-root {
+  transition: all 0.2s ease-in-out;
+}
+
+.vehicle-rent-approvals-container .MuiIconButton-root:hover {
+  transform: scale(1.1);
+}
+
+/* Select dropdown styling */
+.vehicle-rent-approvals-container .MuiSelect-root {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Filter card styling */
+.vehicle-rent-approvals-container .vehicle-rent-approvals-filter-card {
+  transition: all 0.3s ease-in-out;
+}
+
+.vehicle-rent-approvals-container .vehicle-rent-approvals-filter-card:hover {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12) !important;
+}
+
+/* Search input styling */
+.vehicle-rent-approvals-container .vehicle-rent-approvals-filter-card .MuiTextField-root {
+  transition: all 0.2s ease-in-out;
+}
+
+.vehicle-rent-approvals-container .vehicle-rent-approvals-filter-card .MuiTextField-root:focus-within {
+  transform: translateY(-1px);
+}

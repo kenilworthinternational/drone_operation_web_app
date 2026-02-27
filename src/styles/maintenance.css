@@ -1,0 +1,420 @@
+.maintenance-container-maintenance {
+  padding: 20px;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.maintenance-header-maintenance {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.maintenance-header-maintenance h1 {
+  color: #004B71;
+  margin: 0;
+}
+
+.maintenance-filter-button-maintenance {
+  padding: 10px 20px;
+  background: #004B71;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.maintenance-filter-button-maintenance:hover {
+  background: #003a5a;
+}
+
+.maintenance-filters-maintenance {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.maintenance-filters-header-maintenance {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.maintenance-filters-header-maintenance h3 {
+  margin: 0;
+  color: #004B71;
+}
+
+.maintenance-clear-filters-maintenance {
+  padding: 6px 12px;
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.maintenance-filter-grid-maintenance {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 15px;
+}
+
+.maintenance-filter-group-maintenance {
+  display: flex;
+  flex-direction: column;
+}
+
+.maintenance-filter-group-maintenance label {
+  margin-bottom: 5px;
+  font-weight: 600;
+  color: #333;
+}
+
+.maintenance-filter-input-maintenance,
+.maintenance-filter-select-maintenance {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  width: 100%;
+  max-width: 200px;
+  box-sizing: border-box;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  background: white;
+}
+
+.maintenance-filter-input-maintenance:focus,
+.maintenance-filter-select-maintenance:focus {
+  outline: none;
+  border-color: #004B71;
+  box-shadow: 0 0 0 2px rgba(0, 75, 113, 0.1);
+}
+
+/* Date Input Styling - Make entire field clickable and improve appearance */
+.maintenance-filter-input-maintenance[type="date"] {
+  cursor: pointer;
+  position: relative;
+  padding-right: 35px;
+}
+
+/* Style the calendar picker indicator */
+.maintenance-filter-input-maintenance[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 1;
+  padding: 4px;
+  background: transparent;
+  filter: brightness(0) saturate(100%) invert(27%) sepia(51%) saturate(2878%) hue-rotate(180deg) brightness(95%) contrast(88%);
+  font-size: 16px;
+}
+
+/* Make the input itself clickable */
+.maintenance-filter-input-maintenance[type="date"]:hover {
+  border-color: #004B71;
+}
+
+.maintenance-filter-input-maintenance[type="date"]:focus {
+  cursor: text;
+}
+
+/* For Firefox */
+.maintenance-filter-input-maintenance[type="date"]::-moz-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 1;
+}
+
+/* For form date inputs */
+.maintenance-form-input-maintenance[type="date"] {
+  cursor: pointer;
+  position: relative;
+  padding-right: 40px;
+  z-index: 1;
+}
+
+.maintenance-form-input-maintenance[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 1;
+  padding: 4px;
+  background: transparent;
+  filter: brightness(0) saturate(100%) invert(27%) sepia(51%) saturate(2878%) hue-rotate(180deg) brightness(95%) contrast(88%);
+  font-size: 18px;
+  z-index: 2;
+  width: 24px;
+  height: 24px;
+  margin-left: 4px;
+}
+
+.maintenance-form-input-maintenance[type="date"]:hover {
+  border-color: #004B71;
+}
+
+.maintenance-form-input-maintenance[type="date"]:focus {
+  cursor: text;
+  border-color: #004B71;
+  box-shadow: 0 0 0 2px rgba(0, 75, 113, 0.1);
+}
+
+.maintenance-form-input-maintenance[type="date"]::-moz-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 1;
+  z-index: 2;
+}
+
+.maintenance-search-bar-maintenance {
+  margin-bottom: 15px;
+}
+
+.maintenance-search-input-maintenance {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.maintenance-status-info-maintenance {
+  padding: 10px;
+  background: #e7f3ff;
+  border-left: 4px solid #004B71;
+  margin-bottom: 15px;
+  border-radius: 4px;
+}
+
+.maintenance-table-wrapper-maintenance {
+  overflow-x: auto;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.maintenance-table-maintenance {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.maintenance-table-maintenance thead {
+  background: #004B71;
+  color: white;
+}
+
+.maintenance-table-maintenance th {
+  padding: 12px;
+  text-align: left;
+  font-weight: 600;
+  white-space: nowrap;
+  color: white !important;
+  background: #004B71 !important;
+}
+
+.maintenance-table-maintenance tbody tr {
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.maintenance-table-maintenance tbody tr:hover {
+  background: #f8f9fa;
+}
+
+.maintenance-table-maintenance td {
+  padding: 12px;
+  vertical-align: middle;
+}
+
+.maintenance-description-cell-maintenance {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.maintenance-status-badge-maintenance {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.maintenance-actions-maintenance {
+  display: flex;
+  gap: 8px;
+}
+
+.maintenance-action-button-maintenance {
+  padding: 6px 10px;
+  background: #004B71;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.maintenance-action-button-maintenance:hover {
+  background: #003a5a;
+}
+
+.maintenance-loading-cell-maintenance,
+.maintenance-error-cell-maintenance,
+.maintenance-empty-cell-maintenance {
+  text-align: center;
+  padding: 40px;
+}
+
+.maintenance-modal-overlay-maintenance {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.maintenance-modal-content-maintenance {
+  background: white;
+  border-radius: 8px;
+  max-width: 800px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  overflow-x: visible;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  position: relative;
+  z-index: 1001;
+}
+
+.maintenance-modal-header-maintenance {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.maintenance-modal-header-maintenance h2 {
+  margin: 0;
+  color: #004B71;
+}
+
+.maintenance-modal-close-maintenance {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+}
+
+.maintenance-modal-close-maintenance:hover {
+  color: #000;
+}
+
+.maintenance-modal-details-grid-maintenance {
+  padding: 20px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+}
+
+.maintenance-modal-details-grid-maintenance > div {
+  padding: 10px;
+  background: #f8f9fa;
+  border-radius: 4px;
+}
+
+.maintenance-description-full-maintenance {
+  grid-column: 1 / -1;
+}
+
+.maintenance-description-full-maintenance p {
+  margin: 10px 0 0 0;
+  padding: 10px;
+  background: white;
+  border-radius: 4px;
+  white-space: pre-wrap;
+}
+
+.maintenance-status-form-maintenance {
+  padding: 20px;
+}
+
+.maintenance-form-group-maintenance {
+  margin-bottom: 20px;
+}
+
+.maintenance-form-group-maintenance label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 600;
+  color: #333;
+}
+
+.maintenance-form-input-maintenance,
+.maintenance-form-textarea-maintenance {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+/* Limit width of date inputs in forms */
+.maintenance-form-input-maintenance[type="date"] {
+  max-width: 250px;
+  min-width: 200px;
+  width: auto;
+  display: block;
+}
+
+.maintenance-form-textarea-maintenance {
+  resize: vertical;
+}
+
+.maintenance-form-actions-maintenance {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.maintenance-button-primary-maintenance {
+  padding: 10px 20px;
+  background: #004B71;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.maintenance-button-primary-maintenance:hover {
+  background: #003a5a;
+}
+
+.maintenance-button-secondary-maintenance {
+  padding: 10px 20px;
+  background: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.maintenance-button-secondary-maintenance:hover {
+  background: #5a6268;
+}
+

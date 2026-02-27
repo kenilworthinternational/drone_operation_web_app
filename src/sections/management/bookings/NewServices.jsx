@@ -50,9 +50,6 @@ const NewServices = () => {
     popupDate: null, // Store date selected from calendar
     submittingDate: null, // Track which date is being submitted
   });
-  const [fetchedDates, setFetchedDates] = useState([]);
-  const [fetchedFields, setFetchedFields] = useState([]);
-  const [calendarData, setCalendarData] = useState([]); // Store detailed calendar data
   const [calendarTasks, setCalendarTasks] = useState([]); // Store calendar tasks for display
   const [currentMonth, setCurrentMonth] = useState(new Date()); // Current month for calendar
   const [calendarLoading, setCalendarLoading] = useState(false);
@@ -304,56 +301,6 @@ const NewServices = () => {
   };
 
 
-  const fetchUpdatedCalendar = useCallback(async (startDate, endDate) => {
-    const { selectedEstate, selectedMissionType, selectedCropType, isAdHocPlan } = state;
-    console.log("came here");
-    if (selectedEstate && selectedMissionType && selectedCropType) {
-      try {
-        const calendarResult = await dispatch(
-          baseApi.endpoints.getCalendarData.initiate({
-            estateId: selectedEstate.id,
-            cropType: selectedCropType.id,
-            missionType: selectedMissionType.id,
-            startDate,
-            endDate,
-            location: isAdHocPlan ? '' : 'new_plan',
-          })
-        );
-        const response = calendarResult.data;
-
-        if (response?.status === "true") {
-          // Extract detailed calendar data
-          const extractedData = Object.keys(response)
-            .filter(key => !isNaN(key)) // Filter numeric keys
-            .map(key => ({
-              id: response[key].id,
-              date: response[key].date,
-              fieldIds: response[key].fields.flat().map(field => field.id),
-            }));
-
-          // Update calendar data
-          setCalendarData(extractedData);
-
-          // Extract dates and fields for existing logic
-          const extractedDates = extractedData.map(data => data.date);
-          const extractedFields = extractedData.flatMap(data => data.fieldIds);
-
-          // Update existing state
-          setFetchedDates(extractedDates);
-          setFetchedFields(extractedFields);
-        } else {
-          setCalendarData([]);
-          setFetchedDates([]);
-          setFetchedFields([]);
-        }
-      } catch (error) {
-        console.error("Error fetching update mission details:", error);
-        alert("An error occurred while fetching the calendar data. Please try again.");
-      }
-    } else {
-      alert("Please select Estate, Crop Type, and Mission Type first.");
-    }
-  }, [state.selectedEstate, state.selectedMissionType, state.selectedCropType, state.isAdHocPlan]);
 
 
   const handleDropdownSelect = async (type, id, fetchFunc, nextOptionsKey) => {
@@ -527,14 +474,6 @@ const NewServices = () => {
           // selectedCropType, selectedMissionType are kept so they don't need to be reselected
         }));
         
-        // Refresh the calendar data to update field availability for newly added fields
-        if (state.selectedEstate && state.selectedCropType && state.selectedMissionType) {
-          const currentDate = new Date();
-          const startdate = format(startOfMonth(currentDate), 'yyyy-MM-dd');
-          const endDate = format(endOfMonth(currentDate), 'yyyy-MM-dd');
-          await fetchUpdatedCalendar(startdate, endDate);
-        }
-        
         // Refresh calendar tasks
         const startDate = format(startOfMonth(currentMonth), 'yyyy-MM-dd');
         const endDate = format(endOfMonth(currentMonth), 'yyyy-MM-dd');
@@ -594,10 +533,6 @@ const NewServices = () => {
 
 
   const dayClassName = (date) => {
-    const formattedDate = format(date, 'yyyy-MM-dd');
-    if (fetchedDates.includes(formattedDate)) {
-      return "disabled-date"; // Apply class to disable the date
-    }
     return "";
   };
   const fetchMonthlyPlanData = async (startDate, endDate) => {
@@ -677,7 +612,6 @@ const NewServices = () => {
       monthEndDate,
     }));
 
-    await fetchUpdatedCalendar(monthStartDate, monthEndDate);
     await fetchMonthlyPlanData(monthStartDate, monthEndDate);
     await fetchTotalAreaForDate(state.selectedDate);
   };
@@ -706,9 +640,6 @@ const NewServices = () => {
         monthStartDate: startdate,
         monthEndDate: endDate,
       }));
-
-      // Fetch calendar based on the current filters
-      await fetchUpdatedCalendar(startdate, endDate);
 
       // Fetch monthly plan data immediately
       await fetchMonthlyPlanData(startdate, endDate);

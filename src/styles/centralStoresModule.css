@@ -1,0 +1,199 @@
+.central-stores-page {
+  padding: 20px;
+  background: #f5f7fb;
+  border-radius: 12px;
+}
+
+.central-stores-title {
+  margin: 0 0 16px;
+  font-size: 1.4rem;
+  color: #0f3550;
+}
+
+.central-stores-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.central-stores-tab-btn {
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid #cad6e2;
+  background: #ffffff;
+  color: #29465f;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.central-stores-tab-btn.active {
+  background: #0f4c6e;
+  color: #fff;
+  border-color: #0f4c6e;
+  box-shadow: 0 4px 10px rgba(15, 76, 110, 0.25);
+}
+
+.central-stores-tab-btn:hover {
+  transform: translateY(-1px);
+  border-color: #0f4c6e;
+}
+
+.central-stores-form {
+  display: grid;
+  gap: 14px;
+  max-width: 900px;
+  background: #fff;
+  border: 1px solid #e5ebf1;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 6px 18px rgba(15, 54, 82, 0.08);
+}
+
+.central-stores-row-two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.central-stores-item-line {
+  display: grid;
+  grid-template-columns: 2fr 1fr auto;
+  gap: 10px;
+}
+
+.central-stores-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.central-stores-table-wrap {
+  overflow-x: auto;
+  background: #fff;
+  border: 1px solid #e5ebf1;
+  border-radius: 12px;
+  padding: 10px;
+  box-shadow: 0 6px 16px rgba(15, 54, 82, 0.06);
+}
+
+.central-stores-issue-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.central-stores-issue-panel {
+  border: 1px solid #e5ebf1;
+  padding: 14px;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 6px 16px rgba(15, 54, 82, 0.06);
+}
+
+.central-stores-issue-panel h4 {
+  margin: 0 0 10px;
+  color: #0f3550;
+}
+
+.central-stores-issue-item-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 10px;
+  align-items: center;
+  padding: 10px;
+  border-radius: 8px;
+  background: #f7faff;
+  border: 1px solid #e5ecf5;
+}
+
+.central-stores-page table {
+  border-collapse: collapse;
+  width: 100%;
+  background: #fff;
+}
+
+.central-stores-page th,
+.central-stores-page td {
+  border-bottom: 1px solid #edf1f5;
+  text-align: left;
+  padding: 10px 8px;
+  font-size: 0.92rem;
+}
+
+.central-stores-page th {
+  background: #f3f7fc;
+  color: #24455f;
+  font-weight: 700;
+}
+
+.central-stores-page select,
+.central-stores-page input,
+.central-stores-page textarea,
+.central-stores-page button,
+.central-stores-page table {
+  font: inherit;
+}
+
+.central-stores-page select,
+.central-stores-page input,
+.central-stores-page textarea {
+  width: 100%;
+  border: 1px solid #ccd7e3;
+  border-radius: 8px;
+  padding: 9px 10px;
+  background: #fff;
+  color: #22384c;
+  outline: none;
+}
+
+.central-stores-page textarea {
+  min-height: 70px;
+  resize: vertical;
+}
+
+.central-stores-page select:focus,
+.central-stores-page input:focus,
+.central-stores-page textarea:focus {
+  border-color: #2d7fb5;
+  box-shadow: 0 0 0 3px rgba(45, 127, 181, 0.15);
+}
+
+.central-stores-page button:not(.central-stores-tab-btn) {
+  border: none;
+  border-radius: 8px;
+  padding: 9px 13px;
+  background: #1f6f9f;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.central-stores-page button:not(.central-stores-tab-btn):hover {
+  filter: brightness(0.95);
+}
+
+.central-stores-page button:not(.central-stores-tab-btn):disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+@media (max-width: 900px) {
+  .central-stores-page {
+    padding: 14px;
+  }
+
+  .central-stores-row-two {
+    grid-template-columns: 1fr;
+  }
+
+  .central-stores-item-line {
+    grid-template-columns: 1fr;
+  }
+
+  .central-stores-issue-item-row {
+    grid-template-columns: 1fr;
+  }
+}

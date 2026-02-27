@@ -8,6 +8,54 @@
   flex-direction: column;
 }
 
+.ops-assign-header {
+  display: flex;
+  align-items: center;
+  padding: 8px 20px;
+  background: #ffffff;
+  border-bottom: 1px solid #e1e8ed;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  flex-shrink: 0;
+}
+
+.ops-assign-back-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  background: linear-gradient(135deg, #003057 0%, #004b71 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 48, 87, 0.2);
+  gap: 6px;
+}
+
+.ops-assign-back-btn:hover {
+  background: linear-gradient(135deg, #004b71 0%, #006494 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 48, 87, 0.3);
+}
+
+.ops-assign-back-icon {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.ops-assign-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1a202c;
+  margin: 0;
+  flex: 1;
+  text-align: center;
+  letter-spacing: -0.5px;
+}
+
 .ops-assign-tabs {
   height: 5vh;
   display: flex;

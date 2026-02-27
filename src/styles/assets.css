@@ -423,6 +423,20 @@
   gap: 24px;
 }
 
+.form-section-divider-assets {
+  margin: 32px 0 20px 0;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #e0e0e0;
+  grid-column: 1 / -1;
+}
+
+.form-section-divider-assets h4 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+}
+
 .form-row-assets {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));

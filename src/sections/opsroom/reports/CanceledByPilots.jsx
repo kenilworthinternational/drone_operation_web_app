@@ -53,16 +53,30 @@ const CanceledByPilots = () => {
       
       // Flatten tasks for table display
       const flattenedData = plans.flatMap(plan => 
-        plan.tasks.map(task => ({
-          plan_id: plan.plan_id,
-          date: plan.date,
-          estate: plan.estate,
-          estate_area: plan.area.toFixed(2),
-          task_id: task.task_id,
-          pilot: task.pilot,
-          field: task.field,
-          reason: task.reason
-        }))
+        plan.tasks.map(task => {
+          // Calculate completion rate: if dji_field_area exists, calculate percentage
+          const completionRate = task.dji_field_area && task.area 
+            ? ((task.dji_field_area / task.area) * 100).toFixed(2)
+            : 0;
+          
+          // Determine type: 'x' = canceled, 'p' = partially completed (has dji_field_area with value)
+          const type = completionRate > 0 && completionRate < 100 ? 'p' : 'x';
+          
+          return {
+            plan_id: plan.plan_id,
+            date: plan.date,
+            estate: plan.estate,
+            estate_area: plan.area.toFixed(2),
+            task_id: task.task_id,
+            pilot: task.pilot,
+            field: task.field,
+            reason: task.reason,
+            area: task.area ? task.area.toFixed(2) : 0,
+            dji_field_area: task.dji_field_area ? task.dji_field_area.toFixed(2) : 0,
+            completion_rate: completionRate,
+            type: type
+          };
+        })
       );
 
       setData(flattenedData);
@@ -110,6 +124,10 @@ const CanceledByPilots = () => {
       "Task ID": task.task_id,
       Pilot: task.pilot,
       Field: task.field,
+      Area: task.area,
+      "DJI Field Area": task.dji_field_area,
+      "Completion Rate (%)": task.completion_rate,
+      "Pilot Status": task.type === 'x' ? 'Canceled' : 'Partially Completed',
       Reason: task.reason
     }));
 
@@ -160,12 +178,16 @@ const CanceledByPilots = () => {
       task.task_id,
       task.pilot,
       task.field,
+      task.area,
+      task.dji_field_area,
+      task.completion_rate,
+      task.type === 'x' ? 'Canceled' : 'Partially Completed',
       task.reason
     ]);
 
     // Add table
     autoTable(doc, {
-      head: [['Plan ID', 'Date', 'Estate (Area)', 'Task ID', 'Pilot', 'Field', 'Reason']],
+      head: [['Plan ID', 'Date', 'Estate (Area)', 'Task ID', 'Pilot', 'Field', 'Area', 'DJI Field Area', 'Completion %', 'Pilot Status', 'Reason']],
       body: tableData,
       startY: 30,
       styles: {
@@ -185,7 +207,7 @@ const CanceledByPilots = () => {
         fillColor: [249, 250, 251] // gray-50
       },
       columnStyles: {
-        6: { cellWidth: 40 } // Wider column for Reason
+        10: { cellWidth: 40 } // Wider column for Reason
       }
     });
 
@@ -305,6 +327,10 @@ const CanceledByPilots = () => {
                   <th>Task ID</th>
                   <th>Pilot</th>
                   <th>Field</th>
+                  <th>Area</th>
+                  <th>DJI Field Area</th>
+                  <th>Completion Rate (%)</th>
+                  <th>Pilot Status</th>
                   <th>Reason</th>
                 </tr>
               </thead>
@@ -317,6 +343,10 @@ const CanceledByPilots = () => {
                     <td>{task.task_id}</td>
                     <td>{task.pilot}</td>
                     <td>{task.field}</td>
+                    <td>{task.area}</td>
+                    <td>{task.dji_field_area}</td>
+                    <td>{task.completion_rate}%</td>
+                    <td>{task.type === 'x' ? 'Canceled' : 'Partially Completed'}</td>
                     <td>{task.reason}</td>
                   </tr>
                 ))}

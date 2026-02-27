@@ -1,7 +1,5 @@
 /* Workflow Dashboard Container */
-.workflow-dashboard-com {
-  padding: 20px;
-  padding-top: 10px;
+.workflow-dashboard-workflowDashboard {
   background-color: #f5f5f5;
   min-height: calc(100vh - 80px);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
@@ -11,23 +9,21 @@
 }
 
 /* Header Section */
-.dashboard-header-com {
+.dashboard-header-workflowDashboard {
   background-color: #ffffff;
-  padding: 20px;
-  margin-bottom: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 2px;
+  margin-bottom: 12px;
   width: 100%;
   box-sizing: border-box;
 }
 
-.header-content-com {
+.header-content-workflowDashboard {
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-.dashboard-title-com {
+.dashboard-title-workflowDashboard {
   font-size: 32px;
   font-weight: 700;
   color: #1a1a1a;
@@ -35,7 +31,7 @@
   text-align: center;
 }
 
-.header-controls-com {
+.header-controls-workflowDashboard {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -45,20 +41,20 @@
 }
 
 /* Date Range Selector */
-.date-range-selector-com {
+.date-range-selector-workflowDashboard {
   display: flex;
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
 }
 
-.date-label-com {
+.date-label-workflowDashboard {
   font-size: 14px;
   font-weight: 500;
   color: #333;
 }
 
-.date-input-com {
+.date-input-workflowDashboard {
   padding: 8px 12px;
   border: 1px solid #ccc;
   border-radius: 4px;
@@ -66,13 +62,13 @@
   width: 200px;
 }
 
-.calendar-icon-com {
+.calendar-icon-workflowDashboard {
   font-size: 18px;
   cursor: pointer;
 }
 
 /* Revenue Box */
-.revenue-box-com {
+.revenue-box-workflowDashboard {
   background-color: #f8f9fa;
   padding: 15px 20px;
   border-radius: 8px;
@@ -81,46 +77,46 @@
   flex-shrink: 0;
 }
 
-.revenue-total-com {
+.revenue-total-workflowDashboard {
   margin-bottom: 10px;
   padding-bottom: 10px;
   border-bottom: 1px solid #dee2e6;
 }
 
-.revenue-header-com {
+.revenue-header-workflowDashboard {
   font-size: 16px;
   font-weight: 600;
   color: #333;
   margin-bottom: 5px;
 }
 
-.revenue-details-com {
+.revenue-details-workflowDashboard {
   display: flex;
   gap: 15px;
   font-size: 14px;
   color: #666;
 }
 
-.revenue-breakdown-com {
+.revenue-breakdown-workflowDashboard {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.breakdown-item-com {
+.breakdown-item-workflowDashboard {
   display: flex;
   gap: 10px;
   font-size: 13px;
   color: #555;
 }
 
-.breakdown-label-com {
+.breakdown-label-workflowDashboard {
   font-weight: 500;
   min-width: 120px;
 }
 
 /* Main Content Layout */
-.dashboard-content-com {
+.dashboard-content-workflowDashboard {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   gap: 20px;
@@ -130,29 +126,29 @@
 }
 
 /* Section Titles */
-.section-title-com {
+.section-title-workflowDashboard {
   font-size: 20px;
   font-weight: 700;
   color: #333;
   margin-bottom: 15px;
 }
 
-.action-section-header-com {
+.action-section-header-workflowDashboard {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 20px;
+  margin-bottom: 3px;
   position: relative;
 }
 
-.section-title-action-com {
-  font-size: 20px;
+.section-title-action-workflowDashboard {
+  font-size: 15px;
   font-weight: 700;
   color: #dc3545;
   margin: 0;
 }
 
-.refresh-button-action-com {
+.refresh-button-action-workflowDashboard {
   background: none;
   border: none;
   cursor: pointer;
@@ -166,21 +162,21 @@
   margin-left: auto;
 }
 
-.refresh-button-action-com:hover {
+.refresh-button-action-workflowDashboard:hover {
   background-color: #f8f9fa;
 }
 
-.refresh-button-action-com:disabled {
+.refresh-button-action-workflowDashboard:disabled {
   cursor: not-allowed;
   opacity: 0.6;
 }
 
-.refresh-icon-com {
+.refresh-icon-workflowDashboard {
   font-size: 14px;
   transition: transform 0.2s ease;
 }
 
-.refresh-icon-spinning-com {
+.refresh-icon-spinning-workflowDashboard {
   font-size: 14px;
   animation: spin 1s linear infinite;
 }
@@ -195,13 +191,13 @@
 }
 
 /* Resource Availability Section */
-.resource-section-com {
+.resource-section-workflowDashboard {
   display: flex;
   flex-direction: column;
   gap: 15px;
 }
 
-.resource-card-com {
+.resource-card-workflowDashboard {
   background-color: #ffffff;
   border: 1px solid #dee2e6;
   border-radius: 8px;
@@ -209,67 +205,67 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.resource-card-header-com {
+.resource-card-header-workflowDashboard {
   margin-bottom: 10px;
   padding-bottom: 10px;
   border-bottom: 1px solid #e9ecef;
 }
 
-.resource-title-com {
+.resource-title-workflowDashboard {
   font-size: 16px;
   font-weight: 600;
   color: #333;
 }
 
-.resource-card-body-com {
+.resource-card-body-workflowDashboard {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.resource-categories-grid-com {
+.resource-categories-grid-workflowDashboard {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 15px;
 }
 
-.resource-category-com {
+.resource-category-workflowDashboard {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.resource-category-title-com {
+.resource-category-title-workflowDashboard {
   font-size: 14px;
   font-weight: 600;
   color: #333;
   margin-bottom: 4px;
 }
 
-.resource-sub-items-com {
+.resource-sub-items-workflowDashboard {
   display: flex;
   flex-direction: column;
   gap: 6px;
   margin-left: 0;
 }
 
-.resource-sub-item-com {
+.resource-sub-item-workflowDashboard {
   display: flex;
   align-items: center;
   gap: 8px;
   font-size: 13px;
 }
 
-.sub-item-bullet-com {
+.sub-item-bullet-workflowDashboard {
   color: #666;
   font-weight: bold;
 }
 
-.sub-item-label-com {
+.sub-item-label-workflowDashboard {
   color: #555;
 }
 
-.sub-item-value-com {
+.sub-item-value-workflowDashboard {
   color: #333;
   font-weight: 600;
   font-size: 13px;
@@ -277,19 +273,19 @@
 }
 
 /* Action Needed Section */
-.action-section-com {
+.action-section-workflowDashboard {
   display: flex;
   flex-direction: column;
   gap: 15px;
 }
 
-.action-queue-com {
+.action-queue-workflowDashboard {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.action-card-com {
+.action-card-workflowDashboard {
   background-color: #dc3545;
   color: #ffffff;
   padding: 15px;
@@ -302,22 +298,22 @@
   box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3);
 }
 
-.action-card-com:hover {
+.action-card-workflowDashboard:hover {
   background-color: #c82333;
 }
 
-.action-title-com {
+.action-title-workflowDashboard {
   font-size: 14px;
   font-weight: 500;
 }
 
-.action-plans-com {
+.action-plans-workflowDashboard {
   font-size: 14px;
   font-weight: 600;
 }
 
 /* Queue Box Card - Single Red Box with Multiple Items */
-.queue-box-card-com {
+.queue-box-card-workflowDashboard {
   background-color: #dc3545;
   color: #ffffff;
   padding: 15px;
@@ -326,25 +322,25 @@
   margin-bottom: 12px;
 }
 
-.queue-box-card-header-com {
+.queue-box-card-header-workflowDashboard {
   margin-bottom: 12px;
   padding-bottom: 10px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.3);
 }
 
-.queue-box-card-title-com {
+.queue-box-card-title-workflowDashboard {
   font-size: 16px;
   font-weight: 600;
   color: #ffffff;
 }
 
-.queue-box-card-items-com {
+.queue-box-card-items-workflowDashboard {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-.queue-box-card-item-com {
+.queue-box-card-item-workflowDashboard {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -354,54 +350,54 @@
   transition: background-color 0.2s;
 }
 
-.queue-box-card-item-com:hover {
+.queue-box-card-item-workflowDashboard:hover {
   background-color: rgba(255, 255, 255, 0.2);
 }
 
-.queue-box-card-item-title-com {
+.queue-box-card-item-title-workflowDashboard {
   font-size: 14px;
   font-weight: 500;
   color: #ffffff;
 }
 
-.queue-box-card-item-count-com {
+.queue-box-card-item-count-workflowDashboard {
   font-size: 14px;
   font-weight: 600;
   color: #ffffff;
 }
 
 /* Future Business Section */
-.future-business-section-com {
+.future-business-section-workflowDashboard {
   display: flex;
   flex-direction: column;
   gap: 15px;
 }
 
-.future-header-com {
+.future-header-workflowDashboard {
   margin-bottom: 10px;
 }
 
-.future-date-display-com {
+.future-date-display-workflowDashboard {
   font-weight: 400;
   color: #555;
   font-size: 18px;
 }
 
-.future-actions-row-com {
+.future-actions-row-workflowDashboard {
   display: flex;
   align-items: center;
   gap: 15px;
   margin-bottom: 10px;
 }
 
-.future-date-display-com {
+.future-date-display-workflowDashboard {
   font-weight: 500;
   color: #333;
   font-size: 16px;
   margin-right: auto;
 }
 
-.action-btn-com {
+.action-btn-workflowDashboard {
   padding: 8px 20px;
   background-color: #007bff;
   color: #ffffff;
@@ -413,17 +409,17 @@
   transition: background-color 0.2s;
 }
 
-.action-btn-com:hover {
+.action-btn-workflowDashboard:hover {
   background-color: #0056b3;
 }
 
-.action-btn-com.active-com {
+.action-btn-workflowDashboard.active-workflowDashboard {
   background-color: #0056b3;
   box-shadow: 0 2px 4px rgba(0, 123, 255, 0.3);
 }
 
 /* Business Table */
-.business-table-container-com {
+.business-table-container-workflowDashboard {
   background-color: #ffffff;
   border: 1px solid #dee2e6;
   border-radius: 8px;
@@ -431,12 +427,12 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.business-table-com {
+.business-table-workflowDashboard {
   width: 100%;
   border-collapse: collapse;
 }
 
-.table-header-com {
+.table-header-workflowDashboard {
   padding: 12px;
   background-color: #f8f9fa;
   border-bottom: 2px solid #dee2e6;
@@ -446,29 +442,29 @@
   color: #333;
 }
 
-.table-cell-com {
+.table-cell-workflowDashboard {
   padding: 12px;
   border-bottom: 1px solid #e9ecef;
   font-size: 14px;
   color: #555;
 }
 
-.business-table-com tbody tr:hover {
+.business-table-workflowDashboard tbody tr:hover {
   background-color: #f8f9fa;
 }
 
-.total-row-com {
+.total-row-workflowDashboard {
   background-color: #f8f9fa;
   font-weight: 600;
 }
 
-.total-row-com .table-cell-com {
+.total-row-workflowDashboard .table-cell-workflowDashboard {
   border-top: 2px solid #dee2e6;
   border-bottom: none;
 }
 
 /* Calendar Buttons Container */
-.calendar-buttons-container-com {
+.calendar-buttons-container-workflowDashboard {
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -477,9 +473,9 @@
 }
 
 /* Calendar Button */
-.calendar-btn-com {
+.calendar-btn-workflowDashboard {
   padding: 12px 24px;
-  background-color: #ff6b35;
+  background-color: #4a90e2;
   color: #ffffff;
   border: none;
   border-radius: 8px;
@@ -492,80 +488,477 @@
   gap: 8px;
   width: 100%;
   transition: background-color 0.2s;
-  box-shadow: 0 2px 4px rgba(255, 107, 53, 0.3);
+  box-shadow: 0 2px 4px rgba(74, 144, 226, 0.3);
 }
 
-.calendar-btn-com:hover {
-  background-color: #e55a2b;
+.calendar-btn-workflowDashboard:hover {
+  background-color: #357abd;
 }
 
-.today-plans-btn-com {
+.today-plans-btn-workflowDashboard {
   background-color: #4a90e2;
   box-shadow: 0 2px 4px rgba(74, 144, 226, 0.3);
 }
 
-.today-plans-btn-com:hover {
+.today-plans-btn-workflowDashboard:hover {
   background-color: #357abd;
 }
 
-.calendar-btn-icon-com {
+.calendar-btn-icon-workflowDashboard {
   font-size: 18px;
 }
 
 /* Responsive Design */
 @media (max-width: 1400px) {
-  .dashboard-content-com {
+  .dashboard-content-workflowDashboard {
     grid-template-columns: 1fr 1fr;
   }
   
-  .future-business-section-com {
+  .future-business-section-workflowDashboard {
     grid-column: 1 / -1;
   }
 }
 
 @media (max-width: 992px) {
-  .dashboard-content-com {
+  .dashboard-content-workflowDashboard {
     grid-template-columns: 1fr;
   }
   
-  .header-controls-com {
+  .header-controls-workflowDashboard {
     flex-direction: column;
     align-items: flex-start;
   }
   
-  .revenue-box-com {
+  .revenue-box-workflowDashboard {
     width: 100%;
   }
   
-  .action-buttons-com {
+  .action-buttons-workflowDashboard {
     margin-left: 0;
   }
 }
 
 @media (max-width: 768px) {
-  .workflow-dashboard-com {
+  .workflow-dashboard-workflowDashboard {
     padding: 10px;
   }
   
-  .dashboard-title-com {
+  .dashboard-title-workflowDashboard {
     font-size: 24px;
   }
   
-  .header-controls-com {
+  .header-controls-workflowDashboard {
     gap: 15px;
   }
   
-  .future-controls-com {
+  .future-controls-workflowDashboard {
     flex-direction: column;
     align-items: stretch;
   }
   
-  .action-buttons-com {
+  .action-buttons-workflowDashboard {
     width: 100%;
   }
   
-  .action-btn-com {
+  .action-btn-workflowDashboard {
     flex: 1;
+  }
+}
+
+/* Notifications Section Styles */
+.notifications-section-workflowDashboard {
+  width: 100%;
+  background-color: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.notifications-header-workflowDashboard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #f0f0f0;
+  gap: 12px;
+}
+
+.notifications-title-workflowDashboard {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.notifications-icon-workflowDashboard {
+  color: #2563eb;
+  font-size: 22px;
+}
+
+.unread-badge-workflowDashboard {
+  background-color: #ef4444;
+  color: #ffffff;
+  border-radius: 12px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  min-width: 24px;
+  text-align: center;
+  margin-left: 8px;
+}
+
+.notifications-content-workflowDashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.notifications-list-workflowDashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.notification-item-workflowDashboard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px;
+  background-color: #f8f9fa;
+  border-left: 3px solid #2563eb;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.notification-item-workflowDashboard:hover {
+  background-color: #f1f5f9;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.notification-text-workflowDashboard {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.notification-description-workflowDashboard {
+  margin: 0;
+  font-size: 14px;
+  color: #1a1a1a;
+  line-height: 1.4;
+  font-weight: 500;
+}
+
+.notification-date-workflowDashboard {
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 400;
+}
+
+.notification-read-btn-workflowDashboard {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  line-height: 0;
+}
+
+.notification-read-btn-workflowDashboard:hover {
+  opacity: 0.8;
+  transform: scale(1.1);
+}
+
+.notification-read-btn-workflowDashboard:active {
+  transform: scale(0.95);
+}
+
+.notification-read-indicator-workflowDashboard {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  cursor: default;
+  padding: 0;
+  margin: 0;
+  line-height: 0;
+}
+
+.read-icon-workflowDashboard {
+  color: #10b981;
+  font-size: 18px;
+  display: block;
+  line-height: 1;
+}
+
+.unread-icon-workflowDashboard {
+  color: #ef4444;
+  font-size: 18px;
+  display: block;
+  line-height: 1;
+}
+
+.show-all-btn-workflowDashboard {
+  background-color: #2563eb;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 14px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.show-all-btn-workflowDashboard:hover {
+  background-color: #1d4ed8;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.3);
+}
+
+.show-all-btn-workflowDashboard:active {
+  transform: translateY(0);
+}
+
+.no-notifications-workflowDashboard {
+  text-align: center;
+  padding: 20px 10px;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+/* Notifications Modal Styles */
+.notifications-modal-overlay-workflowDashboard {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.notifications-modal-workflowDashboard {
+  background-color: #ffffff;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 700px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.notifications-modal-header-workflowDashboard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.notifications-modal-header-workflowDashboard h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.notifications-modal-close-workflowDashboard {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.notifications-modal-close-workflowDashboard:hover {
+  background-color: #f3f4f6;
+  color: #1a1a1a;
+}
+
+.notifications-modal-body-workflowDashboard {
+  padding: 12px 16px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.notifications-modal-list-workflowDashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.notification-modal-item-workflowDashboard {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px;
+  background-color: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.notification-modal-item-workflowDashboard:hover {
+  background-color: #f3f4f6;
+  border-color: #d1d5db;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.notification-modal-content-workflowDashboard {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.notification-modal-description-workflowDashboard {
+  margin: 0;
+  font-size: 15px;
+  color: #1a1a1a;
+  line-height: 1.5;
+  font-weight: 500;
+}
+
+.notification-modal-meta-workflowDashboard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.notification-modal-date-workflowDashboard {
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 400;
+}
+
+.notification-modal-intended-workflowDashboard {
+  font-size: 12px;
+  color: #8b5cf6;
+  font-weight: 500;
+  background-color: #f3f4f6;
+  padding: 3px 6px;
+  border-radius: 4px;
+}
+
+.notification-modal-read-btn-workflowDashboard {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1a1a1a;
+  white-space: nowrap;
+  flex-shrink: 0;
+  line-height: 1.4;
+}
+
+.notification-modal-read-btn-workflowDashboard:hover {
+  opacity: 0.8;
+}
+
+.notification-modal-read-btn-workflowDashboard:active {
+  transform: scale(0.98);
+}
+
+.notification-modal-read-indicator-workflowDashboard {
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  cursor: default;
+  line-height: 1.4;
+}
+
+.read-icon-modal-workflowDashboard {
+  color: #10b981;
+  font-size: 16px;
+  display: block;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.unread-icon-modal-workflowDashboard {
+  color: #ef4444;
+  font-size: 16px;
+  display: block;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.no-notifications-modal-workflowDashboard {
+  text-align: center;
+  padding: 40px 20px;
+  color: #6b7280;
+  font-size: 16px;
+}
+
+/* Responsive Design for Notifications */
+@media (max-width: 768px) {
+  .notifications-section-workflowDashboard {
+    padding: 15px;
+  }
+
+  .notifications-title-workflowDashboard {
+    font-size: 18px;
+  }
+
+  .notifications-modal-workflowDashboard {
+    max-width: 95%;
+    max-height: 90vh;
+  }
+
+  .notification-modal-item-workflowDashboard {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .notification-modal-read-btn-workflowDashboard {
+    align-self: flex-end;
   }
 }
 

@@ -1,180 +1,408 @@
-import React, { useEffect, useState } from 'react';
-import { FaPlane, FaCar, FaBolt, FaBatteryFull, FaGamepad, FaPlus, FaEye } from 'react-icons/fa';
-import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { fetchAssets, selectAssets, selectLoading, setActiveTab } from '../../store/slices/assetsSlice';
-import '../../styles/assetsRegistry.css';
-import AssetsRegistration from '../hr&admin/assets/AssetsRegistration';
-import Assets from '../hr&admin/assets/Assets';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import '../../styles/centralStoresModule.css';
+import {
+  useCreateCentralStoreRequestMutation,
+  useGetCentralStoreRequestQuery,
+  useGetCentralStoreRequestQueueQuery,
+  useGetNeedToProcureQueueQuery,
+  useGetStockSectorsQuery,
+  useGetStockWingsQuery,
+  useIssueCentralStoreItemsMutation,
+  useSendRequestToNeedToProcureMutation,
+  useGetInventoryItemsQuery,
+} from '../../api/services NodeJs/allEndpoints';
 
-const ASSET_TYPES = [
-  { key: 'drones', label: 'Drones', icon: FaPlane },
-  { key: 'vehicles', label: 'Vehicles', icon: FaCar },
-  { key: 'generators', label: 'Generators', icon: FaBolt },
-  { key: 'batteries', label: 'Batteries', icon: FaBatteryFull },
-  { key: 'remoteControls', label: 'Remote Controls', icon: FaGamepad },
+const TABS = [
+  { key: 'request', label: 'Request Items/Services', path: '/home/stock-assets/central-stores/request-items-services' },
+  { key: 'queue', label: 'Request Queue', path: '/home/stock-assets/central-stores/request-queue' },
+  { key: 'issue', label: 'Issue Items/Services', path: '/home/stock-assets/central-stores/issue-items-services' },
+  { key: 'need', label: 'Need to Procure Queue', path: '/home/stock-assets/central-stores/need-to-procure-queue' },
 ];
 
+const detectTabFromPath = (path) => {
+  if (path.includes('/request-queue')) return 'queue';
+  if (path.includes('/issue-items-services')) return 'issue';
+  if (path.includes('/need-to-procure-queue')) return 'need';
+  return 'request';
+};
+
+const EMPTY_LINE = { inventory_item_id: '', requested_qty: '' };
+
 const CentralStores = () => {
-  const dispatch = useAppDispatch();
-  const loading = useAppSelector(selectLoading);
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [showViewUpdate, setShowViewUpdate] = useState(false);
-  const [selectedAssetType, setSelectedAssetType] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 12;
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState(detectTabFromPath(location.pathname));
+  const [requestForm, setRequestForm] = useState({
+    wing_id: '',
+    sector_id: '',
+    remarks: '',
+    items: [{ ...EMPTY_LINE }],
+  });
+  const [issueRequestId, setIssueRequestId] = useState('');
+  const [issueQtyMap, setIssueQtyMap] = useState({});
 
-  // Get asset counts from Redux
-  const drones = useAppSelector((state) => selectAssets(state, 'drones'));
-  const vehicles = useAppSelector((state) => selectAssets(state, 'vehicles'));
-  const generators = useAppSelector((state) => selectAssets(state, 'generators'));
-  const batteries = useAppSelector((state) => selectAssets(state, 'batteries'));
-  const remoteControls = useAppSelector((state) => selectAssets(state, 'remoteControls'));
+  const { data: wings = [] } = useGetStockWingsQuery();
+  const { data: sectors = [] } = useGetStockSectorsQuery();
+  const { data: inventoryItems = [] } = useGetInventoryItemsQuery({});
+  const {
+    data: requestQueue = [],
+    refetch: refetchRequestQueue,
+  } = useGetCentralStoreRequestQueueQuery({});
+  const {
+    data: needToProcureQueue = [],
+    refetch: refetchNeedToProcure,
+  } = useGetNeedToProcureQueueQuery({});
+  const {
+    data: issueRequestDetails,
+    refetch: refetchIssueRequest,
+  } = useGetCentralStoreRequestQuery(issueRequestId, { skip: !issueRequestId });
 
-  const assetCounts = {
-    drones: drones.length,
-    vehicles: vehicles.length,
-    generators: generators.length,
-    batteries: batteries.length,
-    remoteControls: remoteControls.length,
-  };
+  const [createCentralStoreRequest, { isLoading: creatingRequest }] = useCreateCentralStoreRequestMutation();
+  const [issueCentralStoreItems, { isLoading: issuingItems }] = useIssueCentralStoreItemsMutation();
+  const [sendRequestToNeedToProcure, { isLoading: sendingToProcure }] = useSendRequestToNeedToProcureMutation();
 
-  // Fetch counts for all asset types
   useEffect(() => {
-    ASSET_TYPES.forEach((type) => {
-      dispatch(fetchAssets(type.key));
+    setActiveTab(detectTabFromPath(location.pathname));
+  }, [location.pathname]);
+
+  const selectedWing = useMemo(
+    () => wings.find((w) => String(w.id) === String(requestForm.wing_id)),
+    [wings, requestForm.wing_id]
+  );
+  const isDroneWing = String(selectedWing?.wingsCode || '').toLowerCase() === 'd';
+
+  const addRequestLine = () => {
+    setRequestForm((prev) => ({ ...prev, items: [...prev.items, { ...EMPTY_LINE }] }));
+  };
+
+  const removeRequestLine = (idx) => {
+    setRequestForm((prev) => {
+      const items = prev.items.filter((_, index) => index !== idx);
+      return { ...prev, items: items.length ? items : [{ ...EMPTY_LINE }] };
     });
-  }, [dispatch]);
-
-  // Pagination logic
-  const totalPages = Math.ceil(ASSET_TYPES.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentAssetTypes = ASSET_TYPES.slice(startIndex, endIndex);
-
-  const handlePageChange = (page) => {
-    setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleAdd = (assetType) => {
-    setSelectedAssetType(assetType);
-    dispatch(setActiveTab(assetType));
-    setShowAddForm(true);
-    setShowViewUpdate(false);
+  const updateRequestLine = (idx, key, value) => {
+    setRequestForm((prev) => ({
+      ...prev,
+      items: prev.items.map((line, index) => (index === idx ? { ...line, [key]: value } : line)),
+    }));
   };
 
-  const handleViewUpdate = (assetType) => {
-    setSelectedAssetType(assetType);
-    dispatch(setActiveTab(assetType));
-    setShowViewUpdate(true);
-    setShowAddForm(false);
+  const submitRequest = async (e) => {
+    e.preventDefault();
+    const filteredItems = requestForm.items
+      .map((x) => ({
+        inventory_item_id: Number(x.inventory_item_id),
+        requested_qty: Number(x.requested_qty),
+      }))
+      .filter((x) => x.inventory_item_id > 0 && x.requested_qty > 0);
+
+    if (!filteredItems.length) {
+      alert('Add at least one valid item');
+      return;
+    }
+    if (!requestForm.wing_id) {
+      alert('Wing is required');
+      return;
+    }
+    if (isDroneWing && !requestForm.sector_id) {
+      alert('Sector is required for Drone wing');
+      return;
+    }
+
+    try {
+      await createCentralStoreRequest({
+        wing_id: Number(requestForm.wing_id),
+        sector_id: requestForm.sector_id ? Number(requestForm.sector_id) : null,
+        remarks: requestForm.remarks,
+        items: filteredItems,
+      }).unwrap();
+      alert('Request created successfully');
+      setRequestForm({ wing_id: '', sector_id: '', remarks: '', items: [{ ...EMPTY_LINE }] });
+      refetchRequestQueue();
+    } catch (error) {
+      alert(error?.data?.message || 'Failed to create request');
+    }
   };
 
-  const handleCloseForms = () => {
-    setShowAddForm(false);
-    setShowViewUpdate(false);
-    setSelectedAssetType(null);
+  const submitIssue = async () => {
+    if (!issueRequestId) return;
+    const payloadItems = Object.entries(issueQtyMap)
+      .map(([request_item_id, issued_qty]) => ({
+        request_item_id: Number(request_item_id),
+        issued_qty: Number(issued_qty),
+      }))
+      .filter((x) => x.issued_qty > 0);
+    if (!payloadItems.length) {
+      alert('Enter at least one issue quantity');
+      return;
+    }
+    try {
+      await issueCentralStoreItems({
+        request_id: Number(issueRequestId),
+        items: payloadItems,
+      }).unwrap();
+      alert('Items issued successfully');
+      setIssueQtyMap({});
+      refetchRequestQueue();
+      refetchNeedToProcure();
+      refetchIssueRequest();
+    } catch (error) {
+      alert(error?.data?.message || 'Failed to issue items');
+    }
   };
 
-  if (showAddForm && selectedAssetType) {
-    return (
-      <div className="assets-registry-container">
-        <div className="assets-registry-header">
-          <button className="back-button" onClick={handleCloseForms}>
-            ← Back to Registry
-          </button>
-          <h3>Add {ASSET_TYPES.find((t) => t.key === selectedAssetType)?.label}</h3>
-        </div>
-        <AssetsRegistration singleMode={true} selectedType={selectedAssetType} />
-      </div>
-    );
-  }
-
-  if (showViewUpdate && selectedAssetType) {
-    return (
-      <div className="assets-registry-container">
-        <div className="assets-registry-header">
-          <button className="back-button" onClick={handleCloseForms}>
-            ← Back to Registry
-          </button>
-          <h3>View and Update {ASSET_TYPES.find((t) => t.key === selectedAssetType)?.label}</h3>
-        </div>
-        <Assets singleMode={true} selectedType={selectedAssetType} />
-      </div>
-    );
-  }
+  const sendCurrentRequestToProcure = async (requestId) => {
+    if (!requestId) return;
+    try {
+      await sendRequestToNeedToProcure({ request_id: Number(requestId) }).unwrap();
+      alert('Remaining items moved to Need to Procure Queue');
+      if (String(issueRequestId) === String(requestId)) {
+        setIssueRequestId('');
+      }
+      refetchRequestQueue();
+      refetchNeedToProcure();
+    } catch (error) {
+      alert(error?.data?.message || 'Failed to move to Need to Procure Queue');
+    }
+  };
 
   return (
-    <div className="assets-registry-container">
-      <div className="assets-registry-grid">
-        {currentAssetTypes.map((assetType) => {
-          const Icon = assetType.icon;
-          const count = assetCounts[assetType.key] || 0;
-          const isLoading = loading.assets;
-
-          return (
-            <div key={assetType.key} className="asset-card">
-              <div className="asset-card-header">
-                <div className="asset-icon-wrapper">
-                  <Icon className="asset-icon" />
-                </div>
-                <div className="asset-info">
-                  <h3 className="asset-name">{assetType.label}</h3>
-                  <div className="asset-count">
-                    <span className="count-label">Count:</span>
-                    <span className="count-value">{isLoading ? '...' : count}</span>
-                  </div>
-                </div>
-              </div>
-              <div className="asset-card-actions">
-                <button
-                  className="action-button add-button"
-                  onClick={() => handleAdd(assetType.key)}
-                >
-                  <FaPlus className="button-icon" />
-                  Add
-                </button>
-                <button
-                  className="action-button view-button"
-                  onClick={() => handleViewUpdate(assetType.key)}
-                >
-                  <FaEye className="button-icon" />
-                  View/Update
-                </button>
-              </div>
-            </div>
-          );
-        })}
+    <div className="central-stores-page">
+      <h2 className="central-stores-title">Central Stores (GRN/GIN)</h2>
+      <div className="central-stores-tabs">
+        {TABS.map((tab) => (
+          <button
+            key={tab.key}
+            type="button"
+            onClick={() => {
+              setActiveTab(tab.key);
+              navigate(tab.path);
+            }}
+            className={`central-stores-tab-btn ${activeTab === tab.key ? 'active' : ''}`}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="assets-registry-pagination">
-          <button
-            className="pagination-button"
-            onClick={() => handlePageChange(currentPage - 1)}
-            disabled={currentPage === 1}
-          >
-            &lt; previous
-          </button>
-          <div className="pagination-numbers">
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <button
-                key={page}
-                className={`pagination-number ${currentPage === page ? 'active' : ''}`}
-                onClick={() => handlePageChange(page)}
+      {activeTab === 'request' && (
+        <form onSubmit={submitRequest} className="central-stores-form">
+          <div className="central-stores-row-two">
+            <select
+              value={requestForm.wing_id}
+              onChange={(e) => setRequestForm((prev) => ({ ...prev, wing_id: e.target.value, sector_id: '' }))}
+              required
+            >
+              <option value="">Select Wing</option>
+              {wings.map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.wing} ({w.wingsCode})
+                </option>
+              ))}
+            </select>
+            {isDroneWing && (
+              <select
+                value={requestForm.sector_id}
+                onChange={(e) => setRequestForm((prev) => ({ ...prev, sector_id: e.target.value }))}
+                required
               >
-                {page}
-              </button>
-            ))}
+                <option value="">Select Sector</option>
+                {sectors.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.sector}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
-          <button
-            className="pagination-button"
-            onClick={() => handlePageChange(currentPage + 1)}
-            disabled={currentPage === totalPages}
-          >
-            next &gt;
-          </button>
+
+          <textarea
+            value={requestForm.remarks}
+            onChange={(e) => setRequestForm((prev) => ({ ...prev, remarks: e.target.value }))}
+            placeholder="Remarks"
+            rows={2}
+          />
+
+          {requestForm.items.map((line, idx) => (
+            <div key={`line-${idx}`} className="central-stores-item-line">
+              <select
+                value={line.inventory_item_id}
+                onChange={(e) => updateRequestLine(idx, 'inventory_item_id', e.target.value)}
+                required
+              >
+                <option value="">Select Item</option>
+                {inventoryItems.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.item_code} - {item.item_name}
+                  </option>
+                ))}
+              </select>
+              <input
+                type="number"
+                min="0.01"
+                step="0.01"
+                value={line.requested_qty}
+                onChange={(e) => updateRequestLine(idx, 'requested_qty', e.target.value)}
+                placeholder="Qty"
+                required
+              />
+              <button type="button" onClick={() => removeRequestLine(idx)}>Remove</button>
+            </div>
+          ))}
+          <div className="central-stores-actions">
+            <button type="button" onClick={addRequestLine}>+ Add Item</button>
+            <button type="submit" disabled={creatingRequest}>
+              {creatingRequest ? 'Submitting...' : 'Submit Request'}
+            </button>
+          </div>
+        </form>
+      )}
+
+      {activeTab === 'queue' && (
+        <div className="central-stores-table-wrap">
+          <table width="100%" cellPadding="6">
+            <thead>
+              <tr>
+                <th>Request No</th>
+                <th>Wing</th>
+                <th>Sector</th>
+                <th>Status</th>
+                <th>Items</th>
+                <th>Requested Qty</th>
+                <th>Issued Qty</th>
+              </tr>
+            </thead>
+            <tbody>
+              {requestQueue.map((row) => (
+                <tr key={row.id}>
+                  <td>{row.request_no}</td>
+                  <td>{row.wing_name || '-'}</td>
+                  <td>{row.sector_name || '-'}</td>
+                  <td>{row.status}</td>
+                  <td>{row.item_count}</td>
+                  <td>{row.total_requested_qty}</td>
+                  <td>{row.total_issued_qty}</td>
+                </tr>
+              ))}
+              {!requestQueue.length && (
+                <tr>
+                  <td colSpan={7}>No records found.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {activeTab === 'issue' && (
+        <div className="central-stores-issue-grid">
+          <div className="central-stores-table-wrap">
+            <table width="100%" cellPadding="6">
+              <thead>
+                <tr>
+                  <th>Request No</th>
+                  <th>Wing</th>
+                  <th>Status</th>
+                  <th>Remaining Qty</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {requestQueue.filter((x) => x.status !== 'issued').map((row) => (
+                  <tr key={row.id}>
+                    <td>{row.request_no}</td>
+                    <td>{row.wing_name || '-'}</td>
+                    <td>{row.status}</td>
+                    <td>{row.total_remaining_qty}</td>
+                    <td>
+                      <button type="button" onClick={() => setIssueRequestId(String(row.id))}>Issue</button>
+                      {' '}
+                      <button
+                        type="button"
+                        disabled={sendingToProcure}
+                        onClick={() => sendCurrentRequestToProcure(row.id)}
+                      >
+                        Send to Procure
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {issueRequestDetails?.items?.length > 0 && (
+            <div className="central-stores-issue-panel">
+              <h4>Issue Request: {issueRequestDetails.request_no}</h4>
+              {issueRequestDetails.items.map((item) => (
+                <div
+                  key={item.id}
+                  className="central-stores-issue-item-row"
+                >
+                  <div>{item.item_code} - {item.item_name}</div>
+                  <div>Remaining: {item.remaining_qty}</div>
+                  <div>Stock: {item.current_stock}</div>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    max={item.remaining_qty}
+                    value={issueQtyMap[item.id] || ''}
+                    onChange={(e) => setIssueQtyMap((prev) => ({ ...prev, [item.id]: e.target.value }))}
+                    placeholder="Issue qty"
+                  />
+                </div>
+              ))}
+              <button type="button" disabled={issuingItems} onClick={submitIssue}>
+                {issuingItems ? 'Issuing...' : 'Issue Selected'}
+              </button>
+              {' '}
+              <button
+                type="button"
+                disabled={sendingToProcure}
+                onClick={() => sendCurrentRequestToProcure(issueRequestId)}
+              >
+                {sendingToProcure ? 'Sending...' : 'Send Remaining to Procure'}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'need' && (
+        <div className="central-stores-table-wrap">
+          <table width="100%" cellPadding="6">
+            <thead>
+              <tr>
+                <th>Request No</th>
+                <th>Item</th>
+                <th>Qty</th>
+                <th>Wing</th>
+                <th>Sector</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {needToProcureQueue.map((row) => (
+                <tr key={row.id}>
+                  <td>{row.request_no}</td>
+                  <td>{row.item_code} - {row.item_name}</td>
+                  <td>{row.quantity}</td>
+                  <td>{row.wing_name || '-'}</td>
+                  <td>{row.sector_name || '-'}</td>
+                  <td>{row.status}</td>
+                </tr>
+              ))}
+              {!needToProcureQueue.length && (
+                <tr>
+                  <td colSpan={6}>No records found.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       )}
     </div>

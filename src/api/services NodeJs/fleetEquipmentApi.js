@@ -1,43 +1,5 @@
 import { baseApi } from '../baseApi';
-import { fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-
-// Node.js Backend Base URL Configuration
-const getNodeBackendUrl = () => {
-  const hostname = window.location.hostname;
-  
-  if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    return 'https://dsms-web-api-dev.kenilworthinternational.com';
-  }
-  
-  if (hostname.includes('dev') || hostname.includes('kenilworthinternational.com')) {
-    return 'https://dsms-web-api-dev.kenilworthinternational.com';
-  }
-  
-  if (hostname.includes('test')) {
-    return 'https://dsms-api-test.kenilworth.international.com';
-  }
-  
-  return 'https://dsms-api.kenilworth.international.com';
-};
-
-// Helper function to get token
-const getToken = () => {
-  const storedUser = JSON.parse(localStorage.getItem('userData'));
-  return storedUser?.token || null;
-};
-
-// Custom base query for Node.js backend
-const nodeBackendBaseQuery = fetchBaseQuery({
-  baseUrl: getNodeBackendUrl(),
-  prepareHeaders: (headers) => {
-    const token = getToken();
-    if (token) {
-      headers.set('Authorization', `Bearer ${token}`);
-    }
-    headers.set('Content-Type', 'application/json');
-    return headers;
-  },
-});
+import { nodeBackendBaseQuery, getNodeBackendUrl } from './nodeBackendConfig';
 
 export const fleetEquipmentApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
@@ -270,6 +232,23 @@ export const fleetEquipmentApi = baseApi.injectEndpoints({
       providesTags: ['Pilots', 'Teams'],
     }),
 
+    // Get team leads
+    getFleetTeamLeads: builder.query({
+      queryFn: async () => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: '/api/fleet-equipment/team-leads',
+            method: 'POST',
+            body: {},
+          },
+          {},
+          {}
+        );
+        return result;
+      },
+      providesTags: ['TeamLeads'],
+    }),
+
     // Create team with pilot
     createFleetTeam: builder.mutation({
       queryFn: async (data) => {
@@ -419,6 +398,7 @@ export const {
   useAssignFleetDroneMutation,
   useRemoveFleetDroneMutation,
   useGetFleetPilotsWithTeamsQuery,
+  useGetFleetTeamLeadsQuery,
   useCreateFleetTeamMutation,
   useGetFleetTeamEquipmentQuery,
   // Temporary allocations (unified)

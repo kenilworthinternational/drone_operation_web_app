@@ -88,6 +88,24 @@
   border-radius: 4px;
 }
 
+.today-plans-date-picker-com {
+  border: 1px solid #b8d4e3;
+  cursor: pointer;
+  min-height: 36px;
+  font-family: inherit;
+}
+
+.today-plans-date-picker-com:hover {
+  border-color: #003057;
+  background-color: #dceef5;
+}
+
+.today-plans-date-picker-com:focus {
+  outline: none;
+  border-color: #003057;
+  box-shadow: 0 0 0 2px rgba(0, 48, 87, 0.2);
+}
+
 /* Summary Card */
 .today-plans-summary-com {
   margin-bottom: 20px;
@@ -182,33 +200,164 @@
   border-bottom: 2px solid #003057;
 }
 
-/* Items Grid - 4 per row with scrolling */
-.items-grid-com {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
+/* One plan per row - list layout (no grid) */
+.today-plans-list-com {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
   width: 100%;
-  max-height: calc(100vh - 350px);
-  overflow-y: auto;
   padding-right: 5px;
 }
 
-/* Custom scrollbar */
-.items-grid-com::-webkit-scrollbar {
+.today-plan-row-com {
+  width: 100%;
+}
+
+/* Fields section under each plan */
+.today-plans-fields-wrap-com {
+  margin-top: 0;
+  padding: 12px 16px;
+  background-color: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  border-radius: 0 0 8px 8px;
+}
+
+.today-plans-fields-title-com {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 10px 0;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #cbd5e1;
+}
+
+.today-plans-fields-list-com {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.today-plan-field-card-com {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 10px 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  min-height: 0;
+}
+
+.today-plan-field-header-com {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.today-plan-field-name-com {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.today-plan-field-id-com {
+  font-size: 11px;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.today-plan-field-status-badge-com {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.field-status-cancelled-com {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.field-status-completed-com {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.field-status-partial-com {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.field-status-inprogress-com {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.today-plan-field-reason-com {
+  font-weight: 500;
+  text-transform: none;
+}
+
+.today-plan-field-details-com {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.today-plan-field-detail-row-com {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 11px;
+}
+
+.field-detail-label-com {
+  color: #64748b;
+  font-weight: 600;
+  min-width: 100px;
+  flex-shrink: 0;
+}
+
+.field-detail-value-com {
+  color: #1e293b;
+  font-weight: 500;
+  min-width: 0;
+}
+
+.field-detail-sub-com {
+  color: #64748b;
+  font-weight: 400;
+  margin-left: 2px;
+}
+
+/* Custom scrollbar for section */
+.today-plans-section-com .today-plans-list-com {
+  max-height: none;
+}
+
+.today-plans-section-com {
+  overflow-y: auto;
+}
+
+.today-plans-section-com::-webkit-scrollbar {
   width: 8px;
 }
 
-.items-grid-com::-webkit-scrollbar-track {
+.today-plans-section-com::-webkit-scrollbar-track {
   background: #f1f1f1;
   border-radius: 4px;
 }
 
-.items-grid-com::-webkit-scrollbar-thumb {
+.today-plans-section-com::-webkit-scrollbar-thumb {
   background: #888;
   border-radius: 4px;
 }
 
-.items-grid-com::-webkit-scrollbar-thumb:hover {
+.today-plans-section-com::-webkit-scrollbar-thumb:hover {
   background: #555;
 }
 
@@ -285,7 +434,7 @@
   line-height: 1.4;
 }
 
-/* Row 3: Info and Status Badges */
+/* Row 3: Info and Status Badges (legacy, kept for any other use) */
 .item-row-3-com {
   padding: 14px 16px;
   display: flex;
@@ -294,6 +443,53 @@
   gap: 14px;
   border-bottom: 1px solid #e9ecef;
   background-color: #ffffff;
+}
+
+/* Single row: estate/extent | pilot | drone — equal spacing between all three */
+.item-row-main-com {
+  padding: 12px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 24px;
+  border-bottom: 1px solid #e9ecef;
+  background-color: #ffffff;
+}
+
+.item-row-left-com {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  min-width: 0;
+  flex: 1;
+  min-width: 120px;
+}
+
+.item-row-pilot-com {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+  width: 220px;
+  flex-shrink: 0;
+}
+
+.item-row-drone-com {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  width: 220px;
+  flex-shrink: 0;
+}
+
+.item-row-main-com .resource-badge-inline-com {
+  padding: 6px 10px;
+  margin: 0;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .item-info-row-com {
@@ -540,18 +736,6 @@
 }
 
 /* Responsive Design */
-@media (max-width: 1400px) {
-  .items-grid-com {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-@media (max-width: 1024px) {
-  .items-grid-com {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
 @media (max-width: 768px) {
   .today-plans-header-com {
     flex-direction: column;
@@ -559,12 +743,32 @@
     gap: 12px;
   }
 
-  .items-grid-com {
-    grid-template-columns: 1fr;
+  .today-plan-field-header-com {
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .today-plans-summary-com {
     grid-template-columns: 1fr;
+  }
+
+  .today-plans-fields-list-com {
+    grid-template-columns: 1fr;
+  }
+
+  .item-row-main-com {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .item-row-drone-com {
+    margin-left: 0;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1200px) {
+  .today-plans-fields-list-com {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 

@@ -60,6 +60,38 @@
 .report-section-header {
   margin-bottom: 30px;
   padding: 30px 20px 0 20px;
+  position: relative;
+}
+
+.back-button-modernreport {
+  position: absolute;
+  top: 30px;
+  left: 20px;
+  background: #4472c4;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  font-size: 16px;
+  font-weight: 600;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(68, 114, 196, 0.3);
+}
+
+.back-button-modernreport:hover {
+  background: #3560b8;
+  transform: translateX(-3px);
+  box-shadow: 0 4px 12px rgba(68, 114, 196, 0.4);
+}
+
+.back-btn-icon-modernreport {
+  margin-right: 6px;
+  font-size: 18px;
 }
 
 .report-section-header h2 {
@@ -67,6 +99,10 @@
   font-weight: 700;
   color: #2c3e50;
   margin: 0 0 8px 0;
+}
+
+.report-section-header:has(.back-button-modernreport) h2 {
+  padding-left: 60px;
 }
 
 .report-section-header p {
@@ -221,9 +257,13 @@
   margin-bottom: 20px;
   padding: 20px;
   border-bottom: 2px solid #f1f3f5;
+  position: relative;
 }
 
 .back-button {
+  position: absolute;
+  left: 20px;
+  top: 20px;
   background: #f8f9fa;
   border: 2px solid #e1e8ed;
   padding: 10px 20px;
@@ -234,7 +274,8 @@
   cursor: pointer;
   transition: all 0.2s ease;
   font-family: 'Inter', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
-  margin-bottom: 20px;
+  white-space: nowrap;
+  z-index: 2;
 }
 
 .back-button:hover {
@@ -242,6 +283,10 @@
   border-color: #4472c4;
   color: #4472c4;
   transform: translateX(-4px);
+}
+
+.report-display-title {
+  text-align: center;
 }
 
 .report-display-title h2 {
@@ -292,6 +337,17 @@
   .report-category-tabs {
     padding: 15px;
     gap: 8px;
+  }
+  
+  .back-button-modernreport {
+    top: 20px;
+    left: 15px;
+    padding: 8px 12px;
+    font-size: 14px;
+  }
+  
+  .report-section-header:has(.back-button-modernreport) h2 {
+    padding-left: 50px;
   }
 
   .category-tab {

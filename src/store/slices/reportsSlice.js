@@ -122,6 +122,14 @@ const reportsSlice = createSlice({
       selectedGroup: null,
       selectedPlantation: null,
       selectedRegion: null,
+      // Separate filters for PlanAreas graph
+      planAreasSelectedGroup: null,
+      planAreasSelectedPlantation: null,
+      planAreasSelectedRegion: null,
+      // Separate filters for CoveredAreas graph
+      coveredAreasSelectedGroup: null,
+      coveredAreasSelectedPlantation: null,
+      coveredAreasSelectedRegion: null,
       selectedRegions: 'All', // For FlightNumbersReport
       filterManagerReview: 'all',
       filterDirectorOps: 'all',
@@ -156,6 +164,12 @@ const reportsSlice = createSlice({
         selectedGroup: null,
         selectedPlantation: null,
         selectedRegion: null,
+        planAreasSelectedGroup: null,
+        planAreasSelectedPlantation: null,
+        planAreasSelectedRegion: null,
+        coveredAreasSelectedGroup: null,
+        coveredAreasSelectedPlantation: null,
+        coveredAreasSelectedRegion: null,
         selectedRegions: 'All',
         filterManagerReview: 'all',
         filterDirectorOps: 'all',

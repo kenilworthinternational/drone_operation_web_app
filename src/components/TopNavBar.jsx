@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FaUserCircle } from 'react-icons/fa';
+import { ensureHttps } from '../utils/urlUtils';
 import '../styles/css-navbar.css';
 
 const TopNavBar = (props) => {
@@ -12,7 +13,8 @@ const TopNavBar = (props) => {
 
     if (storedUser) {
       setActiveUser(storedUser.member_type_name);
-      setProfileImage(storedUser.image);
+      // Convert HTTP to HTTPS for profile image to prevent mixed content warnings
+      setProfileImage(storedUser.image ? ensureHttps(storedUser.image) : null);
     }
   }, []);
 

@@ -159,39 +159,6 @@ export const plansApi = baseApi.injectEndpoints({
       providesTags: ['Plans'],
     }),
 
-    // Get calendar data
-    getCalendarData: builder.query({
-      query: ({ estateId, cropType, missionType, startDate, endDate, location }) => ({
-        url: 'find_plans_by_estate_and_crop_and_mission_type_date_range',
-        method: 'POST',
-        body: {
-          estate: estateId,
-          crop_type: cropType,
-          mission_type: missionType,
-          start_date: startDate,
-          end_date: endDate,
-        },
-      }),
-      providesTags: ['Calendar'],
-      transformResponse: (response, meta, arg) => {
-        // Apply filtering logic based on location
-        if (arg.location === "new_plan") {
-          const filtered = Object.keys(response)
-            .filter((key) => !isNaN(key))
-            .reduce((acc, key) => {
-              if (response[key].flag !== "ap") {
-                acc[key] = response[key];
-              }
-              return acc;
-            }, {});
-          filtered.status = response.status;
-          filtered.count = Object.keys(filtered).length - 2;
-          return filtered;
-        }
-        return response;
-      },
-    }),
-
     // Operations approval
     updateOpsApproval: builder.mutation({
       query: ({ plan, status }) => ({
@@ -222,7 +189,6 @@ export const {
   useUpdatePilotToPlanMutation,
   useGetPlansForUpdateQuery,
   useGetPlansForRescheduleQuery,
-  useGetCalendarDataQuery,
   useUpdateOpsApprovalMutation,
 } = plansApi;
 

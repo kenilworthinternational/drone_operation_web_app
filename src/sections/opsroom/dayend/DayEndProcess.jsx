@@ -11,7 +11,7 @@ import { useAppDispatch } from '../../../store/hooks';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useGetUnlinkedDjiImagesQuery, useGetAllDjiImagesQuery, useLinkDjiImageToTaskMutation } from '../../../api/services NodeJs/djiImagesApi';
-import { useUpdateOpsTaskStatusMutation, useGetPlansWithCompletionStatsQuery } from '../../../api/services NodeJs/dayEndProcessApi';
+import { dayEndProcessApi, useUpdateOpsTaskStatusMutation, useGetPlansWithCompletionStatsQuery, useGetCancelReasonsQuery, useCancelTaskMutation, useGetTasksCancelStatusQuery, useResetPilotCancelMutation } from '../../../api/services NodeJs/dayEndProcessApi';
 
 const CustomDateInput = React.forwardRef(({ value, onClick }, ref) => (
   <div className="custom-date-input" ref={ref} onClick={onClick}>
@@ -19,6 +19,17 @@ const CustomDateInput = React.forwardRef(({ value, onClick }, ref) => (
     <FaCalendarAlt className="calendar-icon" />
   </div>
 ));
+
+// Helper function to get backend URL based on environment
+const getBackendUrl = () => {
+  const hostname = window.location.hostname;
+  if (hostname.includes('test')) {
+    return 'https://dsms-api-test.kenilworth.international.com';
+  } else if (!hostname.includes('dev') && !hostname.includes('localhost')) {
+    return 'https://dsms-web-api.kenilworthinternational.com';
+  }
+  return 'https://dsms-web-api-dev.kenilworthinternational.com';
+};
 
 const DayEndProcess = () => {
   const navigate = useNavigate();
@@ -62,12 +73,21 @@ const DayEndProcess = () => {
   
   // Update ops_task_status mutation
   const [updateOpsTaskStatus] = useUpdateOpsTaskStatusMutation();
+  
+  // Cancel task state
+  const { data: cancelReasons = [] } = useGetCancelReasonsQuery();
+  const [cancelTask] = useCancelTaskMutation();
+  const [resetPilotCancel] = useResetPilotCancelMutation();
+  const [showCancelPopup, setShowCancelPopup] = useState(false);
+  const [cancelTaskId, setCancelTaskId] = useState(null);
+  const [cancelFieldId, setCancelFieldId] = useState(null);
+  const [selectedCancelReason, setSelectedCancelReason] = useState(null);
+  const [cancelSubmitting, setCancelSubmitting] = useState(false);
+  // Cancel status map: { task_id: { com_naration, cancel_reason_text } }
+  const [taskCancelStatusMap, setTaskCancelStatusMap] = useState({});
   // State for image modal
   const [selectedImage, setSelectedImage] = useState(null);
   const [rotation, setRotation] = useState(0);
-  // Add state for crop image
-  const [cropImage, setCropImage] = useState(null);
-  const [cropImagePreview, setCropImagePreview] = useState("");
   const [showReportPopup, setShowReportPopup] = useState(false);
   const [reportReasons, setReportReasons] = useState([]);
   const [selectedReportReasons, setSelectedReportReasons] = useState([]);
@@ -91,6 +111,104 @@ const DayEndProcess = () => {
     }
   };
 
+
+  // Fetch cancel status for all tasks in a plan
+  const fetchCancelStatus = async (planId) => {
+    try {
+      const result = await dispatch(
+        dayEndProcessApi.endpoints.getTasksCancelStatus.initiate({ planId }, { forceRefetch: true })
+      );
+      if (result.data) {
+        setTaskCancelStatusMap(result.data);
+      }
+    } catch (e) {
+      console.error('Error fetching cancel status:', e);
+    }
+  };
+
+  // Cancel task handlers
+  const handleCancelTaskClick = (fieldId, task) => {
+    setCancelTaskId(task.task_id);
+    setCancelFieldId(fieldId);
+    // Pre-select existing ops cancel reason if task was already cancelled
+    const cancelInfo = taskCancelStatusMap[task.task_id];
+    const existing = cancelInfo ? cancelInfo.ops_cancel_id : null;
+    setSelectedCancelReason(existing && existing !== 0 ? existing : null);
+    setShowCancelPopup(true);
+  };
+
+  // Handle pilot cancel reset
+  const handleResetPilotCancel = async (fieldId, task) => {
+    if (!window.confirm('Are you sure you want to reset the pilot cancel status? The task will be set back to pending.')) {
+      return;
+    }
+    setCancelSubmitting(true);
+    try {
+      await resetPilotCancel({ taskId: task.task_id }).unwrap();
+      toast.success('Pilot cancel reset successfully');
+      // Refresh cancel status map
+      if (selectedMission) {
+        fetchCancelStatus(selectedMission.id);
+      }
+      // Refresh field tasks
+      if (fieldId && selectedMission) {
+        const taskResult = await dispatch(
+          baseApi.endpoints.getTasksByPlanAndField.initiate(
+            { planId: selectedMission.id, fieldId: fieldId },
+            { forceRefetch: true }
+          )
+        );
+        if (taskResult.data) {
+          setFieldTasks((prev) => ({ ...prev, [fieldId]: taskResult.data }));
+        }
+      }
+    } catch (err) {
+      toast.error(err?.data?.message || 'Failed to reset pilot cancel');
+    } finally {
+      setCancelSubmitting(false);
+    }
+  };
+
+  // Helper to get cancel reason text by id
+  const getCancelReasonText = (reasonId) => {
+    if (!reasonId || reasonId === 0 || reasonId === '0') return null;
+    const r = cancelReasons.find((cr) => cr.id === Number(reasonId));
+    return r ? r.reason : null;
+  };
+
+  const handleCancelTaskSubmit = async () => {
+    if (!cancelTaskId || !selectedCancelReason) {
+      toast.error('Please select a reason');
+      return;
+    }
+    setCancelSubmitting(true);
+    try {
+      const isEdit = taskCancelStatusMap[cancelTaskId]?.ops_cancel_id > 0;
+      await cancelTask({ taskId: cancelTaskId, reasonId: selectedCancelReason }).unwrap();
+      toast.success(isEdit ? 'Cancel reason updated successfully' : 'Task cancelled successfully');
+      setShowCancelPopup(false);
+      // Refresh cancel status map so badge updates immediately
+      if (selectedMission) {
+        fetchCancelStatus(selectedMission.id);
+      }
+      // Refresh field tasks
+      if (cancelFieldId && selectedMission) {
+        const taskResult = await dispatch(
+          baseApi.endpoints.getTasksByPlanAndField.initiate(
+            { planId: selectedMission.id, fieldId: cancelFieldId },
+            { forceRefetch: true }
+          )
+        );
+        if (taskResult.data) {
+          setFieldTasks((prev) => ({ ...prev, [cancelFieldId]: taskResult.data }));
+        }
+      }
+    } catch (err) {
+      toast.error(err?.data?.message || 'Failed to cancel task');
+    } finally {
+      setCancelSubmitting(false);
+    }
+  };
 
   const handleContainerClick = (missionId) => {
     setSelectedMissionId(missionId); // Update selected mission ID
@@ -144,6 +262,7 @@ const DayEndProcess = () => {
     setExpandedDivisions([]);
     setExpandedFields([]);
     setFieldTasks({});
+    setTaskCancelStatusMap({});
     setLoadingFields({});
     setLoadingMissions(true);
     try {
@@ -203,14 +322,7 @@ const DayEndProcess = () => {
         let completionStatsMap = {};
         try {
           // Get Node.js backend URL based on environment
-          const hostname = window.location.hostname;
-          let backendUrl = 'https://dsms-web-api-dev.kenilworthinternational.com';
-          if (hostname.includes('test')) {
-            backendUrl = 'https://dsms-api-test.kenilworth.international.com';
-          } else if (!hostname.includes('dev') && !hostname.includes('localhost')) {
-            backendUrl = 'https://dsms-api.kenilworth.international.com';
-          }
-          
+          const backendUrl = getBackendUrl();
           const token = userData.token;
           const response = await fetch(`${backendUrl}/api/day-end-process/plans-completion-stats`, {
             method: 'POST',
@@ -275,6 +387,7 @@ const DayEndProcess = () => {
       setLoadingFields({});
       setExpandedDivisions([]);
       setExpandedFields([]);
+      setTaskCancelStatusMap({});
       
       const summaryResult = await dispatch(
         baseApi.endpoints.getPlanSummary.initiate(missionId)
@@ -282,6 +395,8 @@ const DayEndProcess = () => {
       const response = summaryResult.data;
       if (response) {
         setSelectedMission({ ...response, id: missionId });
+        // Fetch cancel status for all tasks in this plan
+        fetchCancelStatus(missionId);
       } else {
         setSelectedMission(null);
       }
@@ -431,12 +546,7 @@ const DayEndProcess = () => {
         dji_flying_duration: freshTask.dji_flying_duration || '',
         dji_no_of_flights: freshTask.dji_no_of_flights || '',
       });
-      // Reset crop image states when opening a new task
-      setCropImage(null);
-      setCropImagePreview("");
-      // Reset file inputs
-      const cropImageInput = document.getElementById('crop-image-upload');
-      if (cropImageInput) cropImageInput.value = '';
+      // Crop image is now handled automatically from DJI image, no need to reset
       
       // Fetch existing report data to show button color immediately
       try {
@@ -466,12 +576,6 @@ const DayEndProcess = () => {
     setShowTaskPopup(false);
     setCurrentField(null);
     setCurrentTask(null);
-    // Reset crop image states when closing the task popup
-    setCropImage(null);
-    setCropImagePreview("");
-    // Reset file inputs
-    const cropImageInput = document.getElementById('crop-image-upload');
-    if (cropImageInput) cropImageInput.value = '';
     // Reset DJI image selection
     setDjiData((prev) => ({ ...prev, dji_image_id: null }));
     // Reset existing report data when closing the task popup
@@ -519,7 +623,7 @@ const DayEndProcess = () => {
     if (djiData.dji_image_id) {
       const selectedImage = allDjiImages.find(img => img.id === parseInt(djiData.dji_image_id));
       if (selectedImage) {
-        const baseUrl = 'https://dsms-web-api-dev.kenilworthinternational.com';
+        const baseUrl = getBackendUrl();
         return `${baseUrl}/api/dji-images/file/${selectedImage.image_filename}`;
       }
     }
@@ -536,7 +640,7 @@ const DayEndProcess = () => {
       const selectedImage = allDjiImages.find(img => img.id === parseInt(imageId));
       if (!selectedImage) return null;
       
-      const baseUrl = 'https://dsms-web-api-dev.kenilworthinternational.com';
+      const baseUrl = getBackendUrl();
       const imageUrl = `${baseUrl}/api/dji-images/file/${selectedImage.image_filename}`;
       
       const userData = JSON.parse(localStorage.getItem('userData')) || {};
@@ -562,16 +666,6 @@ const DayEndProcess = () => {
     }
   };
 
-  // Add handler for crop image upload
-  const handleCropImageUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setCropImage(file);
-      const reader = new FileReader();
-      reader.onload = (ev) => setCropImagePreview(ev.target.result);
-      reader.readAsDataURL(file);
-    }
-  };
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
@@ -589,18 +683,15 @@ const DayEndProcess = () => {
       formData.append('dji_no_of_flights', formatNumber(djiData.dji_no_of_flights));
       
       // Fetch and upload DJI image file to old API if image is selected
+      // Send DJI image as both 'image' and 'image_crop' (same image for both)
       if (djiData.dji_image_id) {
         const imageFile = await fetchDjiImageFile(djiData.dji_image_id);
         if (imageFile) {
           formData.append('image', imageFile);
+          formData.append('image_crop', imageFile); // Send same DJI image as crop image
         } else {
           toast.warning('Selected DJI image could not be loaded. Proceeding without image.');
         }
-      }
-      
-      // Only append crop image if a file is selected and is a File instance
-      if (cropImage && cropImage instanceof File) {
-        formData.append('image_crop', cropImage);
       }
       
       const submitResult = await dispatch(baseApi.endpoints.submitDJIRecord.initiate(formData));
@@ -615,14 +706,7 @@ const DayEndProcess = () => {
           
           // Refresh completion stats for the plan
           if (selectedMission && selectedMission.id) {
-            const hostname = window.location.hostname;
-            let backendUrl = 'https://dsms-web-api-dev.kenilworthinternational.com';
-            if (hostname.includes('test')) {
-              backendUrl = 'https://dsms-api-test.kenilworth.international.com';
-            } else if (!hostname.includes('dev') && !hostname.includes('localhost')) {
-              backendUrl = 'https://dsms-api.kenilworth.international.com';
-            }
-            
+            const backendUrl = getBackendUrl();
             const formattedDate = selectedDate.toLocaleDateString('en-CA');
             const statsResponse = await fetch(`${backendUrl}/api/day-end-process/plans-completion-stats`, {
               method: 'POST',
@@ -957,14 +1041,22 @@ const DayEndProcess = () => {
                             {(fieldTasks[field.field_id]?.tasks || []).map((task, taskIndex) => (
                               <div key={`task-${task.task_id}-${taskIndex}`} className="task-details-dayend">
                                 <div
-                                  className="task-header"
+                                  className={`task-header ${(taskCancelStatusMap[task.task_id]?.pilot_cancel_id || taskCancelStatusMap[task.task_id]?.ops_cancel_id) ? 'task-header-cancelled' : ''}`}
                                   style={{
-                                    backgroundColor: getStatusBackground(task.task_status_text),
+                                    backgroundColor: (taskCancelStatusMap[task.task_id]?.pilot_cancel_id || taskCancelStatusMap[task.task_id]?.ops_cancel_id) ? '#ffebee' : getStatusBackground(task.task_status_text),
                                     transition: 'all 0.3s ease',
                                   }}
                                   onClick={() => toggleTaskExpansion(field.field_id, taskIndex)}
                                 >
-                                  <h4>Task {taskIndex + 1} : {task.drone_tag} - {task.pilot}</h4>
+                                  <h4>
+                                    Task {taskIndex + 1} : {task.drone_tag} - {task.pilot}
+                                    {taskCancelStatusMap[task.task_id]?.pilot_cancel_id > 0 && (
+                                      <span className="cancelled-badge cancelled-badge-pilot">Pilot Cancelled</span>
+                                    )}
+                                    {taskCancelStatusMap[task.task_id]?.ops_cancel_id > 0 && (
+                                      <span className="cancelled-badge cancelled-badge-ops">Ops Cancelled</span>
+                                    )}
+                                  </h4>
                                   {task.expanded ? <FaArrowCircleUp /> : <FaArrowCircleDown />}
                                 </div>
                                 {task.expanded && (
@@ -994,6 +1086,24 @@ const DayEndProcess = () => {
                                         />
                                       </div>
                                     </div>
+                                    {/* Show pilot cancel reason */}
+                                    {taskCancelStatusMap[task.task_id]?.pilot_cancel_id > 0 && (
+                                      <div className="cancel-reason-display cancel-reason-pilot">
+                                        <span className="cancel-reason-label">Pilot Cancel:</span>
+                                        <span className="cancel-reason-value">
+                                          {taskCancelStatusMap[task.task_id].pilot_cancel_reason || 'Unknown'}
+                                        </span>
+                                      </div>
+                                    )}
+                                    {/* Show ops room cancel reason */}
+                                    {taskCancelStatusMap[task.task_id]?.ops_cancel_id > 0 && (
+                                      <div className="cancel-reason-display cancel-reason-ops">
+                                        <span className="cancel-reason-label">Ops Cancel:</span>
+                                        <span className="cancel-reason-value">
+                                          {taskCancelStatusMap[task.task_id].ops_cancel_reason || 'Unknown'}
+                                        </span>
+                                      </div>
+                                    )}
                                     <div className="button-set-dayend">
                                       <button
                                         className="confirm-button-dayend"
@@ -1001,6 +1111,21 @@ const DayEndProcess = () => {
                                       >
                                         Task
                                       </button>
+                                      <button
+                                        className={`cancel-button-dayend ${taskCancelStatusMap[task.task_id]?.ops_cancel_id > 0 ? 'cancel-button-edit' : ''}`}
+                                        onClick={() => handleCancelTaskClick(field.field_id, task)}
+                                      >
+                                        {taskCancelStatusMap[task.task_id]?.ops_cancel_id > 0 ? 'Edit Cancel' : 'Cancel Task'}
+                                      </button>
+                                      {taskCancelStatusMap[task.task_id]?.pilot_cancel_id > 0 && (
+                                        <button
+                                          className="reset-button-dayend"
+                                          onClick={() => handleResetPilotCancel(field.field_id, task)}
+                                          title="Reset pilot cancel status"
+                                        >
+                                          Pilot Cancel Reset
+                                        </button>
+                                      )}
                                     </div>
                                   </div>
                                 )}
@@ -1084,16 +1209,16 @@ const DayEndProcess = () => {
               </div>
               <div className="task-popup-body">
                 <div className="task-images-section">
-                  <div className="image-card-full">
-                    <h4>Task Image</h4>
-                    <img
-                      src={currentTask.task_image || '/assets/images/no-plan-found.png'}
-                      alt="Task"
-                      className="popup-image"
-                      onClick={() => openImage(currentTask.task_image)}
-                    />
-                  </div>
                   <div className="image-cards-row">
+                    <div className="image-card2">
+                      <h4>Task Image</h4>
+                      <img
+                        src={currentTask.task_image || '/assets/images/no-plan-found.png'}
+                        alt="Task"
+                        className="popup-image"
+                        onClick={() => openImage(currentTask.task_image)}
+                      />
+                    </div>
                     <div className="image-card2">
                       <h4>DJI Image</h4>
                       <img
@@ -1145,32 +1270,6 @@ const DayEndProcess = () => {
                           </optgroup>
                         )}
                       </select>
-                    </div>
-                    <div className="image-card2">
-                      <h4>Crop Image</h4>
-                      <img
-                        src={
-                          cropImagePreview ||
-                          currentTask.image_crop ||
-                          '/assets/images/no-plan-found.png'
-                        }
-                        alt="Crop"
-                        className="popup-image"
-                        onClick={() =>
-                          openImage(
-                            cropImagePreview ||
-                            currentTask.image_crop ||
-                            '/assets/images/no-plan-found.png'
-                          )
-                        }
-                      />
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleCropImageUpload}
-                        id="crop-image-upload"
-                        className="image-upload-input"
-                      />
                     </div>
                   </div>
                 </div>
@@ -1479,6 +1578,57 @@ const DayEndProcess = () => {
           </div>
         )}
       </div>
+
+      {/* ─── Cancel Task Popup ─── */}
+      {showCancelPopup && createPortal(
+        <div className="cancel-task-overlay" onClick={() => !cancelSubmitting && setShowCancelPopup(false)}>
+          <div className="cancel-task-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="cancel-task-header">
+              <h3>{taskCancelStatusMap[cancelTaskId]?.ops_cancel_id > 0 ? 'Edit Cancellation' : 'Cancel Task'}</h3>
+              <button className="cancel-task-close" onClick={() => !cancelSubmitting && setShowCancelPopup(false)}>×</button>
+            </div>
+            <div className="cancel-task-body">
+              <p className="cancel-task-label">
+                {taskCancelStatusMap[cancelTaskId]?.ops_cancel_id > 0 ? 'Change the cancellation reason:' : 'Select a reason for cancellation:'}
+              </p>
+              <div className="cancel-reasons-list">
+                {cancelReasons.map((r) => (
+                  <button
+                    key={r.id}
+                    className={`cancel-reason-item ${selectedCancelReason === r.id ? 'selected' : ''}`}
+                    onClick={() => setSelectedCancelReason(r.id)}
+                  >
+                    <span className="cancel-reason-radio">
+                      {selectedCancelReason === r.id ? '●' : '○'}
+                    </span>
+                    <span className="cancel-reason-text">{r.reason}</span>
+                  </button>
+                ))}
+                {cancelReasons.length === 0 && (
+                  <p className="cancel-no-reasons">No reasons available.</p>
+                )}
+              </div>
+            </div>
+            <div className="cancel-task-footer">
+              <button
+                className="cancel-task-btn-secondary"
+                onClick={() => setShowCancelPopup(false)}
+                disabled={cancelSubmitting}
+              >
+                Close
+              </button>
+              <button
+                className="cancel-task-btn-danger"
+                onClick={handleCancelTaskSubmit}
+                disabled={!selectedCancelReason || cancelSubmitting}
+              >
+                {cancelSubmitting ? 'Saving...' : (taskCancelStatusMap[cancelTaskId]?.ops_cancel_id > 0 ? 'Update Reason' : 'Confirm Cancel')}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 };

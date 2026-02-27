@@ -1,15 +1,69 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useGetUserMemberTypesQuery, useGetUserJobRolesQuery, useGetUserLevelsQuery, useGetWingsQuery, useGetDrivingLicenseTypesQuery, useGetWorkLocationsQuery, useGetDSCSQuery, useGetProvincesQuery, useGetDistrictsQuery, useGetASCSQuery, useCreateEmployeeRegistrationMutation, useGetLastEmpNoQuery } from '../../api/services NodeJs/jdManagementApi';
 import '../../styles/employeeRegistration.css';
 
 const EmployeeRegistration = () => {
+  // Fetch User Member Types for Employee Type dropdown
+  const { data: userMemberTypesData, isLoading: loadingMemberTypes } = useGetUserMemberTypesQuery();
+  const userMemberTypes = userMemberTypesData?.data || [];
+
+  // Fetch User Job Roles for Employee Job Role dropdown
+  const { data: userJobRolesData, isLoading: loadingJobRoles } = useGetUserJobRolesQuery();
+  const userJobRoles = userJobRolesData?.data || [];
+
+  // Fetch User Levels for User Level dropdown
+  const { data: userLevelsData, isLoading: loadingLevels } = useGetUserLevelsQuery();
+  const userLevels = userLevelsData?.data || [];
+
+  // Fetch Wings for Department dropdown
+  const { data: wingsData, isLoading: loadingWings, error: wingsError } = useGetWingsQuery();
+  
+  // Extract wings array - API returns array directly or wrapped in data/wings property
+  const wings = useMemo(() => {
+    if (!wingsData) return [];
+    
+    // If it's already an array, return it
+    if (Array.isArray(wingsData)) {
+      return wingsData;
+    }
+    
+    // If it's wrapped in data property (new format: { status: true, data: [...] })
+    if (wingsData.data && Array.isArray(wingsData.data)) {
+      return wingsData.data;
+    }
+    
+    // If it's wrapped in wings property (legacy format: { status: 'true', count: 7, wings: [...] })
+    if (wingsData.wings && Array.isArray(wingsData.wings)) {
+      return wingsData.wings;
+    }
+    
+    return [];
+  }, [wingsData]);
+
+  // Fetch Driving License Types for Driving License Type dropdown
+  const { data: drivingLicenseTypesData, isLoading: loadingLicenseTypes } = useGetDrivingLicenseTypesQuery();
+  const drivingLicenseTypes = drivingLicenseTypesData?.data || [];
+
+  // Fetch Work Locations for Work Location dropdown
+  const { data: workLocationsData, isLoading: loadingWorkLocations } = useGetWorkLocationsQuery();
+  const workLocations = useMemo(() => {
+    if (!workLocationsData) return [];
+    if (Array.isArray(workLocationsData)) return workLocationsData;
+    if (workLocationsData.data && Array.isArray(workLocationsData.data)) return workLocationsData.data;
+    return [];
+  }, [workLocationsData]);
+
   const [activeTab, setActiveTab] = useState('employee');
+  const [showLicenseHelpPopup, setShowLicenseHelpPopup] = useState(false);
+  const [showLicenseDropdown, setShowLicenseDropdown] = useState(false);
+  const licenseDropdownRef = useRef(null);
   const [formData, setFormData] = useState({
     // Employee Details
     employeeName: '',
     preferredName: '',
     nic: '',
     drivingLicense: '',
-    drivingLicenseType: '',
+    drivingLicenseType: [], // Changed to array for multiple selection
     race: '',
     religion: '',
     gender: '',
@@ -19,28 +73,33 @@ const EmployeeRegistration = () => {
     telephoneHome: '',
     mobileNumber: '',
     emailAddress: '',
-    educationCertificates: '',
-    serviceLetters: '',
+    companyEmailAddress: '',
+    educationCertificates: null, // FileList for multiple files
+    birthCertificate: null, // File for single file
+    healthReport: null, // File for single file
+    serviceLetters: null, // FileList for multiple files
     
     // Family Details
     maritalStatus: '',
     spouseName: '',
+    marriedCertificate: null, // File for single file
     noOfChildren: '',
     emergencyContactName: '',
     emergencyContactRelationship: '',
     emergencyContactNumber: '',
     
     // Security Details
+    province: '',
+    district: '',
     divisionalSecretariats: '',
     asc: '',
     policeStation: '',
-    district: '',
-    policeRecord: '',
-    ascRecord: '',
+    policeReport: null, // File for single file
+    gndCertificate: null, // File for single file
     
     // Job Details
     empNo: '',
-    employeeType: '',
+    employeeType: 'i', // Default to Internal (typeCode: 'i')
     employeeJobRole: '',
     appointmentDate: '',
     department: '',
@@ -50,12 +109,224 @@ const EmployeeRegistration = () => {
     workLocation: '',
   });
 
+  // State for form submission
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitMessage, setSubmitMessage] = useState({ type: '', text: '' });
+  
+  // Employee Registration Mutation
+  const [createEmployeeRegistration, { isLoading: isCreating }] = useCreateEmployeeRegistrationMutation();
+  
+  // Fetch last EMP NO for estimation
+  const { data: lastEmpNoData, isLoading: loadingLastEmpNo } = useGetLastEmpNoQuery();
+  // Extract nextEmpNo from response - handle both possible response structures
+  const estimatedEmpNo = lastEmpNoData?.data?.nextEmpNo || lastEmpNoData?.nextEmpNo || '';
+
+  // Fetch Provinces for Province dropdown
+  const { data: provincesData, isLoading: loadingProvinces } = useGetProvincesQuery();
+  const provinces = useMemo(() => {
+    if (!provincesData) return [];
+    if (Array.isArray(provincesData)) return provincesData;
+    if (provincesData.data && Array.isArray(provincesData.data)) return provincesData.data;
+    return [];
+  }, [provincesData]);
+
+  // Fetch Districts for District dropdown
+  const { data: districtsData, isLoading: loadingDistricts } = useGetDistrictsQuery();
+  const districts = useMemo(() => {
+    if (!districtsData) return [];
+    if (Array.isArray(districtsData)) return districtsData;
+    if (districtsData.data && Array.isArray(districtsData.data)) return districtsData.data;
+    return [];
+  }, [districtsData]);
+
+  // Fetch DSCS for Divisional Secretariats dropdown
+  const { data: dscsData, isLoading: loadingDSCS } = useGetDSCSQuery();
+  const dscs = useMemo(() => {
+    if (!dscsData) return [];
+    if (Array.isArray(dscsData)) return dscsData;
+    if (dscsData.data && Array.isArray(dscsData.data)) return dscsData.data;
+    return [];
+  }, [dscsData]);
+
+  // Fetch ASCS for ASC dropdown (filtered by district or DSCS)
+  const { data: ascsData, isLoading: loadingASCS } = useGetASCSQuery({
+    districtId: formData.district || undefined,
+    dscsId: formData.divisionalSecretariats || undefined,
+  }, { skip: !formData.district && !formData.divisionalSecretariats });
+  const ascs = useMemo(() => {
+    if (!ascsData) return [];
+    if (Array.isArray(ascsData)) return ascsData;
+    if (ascsData.data && Array.isArray(ascsData.data)) return ascsData.data;
+    return [];
+  }, [ascsData]);
+
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, files } = e.target;
+    
+    // Handle file inputs
+    if (type === 'file') {
+      if (name === 'educationCertificates' || name === 'serviceLetters') {
+        // Multiple files
+        setFormData(prev => ({
+          ...prev,
+          [name]: files && files.length > 0 ? files : null
+        }));
+      } else {
+        // Single file
+        setFormData(prev => ({
+          ...prev,
+          [name]: files && files.length > 0 ? files[0] : null
+        }));
+      }
+    } else {
+      // Handle cascading dropdowns - reset dependent fields
+      setFormData(prev => {
+        const updates = { [name]: value || '' };
+        
+        // If province changes, reset district and dependent fields
+        if (name === 'province') {
+          updates.district = '';
+          updates.divisionalSecretariats = '';
+          updates.asc = '';
+        }
+        
+        // If district changes, reset divisional secretariats and ASC
+        if (name === 'district') {
+          updates.divisionalSecretariats = '';
+          updates.asc = '';
+        }
+        
+        // If divisional secretariats changes, reset ASC
+        if (name === 'divisionalSecretariats') {
+          updates.asc = '';
+        }
+        
+        // If Driving License is set to "No", clear Driving License Type
+        if (name === 'drivingLicense' && value === 'No') {
+          updates.drivingLicenseType = [];
+        }
+        
+        return {
+          ...prev,
+          ...updates
+        };
+      });
+    }
+  };
+
+  // Handle date input click - make entire field clickable to open calendar
+  const handleDateInputClick = (e) => {
+    const input = e.target;
+    if (input.type === 'date') {
+      // Focus the input first
+      input.focus();
+      // Try to show the picker (modern browsers)
+      if (input.showPicker) {
+        try {
+          input.showPicker();
+        } catch (err) {
+          // Fallback: just focus, native behavior will handle it
+        }
+      }
+    }
+  };
+
+  // Handle license type selection
+  const handleLicenseTypeToggle = (licenseId) => {
+    // Don't allow selection if driving license is "No"
+    if (formData.drivingLicense === 'No') {
+      return;
+    }
+    
+    setFormData(prev => {
+      const currentTypes = prev.drivingLicenseType || [];
+      if (currentTypes.includes(licenseId)) {
+        return {
+          ...prev,
+          drivingLicenseType: currentTypes.filter(id => id !== licenseId)
+        };
+      } else {
+        return {
+          ...prev,
+          drivingLicenseType: [...currentTypes, licenseId]
+        };
+      }
+    });
+  };
+
+  // Handle remove license type
+  const handleRemoveLicenseType = (licenseId) => {
+    // Don't allow removal if driving license is "No"
+    if (formData.drivingLicense === 'No') {
+      return;
+    }
+    
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      drivingLicenseType: (prev.drivingLicenseType || []).filter(id => id !== licenseId)
     }));
+  };
+
+  // Set Employee Type to Internal (typeCode: 'i') automatically
+  useEffect(() => {
+    if (userMemberTypes.length > 0 && formData.employeeType !== 'i') {
+      setFormData(prev => ({
+        ...prev,
+        employeeType: 'i'
+      }));
+    }
+  }, [userMemberTypes, formData.employeeType]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (licenseDropdownRef.current && !licenseDropdownRef.current.contains(event.target)) {
+        setShowLicenseDropdown(false);
+      }
+    };
+
+    if (showLicenseDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [showLicenseDropdown]);
+
+  // Close dropdown when driving license is set to "No"
+  useEffect(() => {
+    if (formData.drivingLicense === 'No') {
+      setShowLicenseDropdown(false);
+    }
+  }, [formData.drivingLicense]);
+
+  // Handle file removal
+  const handleRemoveFile = (fieldName, fileIndex = null) => {
+    if (fieldName === 'educationCertificates' || fieldName === 'serviceLetters') {
+      // Remove specific file from multiple files
+      const dt = new DataTransfer();
+      const files = formData[fieldName];
+      for (let i = 0; i < files.length; i++) {
+        if (i !== fileIndex) {
+          dt.items.add(files[i]);
+        }
+      }
+      setFormData(prev => ({
+        ...prev,
+        [fieldName]: dt.files.length > 0 ? dt.files : null
+      }));
+    } else {
+      // Remove single file
+      setFormData(prev => ({
+        ...prev,
+        [fieldName]: null
+      }));
+      // Clear the file input
+      const fileInput = document.querySelector(`input[name="${fieldName}"]`);
+      if (fileInput) {
+        fileInput.value = '';
+      }
+    }
   };
 
   const handleNext = () => {
@@ -74,17 +345,208 @@ const EmployeeRegistration = () => {
     }
   };
 
-  const handleSubmit = () => {
-    // Handle form submission
-    console.log('Form submitted:', formData);
-    // Add API call here
+  const handleSubmit = async () => {
+    // Reset message
+    setSubmitMessage({ type: '', text: '' });
+    setIsSubmitting(true);
+
+    try {
+      // Get names for dropdown fields
+      const employeeTypeObj = userMemberTypes.find(mt => mt.id === formData.employeeType || mt.typeCode === formData.employeeType);
+      const employeeJobRoleObj = userJobRoles.find(jr => jr.id === formData.employeeJobRole);
+      const jobRoleLayerObj = userLevels.find(ul => ul.id === formData.jobRoleLayer);
+      const departmentObj = wings.find(w => w.id === formData.department);
+      const workLocationObj = workLocations.find(wl => wl.id === formData.workLocation);
+
+      // Prepare file paths (for now, store file names - actual upload will be handled separately)
+      const getFilePaths = (files) => {
+        if (!files) return null;
+        if (files instanceof FileList) {
+          return Array.from(files).map(file => `/uploads/employees/${file.name}`);
+        }
+        if (files instanceof File) {
+          return `/uploads/employees/${files.name}`;
+        }
+        return null;
+      };
+
+      // Prepare FormData for file uploads
+      const formDataToSend = new FormData();
+      
+      // Add all form fields
+      Object.keys(formData).forEach(key => {
+        const value = formData[key];
+        
+        // Skip file fields - they'll be added separately
+        if (key === 'educationCertificates' || key === 'birthCertificate' || 
+            key === 'healthReport' || key === 'serviceLetters' || 
+            key === 'marriedCertificate' || key === 'policeReport' || 
+            key === 'gndCertificate') {
+          return;
+        }
+        
+        // Skip empNo - it will be auto-generated
+        if (key === 'empNo') {
+          return;
+        }
+        
+        // Handle arrays (like drivingLicenseType)
+        if (Array.isArray(value)) {
+          formDataToSend.append(key, JSON.stringify(value));
+        } else if (value !== null && value !== undefined && value !== '') {
+          formDataToSend.append(key, value);
+        }
+      });
+      
+      // Add files
+      if (formData.educationCertificates) {
+        Array.from(formData.educationCertificates).forEach(file => {
+          formDataToSend.append('educationCertificates', file);
+        });
+      }
+      if (formData.birthCertificate) {
+        formDataToSend.append('birthCertificate', formData.birthCertificate);
+      }
+      if (formData.healthReport) {
+        formDataToSend.append('healthReport', formData.healthReport);
+      }
+      if (formData.serviceLetters) {
+        Array.from(formData.serviceLetters).forEach(file => {
+          formDataToSend.append('serviceLetters', file);
+        });
+      }
+      if (formData.marriedCertificate) {
+        formDataToSend.append('marriedCertificate', formData.marriedCertificate);
+      }
+      if (formData.policeReport) {
+        formDataToSend.append('policeReport', formData.policeReport);
+      }
+      if (formData.gndCertificate) {
+        formDataToSend.append('gndCertificate', formData.gndCertificate);
+      }
+
+      const result = await createEmployeeRegistration(formDataToSend).unwrap();
+
+      if (result.status) {
+        // Success - show success message with created EMP NO
+        // The empNo should be in result.data.empNo (not result.data.id)
+        const createdEmpNo = result.data?.empNo || result.data?.data?.empNo || estimatedEmpNo || 'N/A';
+        
+        // Debug: Log to verify we're getting the right field
+        if (!createdEmpNo || createdEmpNo === 'N/A' || createdEmpNo.toString().match(/^\d+$/)) {
+          console.warn('Warning: EMP NO might be incorrect. Response:', result);
+        }
+        
+        setSubmitMessage({ 
+          type: 'success', 
+          text: `Employee registration created successfully! Employee Number: ${createdEmpNo}` 
+        });
+        
+        // Clear form data
+        setFormData({
+          // Employee Details
+          employeeName: '',
+          preferredName: '',
+          nic: '',
+          drivingLicense: '',
+          drivingLicenseType: [],
+          race: '',
+          religion: '',
+          gender: '',
+          dob: '',
+          permanentAddress: '',
+          temporaryAddress: '',
+          telephoneHome: '',
+          mobileNumber: '',
+          emailAddress: '',
+          companyEmailAddress: '',
+          educationCertificates: null,
+          birthCertificate: null,
+          healthReport: null,
+          serviceLetters: null,
+          
+          // Family Details
+          maritalStatus: '',
+          spouseName: '',
+          marriedCertificate: null,
+          noOfChildren: '',
+          emergencyContactName: '',
+          emergencyContactRelationship: '',
+          emergencyContactNumber: '',
+          
+          // Security Details
+          province: '',
+          district: '',
+          divisionalSecretariats: '',
+          asc: '',
+          policeStation: '',
+          policeReport: null,
+          gndCertificate: null,
+          
+          // Job Details
+          empNo: '',
+          employeeType: 'i',
+          employeeJobRole: '',
+          appointmentDate: '',
+          department: '',
+          jobRoleLayer: '',
+          workStatus: '',
+          permanentDate: '',
+          workLocation: '',
+        });
+
+        // Reset to first tab
+        setActiveTab('employee');
+
+        // Clear message after 5 seconds
+        setTimeout(() => {
+          setSubmitMessage({ type: '', text: '' });
+        }, 5000);
+      }
+    } catch (error) {
+      // Handle error - improve conflict error messages
+      let errorMessage = 'Failed to create employee registration. Please try again.';
+      
+      // Check for conflict errors (409 status)
+      if (error?.status === 409 || error?.data?.status === false || error?.error?.status === 409) {
+        // Use the backend error message directly (it's already user-friendly)
+        errorMessage = error?.data?.message || error?.error?.data?.message || error?.message || 'A conflict occurred. Please check your input.';
+        
+        // Check for specific error codes from backend
+        const errorCode = error?.data?.code || error?.error?.data?.code;
+        if (errorCode === 'DUPLICATE_EMP_NO') {
+          errorMessage = 'An employee with this employee number already exists.';
+        } else if (errorCode === 'DUPLICATE_MOBILE') {
+          errorMessage = 'An employee with this mobile number already exists. Please use a different mobile number.';
+        } else if (errorCode === 'DUPLICATE_NIC') {
+          errorMessage = 'An employee with this NIC number already exists. Please use a different NIC number.';
+        } else if (errorCode === 'DUPLICATE_EMAIL') {
+          errorMessage = 'An employee with this email address already exists. Please use a different email address.';
+        }
+      } else if (error?.data?.message) {
+        errorMessage = error.data.message;
+      } else if (error?.error?.data?.message) {
+        errorMessage = error.error.data.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
+      setSubmitMessage({ 
+        type: 'error', 
+        text: errorMessage 
+      });
+
+      // Clear error message after 10 seconds
+      setTimeout(() => {
+        setSubmitMessage({ type: '', text: '' });
+      }, 10000);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <div className="employee-registration-container-emp-reg">
-      <h1 className="registration-title-emp-reg">Employee Registration</h1>
-      
-      {/* Tab Navigation */}
       <div className="registration-tabs-emp-reg">
         <button
           type="button"
@@ -154,29 +616,116 @@ const EmployeeRegistration = () => {
               </div>
               <div className="form-group-emp-reg">
                 <label>Driving License:</label>
-                <input
-                  type="text"
+                <select
                   name="drivingLicense"
                   value={formData.drivingLicense}
                   onChange={handleInputChange}
-                />
+                >
+                  <option value="">-- Select --</option>
+                  <option value="No">No</option>
+                  <option value="Light">Light</option>
+                  <option value="Heavy">Heavy</option>
+                </select>
               </div>
             </div>
 
             <div className="form-row-emp-reg">
               <div className="form-group-emp-reg">
-                <label>Driving License Type:</label>
-                <select
-                  name="drivingLicenseType"
-                  value={formData.drivingLicenseType}
-                  onChange={handleInputChange}
-                >
-                  <option value="">-- Select --</option>
-                  <option value="A">A</option>
-                  <option value="B">B</option>
-                  <option value="C">C</option>
-                  <option value="D">D</option>
-                </select>
+                <label>
+                  Driving License Type:
+                  <span 
+                    className="license-help-icon-emp-reg"
+                    onClick={() => !(formData.drivingLicense === 'No') && setShowLicenseHelpPopup(true)}
+                    title="Click to see license code descriptions"
+                    style={{ 
+                      cursor: formData.drivingLicense === 'No' ? 'not-allowed' : 'pointer',
+                      opacity: formData.drivingLicense === 'No' ? 0.5 : 1
+                    }}
+                  >
+                    ?
+                  </span>
+                </label>
+                
+                {/* Selected License Types Display */}
+                {formData.drivingLicenseType && formData.drivingLicenseType.length > 0 && (
+                  <div className="selected-license-types-emp-reg">
+                    {formData.drivingLicenseType.map(licenseId => {
+                      const license = drivingLicenseTypes.find(l => l.id === licenseId);
+                      if (!license) return null;
+                      return (
+                        <span key={licenseId} className="selected-license-tag-emp-reg">
+                          {license.licenseCode}
+                          <button
+                            type="button"
+                            className="remove-license-tag-emp-reg"
+                            onClick={() => handleRemoveLicenseType(licenseId)}
+                          >
+                            ×
+                          </button>
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Multi-Select Dropdown */}
+                <div className="license-multi-select-container-emp-reg" ref={licenseDropdownRef}>
+                  <div 
+                    className="license-multi-select-input-emp-reg"
+                    onClick={() => {
+                      if (formData.drivingLicense !== 'No') {
+                        setShowLicenseDropdown(!showLicenseDropdown);
+                      }
+                    }}
+                    style={{ 
+                      padding: '8px 12px', 
+                      border: '1px solid #ddd', 
+                      borderRadius: '4px',
+                      cursor: formData.drivingLicense === 'No' ? 'not-allowed' : 'pointer',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      backgroundColor: formData.drivingLicense === 'No' ? '#f5f5f5' : '#fff',
+                      width: '100%',
+                      boxSizing: 'border-box',
+                      minHeight: '42px',
+                      opacity: formData.drivingLicense === 'No' ? 0.6 : 1
+                    }}
+                  >
+                    <span style={{ color: formData.drivingLicenseType.length === 0 ? '#999' : '#333' }}>
+                      {formData.drivingLicense === 'No' 
+                        ? 'Disabled (No driving license)' 
+                        : (formData.drivingLicenseType.length === 0 ? 'Select license codes...' : `${formData.drivingLicenseType.length} selected`)
+                      }
+                    </span>
+                    <span className="license-dropdown-arrow-emp-reg">▼</span>
+                  </div>
+                  
+                  {showLicenseDropdown && formData.drivingLicense !== 'No' && (
+                    <div className="license-multi-select-dropdown-emp-reg">
+                      {drivingLicenseTypes.map(license => {
+                          const isSelected = formData.drivingLicenseType && formData.drivingLicenseType.includes(license.id);
+                          return (
+                            <div
+                              key={license.id}
+                              className={`license-multi-select-option-emp-reg ${isSelected ? 'selected-license-emp-reg' : ''}`}
+                              onClick={() => handleLicenseTypeToggle(license.id)}
+                            >
+                              <span className="license-option-text-emp-reg">
+                                {license.licenseCode}
+                              </span>
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => {}}
+                                className="license-checkbox-emp-reg"
+                              />
+                            </div>
+                          );
+                        })}
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="form-group-emp-reg">
                 <label>Race:</label>
@@ -234,10 +783,29 @@ const EmployeeRegistration = () => {
                   name="dob"
                   value={formData.dob}
                   onChange={handleInputChange}
+                  onClick={handleDateInputClick}
                 />
               </div>
               <div className="form-group-emp-reg">
-                {/* Empty placeholder for 2-column layout */}
+                <label>Email Address:</label>
+                <input
+                  type="email"
+                  name="emailAddress"
+                  value={formData.emailAddress}
+                  onChange={handleInputChange}
+                />
+              </div>
+            </div>
+
+            <div className="form-row-emp-reg">
+              <div className="form-group-emp-reg">
+                <label>Company Email Address:</label>
+                <input
+                  type="email"
+                  name="companyEmailAddress"
+                  value={formData.companyEmailAddress}
+                  onChange={handleInputChange}
+                />
               </div>
             </div>
 
@@ -288,37 +856,187 @@ const EmployeeRegistration = () => {
 
             <div className="form-row-emp-reg">
               <div className="form-group-emp-reg">
-                <label>Email Address:</label>
+                <label>Education Certificates:</label>
                 <input
-                  type="email"
-                  name="emailAddress"
-                  value={formData.emailAddress}
+                  type="file"
+                  name="educationCertificates"
+                  multiple
+                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
                   onChange={handleInputChange}
                 />
+                {formData.educationCertificates && formData.educationCertificates.length > 0 && (
+                  <div style={{ marginTop: '8px' }}>
+                    {Array.from(formData.educationCertificates).map((file, index) => (
+                      <div key={index} style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'space-between',
+                        padding: '6px 10px',
+                        marginBottom: '4px',
+                        backgroundColor: '#f0f4f8',
+                        borderRadius: '4px',
+                        fontSize: '13px'
+                      }}>
+                        <span style={{ flex: 1, color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {file.name}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveFile('educationCertificates', index)}
+                          style={{
+                            marginLeft: '8px',
+                            padding: '2px 8px',
+                            backgroundColor: '#dc3545',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '3px',
+                            cursor: 'pointer',
+                            fontSize: '11px',
+                            fontWeight: '600'
+                          }}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="form-group-emp-reg">
-                {/* Empty placeholder for 2-column layout */}
+                <label>Service Letters:</label>
+                <input
+                  type="file"
+                  name="serviceLetters"
+                  multiple
+                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                  onChange={handleInputChange}
+                />
+                {formData.serviceLetters && formData.serviceLetters.length > 0 && (
+                  <div style={{ marginTop: '8px' }}>
+                    {Array.from(formData.serviceLetters).map((file, index) => (
+                      <div key={index} style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'space-between',
+                        padding: '6px 10px',
+                        marginBottom: '4px',
+                        backgroundColor: '#f0f4f8',
+                        borderRadius: '4px',
+                        fontSize: '13px'
+                      }}>
+                        <span style={{ flex: 1, color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {file.name}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveFile('serviceLetters', index)}
+                          style={{
+                            marginLeft: '8px',
+                            padding: '2px 8px',
+                            backgroundColor: '#dc3545',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '3px',
+                            cursor: 'pointer',
+                            fontSize: '11px',
+                            fontWeight: '600'
+                          }}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
             <div className="form-row-emp-reg">
               <div className="form-group-emp-reg">
-                <label>Education Certificates:</label>
+                <label>Birth Certificate:</label>
                 <input
-                  type="text"
-                  name="educationCertificates"
-                  value={formData.educationCertificates}
+                  type="file"
+                  name="birthCertificate"
+                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
                   onChange={handleInputChange}
                 />
+                {formData.birthCertificate && (
+                  <div style={{ marginTop: '8px' }}>
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'space-between',
+                      padding: '6px 10px',
+                      backgroundColor: '#f0f4f8',
+                      borderRadius: '4px',
+                      fontSize: '13px'
+                    }}>
+                      <span style={{ flex: 1, color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {formData.birthCertificate.name}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveFile('birthCertificate')}
+                        style={{
+                          marginLeft: '8px',
+                          padding: '2px 8px',
+                          backgroundColor: '#dc3545',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '3px',
+                          cursor: 'pointer',
+                          fontSize: '11px',
+                          fontWeight: '600'
+                        }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="form-group-emp-reg">
-                <label>Service Letters:</label>
+                <label>Health Report:</label>
                 <input
-                  type="text"
-                  name="serviceLetters"
-                  value={formData.serviceLetters}
+                  type="file"
+                  name="healthReport"
+                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
                   onChange={handleInputChange}
                 />
+                {formData.healthReport && (
+                  <div style={{ marginTop: '8px' }}>
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'space-between',
+                      padding: '6px 10px',
+                      backgroundColor: '#f0f4f8',
+                      borderRadius: '4px',
+                      fontSize: '13px'
+                    }}>
+                      <span style={{ flex: 1, color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {formData.healthReport.name}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveFile('healthReport')}
+                        style={{
+                          marginLeft: '8px',
+                          padding: '2px 8px',
+                          backgroundColor: '#dc3545',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '3px',
+                          cursor: 'pointer',
+                          fontSize: '11px',
+                          fontWeight: '600'
+                        }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -353,13 +1071,64 @@ const EmployeeRegistration = () => {
               </div>
             </div>
 
+            {formData.maritalStatus === 'Married' && (
+              <div className="form-row-emp-reg">
+                <div className="form-group-emp-reg">
+                  <label>Married Certificate:</label>
+                  <input
+                    type="file"
+                    name="marriedCertificate"
+                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                    onChange={handleInputChange}
+                  />
+                  {formData.marriedCertificate && (
+                    <div style={{ marginTop: '8px' }}>
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'space-between',
+                        padding: '6px 10px',
+                        backgroundColor: '#f0f4f8',
+                        borderRadius: '4px',
+                        fontSize: '13px'
+                      }}>
+                        <span style={{ flex: 1, color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {formData.marriedCertificate.name}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveFile('marriedCertificate')}
+                          style={{
+                            marginLeft: '8px',
+                            padding: '2px 8px',
+                            backgroundColor: '#dc3545',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '3px',
+                            cursor: 'pointer',
+                            fontSize: '11px',
+                            fontWeight: '600'
+                          }}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div className="form-group-emp-reg">
+                  {/* Empty placeholder for 2-column layout */}
+                </div>
+              </div>
+            )}
+
             <div className="form-row-emp-reg">
               <div className="form-group-emp-reg">
                 <label>No of Children:</label>
                 <input
                   type="number"
                   name="noOfChildren"
-                  value={formData.noOfChildren}
+                  value={formData.noOfChildren || ''}
                   onChange={handleInputChange}
                   min="0"
                 />
@@ -410,22 +1179,71 @@ const EmployeeRegistration = () => {
           <div className="form-section-emp-reg">
             <div className="form-row-emp-reg">
               <div className="form-group-emp-reg">
+                <label>Province:</label>
+                <select
+                  name="province"
+                  value={formData.province}
+                  onChange={handleInputChange}
+                  disabled={loadingProvinces}
+                >
+                  <option value="">-- Select --</option>
+                  {provinces.map((province) => (
+                    <option key={province.id} value={province.id}>
+                      {province.province}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-group-emp-reg">
+                <label>District:</label>
+                <select
+                  name="district"
+                  value={formData.district}
+                  onChange={handleInputChange}
+                  disabled={loadingDistricts}
+                >
+                  <option value="">-- Select --</option>
+                  {districts.map((district) => (
+                    <option key={district.id} value={district.id}>
+                      {district.district}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="form-row-emp-reg">
+              <div className="form-group-emp-reg">
                 <label>Divisional Secretariats:</label>
-                <input
-                  type="text"
+                <select
                   name="divisionalSecretariats"
                   value={formData.divisionalSecretariats}
                   onChange={handleInputChange}
-                />
+                  disabled={loadingDSCS}
+                >
+                  <option value="">-- Select --</option>
+                  {dscs.map((dsc) => (
+                    <option key={dsc.id} value={dsc.id}>
+                      {dsc.dse}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="form-group-emp-reg">
                 <label>ASC:</label>
-                <input
-                  type="text"
+                <select
                   name="asc"
                   value={formData.asc}
                   onChange={handleInputChange}
-                />
+                  disabled={loadingASCS || (!formData.district && !formData.divisionalSecretariats)}
+                >
+                  <option value="">-- Select --</option>
+                  {ascs.map((asc) => (
+                    <option key={asc.id} value={asc.id}>
+                      {asc.ascs}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 
@@ -439,35 +1257,94 @@ const EmployeeRegistration = () => {
                   onChange={handleInputChange}
                 />
               </div>
-              <div className="form-group-emp-reg">
-                <label>District:</label>
-                <input
-                  type="text"
-                  name="district"
-                  value={formData.district}
-                  onChange={handleInputChange}
-                />
-              </div>
             </div>
 
             <div className="form-row-emp-reg">
               <div className="form-group-emp-reg">
-                <label>Police Record:</label>
+                <label>Police Report:</label>
                 <input
-                  type="text"
-                  name="policeRecord"
-                  value={formData.policeRecord}
+                  type="file"
+                  name="policeReport"
+                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
                   onChange={handleInputChange}
                 />
+                {formData.policeReport && (
+                  <div style={{ marginTop: '8px' }}>
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'space-between',
+                      padding: '6px 10px',
+                      backgroundColor: '#f0f4f8',
+                      borderRadius: '4px',
+                      fontSize: '13px'
+                    }}>
+                      <span style={{ flex: 1, color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {formData.policeReport.name}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveFile('policeReport')}
+                        style={{
+                          marginLeft: '8px',
+                          padding: '2px 8px',
+                          backgroundColor: '#dc3545',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '3px',
+                          cursor: 'pointer',
+                          fontSize: '11px',
+                          fontWeight: '600'
+                        }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="form-group-emp-reg">
-                <label>ASC Record:</label>
+                <label>GND Certificate:</label>
                 <input
-                  type="text"
-                  name="ascRecord"
-                  value={formData.ascRecord}
+                  type="file"
+                  name="gndCertificate"
+                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
                   onChange={handleInputChange}
                 />
+                {formData.gndCertificate && (
+                  <div style={{ marginTop: '8px' }}>
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'space-between',
+                      padding: '6px 10px',
+                      backgroundColor: '#f0f4f8',
+                      borderRadius: '4px',
+                      fontSize: '13px'
+                    }}>
+                      <span style={{ flex: 1, color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {formData.gndCertificate.name}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveFile('gndCertificate')}
+                        style={{
+                          marginLeft: '8px',
+                          padding: '2px 8px',
+                          backgroundColor: '#dc3545',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '3px',
+                          cursor: 'pointer',
+                          fontSize: '11px',
+                          fontWeight: '600'
+                        }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -482,22 +1359,27 @@ const EmployeeRegistration = () => {
                 <input
                   type="text"
                   name="empNo"
-                  value={formData.empNo}
+                  value={estimatedEmpNo || (loadingLastEmpNo ? 'Loading...' : 'Auto-generated on save')}
                   onChange={handleInputChange}
+                  disabled={true}
+                  style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed' }}
+                  placeholder="Will be auto-generated (EMP001, EMP002, etc.)"
                 />
               </div>
               <div className="form-group-emp-reg">
-                <label>Employee Type:</label>
+                <label>User Level:</label>
                 <select
-                  name="employeeType"
-                  value={formData.employeeType}
+                  name="jobRoleLayer"
+                  value={formData.jobRoleLayer}
                   onChange={handleInputChange}
+                  disabled={loadingLevels}
                 >
                   <option value="">-- Select --</option>
-                  <option value="Permanent">Permanent</option>
-                  <option value="Contract">Contract</option>
-                  <option value="Temporary">Temporary</option>
-                  <option value="Intern">Intern</option>
+                  {userLevels.map((level) => (
+                    <option key={level.id} value={level.id}>
+                      {level.userLevel}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -505,33 +1387,69 @@ const EmployeeRegistration = () => {
             <div className="form-row-emp-reg">
               <div className="form-group-emp-reg">
                 <label>Employee Job Role:</label>
-                <input
-                  type="text"
+                <select
                   name="employeeJobRole"
                   value={formData.employeeJobRole}
                   onChange={handleInputChange}
-                />
+                  disabled={loadingJobRoles}
+                >
+                  <option value="">-- Select --</option>
+                  {userJobRoles
+                    .filter(role => role.status === 1) // Only show active job roles
+                    .map((jobRole) => (
+                      <option key={jobRole.id} value={jobRole.id}>
+                        {jobRole.designation}
+                      </option>
+                    ))}
+                </select>
               </div>
               <div className="form-group-emp-reg">
-                <label>Appointment Date:</label>
-                <input
-                  type="date"
-                  name="appointmentDate"
-                  value={formData.appointmentDate}
+                <label>Employee Type:</label>
+                <select
+                  name="employeeType"
+                  value={formData.employeeType}
                   onChange={handleInputChange}
-                />
+                  disabled={true}
+                  style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed' }}
+                >
+                  {userMemberTypes.map((memberType) => (
+                    <option key={memberType.id} value={memberType.typeCode}>
+                      {memberType.memberType}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 
             <div className="form-row-emp-reg">
               <div className="form-group-emp-reg">
                 <label>Department:</label>
-                <input
-                  type="text"
+                <select
                   name="department"
                   value={formData.department}
                   onChange={handleInputChange}
-                />
+                  disabled={loadingWings}
+                >
+                  <option value="">-- Select --</option>
+                  {loadingWings ? (
+                    <option value="" disabled>Loading...</option>
+                  ) : wingsError ? (
+                    <option value="" disabled>Error loading wings</option>
+                  ) : wings.length === 0 ? (
+                    <option value="" disabled>No wings available</option>
+                  ) : (
+                    wings.map((wing) => (
+                      <option key={wing.id} value={wing.id}>
+                        {wing.wing || `Wing ${wing.id}`}
+                      </option>
+                    ))
+                  )}
+                </select>
+                {wingsError && (
+                  <span style={{ color: 'red', fontSize: '12px', marginTop: '4px', display: 'block' }}>
+                    Error: {wingsError.message || 'Failed to load wings'}
+                  </span>
+                )}
               </div>
               <div className="form-group-emp-reg">
                 {/* Empty placeholder for 2-column layout */}
@@ -540,12 +1458,13 @@ const EmployeeRegistration = () => {
 
             <div className="form-row-emp-reg">
               <div className="form-group-emp-reg">
-                <label>Job Role Layer:</label>
+                <label>Appointment Date:</label>
                 <input
-                  type="text"
-                  name="jobRoleLayer"
-                  value={formData.jobRoleLayer}
+                  type="date"
+                  name="appointmentDate"
+                  value={formData.appointmentDate}
                   onChange={handleInputChange}
+                  onClick={handleDateInputClick}
                 />
               </div>
               <div className="form-group-emp-reg">
@@ -572,16 +1491,24 @@ const EmployeeRegistration = () => {
                   name="permanentDate"
                   value={formData.permanentDate}
                   onChange={handleInputChange}
+                  onClick={handleDateInputClick}
                 />
               </div>
               <div className="form-group-emp-reg">
                 <label>Work Location:</label>
-                <input
-                  type="text"
+                <select
                   name="workLocation"
                   value={formData.workLocation}
                   onChange={handleInputChange}
-                />
+                  disabled={loadingWorkLocations}
+                >
+                  <option value="">-- Select --</option>
+                  {workLocations.map((location) => (
+                    <option key={location.id} value={location.id}>
+                      {location.locationName}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
           </div>
@@ -608,15 +1535,58 @@ const EmployeeRegistration = () => {
             Next
           </button>
         ) : (
-          <button
-            type="button"
-            className="btn-submit-emp-reg"
-            onClick={handleSubmit}
-          >
-            Forward to Payroll
-          </button>
+          <>
+            <button
+              type="button"
+              className="btn-submit-emp-reg"
+              onClick={handleSubmit}
+              disabled={isSubmitting || isCreating}
+            >
+              {isSubmitting || isCreating ? 'Processing...' : 'Forward to Payroll'}
+            </button>
+            {submitMessage.text && (
+              <div 
+                style={{
+                  marginTop: '10px',
+                  padding: '10px',
+                  borderRadius: '4px',
+                  backgroundColor: submitMessage.type === 'success' ? '#d4edda' : '#f8d7da',
+                  color: submitMessage.type === 'success' ? '#155724' : '#721c24',
+                  border: `1px solid ${submitMessage.type === 'success' ? '#c3e6cb' : '#f5c6cb'}`,
+                  fontSize: '14px',
+                }}
+              >
+                {submitMessage.text}
+              </div>
+            )}
+          </>
         )}
       </div>
+
+      {/* License Help Popup */}
+      {showLicenseHelpPopup && (
+        <div className="license-help-popup-overlay-emp-reg" onClick={() => setShowLicenseHelpPopup(false)}>
+          <div className="license-help-popup-emp-reg" onClick={(e) => e.stopPropagation()}>
+            <div className="license-help-popup-header-emp-reg">
+              <h3>Driving License Code Descriptions</h3>
+              <button 
+                className="license-help-popup-close-emp-reg"
+                onClick={() => setShowLicenseHelpPopup(false)}
+              >
+                ×
+              </button>
+            </div>
+            <div className="license-help-popup-content-emp-reg">
+              {drivingLicenseTypes.map(license => (
+                <div key={license.id} className="license-help-item-emp-reg">
+                  <strong className="license-help-code-emp-reg">{license.licenseCode}:</strong>
+                  <span className="license-help-desc-emp-reg">{license.licenseType}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

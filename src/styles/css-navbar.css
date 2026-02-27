@@ -324,24 +324,105 @@
     border-radius: 8px;
 }
 
+.nav-subgroup.active .nav-subgroup-link {
+    color: #fff;
+    font-weight: 700;
+}
+
+.nav-subgroup.active .nav-subgroup-link .nav-icon {
+    opacity: 1;
+}
+
 .nav-subgroup-header {
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-weight: 600;
+    gap: 0px;
     padding: 6px 4px;
+    width: 100%;
+    position: relative;
+}
+
+.nav-subgroup-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    font-weight: 600;
+    padding: 0;
     color: #f5f5f5;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.nav-subgroup-link:hover {
+    color: #fff;
+}
+
+.nav-subgroup-link .nav-icon {
+    font-size: 1rem;
+}
+
+.nav-subgroup-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    padding: 4px;
+    cursor: pointer;
+    color: #f5f5f5;
+    transition: all 0.2s ease;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+.nav-subgroup-toggle:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+.nav-subgroup-chevron {
+    margin-left: auto;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateZ(0);
+    font-size: 0.75rem;
+}
+
+.nav-subgroup-chevron.open {
+    transform: rotate(90deg);
+    color: #fff;
+}
+
+.nav-subgroup-chevron:not(.open) {
+    transform: rotate(0deg);
 }
 
 .nav-subgroup-list {
     list-style: none;
-    margin: 4px 0 8px 28px;
+    margin: 4px 0 1px 6px !important;
     padding: 0;
 }
 
 .nav-subgroup-list .nav-link {
     margin-left: 0;
     width: 100%;
+    padding-left: 1px;
+    font-weight: 500;
+}
+
+.nav-subgroup-list .nav-link .nav-icon {
+    font-size: 0.9rem;
+    opacity: 0.85;
+}
+
+.nav-subgroup-list .nav-link.active {
+    font-weight: 600;
+}
+
+.nav-subgroup-list .nav-link.active .nav-icon {
+    opacity: 1;
 }
 
 @keyframes submenuItemSlideIn {
@@ -775,7 +856,8 @@
     cursor: pointer;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
+    gap: 8px;
     transition: background 0.2s ease;
     font-weight: 700;
     text-transform: none;
@@ -797,6 +879,8 @@
     font-weight: 600;
     font-size: 11px;
     letter-spacing: 0.3px;
+    flex: 1;
+    text-align: left;
 }
 
 .nav-sublist {
@@ -835,6 +919,8 @@
     justify-content: center;
     font-size: 14px;
     opacity: 0.95;
+    margin-left: auto;
+    flex-shrink: 0;
 }
 
 /* Themed accents for clarity under different roles */

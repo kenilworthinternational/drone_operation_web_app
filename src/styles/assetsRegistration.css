@@ -244,6 +244,19 @@
   font-family: inherit;
 }
 
+.form-section-divider-assets-reg {
+  margin: 32px 0 20px 0;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.form-section-divider-assets-reg h4 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+}
+
 .form-actions-assets-reg {
   display: flex;
   gap: 16px;

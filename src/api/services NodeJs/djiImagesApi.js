@@ -1,32 +1,8 @@
 import { baseApi } from '../baseApi';
 import { fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { getNodeBackendUrl, getToken } from './nodeBackendConfig';
 
-// Node.js Backend Base URL Configuration
-const getNodeBackendUrl = () => {
-  const hostname = window.location.hostname;
-  
-  if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    return 'https://dsms-web-api-dev.kenilworthinternational.com';
-  }
-  
-  if (hostname.includes('dev') || hostname.includes('kenilworthinternational.com')) {
-    return 'https://dsms-web-api-dev.kenilworthinternational.com';
-  }
-  
-  if (hostname.includes('test')) {
-    return 'https://dsms-api-test.kenilworth.international.com';
-  }
-  
-  return 'https://dsms-api.kenilworth.international.com';
-};
-
-// Helper function to get token
-const getToken = () => {
-  const storedUser = JSON.parse(localStorage.getItem('userData'));
-  return storedUser?.token || null;
-};
-
-// Custom base query for Node.js backend
+// Custom base query for Node.js backend (with special handling for file uploads)
 const nodeBackendBaseQuery = fetchBaseQuery({
   baseUrl: getNodeBackendUrl(),
   prepareHeaders: (headers, { endpoint }) => {

@@ -174,64 +174,22 @@ const UpdateServices = () => {
           endDate,
         };
 
-        console.log("Fetching mission details with payload:", payload);
+        // Show all dates in range (endpoint removed)
+        const allDatesInRange = [];
+        let currentDate = new Date(startDate);
+        const lastDate = new Date(endDate);
 
-        const calendarResult = await dispatch(baseApi.endpoints.getCalendarData.initiate({
-          estateId: payload.estateId,
-          cropType: payload.cropTypeId,
-          missionType: payload.missionTypeId,
-          startDate: payload.startDate,
-          endDate: payload.endDate,
-          location: "update_plan"
-        }));
-        const updateMissionResponse = calendarResult.data;
-        console.log(`Current Data for ${startDate}-${endDate}:`, updateMissionResponse);
-
-        if (updateMissionResponse.status === "false") {
-          const allDatesInRange = [];
-          let currentDate = new Date(startDate);
-          const lastDate = new Date(endDate);
-
-          while (currentDate <= lastDate) {
-            allDatesInRange.push(new Date(currentDate));
-            currentDate.setDate(currentDate.getDate() + 1);
-          }
-
-          setState(prev => ({
-            ...prev,
-            highlightedDates: [],
-            formattedhighlightedDates: allDatesInRange,
-          }));
-        } else {
-          const fetchedDates = Object.values(updateMissionResponse)
-            .filter(item => item?.date)
-            .map(item => new Date(item.date));
-
-          const firstDay = new Date(startDate);
-          const lastDay = new Date(endDate);
-          let allDates = [];
-          let currentDate = new Date(firstDay);
-
-          while (currentDate <= lastDay) {
-            allDates.push(new Date(currentDate));
-            currentDate.setDate(currentDate.getDate() + 1);
-          }
-
-          const missingDates = allDates.filter(date =>
-            !fetchedDates.some(highlighted => highlighted.toDateString() === date.toDateString())
-          );
-
-          setState(prev => ({
-            ...prev,
-            highlightedDates: fetchedDates,
-            formattedhighlightedDates: missingDates,
-          }));
+        while (currentDate <= lastDate) {
+          allDatesInRange.push(new Date(currentDate));
+          currentDate.setDate(currentDate.getDate() + 1);
         }
 
         setState(prev => ({
           ...prev,
-          update: updateMissionResponse.status !== "false",
-          missionId: updateMissionResponse?.id,
+          highlightedDates: [],
+          formattedhighlightedDates: allDatesInRange,
+          update: false,
+          missionId: "",
         }));
       } catch (error) {
         console.error('Error fetching update mission details:', error);

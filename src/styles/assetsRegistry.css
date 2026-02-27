@@ -1,10 +1,10 @@
-.assets-registry-container {
+.assets-registry-container-assets-reg {
   padding: 0;
   width: 100%;
   box-sizing: border-box;
 }
 
-.assets-registry-header {
+.assets-registry-header-assets-reg {
   display: flex;
   align-items: center;
   gap: 16px;
@@ -13,10 +13,12 @@
   width: 100%;
   position: relative;
   padding: 0;
+  padding-left: 140px;
   box-sizing: border-box;
+  min-height: 40px;
 }
 
-.back-button {
+.back-button-assets-reg {
   padding: 8px 16px;
   background: #004B71;
   color: white;
@@ -31,14 +33,15 @@
   height: fit-content;
   position: absolute;
   left: 0;
+  top: 0;
   z-index: 1;
 }
 
-.back-button:hover {
+.back-button-assets-reg:hover {
   background: #003d5f;
 }
 
-.assets-registry-header h3 {
+.assets-registry-header-assets-reg h3 {
   margin: 0;
   font-size: 20px;
   color: #333;
@@ -47,13 +50,13 @@
   line-height: 1.2;
   display: flex;
   align-items: center;
-  width: 100%;
+  flex: 1;
   justify-content: center;
   text-align: center;
   position: relative;
 }
 
-.assets-registry-grid {
+.assets-registry-grid-assets-reg {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 20px;
@@ -63,14 +66,14 @@
 
 /* Show 3 cards per row on medium screens */
 @media (min-width: 768px) and (max-width: 1199px) {
-  .assets-registry-grid {
+  .assets-registry-grid-assets-reg {
     grid-template-columns: repeat(3, 1fr);
   }
 }
 
 /* Show 2 cards per row on smaller screens */
 @media (min-width: 480px) and (max-width: 767px) {
-  .assets-registry-grid {
+  .assets-registry-grid-assets-reg {
     grid-template-columns: repeat(2, 1fr);
     gap: 16px;
   }
@@ -78,12 +81,12 @@
 
 /* Show 1 card per row on very small screens */
 @media (max-width: 479px) {
-  .assets-registry-grid {
+  .assets-registry-grid-assets-reg {
     grid-template-columns: 1fr;
   }
 }
 
-.asset-card {
+.asset-card-assets-reg {
   background: white;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -94,12 +97,12 @@
   min-height: auto;
 }
 
-.asset-card:hover {
+.asset-card-assets-reg:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-.asset-card-header {
+.asset-card-header-assets-reg {
   display: flex;
   align-items: flex-start;
   gap: 12px;
@@ -107,7 +110,7 @@
   flex: 1;
 }
 
-.asset-icon-wrapper {
+.asset-icon-wrapper-assets-reg {
   width: 40px;
   height: 40px;
   border-radius: 50%;
@@ -118,17 +121,17 @@
   flex-shrink: 0;
 }
 
-.asset-icon {
+.asset-icon-assets-reg {
   font-size: 20px;
   color: white;
 }
 
-.asset-info {
+.asset-info-assets-reg {
   flex: 1;
   min-width: 0;
 }
 
-.asset-name {
+.asset-name-assets-reg {
   margin: 0 0 6px 0;
   font-size: 16px;
   font-weight: 600;
@@ -136,31 +139,31 @@
   word-wrap: break-word;
 }
 
-.asset-count {
+.asset-count-assets-reg {
   display: flex;
   align-items: center;
   gap: 6px;
   font-size: 13px;
 }
 
-.count-label {
+.count-label-assets-reg {
   color: #666;
   font-weight: 500;
 }
 
-.count-value {
+.count-value-assets-reg {
   color: #004B71;
   font-weight: 600;
   font-size: 16px;
 }
 
-.asset-card-actions {
+.asset-card-actions-assets-reg {
   display: flex;
   gap: 10px;
   margin-top: auto;
 }
 
-.action-button {
+.action-button-assets-reg {
   flex: 1;
   min-width: 0;
   padding: 8px 12px;
@@ -177,35 +180,35 @@
   width: 100%;
 }
 
-.add-button {
+.add-button-assets-reg {
   background: #004B71;
   color: white;
 }
 
-.add-button:hover {
+.add-button-assets-reg:hover {
   background: #003d5f;
   transform: translateY(-1px);
 }
 
-.view-button {
+.view-button-assets-reg {
   background: #f5f5f5;
   color: #333;
   border: 1px solid #ddd;
 }
 
-.view-button:hover {
+.view-button-assets-reg:hover {
   background: #e8e8e8;
   border-color: #004B71;
   color: #004B71;
   transform: translateY(-1px);
 }
 
-.button-icon {
+.button-icon-assets-reg {
   font-size: 14px;
 }
 
 /* Pagination Styles */
-.assets-registry-pagination {
+.assets-registry-pagination-assets-reg {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -215,7 +218,7 @@
   border-top: 1px solid #e0e0e0;
 }
 
-.pagination-button {
+.pagination-button-assets-reg {
   padding: 8px 16px;
   background: #f5f5f5;
   color: #333;
@@ -227,24 +230,24 @@
   transition: all 0.3s ease;
 }
 
-.pagination-button:hover:not(:disabled) {
+.pagination-button-assets-reg:hover:not(:disabled) {
   background: #e8e8e8;
   border-color: #004B71;
   color: #004B71;
 }
 
-.pagination-button:disabled {
+.pagination-button-assets-reg:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.pagination-numbers {
+.pagination-numbers-assets-reg {
   display: flex;
   gap: 8px;
   align-items: center;
 }
 
-.pagination-number {
+.pagination-number-assets-reg {
   min-width: 36px;
   height: 36px;
   padding: 0 12px;
@@ -261,13 +264,13 @@
   justify-content: center;
 }
 
-.pagination-number:hover {
+.pagination-number-assets-reg:hover {
   background: #e8e8e8;
   border-color: #004B71;
   color: #004B71;
 }
 
-.pagination-number.active {
+.pagination-number-assets-reg.active-assets-reg {
   background: #004B71;
   color: white;
   border-color: #004B71;

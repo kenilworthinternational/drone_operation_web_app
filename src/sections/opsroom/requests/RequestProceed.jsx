@@ -4,6 +4,7 @@ import { Bars } from 'react-loader-spinner';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, addMonths } from 'date-fns';
 import { baseApi } from '../../../api/services/allEndpoints';
 import { useAppDispatch } from '../../../store/hooks';
+import { useCreateAdHocNotificationMutation, useCreateRescheduleNotificationMutation, useCreatePlanApprovalNotificationMutation } from '../../../api/services NodeJs/notificationsApi';
 import '../../../styles/requestProceed.css';
 
 const RequestProceed = () => {
@@ -12,6 +13,22 @@ const RequestProceed = () => {
   const location = useLocation();
   const [selectedRequestId, setSelectedRequestId] = useState(null);
   const [requestType, setRequestType] = useState('adhoc'); // 'adhoc' or 'reschedule'
+  
+  // Notification mutations
+  const [createAdHocNotification] = useCreateAdHocNotificationMutation();
+  const [createRescheduleNotification] = useCreateRescheduleNotificationMutation();
+  const [createPlanApprovalNotification] = useCreatePlanApprovalNotificationMutation();
+  
+  // Get current user ID
+  const getCurrentUserId = () => {
+    try {
+      const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+      return userData?.id || null;
+    } catch (error) {
+      console.error('Error getting user ID:', error);
+      return null;
+    }
+  };
   
   const [adhocLoading, setAdhocLoading] = useState(false);
   const [adhocData, setAdhocData] = useState(null);
@@ -224,6 +241,109 @@ const RequestProceed = () => {
       if (resultData.status === 'true' || resultData.status === true || resultData.success === true) {
         setSuccessMessage('Plan created successfully');
         setShowSuccess(true);
+        
+        // Create notification for estate managers
+        // Only create for Plantation requests (not Non-Plantation)
+        try {
+          const selectedRequest = requestType === 'reschedule' ? selectedRescheduleRequest : selectedAdhocRequest;
+          if (selectedRequest) {
+            // Get estate_id from request (may be estate_id, estateId, or need to look up by estate name)
+            const estateId = selectedRequest.estate_id || selectedRequest.estateId || null;
+            const estateName = selectedRequest.estate || null;
+            
+            // Only create notification if we have estate information (Plantation request)
+            // Non-Plantation requests won't have estate info, so skip notifications for those
+            if (estateId || estateName) {
+              // Create notification for estate managers
+              if (requestType === 'reschedule') {
+                await createRescheduleNotification({
+                  request_id: apiRequestId,
+                  estate_id: estateId || undefined,
+                  estate_name: estateName || undefined,
+                  date_planned: dateFormatted
+                }).unwrap().catch(err => {
+                  console.warn('Failed to create reschedule notification:', err);
+                  // Don't fail the whole operation if notification fails
+                });
+              } else {
+                await createAdHocNotification({
+                  request_id: apiRequestId,
+                  estate_id: estateId || undefined,
+                  estate_name: estateName || undefined,
+                  date_planned: dateFormatted
+                }).unwrap().catch(err => {
+                  console.warn('Failed to create ad-hoc notification:', err);
+                  // Don't fail the whole operation if notification fails
+                });
+              }
+            } else {
+              console.log('Skipping notification: Non-Plantation request (no estate info)');
+            }
+            
+            // Create plan approval notification
+            // Try to get plan ID from response, or fetch it
+            try {
+              let planId = resultData.plan_id || resultData.plan || resultData.id || null;
+              
+              // If plan ID not in response, try to fetch it by request ID and date
+              if (!planId) {
+                try {
+                  // Fetch plans for the selected date to find the newly created plan
+                  const plansResult = await dispatch(baseApi.endpoints.getPlansByDate.initiate(dateFormatted));
+                  const plansData = plansResult.data;
+                  
+                  if (plansData && (plansData.status === 'true' || plansData.status === true)) {
+                    // Find plan that matches the request
+                    const plansArray = Array.isArray(plansData) 
+                      ? plansData 
+                      : Object.keys(plansData)
+                          .filter(key => !isNaN(key) && key !== 'status' && key !== 'count')
+                          .map(key => plansData[key]);
+                    
+                    // Try to find plan by estate and date
+                    const matchingPlan = plansArray.find(plan => {
+                      const planEstate = plan.estate || plan.estate_name || plan.estateId;
+                      const matchesEstate = estateName 
+                        ? (planEstate === estateName || String(planEstate) === String(estateId))
+                        : true;
+                      return matchesEstate && plan.pickedDate === dateFormatted;
+                    });
+                    
+                    if (matchingPlan) {
+                      planId = matchingPlan.id;
+                    }
+                  }
+                } catch (fetchError) {
+                  console.warn('Could not fetch plan ID:', fetchError);
+                }
+              }
+              
+              // Create plan approval notification if we have plan ID and user ID
+              if (planId) {
+                const currentUserId = getCurrentUserId();
+                if (currentUserId) {
+                  await createPlanApprovalNotification({
+                    plan_id: planId,
+                    approved_by_user_id: currentUserId
+                  }).unwrap().catch(err => {
+                    console.warn('Failed to create plan approval notification:', err);
+                    // Don't fail the whole operation if notification fails
+                  });
+                } else {
+                  console.warn('Cannot create plan approval notification: User ID not found');
+                }
+              } else {
+                console.warn('Cannot create plan approval notification: Plan ID not found');
+              }
+            } catch (planApprovalError) {
+              console.error('Error creating plan approval notification:', planApprovalError);
+              // Don't fail the whole operation if notification fails
+            }
+          }
+        } catch (notificationError) {
+          console.error('Error creating notification:', notificationError);
+          // Don't fail the whole operation if notification fails
+        }
         
         // Refresh the request list based on type
         if (requestType === 'reschedule') {

@@ -151,6 +151,23 @@ const PlanCalendar = () => {
 
       {error && <div className="error-booking-calendar">{error}</div>}
 
+      <div className="legend-booking-calendar">
+        <div className="legend-group-booking-calendar">
+          <span className="legend-label-booking-calendar">Type:</span>
+          <span className="legend-chip-booking-calendar legend-chip-revolving">Revolving</span>
+          <span className="legend-chip-booking-calendar legend-chip-adhoc">AddHoc</span>
+          <span className="legend-chip-booking-calendar legend-chip-rescheduled">Rescheduled</span>
+        </div>
+        <div className="legend-group-booking-calendar">
+          <span className="legend-label-booking-calendar">Status:</span>
+          <span className="legend-dot-item"><span className="legend-dot" style={{background:'#BEBEBE'}} />Not Activated</span>
+          <span className="legend-dot-item"><span className="legend-dot" style={{background:'#60a5fa'}} />Active</span>
+          <span className="legend-dot-item"><span className="legend-dot" style={{background:'#f97316'}} />Manager Approved</span>
+          <span className="legend-dot-item"><span className="legend-dot" style={{background:'#eab308'}} />Team Assigned</span>
+          <span className="legend-dot-item"><span className="legend-dot" style={{background:'#22c55e'}} />Completed</span>
+        </div>
+      </div>
+
       <div className="grid-booking-calendar">
         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
           <div key={d} className="weekday-booking-calendar">{d}</div>
@@ -162,7 +179,13 @@ const PlanCalendar = () => {
 
         {daysInMonth.map((day) => {
           const key = format(day, 'yyyy-MM-dd');
-          const items = (plansByDate[key] || []).filter((p) => p.activated === 1);
+          const flagOrder = { np: 0, ap: 1, rp: 2 };
+          const items = (plansByDate[key] || []).slice().sort((a, b) => {
+            const aActive = Number(a.activated) === 1 ? 0 : 1;
+            const bActive = Number(b.activated) === 1 ? 0 : 1;
+            if (aActive !== bActive) return aActive - bActive;
+            return (flagOrder[a.flag] ?? 3) - (flagOrder[b.flag] ?? 3);
+          });
           const count = items.length;
           return (
             <div key={key} className="cell-booking-calendar">
@@ -171,11 +194,42 @@ const PlanCalendar = () => {
                 {count > 0 && <span className="count-booking-calendar">{count}</span>}
               </div>
               <div className="items-booking-calendar">
-                {items.map((p) => (
-                  <div key={p.id} className="item-booking-calendar" title={`${p.estate} - ${p.id}`} onClick={() => setSelectedPlan(p)}>
-                    <span className="item-text-booking-calendar">{p.estate} · {p.id}</span>
-                  </div>
-                ))}
+                {items.map((p) => {
+                  const planTypeClass =
+                    p.flag === 'ap' ? 'item-type-adhoc' :
+                    p.flag === 'rp' ? 'item-type-rescheduled' :
+                    'item-type-revolving';
+
+                  let statusColor;
+                  const activated = Number(p.activated) === 1;
+                  const managerApproved = Number(p.manager_approval) === 1;
+                  const teamAssigned = Number(p.team_assigned) === 1;
+                  const completed = Number(p.completed) === 1;
+
+                  if (!activated) {
+                    statusColor = '#BEBEBE';
+                  } else if (activated && managerApproved && teamAssigned && completed) {
+                    statusColor = '#22c55e';
+                  } else if (activated && managerApproved && teamAssigned) {
+                    statusColor = '#eab308';
+                  } else if (activated && managerApproved) {
+                    statusColor = '#f97316';
+                  } else {
+                    statusColor = '#60a5fa';
+                  }
+
+                  return (
+                    <div
+                      key={p.id}
+                      className={`item-booking-calendar ${planTypeClass}`}
+                      title={`${p.estate} - #${p.id}`}
+                      onClick={() => setSelectedPlan(p)}
+                    >
+                      <span className="item-status-dot" style={{ background: statusColor }} />
+                      <span className="item-text-booking-calendar">{p.estate} · {p.id}</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           );

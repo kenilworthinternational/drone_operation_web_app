@@ -1,0 +1,433 @@
+/* Field Size Adjustments - all class names end with -fieldsize-adjust */
+
+:root {
+  --fieldsize-primary: #2563eb;
+  --fieldsize-primary-hover: #1d4ed8;
+  --fieldsize-border: #e5e7eb;
+  --fieldsize-border-focus: #2563eb;
+  --fieldsize-bg-subtle: #f8fafc;
+  --fieldsize-text-muted: #64748b;
+  --fieldsize-text: #1e293b;
+  --fieldsize-card-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --fieldsize-radius: 8px;
+  --fieldsize-radius-sm: 6px;
+}
+
+.container-fieldsize-adjust {
+  width: 100%;
+  padding: 1.5rem 1.5rem 2rem;
+  box-sizing: border-box;
+}
+
+.header-fieldsize-adjust {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--fieldsize-border);
+}
+
+.back-btn-fieldsize-adjust {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--fieldsize-border);
+  border-radius: var(--fieldsize-radius-sm);
+  background: #fff;
+  color: var(--fieldsize-text);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+
+.back-btn-fieldsize-adjust:hover {
+  border-color: var(--fieldsize-primary);
+  background: var(--fieldsize-bg-subtle);
+  color: var(--fieldsize-primary);
+}
+
+.title-fieldsize-adjust {
+  margin: 0;
+  font-size: 1.375rem;
+  font-weight: 600;
+  color: var(--fieldsize-text);
+  letter-spacing: -0.01em;
+}
+
+.search-section-fieldsize-adjust {
+  margin-bottom: 1.75rem;
+}
+
+.search-label-fieldsize-adjust {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  font-size: 0.9375rem;
+  color: var(--fieldsize-text);
+}
+
+.input-wrap-fieldsize-adjust {
+  position: relative;
+}
+
+.search-input-fieldsize-adjust {
+  width: 100%;
+  padding: 0.625rem 2.75rem 0.625rem 0.875rem;
+  border: 1px solid var(--fieldsize-border);
+  border-radius: var(--fieldsize-radius-sm);
+  font-size: 1rem;
+  line-height: 1.5;
+  background: #fff;
+  color: var(--fieldsize-text);
+  transition: border-color 0.15s, box-shadow 0.15s;
+  box-sizing: border-box;
+}
+
+.search-input-fieldsize-adjust::placeholder {
+  color: var(--fieldsize-text-muted);
+}
+
+.search-input-fieldsize-adjust:focus {
+  outline: none;
+  border-color: var(--fieldsize-border-focus);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.search-clear-btn-fieldsize-adjust {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: var(--fieldsize-radius-sm);
+  background: transparent;
+  color: var(--fieldsize-text-muted);
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: color 0.15s, background 0.15s;
+}
+
+.search-clear-btn-fieldsize-adjust:hover {
+  color: var(--fieldsize-text);
+  background: var(--fieldsize-bg-subtle);
+}
+
+.searching-fieldsize-adjust {
+  position: absolute;
+  right: 42px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.8125rem;
+  color: var(--fieldsize-text-muted);
+}
+
+.dropdown-list-fieldsize-adjust {
+  position: fixed;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--fieldsize-border);
+  border-radius: var(--fieldsize-radius-sm);
+  background: #fff;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05);
+  max-height: 320px;
+  overflow-y: auto;
+  z-index: 99999;
+}
+
+.dropdown-message-fieldsize-adjust {
+  padding: 1rem 0.875rem;
+  font-size: 0.9375rem;
+  color: var(--fieldsize-text-muted);
+  text-align: center;
+}
+
+.dropdown-item-fieldsize-adjust {
+  padding: 0.625rem 0.875rem;
+  cursor: pointer;
+  border-bottom: 1px solid var(--fieldsize-border);
+  transition: background 0.12s;
+}
+
+.dropdown-item-fieldsize-adjust:last-child {
+  border-bottom: none;
+}
+
+.dropdown-item-fieldsize-adjust:hover {
+  background: var(--fieldsize-bg-subtle);
+}
+
+.dropdown-item-title-fieldsize-adjust {
+  font-weight: 500;
+  color: var(--fieldsize-text);
+}
+
+.dropdown-item-sub-fieldsize-adjust {
+  color: var(--fieldsize-text-muted);
+  margin-left: 0.5rem;
+  font-size: 0.9375rem;
+}
+
+.dropdown-item-meta-fieldsize-adjust {
+  color: var(--fieldsize-text-muted);
+  margin-left: 0.5rem;
+  font-size: 0.8125rem;
+}
+
+/* Field details card */
+.field-details-card-fieldsize-adjust {
+  margin-bottom: 1.75rem;
+  padding: 1.25rem 1.5rem;
+  border: 1px solid var(--fieldsize-border);
+  border-radius: var(--fieldsize-radius);
+  background: #fff;
+  box-shadow: var(--fieldsize-card-shadow);
+}
+
+.field-details-title-fieldsize-adjust {
+  margin: 0 0 1.25rem;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: var(--fieldsize-text);
+}
+
+.field-details-row-fieldsize-adjust {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem 2rem;
+  align-items: flex-end;
+}
+
+.field-detail-item-fieldsize-adjust {
+  min-width: 0;
+}
+
+.field-detail-item-fieldsize-adjust .field-detail-value-fieldsize-adjust {
+  display: block;
+  margin-top: 0.25rem;
+  padding: 0.375rem 0.5rem;
+  background: var(--fieldsize-bg-subtle);
+  border-radius: var(--fieldsize-radius-sm);
+  font-size: 0.9375rem;
+  min-height: 2rem;
+  line-height: 1.4;
+}
+
+.field-detail-label-fieldsize-adjust {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--fieldsize-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.field-detail-value-fieldsize-adjust {
+  font-weight: 500;
+  color: var(--fieldsize-text);
+}
+
+.field-detail-area-wrap-fieldsize-adjust {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.5rem 1rem;
+}
+
+.field-detail-area-wrap-fieldsize-adjust .field-detail-label-fieldsize-adjust {
+  width: 100%;
+}
+
+.field-detail-area-wrap-fieldsize-adjust .area-input-fieldsize-adjust {
+  margin-right: 0;
+}
+
+.area-input-fieldsize-adjust {
+  width: 120px;
+  padding: 0.5rem 0.625rem;
+  margin-right: 0.5rem;
+  border: 1px solid var(--fieldsize-border);
+  border-radius: var(--fieldsize-radius-sm);
+  font-size: 0.9375rem;
+  background: #fff;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.area-input-fieldsize-adjust:focus {
+  outline: none;
+  border-color: var(--fieldsize-border-focus);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
+}
+
+.save-area-btn-fieldsize-adjust {
+  padding: 0.5rem 1rem;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  border: none;
+  border-radius: var(--fieldsize-radius-sm);
+  background: var(--fieldsize-primary);
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.save-area-btn-fieldsize-adjust:hover:not(:disabled) {
+  background: var(--fieldsize-primary-hover);
+}
+
+.save-area-btn-fieldsize-adjust:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.save-field-msg-fieldsize-adjust {
+  margin-top: 0.75rem;
+  margin-bottom: 0;
+  font-size: 0.875rem;
+  color: var(--fieldsize-text-muted);
+}
+
+.save-field-msg-success-fieldsize-adjust {
+  color: #059669;
+  font-weight: 500;
+}
+
+.save-field-msg-error-fieldsize-adjust {
+  color: #dc2626;
+  font-weight: 500;
+}
+
+/* Plan division fields section */
+.pdf-section-fieldsize-adjust {
+  overflow-x: auto;
+  margin-top: 0.5rem;
+}
+
+.pdf-title-fieldsize-adjust {
+  margin: 0 0 0.75rem;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: var(--fieldsize-text);
+}
+
+.pdf-table-fieldsize-adjust {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid var(--fieldsize-border);
+  border-radius: var(--fieldsize-radius);
+  overflow: hidden;
+  background: #fff;
+  box-shadow: var(--fieldsize-card-shadow);
+}
+
+.pdf-thead-row-fieldsize-adjust {
+  background: #1e293b;
+}
+
+.pdf-th-fieldsize-adjust {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.pdf-th-fieldsize-adjust:not(:last-child) {
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.pdf-tbody-row-fieldsize-adjust {
+  border-bottom: 1px solid var(--fieldsize-border);
+  transition: background 0.12s;
+}
+
+.pdf-tbody-row-fieldsize-adjust:last-child {
+  border-bottom: none;
+}
+
+.pdf-tbody-row-fieldsize-adjust:hover {
+  background: var(--fieldsize-bg-subtle);
+}
+
+.pdf-td-fieldsize-adjust {
+  padding: 0.625rem 1rem;
+  font-size: 0.9375rem;
+  color: var(--fieldsize-text);
+  border: none;
+  border-bottom: 1px solid var(--fieldsize-border);
+}
+
+.pdf-tbody-row-fieldsize-adjust .pdf-td-fieldsize-adjust {
+  border-bottom: 1px solid var(--fieldsize-border);
+}
+
+.pdf-input-fieldsize-adjust {
+  width: 100px;
+  max-width: 100%;
+  padding: 0.375rem 0.5rem;
+  border: 1px solid var(--fieldsize-border);
+  border-radius: var(--fieldsize-radius-sm);
+  font-size: 0.9375rem;
+  background: #fff;
+}
+
+.pdf-input-fieldsize-adjust:focus {
+  outline: none;
+  border-color: var(--fieldsize-border-focus);
+}
+
+.pdf-save-btn-fieldsize-adjust {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  border: 1px solid var(--fieldsize-border);
+  border-radius: var(--fieldsize-radius-sm);
+  background: #fff;
+  color: var(--fieldsize-text);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.pdf-save-btn-fieldsize-adjust:hover:not(:disabled) {
+  border-color: var(--fieldsize-primary);
+  background: var(--fieldsize-bg-subtle);
+  color: var(--fieldsize-primary);
+}
+
+.pdf-save-btn-fieldsize-adjust:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.pdf-save-msg-fieldsize-adjust {
+  margin-left: 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--fieldsize-text-muted);
+}
+
+.pdf-empty-cell-fieldsize-adjust {
+  padding: 2rem 1rem;
+  font-size: 0.9375rem;
+  color: var(--fieldsize-text-muted);
+  text-align: center;
+  font-style: italic;
+  background: var(--fieldsize-bg-subtle);
+}
+
+.loading-text-fieldsize-adjust {
+  font-size: 0.9375rem;
+  color: var(--fieldsize-text-muted);
+}

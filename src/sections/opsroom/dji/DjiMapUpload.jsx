@@ -24,6 +24,17 @@ const CustomDateInput = React.forwardRef(({ value, onClick }, ref) => (
   </div>
 ));
 
+// Helper function to get backend URL based on environment
+const getBackendUrl = () => {
+  const hostname = window.location.hostname;
+  if (hostname.includes('test')) {
+    return 'https://dsms-api-test.kenilworth.international.com';
+  } else if (!hostname.includes('dev') && !hostname.includes('localhost')) {
+    return 'https://dsms-web-api.kenilworthinternational.com';
+  }
+  return 'https://dsms-web-api-dev.kenilworthinternational.com';
+};
+
 const DjiMapUpload = () => {
   const navigate = useNavigate();
   const userData = JSON.parse(localStorage.getItem('userData')) || {};
@@ -376,7 +387,7 @@ const DjiMapUpload = () => {
   
   // Get image URL
   const getImageUrl = (image) => {
-    const baseUrl = 'https://dsms-web-api-dev.kenilworthinternational.com';
+    const baseUrl = getBackendUrl();
     return `${baseUrl}/api/dji-images/file/${image.image_filename}`;
   };
   
@@ -710,7 +721,7 @@ const DjiMapUpload = () => {
       {/* Add Modal */}
       {showAddModal && createPortal(
         <div className="dji-modal-overlay" onClick={() => !uploading && setShowAddModal(false)}>
-          <div className="dji-modal-content" onClick={(e) => e.stopPropagation()} style={{ position: 'relative', overflow: 'visible' }}>
+          <div className="dji-modal-content" onClick={(e) => e.stopPropagation()} style={{ position: 'relative' }}>
             {/* Loading Overlay */}
             {uploading && (
               <div style={{
@@ -776,7 +787,7 @@ const DjiMapUpload = () => {
               </button>
             </div>
             
-            <div className="dji-modal-body" style={{ overflow: 'visible', overflowY: 'visible' }}>
+            <div className="dji-modal-body">
               <div className="dji-form" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 {activeTab === 'plantation' ? (
                   <>

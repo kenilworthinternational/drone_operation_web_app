@@ -61,7 +61,9 @@ const PilotMappingDetails = ({ estateIds, startDate, endDate }) => {
     };
 
     const openFullScreenImage = (imageUrl) => {
-        setSelectedImage(imageUrl);
+        // Ensure HTTPS to prevent mixed content warnings
+        const httpsUrl = imageUrl ? imageUrl.replace('http://', 'https://') : imageUrl;
+        setSelectedImage(httpsUrl);
         setIsImageOpen(true);
     };
 
@@ -85,7 +87,7 @@ const PilotMappingDetails = ({ estateIds, startDate, endDate }) => {
                             <div className="pilot-header">
                                 <div className="left-set-area">
                                     <img
-                                        src={pilot.image} // Assuming pilot.profile_image contains the URL
+                                        src={pilot.image ? pilot.image.replace('http://', 'https://') : ''} // Convert HTTP to HTTPS
                                         alt="Profile"
                                         className="profile-image-mapping"
                                     /><span>
@@ -162,7 +164,7 @@ const PilotMappingDetails = ({ estateIds, startDate, endDate }) => {
                                                                         <div className="third-col-map-details">
                                                                             {task.image && (
                                                                                 <img
-                                                                                    src={task.image}
+                                                                                    src={task.image.replace('http://', 'https://')}
                                                                                     alt="Field preview"
                                                                                     className="field-image-thumbnail"
                                                                                     onClick={() => openFullScreenImage(task.image)}
@@ -215,7 +217,7 @@ const PilotMappingDetails = ({ estateIds, startDate, endDate }) => {
                                         <div className="image-col">
                                             {task.image && (
                                                 <img
-                                                    src={task.image}
+                                                    src={task.image.replace('http://', 'https://')}
                                                     alt="Subtask Preview"
                                                     className="subtask-image"
                                                     onClick={() => openFullScreenImage(task.image)}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Bars } from 'react-loader-spinner';
 import {
   useGetPilotAssignmentPlansQuery,
@@ -13,6 +13,7 @@ import '../../../styles/pilotAssignment-pilotsassign.css';
 
 const PilotAssignment = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   // Set default date to tomorrow
   const getTomorrowDate = () => {
     const tomorrow = new Date();
@@ -34,7 +35,7 @@ const PilotAssignment = () => {
   // Fetch data
   const { data: plansData, isLoading: loadingPlans, refetch: refetchPlans } = useGetPilotAssignmentPlansQuery(selectedDate, { skip: !selectedDate });
   const { data: missionsData, isLoading: loadingMissions, refetch: refetchMissions } = useGetPilotAssignmentMissionsQuery(selectedDate, { skip: !selectedDate });
-  const { data: pilotsData, isLoading: loadingPilots } = useGetPilotAssignmentPilotsQuery();
+  const { data: pilotsData, isLoading: loadingPilots, refetch: refetchPilots } = useGetPilotAssignmentPilotsQuery();
   const { data: droneData, isLoading: loadingDrone, refetch: refetchDrone } = useGetPilotAssignmentDroneQuery(
     { team_id: selectedTeamId, date: selectedDate },
     { skip: !selectedTeamId || !selectedDate }
@@ -45,6 +46,20 @@ const PilotAssignment = () => {
   const plans = plansData?.data || [];
   const missions = missionsData?.data || [];
   const pilots = pilotsData?.data || [];
+
+  // Refetch all data when component mounts or when navigating to this route
+  useEffect(() => {
+    // Refetch all queries to ensure fresh data when navigating to this page
+    if (selectedDate) {
+      refetchPlans();
+      refetchMissions();
+    }
+    refetchPilots();
+    if (selectedTeamId && selectedDate) {
+      refetchDrone();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]); // Refetch when route pathname changes (including on mount)
 
   // Update drone info when drone data changes
   useEffect(() => {
@@ -109,35 +124,92 @@ const PilotAssignment = () => {
 
   // Track previous team/date to detect when to reset selections
   const prevTeamAndDate = useRef({ teamId: null, date: null });
+  // Track when plans/missions data changes to sync selections after deployment
+  const prevPlansLength = useRef(0);
+  const prevMissionsLength = useRef(0);
 
-  // Initialize selected plans with already assigned items (only if team/date changed)
+  // Initialize selected plans with already assigned items
+  // This runs when team/date changes OR when plans data is refetched after deployment
   useEffect(() => {
     const teamChanged = prevTeamAndDate.current.teamId !== selectedTeamId;
     const dateChanged = prevTeamAndDate.current.date !== selectedDate;
+    const plansDataChanged = plans.length !== prevPlansLength.current;
     
     if (teamChanged || dateChanged) {
+      // Team or date changed - reset and sync
+      // Only include plans assigned to the current selected team (blue checkboxes)
       if (selectedTeamId && assignedPlanIds.length > 0) {
         setSelectedPlans(assignedPlanIds);
       } else if (!selectedTeamId) {
         setSelectedPlans([]);
       }
       prevTeamAndDate.current = { teamId: selectedTeamId, date: selectedDate };
+      prevPlansLength.current = plans.length;
+    } else if (plansDataChanged && selectedTeamId) {
+      // Plans data was refetched (e.g., after deployment) - sync selections with assigned items
+      // Filter out any plans that don't belong to current team (remove gray checkboxes)
+      setSelectedPlans(prevSelectedPlans => {
+        const validPlans = prevSelectedPlans.filter(planId => {
+          const plan = plans.find(p => p.id === planId);
+          if (!plan) return false;
+          const isAssigned = plan.is_assigned === 1 || plan.is_assigned === true;
+          const teamMatches = plan.assigned_team_id && parseInt(plan.assigned_team_id) === parseInt(selectedTeamId);
+          return !isAssigned || teamMatches;
+        });
+        
+        if (assignedPlanIds.length > 0) {
+          // Merge assigned plans with valid existing selections
+          const mergedPlans = [...new Set([...assignedPlanIds, ...validPlans])];
+          return mergedPlans;
+        } else {
+          // If no assigned plans, use only valid selections
+          return validPlans;
+        }
+      });
+      prevPlansLength.current = plans.length;
     }
-  }, [selectedTeamId, selectedDate, assignedPlanIds]);
+  }, [selectedTeamId, selectedDate, assignedPlanIds, plans.length, plans]);
 
-  // Initialize selected missions with already assigned items (only if team/date changed)
+  // Initialize selected missions with already assigned items
+  // This runs when team/date changes OR when missions data is refetched after deployment
   useEffect(() => {
     const teamChanged = prevTeamAndDate.current.teamId !== selectedTeamId;
     const dateChanged = prevTeamAndDate.current.date !== selectedDate;
+    const missionsDataChanged = missions.length !== prevMissionsLength.current;
     
     if (teamChanged || dateChanged) {
+      // Team or date changed - reset and sync
+      // Only include missions assigned to the current selected team (blue checkboxes)
       if (selectedTeamId && assignedMissionIds.length > 0) {
         setSelectedMissions(assignedMissionIds);
       } else if (!selectedTeamId) {
         setSelectedMissions([]);
       }
+      prevMissionsLength.current = missions.length;
+    } else if (missionsDataChanged && selectedTeamId) {
+      // Missions data was refetched (e.g., after deployment) - sync selections with assigned items
+      // Filter out any missions that don't belong to current team (remove gray checkboxes)
+      setSelectedMissions(prevSelectedMissions => {
+        const validMissions = prevSelectedMissions.filter(missionId => {
+          const mission = missions.find(m => m.id === missionId);
+          if (!mission) return false;
+          const isAssigned = mission.is_assigned === 1 || mission.is_assigned === true;
+          const teamMatches = mission.assigned_team_id && parseInt(mission.assigned_team_id) === parseInt(selectedTeamId);
+          return !isAssigned || teamMatches;
+        });
+        
+        if (assignedMissionIds.length > 0) {
+          // Merge assigned missions with valid existing selections
+          const mergedMissions = [...new Set([...assignedMissionIds, ...validMissions])];
+          return mergedMissions;
+        } else {
+          // If no assigned missions, use only valid selections
+          return validMissions;
+        }
+      });
+      prevMissionsLength.current = missions.length;
     }
-  }, [selectedTeamId, selectedDate, assignedMissionIds]);
+  }, [selectedTeamId, selectedDate, assignedMissionIds, missions.length, missions]);
 
   const handlePilotChange = (pilotId) => {
     setSelectedPilot(pilotId);
@@ -147,6 +219,17 @@ const PilotAssignment = () => {
   };
 
   const handlePlanToggle = (planId) => {
+    // Find the plan to check if it can be edited
+    const plan = plans.find(p => p.id === planId);
+    if (!plan) return;
+    
+    // Only allow toggling if plan can be edited (not assigned to another team)
+    const canEdit = !plan.is_assigned || (plan.assigned_team_id && parseInt(plan.assigned_team_id) === parseInt(selectedTeamId));
+    if (!canEdit) {
+      // Prevent toggling plans assigned to other teams (gray checkboxes)
+      return;
+    }
+    
     setSelectedPlans(prev => 
       prev.includes(planId) 
         ? prev.filter(id => id !== planId)
@@ -155,6 +238,17 @@ const PilotAssignment = () => {
   };
 
   const handleMissionToggle = (missionId) => {
+    // Find the mission to check if it can be edited
+    const mission = missions.find(m => m.id === missionId);
+    if (!mission) return;
+    
+    // Only allow toggling if mission can be edited (not assigned to another team)
+    const canEdit = !mission.is_assigned || (mission.assigned_team_id && parseInt(mission.assigned_team_id) === parseInt(selectedTeamId));
+    if (!canEdit) {
+      // Prevent toggling missions assigned to other teams (gray checkboxes)
+      return;
+    }
+    
     setSelectedMissions(prev => 
       prev.includes(missionId) 
         ? prev.filter(id => id !== missionId)
@@ -179,12 +273,38 @@ const PilotAssignment = () => {
       return;
     }
 
+    // Filter selectedPlans to only include plans that belong to the current selected team
+    // Exclude plans assigned to other teams (gray checkboxes)
+    const validPlanIds = selectedPlans.filter(planId => {
+      const plan = plans.find(p => p.id === planId);
+      if (!plan) return false;
+      
+      // Include if: not assigned OR assigned to current selected team
+      const isAssigned = plan.is_assigned === 1 || plan.is_assigned === true;
+      const teamMatches = plan.assigned_team_id && parseInt(plan.assigned_team_id) === parseInt(selectedTeamId);
+      
+      return !isAssigned || teamMatches;
+    });
+
+    // Filter selectedMissions to only include missions that belong to the current selected team
+    // Exclude missions assigned to other teams (gray checkboxes)
+    const validMissionIds = selectedMissions.filter(missionId => {
+      const mission = missions.find(m => m.id === missionId);
+      if (!mission) return false;
+      
+      // Include if: not assigned OR assigned to current selected team
+      const isAssigned = mission.is_assigned === 1 || mission.is_assigned === true;
+      const teamMatches = mission.assigned_team_id && parseInt(mission.assigned_team_id) === parseInt(selectedTeamId);
+      
+      return !isAssigned || teamMatches;
+    });
+
     try {
       const assignmentData = {
         team_id: selectedTeamId,
         assignment_date: selectedDate,
-        plan_ids: selectedPlans,
-        mission_ids: selectedMissions,
+        plan_ids: validPlanIds, // Use filtered plans (only blue checkboxes)
+        mission_ids: validMissionIds, // Use filtered missions (only blue checkboxes)
         drone_id: droneInfo.drone_id,
         drone_tag: droneInfo.drone_tag,
         is_temp_drone: droneInfo.is_temp ? 1 : 0,
@@ -198,13 +318,13 @@ const PilotAssignment = () => {
       if (result.status) {
         alert(`Assignment ${result.data.assignment_id} created successfully!`);
         
-        // Reset selections
-        setSelectedPlans([]);
-        setSelectedMissions([]);
-        
         // Refetch data to show updated assignments
-        refetchPlans();
-        refetchMissions();
+        // Note: Don't reset selections here - let useEffect sync them with assigned items after refetch
+        await refetchPlans();
+        await refetchMissions();
+        
+        // The useEffect hooks will automatically sync selectedPlans and selectedMissions
+        // with the newly assigned items after the data is refetched
       }
     } catch (error) {
       console.error('Error creating assignment:', error);
@@ -368,7 +488,7 @@ const PilotAssignment = () => {
                           <input
                             type="checkbox"
                             className="pilot-assignment-checkbox-pilotsassign"
-                            checked={selectedPlans.includes(plan.id)}
+                            checked={canEdit && selectedPlans.includes(plan.id)}
                             onChange={() => canEdit && handlePlanToggle(plan.id)}
                             onClick={(e) => e.stopPropagation()}
                             disabled={!canEdit}
@@ -427,7 +547,7 @@ const PilotAssignment = () => {
                           <input
                             type="checkbox"
                             className="pilot-assignment-checkbox-pilotsassign"
-                            checked={selectedMissions.includes(mission.id)}
+                            checked={canEdit && selectedMissions.includes(mission.id)}
                             onChange={() => canEdit && handleMissionToggle(mission.id)}
                             onClick={(e) => e.stopPropagation()}
                             disabled={!canEdit}
@@ -494,8 +614,8 @@ const PilotAssignment = () => {
                           <h4 className="pilot-assignment-team-section-title-pilotsassign">Permanent Drones</h4>
                           {team.permanent_drones && team.permanent_drones.length > 0 ? (
                             <div className="pilot-assignment-team-items-pilotsassign">
-                              {team.permanent_drones.map((drone) => (
-                                <div key={`team-${team.team_id}-permanent-drone-${drone.drone_id}`} className="pilot-assignment-team-item-pilotsassign">
+                              {team.permanent_drones.map((drone, index) => (
+                                <div key={`team-${team.team_id}-permanent-drone-${drone.drone_id}-${index}`} className="pilot-assignment-team-item-pilotsassign">
                                   <span className="pilot-assignment-team-item-icon-pilotsassign">🚁</span>
                                   <span className="pilot-assignment-team-item-text-pilotsassign">
                                     {drone.drone_tag || drone.serial}
@@ -515,8 +635,8 @@ const PilotAssignment = () => {
                               Temporary Drones ({selectedDate})
                             </h4>
                             <div className="pilot-assignment-team-items-pilotsassign">
-                              {team.temp_drones.map((drone) => (
-                                <div key={`team-${team.team_id}-temp-drone-${drone.drone_id}`} className="pilot-assignment-team-item-pilotsassign pilot-assignment-team-temp-item-pilotsassign">
+                              {team.temp_drones.map((drone, index) => (
+                                <div key={`team-${team.team_id}-temp-drone-${drone.drone_id}-${index}`} className="pilot-assignment-team-item-pilotsassign pilot-assignment-team-temp-item-pilotsassign">
                                   <span className="pilot-assignment-team-item-icon-pilotsassign">🚁</span>
                                   <span className="pilot-assignment-team-item-text-pilotsassign">
                                     {drone.drone_tag || drone.serial}

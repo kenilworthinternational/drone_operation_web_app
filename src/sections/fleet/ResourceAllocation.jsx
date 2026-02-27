@@ -6,6 +6,7 @@ import {
   useGetFleetGeneratorsQuery,
   useGetFleetDronesQuery,
   useGetFleetPilotsWithTeamsQuery,
+  useGetFleetTeamLeadsQuery,
   useCreateFleetTeamMutation,
   useGetFleetTeamEquipmentQuery,
   useGetTempFleetAllocationsByDateQuery,
@@ -16,7 +17,7 @@ import {
   useAssignFleetDroneMutation,
   useCreateTempFleetAllocationMutation,
 } from '../../api/services NodeJs/allEndpoints';
-import { useGetBatteryTypesQuery } from '../../api/services/allEndpoints';
+import { useGetBatteryTypesQuery, useGetSectorsQuery } from '../../api/services/allEndpoints';
 
 const ResourceAllocation = () => {
   const [activeTab, setActiveTab] = useState('availability');
@@ -33,11 +34,17 @@ const ResourceAllocation = () => {
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM format
   const [showCreateTeamModal, setShowCreateTeamModal] = useState(false);
   const [newTeamName, setNewTeamName] = useState('');
+  const [selectedTeamLead, setSelectedTeamLead] = useState('');
+  const [selectedSector, setSelectedSector] = useState('');
   const [isCreatingTeam, setIsCreatingTeam] = useState(false);
   const [teamCreationStatus, setTeamCreationStatus] = useState(''); // 'creating', 'done', ''
 
   // Fetch pilots data first
   const { data: pilotsData, isLoading: loadingPilots, refetch: refetchPilots } = useGetFleetPilotsWithTeamsQuery();
+  
+  // Fetch team leads and sectors
+  const { data: teamLeadsData, isLoading: loadingTeamLeads } = useGetFleetTeamLeadsQuery();
+  const { data: sectorsData, isLoading: loadingSectors } = useGetSectorsQuery();
   
   // Fetch equipment data (only for permanent view)
   const selectedPilotTeamId = selectedPilotFilter && pilotsData?.data 
@@ -115,7 +122,17 @@ const ResourceAllocation = () => {
   const drones = isViewingTemp ? (tempAllocationsByMonthData?.data?.drones || []) : (dronesData?.data || []);
   // Memoize pilots to prevent infinite loop in useEffect
   const pilots = useMemo(() => pilotsData?.data || [], [pilotsData?.data]);
-  const batteryTypes = batteryTypesData?.data || [];
+  // Handle both response formats: { data: [...] } or { types: [...] }
+  const batteryTypes = useMemo(() => {
+    if (!batteryTypesData) return [];
+    // Check for direct array
+    if (Array.isArray(batteryTypesData)) return batteryTypesData;
+    // Check for data property
+    if (Array.isArray(batteryTypesData.data)) return batteryTypesData.data;
+    // Check for types property (legacy format)
+    if (Array.isArray(batteryTypesData.types)) return batteryTypesData.types;
+    return [];
+  }, [batteryTypesData]);
   
   const isLoading = isViewingTemp ? loadingTempAllocations : (loadingRC || loadingBatteries || loadingGenerators || loadingDrones);
 
@@ -398,6 +415,22 @@ const ResourceAllocation = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isTempAllocation, formattedAllocationDate, selectedTeamId, tempAllocationsData?.data]);
 
+  // Extract team leads and sectors from API responses
+  const teamLeads = useMemo(() => {
+    if (!teamLeadsData) return [];
+    if (Array.isArray(teamLeadsData)) return teamLeadsData;
+    if (Array.isArray(teamLeadsData.data)) return teamLeadsData.data;
+    return [];
+  }, [teamLeadsData]);
+
+  const sectors = useMemo(() => {
+    if (!sectorsData) return [];
+    if (Array.isArray(sectorsData)) return sectorsData;
+    if (Array.isArray(sectorsData.data)) return sectorsData.data;
+    if (Array.isArray(sectorsData.sectors)) return sectorsData.sectors;
+    return [];
+  }, [sectorsData]);
+
   // Handle team creation
   const handleCreateTeam = async () => {
     if (!newTeamName.trim() || !selectedPilot) {
@@ -411,6 +444,8 @@ const ResourceAllocation = () => {
       const result = await createTeam({
         team_name: newTeamName.trim(),
         pilot_id: parseInt(selectedPilot),
+        lead_id: selectedTeamLead ? parseInt(selectedTeamLead) : null,
+        sector_id: selectedSector ? parseInt(selectedSector) : null,
       }).unwrap();
 
       if (result.status) {
@@ -419,6 +454,8 @@ const ResourceAllocation = () => {
         setTimeout(async () => {
           setShowCreateTeamModal(false);
           setNewTeamName('');
+          setSelectedTeamLead('');
+          setSelectedSector('');
           setTeamCreationStatus('');
           setIsCreatingTeam(false);
           // Refetch pilots to get updated team info
@@ -710,22 +747,23 @@ const ResourceAllocation = () => {
           }
 
           // Determine item type and item_id based on asset name
+          // Check Battery first (most specific) to avoid matching "RC Battery" as remote control
           let itemType = null;
           let itemId = null;
 
-          if (assetName.includes('Remote Controller') || assetName.includes('RC')) {
-            itemType = 'remote_control';
-            itemId = equipmentId;
-            if (!isTempAllocation) {
-              allocationData.remote_control_id = equipmentId;
-              await assignRemoteControl(allocationData).unwrap();
-            }
-          } else if (assetName.includes('Battery')) {
+          if (assetName.includes('Battery')) {
             itemType = 'battery';
             itemId = equipmentId;
             if (!isTempAllocation) {
               allocationData.battery_id = equipmentId;
               await assignBattery(allocationData).unwrap();
+            }
+          } else if (assetName.includes('Remote Controller') || (assetName.includes('RC') && !assetName.includes('Battery'))) {
+            itemType = 'remote_control';
+            itemId = equipmentId;
+            if (!isTempAllocation) {
+              allocationData.remote_control_id = equipmentId;
+              await assignRemoteControl(allocationData).unwrap();
             }
           } else if (assetName.includes('Generator')) {
             itemType = 'generator';
@@ -734,7 +772,7 @@ const ResourceAllocation = () => {
               allocationData.generator_id = equipmentId;
               await assignGenerator(allocationData).unwrap();
             }
-          } else if (assetName.includes('Drone')) {
+          } else if (assetName.includes('Drone') && !assetName.includes('Battery')) {
             itemType = 'drone';
             itemId = equipmentId;
             if (!isTempAllocation) {
@@ -1077,6 +1115,8 @@ const ResourceAllocation = () => {
                 setShowCreateTeamModal(false);
                 setSelectedPilot('');
                 setNewTeamName('');
+                setSelectedTeamLead('');
+                setSelectedSector('');
                 setIsCreatingTeam(false);
                 setTeamCreationStatus('');
               }
@@ -1090,6 +1130,8 @@ const ResourceAllocation = () => {
                       setShowCreateTeamModal(false);
                       setSelectedPilot('');
                       setNewTeamName('');
+                      setSelectedTeamLead('');
+                      setSelectedSector('');
                       setIsCreatingTeam(false);
                       setTeamCreationStatus('');
                     }}
@@ -1120,6 +1162,66 @@ const ResourceAllocation = () => {
                       }}
                     />
                   </div>
+                  <div className="create-team-modal-field-fleet">
+                    <label htmlFor="team-lead-input" className="create-team-modal-label-fleet">
+                      Team Lead
+                    </label>
+                    <div className="filter-input-wrapper-fleet filter-select-wrapper-fleet">
+                      <select
+                        id="team-lead-input"
+                        className="filter-select-fleet"
+                        value={selectedTeamLead}
+                        onChange={(e) => setSelectedTeamLead(e.target.value)}
+                        disabled={loadingTeamLeads || isCreatingTeam}
+                      >
+                        <option value="">-- Select Team Lead --</option>
+                        {loadingTeamLeads ? (
+                          <option value="" disabled>Loading team leads...</option>
+                        ) : teamLeads.length === 0 ? (
+                          <option value="" disabled>No team leads available</option>
+                        ) : (
+                          teamLeads.map((lead) => (
+                            <option key={lead.id} value={lead.id}>
+                              {lead.name}
+                            </option>
+                          ))
+                        )}
+                      </select>
+                      <span className="filter-select-icon-fleet" aria-hidden="true">
+                        ˅
+                      </span>
+                    </div>
+                  </div>
+                  <div className="create-team-modal-field-fleet">
+                    <label htmlFor="sector-input" className="create-team-modal-label-fleet">
+                      Sector
+                    </label>
+                    <div className="filter-input-wrapper-fleet filter-select-wrapper-fleet">
+                      <select
+                        id="sector-input"
+                        className="filter-select-fleet"
+                        value={selectedSector}
+                        onChange={(e) => setSelectedSector(e.target.value)}
+                        disabled={loadingSectors || isCreatingTeam}
+                      >
+                        <option value="">-- Select Sector --</option>
+                        {loadingSectors ? (
+                          <option value="" disabled>Loading sectors...</option>
+                        ) : sectors.length === 0 ? (
+                          <option value="" disabled>No sectors available</option>
+                        ) : (
+                          sectors.map((sector) => (
+                            <option key={sector.id} value={sector.id}>
+                              {sector.sector}
+                            </option>
+                          ))
+                        )}
+                      </select>
+                      <span className="filter-select-icon-fleet" aria-hidden="true">
+                        ˅
+                      </span>
+                    </div>
+                  </div>
                 </div>
                 <div className="create-team-modal-footer-fleet">
                   <button
@@ -1129,6 +1231,8 @@ const ResourceAllocation = () => {
                         setShowCreateTeamModal(false);
                         setSelectedPilot('');
                         setNewTeamName('');
+                        setSelectedTeamLead('');
+                        setSelectedSector('');
                         setIsCreatingTeam(false);
                         setTeamCreationStatus('');
                       }

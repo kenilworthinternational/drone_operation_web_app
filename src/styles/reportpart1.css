@@ -11,11 +11,13 @@
 }
 
 .chart-title {
-  font-size: 1.5rem;
+  font-size: 1.1rem;
   font-weight: bold;
   color: #004B71;
   text-align: center;
   margin-bottom: 15px;
+  flex: 1;
+  min-width: 0;
 }
 
 .report-part1 .loading,
@@ -32,9 +34,33 @@
 .report-part1 .error {
   color: #e53e3e;
 }
-.back-button{
+.chart-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+  position: relative;
+  z-index: 1;
+}
+
+.report-part1 .back-button {
   background-color: #004B71;
   color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+  white-space: nowrap;
+  position: relative;
+  z-index: 1;
+}
+
+.report-part1 .back-button:hover {
+  background-color: #003d5a;
 }
 .type-selector {
   margin-bottom: 20px;

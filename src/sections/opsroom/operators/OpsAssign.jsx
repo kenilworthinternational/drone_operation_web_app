@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
@@ -19,6 +20,7 @@ import * as XLSX from 'xlsx';
 import '../../../styles/opsAssign.css';
 
 const OpsAssign = () => {
+  const navigate = useNavigate();
   const dispatch = useAppDispatch();
   
   // Redux state
@@ -313,6 +315,18 @@ const OpsAssign = () => {
 
   return (
     <div className="ops-assign-container">
+      {/* Header with Back Button */}
+      <div className="ops-assign-header">
+        <button 
+          className="ops-assign-back-btn" 
+          onClick={() => navigate('/home/workflowDashboard')}
+          title="Go back to Workflow Dashboard"
+        >
+          <span className="ops-assign-back-icon">←</span>
+        </button>
+        <h1 className="ops-assign-title">Ops Assignment</h1>
+      </div>
+
       {/* Tabs */}
       <div className="ops-assign-tabs">
         <button

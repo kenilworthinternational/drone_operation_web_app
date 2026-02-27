@@ -5,6 +5,7 @@ import UpdateServices from './features/misc/UpdateServices';
 import CreateBookings from './sections/management/bookings/CreateBookings';
 import Dashboard from './features/dashboard/Dashboard';
 import Login from './pages/Login';
+import Register from './pages/Register';
 import ProceedPlan from './features/misc/ProceedPlan';
 import TeamAllocation from './features/misc/teamAllocation';
 import NonpTeamAllocation from './features/nonp/nonpTeamAllocation';
@@ -22,36 +23,56 @@ import BookingList from './sections/management/bookings/BookingList';
 import MDDashboard from './features/dashboard/MDDashboard';
 import FieldHistory from './sections/management/ops/FieldHistory';
 import DataViewer from './sections/corporate/chartView/DataViewer';
+import FinancialCards from './sections/finance/financialCards/FinancialCards';
+import FinanceApprovals from './sections/finance/financeApprovals/FinanceApprovals';
+import VehicleRent from './sections/finance/vehicleRent/VehicleRent';
+import VehicleRentApprovals from './sections/hr&admin/vehicleRentApprovals/VehicleRentApprovals';
 import CEODataViewer from './features/dashboard/CEODataViewer';
 import OpsAssign from './sections/opsroom/operators/OpsAssign';
 import ReportReview from './sections/corporate/charts/TaskReviewManagement';
 import Brokers from './sections/finance/brokers/Brokers';
 import WorkflowDashboard from './sections/opsroom/dashboard/WorkflowDashboard';
+import MonitoringDashboard from './sections/opsroom/monitoring/MonitoringDashboard';
 import PlanCalendar from './sections/opsroom/calendar/PlanCalendar';
 import RequestsQueueMain from './sections/opsroom/requests/RequestsQueueMain';
 import RequestProceed from './sections/opsroom/requests/RequestProceed';
 import PlansWithWeather from './sections/opsroom/plans/PlansWithWeather';
 import PilotAssignment from './sections/opsroom/pilot-assigment/PilotAssignment';
 import TodayPlans from './sections/opsroom/today-plans/TodayPlans';
+import EmergencyMoving from './sections/opsroom/emergency/EmergencyMoving';
+import FieldSizeAdjustments from './sections/opsroom/fieldSizeAdjustments/FieldSizeAdjustments';
 import EmployeeRegistration from './sections/hr&admin/EmployeeRegistration';
 import Employees from './sections/hr&admin/Employees';
 import JDManagement from './sections/hr&admin/JDManagement';
 import EmployeeAssignment from './sections/hr&admin/EmployeeAssignment';
 import MonthlyRoaster from './sections/hr&admin/roaster/MonthlyRoaster';
 import RoasterPlanning from './sections/hr&admin/roaster/RoasterPlanning';
-import ResourceAllocation from './sections/fleet/ResourceAllocation';
+import ResourceAllocation from './sections/fleet/resource-allocation/ResourceAllocation';
+import AccidentReports from './sections/fleet/accident-reports/AccidentReports';
+import Maintenance from './sections/fleet/maintenance/Maintenance';
+import FleetUpdate from './sections/fleet/fleet-update/FleetUpdate';
 import DjiMapUpload from './sections/opsroom/dji/DjiMapUpload';
 import ManagerApprovalQueue from './sections/opsroom/manager-approval/ManagerApprovalQueue';
 import PendingPaymentQueue from './sections/opsroom/pending-payment/PendingPaymentQueue';
 import DroneUnlockingQueue from './sections/opsroom/drone-unlocking/DroneUnlockingQueue';
 import Users from './sections/ict/users/Users';
 import AuthControls from './sections/ict/authentication/AuthControls';
+import AppVersionManagement from './sections/ict/appVersions/AppVersionManagement';
+import LogsReportPage from './sections/ict/logsReport/LogsReportPage';
 import SupplierRegistration from './sections/stock-assets/SupplierRegistration';
 import InventoryItemsRegistration from './sections/stock-assets/InventoryItemsRegistration';
 import ProcurementProcess from './sections/stock-assets/ProcurementProcess';
 import CentralStores from './sections/stock-assets/CentralStores';
 import AssetTransfer from './sections/stock-assets/AssetTransfer';
 import AssetRequest from './sections/stock-assets/AssetRequest';
+import PlantationDashboard from './sections/plantation/plantationDashboard/PlantationDashboard';
+import PlantationChartsPage from './sections/plantation/plantationDashboard/pages/PlantationChartsPage';
+import PlantationCalendarPage from './sections/plantation/plantationDashboard/pages/PlantationCalendarPage';
+import PlantationUpcomingPage from './sections/plantation/plantationDashboard/pages/PlantationUpcomingPage';
+import PlantationReportsPage from './sections/plantation/plantationDashboard/pages/PlantationReportsPage';
+import ChartBreakdownPage from './sections/plantation/plantationDashboard/pages/ChartBreakdownPage';
+import GlobalChartBreakdownPage from './sections/corporate/charts/GlobalChartBreakdownPage';
+import MappingUpdatePage from './sections/geo-spatial/mapping/MappingUpdatePage';
 
 import { useAppSelector } from './store/hooks';
 
@@ -69,7 +90,8 @@ function App() {
       <Routes>
         <Route path="/" element={<Navigate to="/login" />} />
         <Route path="/login" element={<Login />} />
-        
+        <Route path="/register" element={<Register />} />
+
         {/* Wrap protected routes with ProtectedRoute */}
         <Route
           path="/home"
@@ -100,6 +122,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <DataViewer />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="dataViewer/chart-breakdown"
+            element={
+              <ProtectedRoute>
+                <GlobalChartBreakdownPage />
               </ProtectedRoute>
             }
           />
@@ -200,6 +230,14 @@ function App() {
             }
           />
           <Route
+            path="geo-spatial/mapping-update"
+            element={
+              <ProtectedRoute>
+                <MappingUpdatePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="calenderView/management"
             element={
               <ProtectedRoute>
@@ -295,6 +333,14 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="fieldSizeAdjustments"
+            element={
+              <ProtectedRoute>
+                <FieldSizeAdjustments />
+              </ProtectedRoute>
+            }
+          />
           {/* <Route
             path="managerRescheduler"
             element={
@@ -339,7 +385,7 @@ function App() {
             path="earnings"
             element={
               <ProtectedRoute>
-                  <Earnings />
+                <Earnings />
               </ProtectedRoute>
             }
           />
@@ -347,7 +393,47 @@ function App() {
             path="brokers"
             element={
               <ProtectedRoute>
-                  <Brokers />
+                <Brokers />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="financial-cards"
+            element={
+              <ProtectedRoute>
+                <FinancialCards />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="finance-approvals"
+            element={
+              <ProtectedRoute>
+                <FinanceApprovals />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="vehicle-rent"
+            element={
+              <ProtectedRoute>
+                <VehicleRent />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="vehicle-rent-approvals"
+            element={
+              <ProtectedRoute>
+                <VehicleRentApprovals />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="monitoringDashboard"
+            element={
+              <ProtectedRoute>
+                <MonitoringDashboard />
               </ProtectedRoute>
             }
           />
@@ -355,7 +441,7 @@ function App() {
             path="workflowDashboard"
             element={
               <ProtectedRoute>
-                  <WorkflowDashboard />
+                <WorkflowDashboard />
               </ProtectedRoute>
             }
           />
@@ -363,7 +449,7 @@ function App() {
             path="opsroomPlanCalendar"
             element={
               <ProtectedRoute>
-                  <PlanCalendar />
+                <PlanCalendar />
               </ProtectedRoute>
             }
           />
@@ -371,7 +457,7 @@ function App() {
             path="requestsQueue"
             element={
               <ProtectedRoute>
-                  <RequestsQueueMain />
+                <RequestsQueueMain />
               </ProtectedRoute>
             }
           />
@@ -424,6 +510,14 @@ function App() {
             }
           />
           <Route
+            path="emergencyMoving"
+            element={
+              <ProtectedRoute>
+                <EmergencyMoving />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="requestProceed"
             element={
               <ProtectedRoute>
@@ -436,6 +530,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <EmployeeRegistration />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="employees"
+            element={
+              <ProtectedRoute>
+                <Employees />
               </ProtectedRoute>
             }
           />
@@ -488,6 +590,30 @@ function App() {
             }
           />
           <Route
+            path="accident-reports"
+            element={
+              <ProtectedRoute>
+                <AccidentReports />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="maintenance"
+            element={
+              <ProtectedRoute>
+                <Maintenance />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="fleet-update"
+            element={
+              <ProtectedRoute>
+                <FleetUpdate />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="ict/system-admin/users"
             element={
               <ProtectedRoute>
@@ -500,6 +626,22 @@ function App() {
             element={
               <ProtectedRoute>
                 <AuthControls />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="ict/system-admin/app-versions"
+            element={
+              <ProtectedRoute>
+                <AppVersionManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="ict/system-admin/logs-report"
+            element={
+              <ProtectedRoute>
+                <LogsReportPage />
               </ProtectedRoute>
             }
           />
@@ -520,7 +662,7 @@ function App() {
             }
           />
           <Route
-            path="stock-assets/procurement-process"
+            path="stock-assets/procurement-process/*"
             element={
               <ProtectedRoute>
                 <ProcurementProcess />
@@ -528,7 +670,7 @@ function App() {
             }
           />
           <Route
-            path="stock-assets/central-stores"
+            path="stock-assets/central-stores/*"
             element={
               <ProtectedRoute>
                 <CentralStores />
@@ -548,6 +690,54 @@ function App() {
             element={
               <ProtectedRoute>
                 <AssetRequest />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="plantation-dashboard"
+            element={
+              <ProtectedRoute>
+                <PlantationDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="plantation-dashboard/charts"
+            element={
+              <ProtectedRoute>
+                <PlantationChartsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="plantation-dashboard/calendar"
+            element={
+              <ProtectedRoute>
+                <PlantationCalendarPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="plantation-dashboard/upcoming"
+            element={
+              <ProtectedRoute>
+                <PlantationUpcomingPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="plantation-dashboard/reports"
+            element={
+              <ProtectedRoute>
+                <PlantationReportsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="plantation-dashboard/chart-breakdown"
+            element={
+              <ProtectedRoute>
+                <ChartBreakdownPage />
               </ProtectedRoute>
             }
           />

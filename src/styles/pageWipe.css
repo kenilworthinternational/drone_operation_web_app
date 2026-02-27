@@ -1,0 +1,38 @@
+/* =====================================================
+   PAGE WIPE TRANSITION
+   A dark overlay sweeps across the screen during
+   Login <-> Register navigation
+   ===================================================== */
+
+.page-wipe-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9999;
+  pointer-events: none;
+  background: linear-gradient(135deg, #0d2137, #1a3a5c);
+}
+
+/* Wipe LEFT to RIGHT (Login -> Register) */
+.page-wipe-overlay.wipe-ltr {
+  animation: wipeLTR 0.7s cubic-bezier(0.77, 0, 0.175, 1) forwards;
+}
+
+/* Wipe RIGHT to LEFT (Register -> Login) */
+.page-wipe-overlay.wipe-rtl {
+  animation: wipeRTL 0.7s cubic-bezier(0.77, 0, 0.175, 1) forwards;
+}
+
+@keyframes wipeLTR {
+  0%   { clip-path: inset(0 100% 0 0); }
+  45%  { clip-path: inset(0 0 0 0); }
+  100% { clip-path: inset(0 0 0 100%); }
+}
+
+@keyframes wipeRTL {
+  0%   { clip-path: inset(0 0 0 100%); }
+  45%  { clip-path: inset(0 0 0 0); }
+  100% { clip-path: inset(0 100% 0 0); }
+}

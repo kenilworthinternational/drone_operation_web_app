@@ -1,0 +1,712 @@
+/* Accident Reports Styles */
+
+.accidentreports-container {
+  padding: 20px;
+}
+
+.accidentreports-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.accidentreports-title {
+  margin: 0;
+}
+
+.accidentreports-filter-button {
+  padding: 8px 16px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.accidentreports-filter-button:hover {
+  background-color: #0056b3;
+}
+
+.accidentreports-filters-panel {
+  background-color: #f8f9fa;
+  padding: 15px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  border: 1px solid #dee2e6;
+}
+
+.accidentreports-filters-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.accidentreports-filters-title {
+  margin: 0;
+}
+
+.accidentreports-clear-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #007bff;
+}
+
+.accidentreports-clear-button:hover {
+  text-decoration: underline;
+}
+
+.accidentreports-filters-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+}
+
+.accidentreports-filter-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+}
+
+.accidentreports-filter-input {
+  width: 100%;
+  padding: 5px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.accidentreports-filter-select {
+  width: 100%;
+  padding: 5px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.accidentreports-search-bar {
+  margin-bottom: 20px;
+}
+
+.accidentreports-search-input {
+  width: 100%;
+  padding: 10px;
+  font-size: 14px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.accidentreports-status-info {
+  margin-top: 20px;
+  padding: 15px;
+  background-color: #e7f3ff;
+  border: 1px solid #b3d9ff;
+  border-radius: 4px;
+}
+
+.accidentreports-table-wrapper {
+  overflow-x: auto;
+  margin-top: 20px;
+}
+
+.accidentreports-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: white;
+  border: 1px solid #dee2e6;
+}
+
+.accidentreports-table thead tr {
+  background-color: #f8f9fa;
+}
+
+.accidentreports-table th {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 2px solid #dee2e6;
+}
+
+.accidentreports-table td {
+  padding: 12px;
+}
+
+.accidentreports-table tbody tr {
+  border-bottom: 1px solid #dee2e6;
+}
+
+.accidentreports-table tbody tr:nth-child(even) {
+  background-color: #f8f9fa;
+}
+
+.accidentreports-table tbody tr:nth-child(odd) {
+  background-color: #ffffff;
+}
+
+.accidentreports-loading-cell {
+  padding: 20px;
+  text-align: center;
+  background-color: #fff3cd;
+}
+
+.accidentreports-error-cell {
+  padding: 20px;
+  text-align: center;
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.accidentreports-empty-cell {
+  padding: 20px;
+  text-align: center;
+  background-color: #fff3cd;
+}
+
+.accidentreports-media-icons {
+  display: flex;
+  gap: 5px;
+}
+
+.accidentreports-view-button {
+  padding: 5px 10px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.accidentreports-view-button:hover {
+  background-color: #0056b3;
+}
+
+.accidentreports-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.accidentreports-modal-content {
+  background-color: white;
+  border-radius: 12px;
+  padding: 20px;
+  max-width: 95%;
+  max-height: 95vh;
+  overflow-y: auto;
+  width: 850px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.accidentreports-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #e9ecef;
+}
+
+.accidentreports-modal-header h2 {
+  margin: 0;
+  color: #212529;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.accidentreports-modal-close {
+  background: none;
+  border: none;
+  font-size: 28px;
+  cursor: pointer;
+  color: #6c757d;
+  padding: 5px;
+  line-height: 1;
+  transition: all 0.2s;
+  border-radius: 4px;
+}
+
+.accidentreports-modal-close:hover {
+  color: #212529;
+  background-color: #f8f9fa;
+}
+
+.accidentreports-modal-details-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  margin-bottom: 20px;
+  padding: 0;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.accidentreports-modal-details-grid > div {
+  padding: 10px 15px;
+  background-color: white;
+  border-left: 3px solid #007bff;
+  border-bottom: 1px solid #e9ecef;
+  border-right: 1px solid #e9ecef;
+}
+
+.accidentreports-modal-details-grid > div:nth-child(odd) {
+  border-right: 1px solid #e9ecef;
+}
+
+.accidentreports-modal-details-grid > div:nth-child(even) {
+  border-right: none;
+}
+
+.accidentreports-modal-details-grid > div:nth-last-child(-n+2) {
+  border-bottom: none;
+}
+
+.accidentreports-modal-details-grid > div {
+  color: #212529;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.accidentreports-modal-details-grid > div strong {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #6c757d;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.accidentreports-modal-media-section {
+  margin-top: 20px;
+}
+
+.accidentreports-modal-media-section h3 {
+  margin: 0 0 15px 0;
+  color: #212529;
+  font-size: 18px;
+  font-weight: 600;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #e9ecef;
+}
+
+.accidentreports-modal-media-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 15px;
+}
+
+.accidentreports-media-three-column {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 15px;
+}
+
+.accidentreports-media-column {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.accidentreports-modal-media-item {
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.accidentreports-modal-media-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.accidentreports-media-label {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #495057;
+}
+
+.accidentreports-image-wrapper,
+.accidentreports-video-wrapper,
+.accidentreports-audio-wrapper {
+  position: relative;
+  width: 100%;
+  background-color: #000;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.accidentreports-modal-image {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.accidentreports-modal-video {
+  width: 100%;
+  display: block;
+  border-radius: 6px;
+  background-color: #000;
+}
+
+.accidentreports-modal-audio {
+  width: 100%;
+  display: block;
+  padding: 10px;
+  background-color: #fff;
+  border-radius: 6px;
+}
+
+.accidentreports-image-error,
+.accidentreports-video-error,
+.accidentreports-audio-error {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px 15px;
+  color: #6c757d;
+  text-align: center;
+  min-height: 150px;
+}
+
+.accidentreports-image-error p,
+.accidentreports-video-error p,
+.accidentreports-audio-error p {
+  margin: 0;
+  font-size: 12px;
+  color: #868e96;
+}
+
+.accidentreports-video-full-width {
+  margin-top: 15px;
+  width: 100%;
+}
+
+.accidentreports-video-item {
+  width: 100%;
+}
+
+.accidentreports-audio-item {
+  background-color: #fff;
+  border: 1px solid #dee2e6;
+}
+
+.accidentreports-loading-container {
+  padding: 20px;
+  text-align: center;
+}
+
+.accidentreports-download-btn {
+  background: none;
+  border: none;
+  color: #6c757d;
+  cursor: pointer;
+  padding: 4px 8px;
+  margin-left: auto;
+  border-radius: 4px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+}
+
+.accidentreports-download-btn:hover {
+  background-color: #f8f9fa;
+  color: #007bff;
+}
+
+.accidentreports-media-label {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #495057;
+}
+
+.accidentreports-image-wrapper {
+  position: relative;
+  width: 100%;
+  background-color: #000;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.accidentreports-image-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+}
+
+.accidentreports-image-wrapper:hover .accidentreports-image-overlay {
+  opacity: 1;
+}
+
+/* Image Viewer Modal */
+.accidentreports-image-viewer-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  animation: fadeIn 0.2s ease-in;
+}
+
+.accidentreports-image-viewer-content {
+  position: relative;
+  max-width: 95vw;
+  max-height: 95vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #000;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.accidentreports-image-viewer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  background-color: rgba(0, 0, 0, 0.8);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.accidentreports-image-viewer-controls {
+  display: flex;
+  gap: 10px;
+}
+
+.accidentreports-image-viewer-btn {
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  padding: 10px 15px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 14px;
+}
+
+.accidentreports-image-viewer-btn:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.accidentreports-image-viewer-close {
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  padding: 10px 15px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.accidentreports-image-viewer-close:hover {
+  background-color: rgba(255, 0, 0, 0.3);
+  border-color: rgba(255, 0, 0, 0.5);
+}
+
+.accidentreports-image-viewer-image-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  overflow: auto;
+  max-height: calc(95vh - 80px);
+}
+
+.accidentreports-image-viewer-image {
+  max-width: 100%;
+  max-height: calc(95vh - 100px);
+  object-fit: contain;
+  transition: transform 0.3s;
+  border-radius: 4px;
+}
+
+/* Action Column Styles */
+.accidentreports-action-dropdown {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.accidentreports-action-button {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s;
+}
+
+.accidentreports-action-button:first-child {
+  background: #dc3545;
+  color: white;
+}
+
+.accidentreports-action-button:first-child:hover {
+  background: #c82333;
+}
+
+.accidentreports-action-button:last-child {
+  background: #28a745;
+  color: white;
+}
+
+.accidentreports-action-button:last-child:hover {
+  background: #218838;
+}
+
+.accidentreports-action-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.accidentreports-action-badge.declined {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.accidentreports-action-badge.repair {
+  background: #d4edda;
+  color: #155724;
+}
+
+.accidentreports-action-badge .maintenance-id {
+  margin-left: 4px;
+  font-size: 11px;
+  opacity: 0.8;
+}
+
+/* Action Form Styles */
+.accidentreports-action-form {
+  padding: 20px;
+}
+
+.accidentreports-form-group {
+  margin-bottom: 20px;
+}
+
+.accidentreports-form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #333;
+}
+
+.accidentreports-form-input,
+.accidentreports-form-select,
+.accidentreports-form-textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.accidentreports-form-textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.accidentreports-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.accidentreports-button-primary {
+  padding: 10px 20px;
+  background: #004B71;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.accidentreports-button-primary:hover {
+  background: #003a5a;
+}
+
+.accidentreports-button-secondary {
+  padding: 10px 20px;
+  background: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.accidentreports-button-secondary:hover {
+  background: #5a6268;
+}
+

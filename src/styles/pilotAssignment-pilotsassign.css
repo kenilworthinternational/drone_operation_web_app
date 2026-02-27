@@ -332,6 +332,36 @@
   accent-color: #007bff;
 }
 
+/* Disabled checkbox styling - consistent gray appearance */
+.pilot-assignment-checkbox-pilotsassign:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  accent-color: #adb5bd;
+  background-color: #f8f9fa;
+  border-color: #dee2e6;
+}
+
+.pilot-assignment-checkbox-pilotsassign:disabled:checked {
+  accent-color: #adb5bd;
+  background-color: #e9ecef;
+  border-color: #adb5bd;
+  opacity: 0.5;
+}
+
+/* Ensure disabled checkboxes are always visible and consistently styled */
+.pilot-assignment-checkbox-wrapper-pilotsassign input[type="checkbox"]:disabled {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 0.5 !important;
+  pointer-events: none;
+}
+
+/* For plans assigned to other teams - ensure checkbox is always visible but unchecked */
+.pilot-assignment-plan-assigned-pilotsassign .pilot-assignment-checkbox-pilotsassign:disabled {
+  opacity: 0.5;
+  accent-color: #adb5bd;
+}
+
 /* Responsive Design */
 @media (max-width: 1200px) {
   .pilot-assignment-controls-bar-pilotsassign {

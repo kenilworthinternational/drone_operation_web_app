@@ -97,6 +97,8 @@ const authSlice = createSlice({
       state.error = null;
       localStorage.removeItem('userData');
       localStorage.removeItem('token');
+      // Note: RTK Query cache clearing should be done in the component
+      // using dispatch(baseApi.util.resetApiState()) before calling logout
     },
     clearError: (state) => {
       state.error = null;

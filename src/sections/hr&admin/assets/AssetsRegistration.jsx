@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { FaClipboardList, FaPlane, FaCar, FaBolt, FaBatteryFull, FaGamepad } from 'react-icons/fa';
 import '../../../styles/assetsRegistration.css';
 import { baseApi } from '../../../api/services/allEndpoints';
@@ -9,7 +9,7 @@ import {
   selectLoading,
   selectActiveTab,
 } from '../../../store/slices/assetsSlice';
-import { useGetWingsQuery, useGetBatteryTypesQuery } from '../../../api/services/assetsApi';
+import { useGetWingsQuery, useGetBatteryTypesQuery, useGetVehicleDriversQuery, useGetVehicleCategoriesQuery, useGetFuelCategoriesQuery } from '../../../api/services/assetsApi';
 
 const parsePurchasePrice = (value) => {
   if (value === undefined || value === null) return null;
@@ -24,6 +24,11 @@ const parseWingId = (value) => {
   if (value === undefined || value === null || value === '') return null;
   const parsed = Number.parseInt(value, 10);
   return Number.isNaN(parsed) ? null : String(parsed);
+};
+
+// Prevent number input from changing when scrolling
+const handleNumberInputWheel = (e) => {
+  e.target.blur();
 };
 
 const FIELD_LABELS = {
@@ -70,6 +75,29 @@ const vehicleInitialState = {
   operational_status: 'y',
   activated: '1',
   wing_id: '',
+  // Driver information (vehicle_drivers table ID)
+  driver: '',
+  driver_license_front_image: '',
+  driver_license_back_image: '',
+  copy_of_registration_document: '',
+  // Vehicle details
+  vehicle_category: '',
+  fuel_category: '',
+  avg_fuel_consumption: '',
+  vehicle_revenue_license_image: '',
+  smoke_test_image: '',
+  insurance_image: '',
+  // Service fields (already exist in table)
+  last_serviced_meter: '',
+  next_serviced: '',
+  wheel_alignment_meter: '',
+  next_wheel_alignment_meter: '',
+  // Rented vehicle fields
+  no_of_km_for_month: '',
+  working_days: '',
+  rate_per_km: '',
+  starting_date: '',
+  end_date: '',
 };
 
 const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
@@ -82,6 +110,14 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState('');
+  
+  // Refs for file inputs to clear them after successful submission
+  const driverLicenseFrontRef = useRef(null);
+  const driverLicenseBackRef = useRef(null);
+  const registrationDocRef = useRef(null);
+  const revenueLicenseRef = useRef(null);
+  const smokeTestRef = useRef(null);
+  const insuranceRef = useRef(null);
   
   // Get from Redux
   const insuranceOptions = useAppSelector(selectInsuranceTypes);
@@ -100,6 +136,22 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
     isError: batteryTypesError,
   } = useGetBatteryTypesQuery();
 
+  const {
+    data: vehicleDriversResponse,
+    isLoading: vehicleDriversLoading,
+    isError: vehicleDriversError,
+  } = useGetVehicleDriversQuery();
+
+  const {
+    data: vehicleCategoriesResponse,
+    isLoading: vehicleCategoriesLoading,
+  } = useGetVehicleCategoriesQuery();
+
+  const {
+    data: fuelCategoriesResponse,
+    isLoading: fuelCategoriesLoading,
+  } = useGetFuelCategoriesQuery();
+
   const wings = useMemo(() => {
     if (!wingsResponse) return [];
     if (Array.isArray(wingsResponse)) return wingsResponse;
@@ -117,6 +169,53 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
     if (Array.isArray(batteryTypesResponse?.data)) return batteryTypesResponse.data;
     return [];
   }, [batteryTypesResponse]);
+
+  // Filter vehicle drivers based on ownership type
+  const internalDrivers = useMemo(() => {
+    if (!vehicleDriversResponse) return [];
+    let drivers = [];
+    if (Array.isArray(vehicleDriversResponse)) {
+      drivers = vehicleDriversResponse;
+    } else if (Array.isArray(vehicleDriversResponse?.drivers)) {
+      drivers = vehicleDriversResponse.drivers;
+    } else if (Array.isArray(vehicleDriversResponse?.data)) {
+      drivers = vehicleDriversResponse.data;
+    }
+    // For own vehicles: member_type = 'i' (internal)
+    return drivers.filter(driver => driver.member_type === 'i' && driver.activated === 1);
+  }, [vehicleDriversResponse]);
+
+  const externalDrivers = useMemo(() => {
+    if (!vehicleDriversResponse) return [];
+    let drivers = [];
+    if (Array.isArray(vehicleDriversResponse)) {
+      drivers = vehicleDriversResponse;
+    } else if (Array.isArray(vehicleDriversResponse?.drivers)) {
+      drivers = vehicleDriversResponse.drivers;
+    } else if (Array.isArray(vehicleDriversResponse?.data)) {
+      drivers = vehicleDriversResponse.data;
+    }
+    // For rented vehicles: member_type = 'e' (external) AND job_role = 'dri' (driver)
+    return drivers.filter(driver => driver.member_type === 'e' && driver.job_role === 'dri' && driver.activated === 1);
+  }, [vehicleDriversResponse]);
+
+  const vehicleCategories = useMemo(() => {
+    if (!vehicleCategoriesResponse) return [];
+    // RTK Query returns the data directly from queryFn
+    if (Array.isArray(vehicleCategoriesResponse)) return vehicleCategoriesResponse;
+    // Fallback for nested structures
+    if (Array.isArray(vehicleCategoriesResponse?.data)) return vehicleCategoriesResponse.data;
+    return [];
+  }, [vehicleCategoriesResponse]);
+
+  const fuelCategories = useMemo(() => {
+    if (!fuelCategoriesResponse) return [];
+    // RTK Query returns the data directly from queryFn
+    if (Array.isArray(fuelCategoriesResponse)) return fuelCategoriesResponse;
+    // Fallback for nested structures
+    if (Array.isArray(fuelCategoriesResponse?.data)) return fuelCategoriesResponse.data;
+    return [];
+  }, [fuelCategoriesResponse]);
 
   const wingsErrorMessage = useMemo(() => {
     if (!wingsError) return '';
@@ -255,8 +354,12 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
         fields.push('purchase_price');
         return fields;
       }
-      case 'vehicles':
-        return ['ownership', 'chassis_no', 'engine_no', 'vehicle_no', 'make', 'model', 'purchase_price', 'insurance_expire_date', 'revenue_license_expire_date', 'initial_mileage', 'operational_status', 'activated', 'wing_id'];
+      case 'vehicles': {
+        const fields = ['ownership', 'chassis_no', 'engine_no', 'vehicle_no', 'make', 'model', 'purchase_price', 'insurance_expire_date', 'revenue_license_expire_date', 'initial_mileage', 'operational_status', 'activated', 'wing_id'];
+        // Driver (user ID) is required for both own and rented vehicles
+        fields.push('driver');
+        return fields;
+      }
       case 'generators':
       case 'remoteControls': {
         const fields = ['tag', 'serial', 'make', 'model', 'manufacture_year', 'depreciation_period', 'have_insurance', 'warranty_period', 'operational_status', 'activated', 'wing_id'];
@@ -286,6 +389,13 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
         break;
       case 'vehicles':
         setVehicleFormData({ ...vehicleInitialState });
+        // Clear file inputs
+        if (driverLicenseFrontRef.current) driverLicenseFrontRef.current.value = '';
+        if (driverLicenseBackRef.current) driverLicenseBackRef.current.value = '';
+        if (registrationDocRef.current) registrationDocRef.current.value = '';
+        if (revenueLicenseRef.current) revenueLicenseRef.current.value = '';
+        if (smokeTestRef.current) smokeTestRef.current.value = '';
+        if (insuranceRef.current) insuranceRef.current.value = '';
         break;
       case 'generators':
         setGeneratorFormData({ ...equipmentInitialState });
@@ -402,24 +512,96 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
         setMessageType('success');
         resetForm(tab);
       } else if (tab === 'vehicles') {
-        const payload = {
-          ownership: formData.ownership.trim(),
-          chassis_no: formData.chassis_no.trim(),
-          engine_no: formData.engine_no.trim(),
-          vehicle_no: formData.vehicle_no.trim(),
-          make: formData.make.trim(),
-          model: formData.model.trim(),
-          purchase_price: normalizedPurchasePrice,
-          insurance_expire_date: formatDate(formData.insurance_expire_date),
-          revenue_license_expire_date: formData.revenue_license_expire_date,
-          initial_mileage: formData.initial_mileage,
-          operational_status: formData.operational_status,
-          activated: formData.activated,
-          wing: wingId
-        };
+        // Create FormData for file uploads
+        const formDataToSend = new FormData();
+        
+        // Add all non-file fields
+        formDataToSend.append('ownership', formData.ownership.trim());
+        formDataToSend.append('chassis_no', formData.chassis_no.trim());
+        formDataToSend.append('engine_no', formData.engine_no.trim());
+        formDataToSend.append('vehicle_no', formData.vehicle_no.trim());
+        formDataToSend.append('make', formData.make.trim());
+        formDataToSend.append('model', formData.model.trim());
+        formDataToSend.append('purchase_price', normalizedPurchasePrice);
+        if (formData.insurance_expire_date) {
+          formDataToSend.append('insurance_expire_date', formatDate(formData.insurance_expire_date));
+        }
+        if (formData.revenue_license_expire_date) {
+          formDataToSend.append('revenue_license_expire_date', formatDate(formData.revenue_license_expire_date));
+        }
+        formDataToSend.append('initial_mileage', formData.initial_mileage ? parseFloat(formData.initial_mileage) : 0);
+        formDataToSend.append('operational_status', formData.operational_status);
+        formDataToSend.append('activated', formData.activated);
+        formDataToSend.append('wing', wingId);
+        
+        // Driver information
+        if (formData.driver) {
+          formDataToSend.append('driver', formData.driver);
+        }
+        if (formData.driver_license_no) {
+          formDataToSend.append('driver_license_no', formData.driver_license_no.trim());
+        }
+        
+        // Vehicle details
+        if (formData.vehicle_category) {
+          formDataToSend.append('vehicle_category', parseInt(formData.vehicle_category, 10));
+        }
+        if (formData.fuel_category) {
+          formDataToSend.append('fuel_category', parseInt(formData.fuel_category, 10));
+        }
+        if (formData.avg_fuel_consumption) {
+          formDataToSend.append('avg_fuel_consumption', parseFloat(formData.avg_fuel_consumption));
+        }
+        
+        // Service fields
+        if (formData.last_serviced_meter) {
+          formDataToSend.append('last_serviced_meter', parseFloat(formData.last_serviced_meter));
+        }
+        if (formData.next_serviced) {
+          formDataToSend.append('next_serviced', parseFloat(formData.next_serviced));
+        }
+        if (formData.wheel_alignment_meter) {
+          formDataToSend.append('wheel_alignment_meter', parseFloat(formData.wheel_alignment_meter));
+        }
+        if (formData.next_wheel_alignment_meter) {
+          formDataToSend.append('next_wheel_alignment_meter', parseFloat(formData.next_wheel_alignment_meter));
+        }
+        
+        // Rented vehicle fields (only if rented)
+        if (formData.ownership === 'r') {
+          if (formData.no_of_km_for_month) {
+            formDataToSend.append('no_of_km_for_month', parseInt(formData.no_of_km_for_month, 10));
+          }
+          if (formData.working_days) {
+            formDataToSend.append('working_days', parseInt(formData.working_days, 10));
+          }
+          if (formData.rate_per_km) {
+            formDataToSend.append('rate_per_km', parseFloat(formData.rate_per_km));
+          }
+          if (formData.starting_date) {
+            formDataToSend.append('starting_date', formatDate(formData.starting_date));
+          }
+          if (formData.end_date) {
+            formDataToSend.append('end_date', formatDate(formData.end_date));
+          }
+        }
+        
+        // Add files (only if they are File objects)
+        if (formData.copy_of_registration_document instanceof File) {
+          formDataToSend.append('copy_of_registration_document', formData.copy_of_registration_document);
+        }
+        if (formData.vehicle_revenue_license_image instanceof File) {
+          formDataToSend.append('vehicle_revenue_license_image', formData.vehicle_revenue_license_image);
+        }
+        if (formData.smoke_test_image instanceof File) {
+          formDataToSend.append('smoke_test_image', formData.smoke_test_image);
+        }
+        if (formData.insurance_image instanceof File) {
+          formDataToSend.append('insurance_image', formData.insurance_image);
+        }
 
         const result = await dispatch(
-          baseApi.endpoints.createVehicle.initiate(payload)
+          baseApi.endpoints.createVehicle.initiate(formDataToSend)
         );
         const response = result.data;
         const isSuccess = response?.status === true || response?.status === 'true';
@@ -569,6 +751,7 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
             name="purchase_price"
             value={droneFormData.purchase_price}
             onChange={(e) => handleInputChange(e, 'drones')}
+            onWheel={handleNumberInputWheel}
             placeholder="Enter purchase price"
             min="0"
             step="0.01"
@@ -621,6 +804,7 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
           <label htmlFor="depreciation_period">Depreciation Period (years) <span className="required-assets-reg">*</span></label>
           <input
             type="number"
+            onWheel={handleNumberInputWheel}
             id="depreciation_period"
             name="depreciation_period"
             value={droneFormData.depreciation_period}
@@ -638,6 +822,7 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
           <label htmlFor="warranty_period">Warranty Period (years) <span className="required-assets-reg">*</span></label>
           <input
             type="number"
+            onWheel={handleNumberInputWheel}
             id="warranty_period"
             name="warranty_period"
             value={droneFormData.warranty_period}
@@ -766,6 +951,7 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
           <label htmlFor="vehicle_purchase_price">Purchase Price (LKR) <span className="required-assets-reg">*</span></label>
           <input
             type="number"
+            onWheel={handleNumberInputWheel}
             id="vehicle_purchase_price"
             name="purchase_price"
             value={vehicleFormData.purchase_price}
@@ -863,6 +1049,7 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
           <label htmlFor="initial_mileage">Initial Mileage (km) <span className="required-assets-reg">*</span></label>
           <input
             type="number"
+            onWheel={handleNumberInputWheel}
             id="initial_mileage"
             name="initial_mileage"
             value={vehicleFormData.initial_mileage}
@@ -902,6 +1089,349 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
           </select>
         </div>
       </div>
+
+      {/* Driver Information Section */}
+      <div className="form-section-divider-assets-reg">
+        <h4>Driver Information</h4>
+      </div>
+
+      <div className="form-row-assets-reg">
+        <div className="form-group-assets-reg">
+          <label htmlFor="driver">Driver <span className="required-assets-reg">*</span></label>
+          <select
+            id="driver"
+            name="driver"
+            value={vehicleFormData.driver}
+            onChange={(e) => handleInputChange(e, 'vehicles')}
+            disabled={vehicleDriversLoading}
+            required
+          >
+            <option value="">
+              {vehicleDriversLoading 
+                ? 'Loading drivers...' 
+                : (vehicleFormData.ownership === 'o' && internalDrivers.length === 0) || (vehicleFormData.ownership === 'r' && externalDrivers.length === 0)
+                  ? 'No drivers available'
+                  : 'Select driver'}
+            </option>
+            {vehicleFormData.ownership === 'o' ? (
+              // Own Vehicle - Show Internal Drivers (member_type = 'i')
+              internalDrivers.map((driver) => (
+                <option key={driver.id} value={driver.id}>
+                  {driver.user_name} {driver.user_nic ? `(${driver.user_nic})` : ''}
+                </option>
+              ))
+            ) : (
+              // Rented Vehicle - Show External Drivers (member_type = 'e' AND job_role = 'dri')
+              externalDrivers.map((driver) => (
+                <option key={driver.id} value={driver.id}>
+                  {driver.user_name} {driver.user_nic ? `(${driver.user_nic})` : ''}
+                </option>
+              ))
+            )}
+          </select>
+        </div>
+        <div className="form-group-assets-reg">
+          <label htmlFor="vehicle_category">Vehicle Category</label>
+          <select
+            id="vehicle_category"
+            name="vehicle_category"
+            value={vehicleFormData.vehicle_category}
+            onChange={(e) => handleInputChange(e, 'vehicles')}
+            disabled={vehicleCategoriesLoading}
+          >
+            <option value="">{vehicleCategoriesLoading ? 'Loading...' : 'Select vehicle category'}</option>
+            {vehicleCategories.map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.category}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div className="form-row-assets-reg">
+        <div className="form-group-assets-reg">
+          <label htmlFor="fuel_category">Fuel Category</label>
+          <select
+            id="fuel_category"
+            name="fuel_category"
+            value={vehicleFormData.fuel_category}
+            onChange={(e) => handleInputChange(e, 'vehicles')}
+            disabled={fuelCategoriesLoading}
+          >
+            <option value="">{fuelCategoriesLoading ? 'Loading...' : 'Select fuel category'}</option>
+            {fuelCategories.map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.category}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="form-group-assets-reg">
+          <label htmlFor="avg_fuel_consumption">Avg Fuel Consumption</label>
+          <input
+            type="number"
+            onWheel={handleNumberInputWheel}
+            id="avg_fuel_consumption"
+            name="avg_fuel_consumption"
+            value={vehicleFormData.avg_fuel_consumption}
+            onChange={(e) => handleInputChange(e, 'vehicles')}
+            placeholder="Enter average fuel consumption"
+            min="0"
+            step="0.01"
+          />
+        </div>
+      </div>
+
+      <div className="form-row-assets-reg">
+        <div className="form-group-assets-reg">
+          <label htmlFor="last_serviced_meter">Last Serviced Meter (km)</label>
+          <input
+            type="number"
+            onWheel={handleNumberInputWheel}
+            id="last_serviced_meter"
+            name="last_serviced_meter"
+            value={vehicleFormData.last_serviced_meter}
+            onChange={(e) => handleInputChange(e, 'vehicles')}
+            placeholder="Enter last serviced meter reading"
+            min="0"
+            step="0.01"
+          />
+        </div>
+        <div className="form-group-assets-reg">
+          <label htmlFor="next_serviced">Next Service (km)</label>
+          <input
+            type="number"
+            onWheel={handleNumberInputWheel}
+            id="next_serviced"
+            name="next_serviced"
+            value={vehicleFormData.next_serviced}
+            onChange={(e) => handleInputChange(e, 'vehicles')}
+            placeholder="Enter next service mileage"
+            min="0"
+            step="0.01"
+          />
+        </div>
+      </div>
+
+      <div className="form-row-assets-reg">
+        <div className="form-group-assets-reg">
+          <label htmlFor="wheel_alignment_meter">Wheel Alignment Meter (km)</label>
+          <input
+            type="number"
+            onWheel={handleNumberInputWheel}
+            id="wheel_alignment_meter"
+            name="wheel_alignment_meter"
+            value={vehicleFormData.wheel_alignment_meter}
+            onChange={(e) => handleInputChange(e, 'vehicles')}
+            placeholder="Enter wheel alignment meter reading"
+            min="0"
+            step="0.01"
+          />
+        </div>
+        <div className="form-group-assets-reg">
+          <label htmlFor="next_wheel_alignment_meter">Next Wheel Alignment (km)</label>
+          <input
+            type="number"
+            onWheel={handleNumberInputWheel}
+            id="next_wheel_alignment_meter"
+            name="next_wheel_alignment_meter"
+            value={vehicleFormData.next_wheel_alignment_meter}
+            onChange={(e) => handleInputChange(e, 'vehicles')}
+            placeholder="Enter next wheel alignment mileage"
+            min="0"
+            step="0.01"
+          />
+        </div>
+      </div>
+
+      {/* Document Uploads Section */}
+      <div className="form-section-divider-assets-reg">
+        <h4>Documents & Images</h4>
+      </div>
+
+      <div className="form-row-assets-reg">
+        <div className="form-group-assets-reg">
+          <label htmlFor="driver_license_front_image">Driver License Front Image</label>
+          <input
+            ref={driverLicenseFrontRef}
+            type="file"
+            id="driver_license_front_image"
+            name="driver_license_front_image"
+            accept="image/*"
+            onChange={(e) => {
+              const file = e.target.files[0];
+              if (file) {
+                setVehicleFormData(prev => ({ ...prev, driver_license_front_image: file.name }));
+              }
+            }}
+          />
+        </div>
+        <div className="form-group-assets-reg">
+          <label htmlFor="driver_license_back_image">Driver License Back Image</label>
+          <input
+            ref={driverLicenseBackRef}
+            type="file"
+            id="driver_license_back_image"
+            name="driver_license_back_image"
+            accept="image/*"
+            onChange={(e) => {
+              const file = e.target.files[0];
+              if (file) {
+                setVehicleFormData(prev => ({ ...prev, driver_license_back_image: file.name }));
+              }
+            }}
+          />
+        </div>
+      </div>
+
+      <div className="form-row-assets-reg">
+        <div className="form-group-assets-reg">
+          <label htmlFor="copy_of_registration_document">Copy of Registration Document</label>
+          <input
+            ref={registrationDocRef}
+            type="file"
+            id="copy_of_registration_document"
+            name="copy_of_registration_document"
+            accept="image/*,.pdf"
+            onChange={(e) => {
+              const file = e.target.files[0];
+              if (file) {
+                setVehicleFormData(prev => ({ ...prev, copy_of_registration_document: file }));
+              }
+            }}
+          />
+        </div>
+        <div className="form-group-assets-reg">
+          <label htmlFor="vehicle_revenue_license_image">Vehicle Revenue License Image</label>
+          <input
+            ref={revenueLicenseRef}
+            type="file"
+            id="vehicle_revenue_license_image"
+            name="vehicle_revenue_license_image"
+            accept="image/*"
+            onChange={(e) => {
+              const file = e.target.files[0];
+              if (file) {
+                setVehicleFormData(prev => ({ ...prev, vehicle_revenue_license_image: file }));
+              }
+            }}
+          />
+        </div>
+      </div>
+
+      <div className="form-row-assets-reg">
+        <div className="form-group-assets-reg">
+          <label htmlFor="smoke_test_image">Smoke Test Image</label>
+          <input
+            ref={smokeTestRef}
+            type="file"
+            id="smoke_test_image"
+            name="smoke_test_image"
+            accept="image/*"
+            onChange={(e) => {
+              const file = e.target.files[0];
+              if (file) {
+                setVehicleFormData(prev => ({ ...prev, smoke_test_image: file }));
+              }
+            }}
+          />
+        </div>
+        <div className="form-group-assets-reg">
+          <label htmlFor="insurance_image">Insurance Image</label>
+          <input
+            ref={insuranceRef}
+            type="file"
+            id="insurance_image"
+            name="insurance_image"
+            accept="image/*"
+            onChange={(e) => {
+              const file = e.target.files[0];
+              if (file) {
+                setVehicleFormData(prev => ({ ...prev, insurance_image: file }));
+              }
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Rented Vehicle Fields */}
+      {vehicleFormData.ownership === 'r' && (
+        <>
+          <div className="form-section-divider-assets-reg">
+            <h4>Rental Information</h4>
+          </div>
+
+          <div className="form-row-assets-reg">
+            <div className="form-group-assets-reg">
+              <label htmlFor="no_of_km_for_month">No of KM for Month</label>
+              <input
+                type="number"
+            onWheel={handleNumberInputWheel}
+                id="no_of_km_for_month"
+                name="no_of_km_for_month"
+                value={vehicleFormData.no_of_km_for_month}
+                onChange={(e) => handleInputChange(e, 'vehicles')}
+                placeholder="Enter number of KM for month"
+                min="0"
+              />
+            </div>
+            <div className="form-group-assets-reg">
+              <label htmlFor="working_days">Working Days</label>
+              <input
+                type="number"
+            onWheel={handleNumberInputWheel}
+                id="working_days"
+                name="working_days"
+                value={vehicleFormData.working_days}
+                onChange={(e) => handleInputChange(e, 'vehicles')}
+                placeholder="Enter working days"
+                min="0"
+              />
+            </div>
+          </div>
+
+          <div className="form-row-assets-reg">
+            <div className="form-group-assets-reg">
+              <label htmlFor="rate_per_km">Rate (Per KM) (LKR)</label>
+              <input
+                type="number"
+            onWheel={handleNumberInputWheel}
+                id="rate_per_km"
+                name="rate_per_km"
+                value={vehicleFormData.rate_per_km}
+                onChange={(e) => handleInputChange(e, 'vehicles')}
+                placeholder="Enter rate per KM"
+                min="0"
+                step="0.01"
+              />
+            </div>
+            <div className="form-group-assets-reg">
+              <label htmlFor="starting_date">Starting Date</label>
+              <input
+                type="date"
+                id="starting_date"
+                name="starting_date"
+                value={vehicleFormData.starting_date}
+                onChange={(e) => handleInputChange(e, 'vehicles')}
+              />
+            </div>
+          </div>
+
+          <div className="form-row-assets-reg">
+            <div className="form-group-assets-reg">
+              <label htmlFor="end_date">End Date</label>
+              <input
+                type="date"
+                id="end_date"
+                name="end_date"
+                value={vehicleFormData.end_date}
+                onChange={(e) => handleInputChange(e, 'vehicles')}
+              />
+            </div>
+          </div>
+        </>
+      )}
 
       <div className="form-actions-assets-reg">
         <button type="submit" className="submit-btn-assets-reg" disabled={isLoading}>
@@ -948,6 +1478,7 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
           <label htmlFor="generator_purchase_price">Purchase Price (LKR) <span className="required-assets-reg">*</span></label>
           <input
             type="number"
+            onWheel={handleNumberInputWheel}
             id="generator_purchase_price"
             name="purchase_price"
             value={generatorFormData.purchase_price}
@@ -1004,6 +1535,7 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
           <label htmlFor="generator_depreciation_period">Depreciation Period (years) <span className="required-assets-reg">*</span></label>
           <input
             type="number"
+            onWheel={handleNumberInputWheel}
             id="generator_depreciation_period"
             name="depreciation_period"
             value={generatorFormData.depreciation_period}
@@ -1021,6 +1553,7 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
           <label htmlFor="generator_warranty_period">Warranty Period (years) <span className="required-assets-reg">*</span></label>
           <input
             type="number"
+            onWheel={handleNumberInputWheel}
             id="generator_warranty_period"
             name="warranty_period"
             value={generatorFormData.warranty_period}
@@ -1147,6 +1680,7 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
           <label htmlFor="battery_purchase_price">Purchase Price (LKR) <span className="required-assets-reg">*</span></label>
           <input
             type="number"
+            onWheel={handleNumberInputWheel}
             id="battery_purchase_price"
             name="purchase_price"
             value={batteryFormData.purchase_price}
@@ -1231,6 +1765,7 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
           <label htmlFor="battery_depreciation_period">Depreciation Period (years) <span className="required-assets-reg">*</span></label>
           <input
             type="number"
+            onWheel={handleNumberInputWheel}
             id="battery_depreciation_period"
             name="depreciation_period"
             value={batteryFormData.depreciation_period}
@@ -1245,6 +1780,7 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
           <label htmlFor="battery_warranty_period">Warranty Period (years) <span className="required-assets-reg">*</span></label>
           <input
             type="number"
+            onWheel={handleNumberInputWheel}
             id="battery_warranty_period"
             name="warranty_period"
             value={batteryFormData.warranty_period}
@@ -1374,6 +1910,7 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
           <label htmlFor="remote_purchase_price">Purchase Price (LKR) <span className="required-assets-reg">*</span></label>
           <input
             type="number"
+            onWheel={handleNumberInputWheel}
             id="remote_purchase_price"
             name="purchase_price"
             value={remoteControlFormData.purchase_price}
@@ -1430,6 +1967,7 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
           <label htmlFor="remote_depreciation_period">Depreciation Period (years) <span className="required-assets-reg">*</span></label>
           <input
             type="number"
+            onWheel={handleNumberInputWheel}
             id="remote_depreciation_period"
             name="depreciation_period"
             value={remoteControlFormData.depreciation_period}
@@ -1447,6 +1985,7 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
           <label htmlFor="remote_warranty_period">Warranty Period (years) <span className="required-assets-reg">*</span></label>
           <input
             type="number"
+            onWheel={handleNumberInputWheel}
             id="remote_warranty_period"
             name="warranty_period"
             value={remoteControlFormData.warranty_period}

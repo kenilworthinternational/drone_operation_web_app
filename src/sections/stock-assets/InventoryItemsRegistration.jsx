@@ -8,9 +8,13 @@ import {
   useGetSubCategoriesQuery,
   useCreateSubCategoryMutation,
   useGetLastSubCategoryCodeQuery,
+  useGetSubSubCategoriesQuery,
+  useCreateSubSubCategoryMutation,
+  useGetLastSubSubCategoryCodeQuery,
   useGetInventoryItemsQuery,
   useCreateInventoryItemMutation,
   useUpdateInventoryItemMutation,
+  useGetLastItemCodeQuery,
 } from '../../api/services NodeJs/stockAssetsApi';
 
 const InventoryItemsRegistration = () => {
@@ -19,14 +23,19 @@ const InventoryItemsRegistration = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMainCategory, setSelectedMainCategory] = useState('');
   const [selectedSubCategory, setSelectedSubCategory] = useState('');
+  const [selectedSubSubCategory, setSelectedSubSubCategory] = useState('');
   // Filter states for Registered Item List
   const [filterMainCategory, setFilterMainCategory] = useState('');
   const [filterSubCategory, setFilterSubCategory] = useState('');
+  const [filterSubSubCategory, setFilterSubSubCategory] = useState('');
   const [filterItemCategory, setFilterItemCategory] = useState('');
   const [showMainCategoryModal, setShowMainCategoryModal] = useState(false);
   const [showSubCategoryModal, setShowSubCategoryModal] = useState(false);
+  const [showSubSubCategoryModal, setShowSubSubCategoryModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showSubCategoryImageModal, setShowSubCategoryImageModal] = useState(false);
+  const [selectedSubCategoryImage, setSelectedSubCategoryImage] = useState(null);
   const [selectedItem, setSelectedItem] = useState(null);
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState('');
@@ -45,6 +54,19 @@ const InventoryItemsRegistration = () => {
     sub_category_name: '',
     main_category_id: '',
     description: '',
+    image: null,
+    imagePreview: null,
+    status: 'active',
+  });
+
+  // Sub-Sub Category Form
+  const [subSubCategoryForm, setSubSubCategoryForm] = useState({
+    sub_sub_category_code: '',
+    sub_sub_category_name: '',
+    sub_category_id: '',
+    description: '',
+    image: null,
+    imagePreview: null,
     status: 'active',
   });
 
@@ -54,15 +76,15 @@ const InventoryItemsRegistration = () => {
     item_name: '',
     main_category_id: '',
     sub_category_id: '',
+    sub_sub_category_id: '',
     unit: '',
     description: '',
-    floor_stock: 0,
-    minimum_floor_stock: 0,
-    minimum_order_qty: 0,
-    maximum_order_qty: 0,
-    reordering_stock_level: 0,
-    item_category: 'stock_item',
-    current_stock: 0,
+    minimum_floor_stock: '',
+    maximum_floor_stock: '',
+    minimum_order_qty: '',
+    maximum_order_qty: '',
+    item_category: 's',
+    current_stock: '',
     status: 'active',
   });
 
@@ -75,20 +97,49 @@ const InventoryItemsRegistration = () => {
   const { data: allSubCategoriesResponse } = useGetSubCategoriesQuery(
     filterMainCategory ? { main_category_id: filterMainCategory } : {}
   );
+  // Sub-sub categories - driven by selected sub category
+  const { data: subSubCategoriesResponse, refetch: refetchSubSubCategories } = useGetSubSubCategoriesQuery(
+    selectedSubCategory ? { sub_category_id: selectedSubCategory } : {},
+    { skip: !selectedSubCategory }
+  );
+  // Sub-sub categories for filter
+  const { data: allSubSubCategoriesResponse } = useGetSubSubCategoriesQuery(
+    filterSubCategory ? { sub_category_id: filterSubCategory } : {},
+    { skip: !filterSubCategory }
+  );
   const { data: itemsResponse, isLoading, error, refetch: refetchItems } = useGetInventoryItemsQuery({});
   
   // Get last category codes
-  const { data: lastMainCategoryCodeResponse, refetch: refetchLastMainCode } = useGetLastMainCategoryCodeQuery();
-  const { data: lastSubCategoryCodeResponse, refetch: refetchLastSubCode } = useGetLastSubCategoryCodeQuery();
+  const { data: lastMainCategoryCodeResponse, refetch: refetchLastMainCode, isLoading: isLoadingLastMainCode, isFetching: isFetchingLastMainCode } = useGetLastMainCategoryCodeQuery(undefined, { skip: false });
+  const { data: lastSubCategoryCodeResponse, refetch: refetchLastSubCode, isLoading: isLoadingLastSubCode, isFetching: isFetchingLastSubCode } = useGetLastSubCategoryCodeQuery(undefined, { skip: false });
+  const { data: lastItemCodeResponse, refetch: refetchLastItemCode, isLoading: isLoadingLastItemCode, isFetching: isFetchingLastItemCode } = useGetLastItemCodeQuery(itemForm.item_category, { skip: !itemForm.item_category });
+  const { data: lastSubSubCategoryCodeResponse, refetch: refetchLastSubSubCode, isLoading: isLoadingLastSubSubCode, isFetching: isFetchingLastSubSubCode } = useGetLastSubSubCategoryCodeQuery(undefined, { skip: false });
   const [createMainCategory] = useCreateMainCategoryMutation();
   const [createSubCategory] = useCreateSubCategoryMutation();
+  const [createSubSubCategory] = useCreateSubSubCategoryMutation();
   const [createInventoryItem] = useCreateInventoryItemMutation();
   const [updateInventoryItem] = useUpdateInventoryItemMutation();
 
-  const mainCategories = mainCategoriesResponse?.data || [];
-  const subCategories = subCategoriesResponse?.data || [];
-  const allSubCategories = allSubCategoriesResponse?.data || [];
-  const items = itemsResponse?.data || [];
+  // When using queryFn, if we return { data: [...] }, RTK Query makes the hook's data be [...]
+  // So mainCategoriesResponse should be the array directly
+  const mainCategories = Array.isArray(mainCategoriesResponse) 
+    ? mainCategoriesResponse 
+    : (mainCategoriesResponse?.data ? (Array.isArray(mainCategoriesResponse.data) ? mainCategoriesResponse.data : []) : []);
+  const subCategories = Array.isArray(subCategoriesResponse) 
+    ? subCategoriesResponse 
+    : (subCategoriesResponse?.data ? (Array.isArray(subCategoriesResponse.data) ? subCategoriesResponse.data : []) : []);
+  const allSubCategories = Array.isArray(allSubCategoriesResponse) 
+    ? allSubCategoriesResponse 
+    : (allSubCategoriesResponse?.data ? (Array.isArray(allSubCategoriesResponse.data) ? allSubCategoriesResponse.data : []) : []);
+  const subSubCategories = Array.isArray(subSubCategoriesResponse) 
+    ? subSubCategoriesResponse 
+    : (subSubCategoriesResponse?.data ? (Array.isArray(subSubCategoriesResponse.data) ? subSubCategoriesResponse.data : []) : []);
+  const allSubSubCategories = Array.isArray(allSubSubCategoriesResponse) 
+    ? allSubSubCategoriesResponse 
+    : (allSubSubCategoriesResponse?.data ? (Array.isArray(allSubSubCategoriesResponse.data) ? allSubSubCategoriesResponse.data : []) : []);
+  const items = Array.isArray(itemsResponse) 
+    ? itemsResponse 
+    : (itemsResponse?.data ? (Array.isArray(itemsResponse.data) ? itemsResponse.data : []) : []);
 
   // Filter items based on search term and filters
   const filteredItems = useMemo(() => {
@@ -104,6 +155,11 @@ const InventoryItemsRegistration = () => {
       filtered = filtered.filter((item) => item.sub_category_id === parseInt(filterSubCategory));
     }
 
+    // Apply Sub-Sub Category filter
+    if (filterSubSubCategory) {
+      filtered = filtered.filter((item) => item.sub_sub_category_id === parseInt(filterSubSubCategory));
+    }
+
     // Apply Item Category filter
     if (filterItemCategory) {
       filtered = filtered.filter((item) => item.item_category === filterItemCategory);
@@ -115,12 +171,13 @@ const InventoryItemsRegistration = () => {
         item.item_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.item_code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.main_category_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.sub_category_name?.toLowerCase().includes(searchTerm.toLowerCase())
+        item.sub_category_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.sub_sub_category_name?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
     return filtered;
-  }, [items, searchTerm, filterMainCategory, filterSubCategory, filterItemCategory]);
+  }, [items, searchTerm, filterMainCategory, filterSubCategory, filterSubSubCategory, filterItemCategory]);
 
   // Auto-clear messages
   useEffect(() => {
@@ -136,13 +193,62 @@ const InventoryItemsRegistration = () => {
   // Update sub categories when main category changes
   useEffect(() => {
     setSelectedSubCategory('');
-    setItemForm((prev) => ({ ...prev, sub_category_id: '' }));
+    setSelectedSubSubCategory('');
+    setSelectedSubCategoryImage(null);
+    setItemForm((prev) => ({ ...prev, sub_category_id: '', sub_sub_category_id: '' }));
   }, [selectedMainCategory]);
+
+  // Clear sub-sub category when sub category changes
+  useEffect(() => {
+    setSelectedSubSubCategory('');
+    setItemForm((prev) => ({ ...prev, sub_sub_category_id: '' }));
+  }, [selectedSubCategory]);
+
+  // Auto-generate item code when item category changes
+  useEffect(() => {
+    if (itemForm.item_category) {
+      refetchLastItemCode();
+    }
+  }, [itemForm.item_category, refetchLastItemCode]);
+
+  useEffect(() => {
+    if (itemForm.item_category) {
+      const isStillLoading = isLoadingLastItemCode || isFetchingLastItemCode;
+      
+      if (!isStillLoading && lastItemCodeResponse !== undefined) {
+        const lastCode = lastItemCodeResponse?.last_code ?? null;
+        const estimatedCode = generateNextItemCode(lastCode, itemForm.item_category);
+        setItemForm((prev) => ({
+          ...prev,
+          item_code: estimatedCode,
+        }));
+      } else if (!isStillLoading && lastItemCodeResponse === undefined) {
+        // Default code when no previous code exists
+        const defaultCode = itemForm.item_category === 'a' ? 'ASSETS0001' : 'STOCKS0001';
+        setItemForm((prev) => ({
+          ...prev,
+          item_code: defaultCode,
+        }));
+      }
+    } else {
+      // Clear item code when no category is selected
+      setItemForm((prev) => ({
+        ...prev,
+        item_code: '',
+      }));
+    }
+  }, [itemForm.item_category, lastItemCodeResponse, isLoadingLastItemCode, isFetchingLastItemCode]);
 
   // Update sub category filter when main category filter changes
   useEffect(() => {
     setFilterSubCategory('');
+    setFilterSubSubCategory('');
   }, [filterMainCategory]);
+
+  // Update sub-sub category filter when sub category filter changes
+  useEffect(() => {
+    setFilterSubSubCategory('');
+  }, [filterSubCategory]);
 
   // Generate next category code
   const generateNextMainCategoryCode = (lastCode) => {
@@ -167,6 +273,29 @@ const InventoryItemsRegistration = () => {
     return 'SUB0001';
   };
 
+  const generateNextSubSubCategoryCode = (lastCode) => {
+    if (!lastCode) return 'SUBSUB0001';
+    const match = lastCode.match(/^SUBSUB(\d+)$/);
+    if (match) {
+      const num = parseInt(match[1], 10);
+      const nextNum = num + 1;
+      return `SUBSUB${String(nextNum).padStart(4, '0')}`;
+    }
+    return 'SUBSUB0001';
+  };
+
+  const generateNextItemCode = (lastCode, itemCategory) => {
+    const prefix = itemCategory === 'a' ? 'ASSETS' : 'STOCKS';
+    if (!lastCode) return `${prefix}0001`;
+    const match = lastCode.match(new RegExp(`^${prefix}(\\d+)$`));
+    if (match) {
+      const num = parseInt(match[1], 10);
+      const nextNum = num + 1;
+      return `${prefix}${String(nextNum).padStart(4, '0')}`;
+    }
+    return `${prefix}0001`;
+  };
+
   // Handle Main Category Modal Open
   useEffect(() => {
     if (showMainCategoryModal) {
@@ -178,21 +307,41 @@ const InventoryItemsRegistration = () => {
   useEffect(() => {
     if (showSubCategoryModal) {
       refetchLastSubCode();
+    } else {
+      // Reset form when modal closes
+      setSubCategoryForm({
+        sub_category_code: '',
+        sub_category_name: '',
+        main_category_id: selectedMainCategory || '',
+        description: '',
+        image: null,
+        imagePreview: null,
+        status: 'active',
+      });
     }
-  }, [showSubCategoryModal, refetchLastSubCode]);
+  }, [showSubCategoryModal, refetchLastSubCode, selectedMainCategory]);
 
   // Auto-fill estimated main category code (read-only)
   useEffect(() => {
     if (showMainCategoryModal) {
-      if (lastMainCategoryCodeResponse?.data?.last_code !== undefined) {
-        const lastCode = lastMainCategoryCodeResponse.data.last_code;
+      // Wait for the API response to finish loading/fetching
+      const isStillLoading = isLoadingLastMainCode || isFetchingLastMainCode;
+      
+      if (!isStillLoading && lastMainCategoryCodeResponse !== undefined) {
+        // Response has loaded, extract the last_code
+        // The response structure from RTK Query: { last_code: "MAIN001" } (after API service transformation)
+        const lastCode = lastMainCategoryCodeResponse?.last_code ?? null;
+        
         const estimatedCode = generateNextMainCategoryCode(lastCode);
         setMainCategoryForm((prev) => ({
           ...prev,
           category_code: estimatedCode,
         }));
+      } else if (isStillLoading) {
+        // Still loading/fetching, don't set anything yet
+        // This prevents defaulting to MAIN001 before we know the actual last code
       } else {
-        // If no last code, set to MAIN001
+        // Response loaded but last_code is null/undefined, default to MAIN001
         setMainCategoryForm((prev) => ({
           ...prev,
           category_code: 'MAIN001',
@@ -205,20 +354,70 @@ const InventoryItemsRegistration = () => {
         category_code: '',
       }));
     }
-  }, [showMainCategoryModal, lastMainCategoryCodeResponse]);
+  }, [showMainCategoryModal, lastMainCategoryCodeResponse, isLoadingLastMainCode, isFetchingLastMainCode]);
+
+  // Handle Sub-Sub Category Modal Open
+  useEffect(() => {
+    if (showSubSubCategoryModal) {
+      refetchLastSubSubCode();
+    } else {
+      setSubSubCategoryForm({
+        sub_sub_category_code: '',
+        sub_sub_category_name: '',
+        sub_category_id: selectedSubCategory || '',
+        description: '',
+        image: null,
+        imagePreview: null,
+        status: 'active',
+      });
+    }
+  }, [showSubSubCategoryModal, refetchLastSubSubCode, selectedSubCategory]);
+
+  // Auto-fill estimated sub-sub category code (read-only)
+  useEffect(() => {
+    if (showSubSubCategoryModal) {
+      const isStillLoading = isLoadingLastSubSubCode || isFetchingLastSubSubCode;
+      if (!isStillLoading && lastSubSubCategoryCodeResponse !== undefined) {
+        const lastCode = lastSubSubCategoryCodeResponse?.last_code ?? null;
+        const estimatedCode = generateNextSubSubCategoryCode(lastCode);
+        setSubSubCategoryForm((prev) => ({
+          ...prev,
+          sub_sub_category_code: estimatedCode,
+        }));
+      } else if (!isStillLoading) {
+        setSubSubCategoryForm((prev) => ({
+          ...prev,
+          sub_sub_category_code: 'SUBSUB0001',
+        }));
+      }
+    } else {
+      setSubSubCategoryForm((prev) => ({
+        ...prev,
+        sub_sub_category_code: '',
+      }));
+    }
+  }, [showSubSubCategoryModal, lastSubSubCategoryCodeResponse, isLoadingLastSubSubCode, isFetchingLastSubSubCode]);
 
   // Auto-fill estimated sub category code (read-only)
   useEffect(() => {
     if (showSubCategoryModal) {
-      if (lastSubCategoryCodeResponse?.data?.last_code !== undefined) {
-        const lastCode = lastSubCategoryCodeResponse.data.last_code;
+      // Wait for the API response to finish loading/fetching
+      const isStillLoading = isLoadingLastSubCode || isFetchingLastSubCode;
+      
+      if (!isStillLoading && lastSubCategoryCodeResponse !== undefined) {
+        // Response has loaded, extract the last_code
+        // The response structure from RTK Query: { last_code: "SUB0001" } (after API service transformation)
+        const lastCode = lastSubCategoryCodeResponse?.last_code ?? null;
         const estimatedCode = generateNextSubCategoryCode(lastCode);
         setSubCategoryForm((prev) => ({
           ...prev,
           sub_category_code: estimatedCode,
         }));
+      } else if (isStillLoading) {
+        // Still loading/fetching, don't set anything yet
+        // This prevents defaulting to SUB0001 before we know the actual last code
       } else {
-        // If no last code, set to SUB0001
+        // Response loaded but last_code is null/undefined, default to SUB0001
         setSubCategoryForm((prev) => ({
           ...prev,
           sub_category_code: 'SUB0001',
@@ -231,12 +430,19 @@ const InventoryItemsRegistration = () => {
         sub_category_code: '',
       }));
     }
-  }, [showSubCategoryModal, lastSubCategoryCodeResponse]);
+  }, [showSubCategoryModal, lastSubCategoryCodeResponse, isLoadingLastSubCode, isFetchingLastSubCode]);
 
   // Handle Main Category Creation
   const handleCreateMainCategory = async (e) => {
     e.preventDefault();
     try {
+      // Ensure we have the latest code before submitting
+      if (isLoadingLastMainCode || isFetchingLastMainCode) {
+        setMessage('Please wait while we fetch the latest category code...');
+        setMessageType('info');
+        return;
+      }
+      
       // Code is auto-generated and read-only, so use it directly
       const result = await createMainCategory({
         ...mainCategoryForm,
@@ -256,8 +462,13 @@ const InventoryItemsRegistration = () => {
         refetchLastMainCode();
       }
     } catch (error) {
-      setMessage(error?.data?.message || 'Failed to create main category');
+      const errorMessage = error?.data?.message || error?.message || 'Failed to create main category';
+      setMessage(errorMessage);
       setMessageType('error');
+      // If it's a duplicate error, refetch the last code to get the updated value
+      if (error?.data?.code === 'DUPLICATE_ENTRY' || error?.status === 409) {
+        refetchLastMainCode();
+      }
     }
   };
 
@@ -270,11 +481,28 @@ const InventoryItemsRegistration = () => {
       return;
     }
     try {
-      // Code is auto-generated and read-only, so use it directly
-      const result = await createSubCategory({
-        ...subCategoryForm,
-        created_by: userData.id || null,
-      }).unwrap();
+      // Create FormData if image is present, otherwise use regular object
+      let formData;
+      if (subCategoryForm.image) {
+        formData = new FormData();
+        formData.append('sub_category_code', subCategoryForm.sub_category_code);
+        formData.append('sub_category_name', subCategoryForm.sub_category_name);
+        formData.append('main_category_id', subCategoryForm.main_category_id);
+        formData.append('description', subCategoryForm.description || '');
+        formData.append('status', subCategoryForm.status);
+        formData.append('created_by', userData.id || '');
+        formData.append('image', subCategoryForm.image);
+      } else {
+        formData = {
+          ...subCategoryForm,
+          created_by: userData.id || null,
+        };
+        // Remove image and imagePreview from regular object
+        delete formData.image;
+        delete formData.imagePreview;
+      }
+      
+      const result = await createSubCategory(formData).unwrap();
       if (result.status) {
         setMessage('Sub Category created successfully');
         setMessageType('success');
@@ -284,6 +512,8 @@ const InventoryItemsRegistration = () => {
           sub_category_name: '',
           main_category_id: selectedMainCategory || '',
           description: '',
+          image: null,
+          imagePreview: null,
           status: 'active',
         });
         refetchSubCategories();
@@ -291,6 +521,57 @@ const InventoryItemsRegistration = () => {
       }
     } catch (error) {
       setMessage(error?.data?.message || 'Failed to create sub category');
+      setMessageType('error');
+    }
+  };
+
+  // Handle Sub-Sub Category Creation
+  const handleCreateSubSubCategory = async (e) => {
+    e.preventDefault();
+    if (!subSubCategoryForm.sub_category_id) {
+      setMessage('Please select a sub category first');
+      setMessageType('error');
+      return;
+    }
+    try {
+      let formData;
+      if (subSubCategoryForm.image) {
+        formData = new FormData();
+        formData.append('sub_sub_category_code', subSubCategoryForm.sub_sub_category_code);
+        formData.append('sub_sub_category_name', subSubCategoryForm.sub_sub_category_name);
+        formData.append('sub_category_id', subSubCategoryForm.sub_category_id);
+        formData.append('description', subSubCategoryForm.description || '');
+        formData.append('status', subSubCategoryForm.status);
+        formData.append('created_by', userData.id || '');
+        formData.append('image', subSubCategoryForm.image);
+      } else {
+        formData = {
+          ...subSubCategoryForm,
+          created_by: userData.id || null,
+        };
+        delete formData.image;
+        delete formData.imagePreview;
+      }
+
+      const result = await createSubSubCategory(formData).unwrap();
+      if (result.status) {
+        setMessage('Sub-Sub Category created successfully');
+        setMessageType('success');
+        setShowSubSubCategoryModal(false);
+        setSubSubCategoryForm({
+          sub_sub_category_code: '',
+          sub_sub_category_name: '',
+          sub_category_id: selectedSubCategory || '',
+          description: '',
+          image: null,
+          imagePreview: null,
+          status: 'active',
+        });
+        refetchSubSubCategories();
+        refetchLastSubSubCode();
+      }
+    } catch (error) {
+      setMessage(error?.data?.message || 'Failed to create sub-sub category');
       setMessageType('error');
     }
   };
@@ -306,6 +587,12 @@ const InventoryItemsRegistration = () => {
     try {
       const result = await createInventoryItem({
         ...itemForm,
+        sub_sub_category_id: itemForm.sub_sub_category_id || null,
+        minimum_floor_stock: itemForm.minimum_floor_stock === '' ? 0 : itemForm.minimum_floor_stock,
+        maximum_floor_stock: itemForm.maximum_floor_stock === '' ? 0 : itemForm.maximum_floor_stock,
+        minimum_order_qty: itemForm.minimum_order_qty === '' ? 0 : itemForm.minimum_order_qty,
+        maximum_order_qty: itemForm.maximum_order_qty === '' ? 0 : itemForm.maximum_order_qty,
+        current_stock: itemForm.current_stock === '' ? 0 : itemForm.current_stock,
         created_by: userData.id || null,
       }).unwrap();
       if (result.status) {
@@ -316,19 +603,21 @@ const InventoryItemsRegistration = () => {
           item_name: '',
           main_category_id: '',
           sub_category_id: '',
+          sub_sub_category_id: '',
           unit: '',
           description: '',
-          floor_stock: 0,
-          minimum_floor_stock: 0,
-          minimum_order_qty: 0,
-          maximum_order_qty: 0,
-          reordering_stock_level: 0,
-          item_category: 'stock_item',
-          current_stock: 0,
+          minimum_floor_stock: '',
+          maximum_floor_stock: '',
+          minimum_order_qty: '',
+          maximum_order_qty: '',
+          item_category: 's',
+          current_stock: '',
           status: 'active',
         });
         setSelectedMainCategory('');
         setSelectedSubCategory('');
+        setSelectedSubSubCategory('');
+        setSelectedSubCategoryImage(null);
         refetchItems();
       }
     } catch (error) {
@@ -344,6 +633,12 @@ const InventoryItemsRegistration = () => {
       const result = await updateInventoryItem({
         id: selectedItem.id,
         ...itemForm,
+        sub_sub_category_id: itemForm.sub_sub_category_id || null,
+        minimum_floor_stock: itemForm.minimum_floor_stock === '' ? 0 : itemForm.minimum_floor_stock,
+        maximum_floor_stock: itemForm.maximum_floor_stock === '' ? 0 : itemForm.maximum_floor_stock,
+        minimum_order_qty: itemForm.minimum_order_qty === '' ? 0 : itemForm.minimum_order_qty,
+        maximum_order_qty: itemForm.maximum_order_qty === '' ? 0 : itemForm.maximum_order_qty,
+        current_stock: itemForm.current_stock === '' ? 0 : itemForm.current_stock,
         updated_by: userData.id || null,
       }).unwrap();
       if (result.status) {
@@ -374,19 +669,20 @@ const InventoryItemsRegistration = () => {
       item_name: item.item_name || '',
       main_category_id: item.main_category_id || '',
       sub_category_id: item.sub_category_id || '',
+      sub_sub_category_id: item.sub_sub_category_id || '',
       unit: item.unit || '',
       description: item.description || '',
-      floor_stock: item.floor_stock || 0,
-      minimum_floor_stock: item.minimum_floor_stock || 0,
-      minimum_order_qty: item.minimum_order_qty || 0,
-      maximum_order_qty: item.maximum_order_qty || 0,
-      reordering_stock_level: item.reordering_stock_level || 0,
-      item_category: item.item_category || 'stock_item',
-      current_stock: item.current_stock || 0,
+      minimum_floor_stock: item.minimum_floor_stock === 0 || item.minimum_floor_stock === null ? '' : item.minimum_floor_stock,
+      maximum_floor_stock: item.maximum_floor_stock === 0 || item.maximum_floor_stock === null ? '' : item.maximum_floor_stock,
+      minimum_order_qty: item.minimum_order_qty === 0 || item.minimum_order_qty === null ? '' : item.minimum_order_qty,
+      maximum_order_qty: item.maximum_order_qty === 0 || item.maximum_order_qty === null ? '' : item.maximum_order_qty,
+      item_category: item.item_category || 's',
+      current_stock: item.current_stock === 0 || item.current_stock === null ? '' : item.current_stock,
       status: item.status || 'active',
     });
     setSelectedMainCategory(item.main_category_id || '');
     setSelectedSubCategory(item.sub_category_id || '');
+    setSelectedSubSubCategory(item.sub_sub_category_id || '');
     setShowEditModal(true);
   };
 
@@ -467,8 +763,16 @@ const InventoryItemsRegistration = () => {
                   className="select-inventory-items-registration"
                   value={itemForm.sub_category_id}
                   onChange={(e) => {
-                    setItemForm((prev) => ({ ...prev, sub_category_id: e.target.value }));
-                    setSelectedSubCategory(e.target.value);
+                    const selectedId = e.target.value;
+                    setItemForm((prev) => ({ ...prev, sub_category_id: selectedId }));
+                    setSelectedSubCategory(selectedId);
+                    // Find the selected subcategory and check for image
+                    const selectedSub = subCategories.find((sub) => sub.id === parseInt(selectedId));
+                    if (selectedSub && selectedSub.image_url) {
+                      setSelectedSubCategoryImage(selectedSub.image_url);
+                    } else {
+                      setSelectedSubCategoryImage(null);
+                    }
                   }}
                   required
                   disabled={!itemForm.main_category_id}
@@ -482,6 +786,16 @@ const InventoryItemsRegistration = () => {
                       </option>
                     ))}
                 </select>
+                {selectedSubCategoryImage && (
+                  <button
+                    type="button"
+                    className="btn-view-category-inventory-items"
+                    onClick={() => setShowSubCategoryImageModal(true)}
+                    title="View Sub Category Image"
+                  >
+                    <FaEye /> View
+                  </button>
+                )}
                 <button
                   type="button"
                   className="btn-add-category-inventory-items"
@@ -496,6 +810,51 @@ const InventoryItemsRegistration = () => {
                   disabled={!itemForm.main_category_id}
                 >
                   <FaPlus /> Add Sub Category
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="form-row-inventory-items">
+            <div className="form-group-inventory-items-registration">
+              <label className="label-inventory-items-registration" htmlFor="sub_sub_category">
+                Sub-Sub Category <span style={{ fontSize: '11px', color: '#999', fontWeight: 'normal' }}>(Optional)</span>
+              </label>
+              <div className="input-with-button-inventory-items">
+                <select
+                  id="sub_sub_category"
+                  className="select-inventory-items-registration"
+                  value={itemForm.sub_sub_category_id}
+                  onChange={(e) => {
+                    const selectedId = e.target.value;
+                    setItemForm((prev) => ({ ...prev, sub_sub_category_id: selectedId }));
+                    setSelectedSubSubCategory(selectedId);
+                  }}
+                  disabled={!itemForm.sub_category_id}
+                >
+                  <option value="">Select Sub-Sub Category</option>
+                  {subSubCategories
+                    .filter((ssc) => ssc.sub_category_id === parseInt(itemForm.sub_category_id))
+                    .map((ssc) => (
+                      <option key={ssc.id} value={ssc.id}>
+                        {ssc.sub_sub_category_name}
+                      </option>
+                    ))}
+                </select>
+                <button
+                  type="button"
+                  className="btn-add-category-inventory-items"
+                  onClick={() => {
+                    setSubSubCategoryForm((prev) => ({
+                      ...prev,
+                      sub_category_id: itemForm.sub_category_id,
+                    }));
+                    setShowSubSubCategoryModal(true);
+                  }}
+                  title="Add Sub-Sub Category"
+                  disabled={!itemForm.sub_category_id}
+                >
+                  <FaPlus /> Add Sub-Sub Category
                 </button>
               </div>
             </div>
@@ -522,18 +881,18 @@ const InventoryItemsRegistration = () => {
                 <input
                   type="radio"
                   name="item_category"
-                  value="inventory_item"
-                  checked={itemForm.item_category === 'inventory_item'}
+                  value="a"
+                  checked={itemForm.item_category === 'a'}
                   onChange={(e) => setItemForm((prev) => ({ ...prev, item_category: e.target.value }))}
                 />
-                <span>Inventory Item</span>
+                <span>Assets Item</span>
               </label>
               <label className="checkbox-label-inventory-items">
                 <input
                   type="radio"
                   name="item_category"
-                  value="stock_item"
-                  checked={itemForm.item_category === 'stock_item'}
+                  value="s"
+                  checked={itemForm.item_category === 's'}
                   onChange={(e) => setItemForm((prev) => ({ ...prev, item_category: e.target.value }))}
                 />
                 <span>Stock Item</span>
@@ -545,13 +904,16 @@ const InventoryItemsRegistration = () => {
             <div className="form-group-inventory-items-registration">
               <label className="label-inventory-items-registration" htmlFor="item_code">
                 Item Code <span className="required-inventory-items-registration">*</span>
+                <span className="estimated-code-hint" style={{ fontSize: '12px', color: '#666', marginLeft: '8px', fontWeight: 'normal' }}>
+                  (Auto-generated)
+                </span>
               </label>
               <input
                 type="text"
                 id="item_code"
                 className="input-inventory-items-registration"
                 value={itemForm.item_code}
-                onChange={(e) => setItemForm((prev) => ({ ...prev, item_code: e.target.value }))}
+                readOnly
                 required
               />
             </div>
@@ -590,21 +952,6 @@ const InventoryItemsRegistration = () => {
 
           <div className="form-row-inventory-items">
             <div className="form-group-inventory-items-registration">
-              <label className="label-inventory-items-registration" htmlFor="floor_stock">
-                Floor Stock
-              </label>
-              <input
-                type="number"
-                id="floor_stock"
-                className="input-inventory-items-registration"
-                value={itemForm.floor_stock}
-                onChange={(e) => setItemForm((prev) => ({ ...prev, floor_stock: parseFloat(e.target.value) || 0 }))}
-                min="0"
-                step="0.01"
-              />
-            </div>
-
-            <div className="form-group-inventory-items-registration">
               <label className="label-inventory-items-registration" htmlFor="minimum_floor_stock">
                 Minimum Floor Stock
               </label>
@@ -612,8 +959,23 @@ const InventoryItemsRegistration = () => {
                 type="number"
                 id="minimum_floor_stock"
                 className="input-inventory-items-registration"
-                value={itemForm.minimum_floor_stock}
-                onChange={(e) => setItemForm((prev) => ({ ...prev, minimum_floor_stock: parseFloat(e.target.value) || 0 }))}
+                value={itemForm.minimum_floor_stock === 0 || itemForm.minimum_floor_stock === '' ? '' : itemForm.minimum_floor_stock}
+                onChange={(e) => setItemForm((prev) => ({ ...prev, minimum_floor_stock: e.target.value === '' ? '' : (isNaN(parseFloat(e.target.value)) ? '' : parseFloat(e.target.value)) }))}
+                min="0"
+                step="0.01"
+              />
+            </div>
+
+            <div className="form-group-inventory-items-registration">
+              <label className="label-inventory-items-registration" htmlFor="maximum_floor_stock">
+                Maximum Floor Stock
+              </label>
+              <input
+                type="number"
+                id="maximum_floor_stock"
+                className="input-inventory-items-registration"
+                value={itemForm.maximum_floor_stock === 0 || itemForm.maximum_floor_stock === '' ? '' : itemForm.maximum_floor_stock}
+                onChange={(e) => setItemForm((prev) => ({ ...prev, maximum_floor_stock: e.target.value === '' ? '' : (isNaN(parseFloat(e.target.value)) ? '' : parseFloat(e.target.value)) }))}
                 min="0"
                 step="0.01"
               />
@@ -629,8 +991,8 @@ const InventoryItemsRegistration = () => {
                 type="number"
                 id="minimum_order_qty"
                 className="input-inventory-items-registration"
-                value={itemForm.minimum_order_qty}
-                onChange={(e) => setItemForm((prev) => ({ ...prev, minimum_order_qty: parseFloat(e.target.value) || 0 }))}
+                value={itemForm.minimum_order_qty === 0 || itemForm.minimum_order_qty === '' ? '' : itemForm.minimum_order_qty}
+                onChange={(e) => setItemForm((prev) => ({ ...prev, minimum_order_qty: e.target.value === '' ? '' : (isNaN(parseFloat(e.target.value)) ? '' : parseFloat(e.target.value)) }))}
                 min="0"
                 step="0.01"
               />
@@ -644,8 +1006,8 @@ const InventoryItemsRegistration = () => {
                 type="number"
                 id="maximum_order_qty"
                 className="input-inventory-items-registration"
-                value={itemForm.maximum_order_qty}
-                onChange={(e) => setItemForm((prev) => ({ ...prev, maximum_order_qty: parseFloat(e.target.value) || 0 }))}
+                value={itemForm.maximum_order_qty === 0 || itemForm.maximum_order_qty === '' ? '' : itemForm.maximum_order_qty}
+                onChange={(e) => setItemForm((prev) => ({ ...prev, maximum_order_qty: e.target.value === '' ? '' : (isNaN(parseFloat(e.target.value)) ? '' : parseFloat(e.target.value)) }))}
                 min="0"
                 step="0.01"
               />
@@ -654,21 +1016,6 @@ const InventoryItemsRegistration = () => {
 
           <div className="form-row-inventory-items">
             <div className="form-group-inventory-items-registration">
-              <label className="label-inventory-items-registration" htmlFor="reordering_stock_level">
-                Re-ordering Stock Level
-              </label>
-              <input
-                type="number"
-                id="reordering_stock_level"
-                className="input-inventory-items-registration"
-                value={itemForm.reordering_stock_level}
-                onChange={(e) => setItemForm((prev) => ({ ...prev, reordering_stock_level: parseFloat(e.target.value) || 0 }))}
-                min="0"
-                step="0.01"
-              />
-            </div>
-
-            <div className="form-group-inventory-items-registration">
               <label className="label-inventory-items-registration" htmlFor="current_stock">
                 Current Stock
               </label>
@@ -676,8 +1023,8 @@ const InventoryItemsRegistration = () => {
                 type="number"
                 id="current_stock"
                 className="input-inventory-items-registration"
-                value={itemForm.current_stock}
-                onChange={(e) => setItemForm((prev) => ({ ...prev, current_stock: parseFloat(e.target.value) || 0 }))}
+                value={itemForm.current_stock === 0 || itemForm.current_stock === '' ? '' : itemForm.current_stock}
+                onChange={(e) => setItemForm((prev) => ({ ...prev, current_stock: e.target.value === '' ? '' : (isNaN(parseFloat(e.target.value)) ? '' : parseFloat(e.target.value)) }))}
                 min="0"
                 step="0.01"
               />
@@ -697,19 +1044,21 @@ const InventoryItemsRegistration = () => {
                   item_name: '',
                   main_category_id: '',
                   sub_category_id: '',
+                  sub_sub_category_id: '',
                   unit: '',
                   description: '',
-                  floor_stock: 0,
                   minimum_floor_stock: 0,
+                  maximum_floor_stock: '',
                   minimum_order_qty: 0,
                   maximum_order_qty: 0,
-                  reordering_stock_level: 0,
-                  item_category: 'stock_item',
+                  item_category: 's',
                   current_stock: 0,
                   status: 'active',
                 });
                 setSelectedMainCategory('');
                 setSelectedSubCategory('');
+                setSelectedSubSubCategory('');
+                setSelectedSubCategoryImage(null);
               }}
             >
               Clear
@@ -758,6 +1107,24 @@ const InventoryItemsRegistration = () => {
                   </select>
                 </div>
                 <div className="filter-group-inventory-items">
+                  <label className="filter-label-inventory-items">Sub-Sub Category:</label>
+                  <select
+                    className="filter-select-inventory-items"
+                    value={filterSubSubCategory}
+                    onChange={(e) => setFilterSubSubCategory(e.target.value)}
+                    disabled={!filterSubCategory}
+                  >
+                    <option value="">All Sub-Sub Categories</option>
+                    {allSubSubCategories
+                      .filter((ssc) => ssc.sub_category_id === parseInt(filterSubCategory))
+                      .map((ssc) => (
+                        <option key={ssc.id} value={ssc.id}>
+                          {ssc.sub_sub_category_name}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+                <div className="filter-group-inventory-items">
                   <label className="filter-label-inventory-items">Item Category:</label>
                   <select
                     className="filter-select-inventory-items"
@@ -765,8 +1132,8 @@ const InventoryItemsRegistration = () => {
                     onChange={(e) => setFilterItemCategory(e.target.value)}
                   >
                     <option value="">All Types</option>
-                    <option value="inventory_item">Inventory Item</option>
-                    <option value="stock_item">Stock Item</option>
+                    <option value="a">Assets Item</option>
+                    <option value="s">Stock Item</option>
                   </select>
                 </div>
                 <div className="search-container-inventory-items">
@@ -779,13 +1146,14 @@ const InventoryItemsRegistration = () => {
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
                 </div>
-                {(filterMainCategory || filterSubCategory || filterItemCategory || searchTerm) && (
+                {(filterMainCategory || filterSubCategory || filterSubSubCategory || filterItemCategory || searchTerm) && (
                   <button
                     type="button"
                     className="btn-clear-filters-inventory-items"
                     onClick={() => {
                       setFilterMainCategory('');
                       setFilterSubCategory('');
+                      setFilterSubSubCategory('');
                       setFilterItemCategory('');
                       setSearchTerm('');
                     }}
@@ -812,6 +1180,7 @@ const InventoryItemsRegistration = () => {
                 <th>ID</th>
                 <th>Main Category</th>
                 <th>Sub Category</th>
+                <th>Sub-Sub Category</th>
                 <th>Item</th>
                 <th>Item Category</th>
                 <th>Actions</th>
@@ -823,10 +1192,11 @@ const InventoryItemsRegistration = () => {
                   <td>#{String(item.id).padStart(3, '0')}</td>
                   <td>{item.main_category_name || '-'}</td>
                   <td>{item.sub_category_name || '-'}</td>
+                  <td>{item.sub_sub_category_name || '-'}</td>
                   <td>{item.item_name || '-'}</td>
                   <td>
-                    <span className={`item-category-badge-inventory-items ${item.item_category === 'stock_item' ? 'stock-item' : 'inventory-item'}`}>
-                      {item.item_category === 'stock_item' ? 'Stock Item' : 'Inventory Item'}
+                    <span className={`item-category-badge-inventory-items ${item.item_category === 's' ? 'stock-item' : 'inventory-item'}`}>
+                      {item.item_category === 's' ? 'Stock Item' : 'Assets Item'}
                     </span>
                   </td>
                   <td className="actions-inventory-items">
@@ -995,6 +1365,45 @@ const InventoryItemsRegistration = () => {
                 />
               </div>
               <div className="form-group-inventory-items-registration">
+                <label className="label-inventory-items-registration" htmlFor="sub_category_image">
+                  Image
+                </label>
+                <input
+                  type="file"
+                  id="sub_category_image"
+                  accept="image/*"
+                  className="input-inventory-items-registration"
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onloadend = () => {
+                        setSubCategoryForm((prev) => ({
+                          ...prev,
+                          image: file,
+                          imagePreview: reader.result,
+                        }));
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                />
+                {subCategoryForm.imagePreview && (
+                  <div style={{ marginTop: '10px' }}>
+                    <img
+                      src={subCategoryForm.imagePreview}
+                      alt="Preview"
+                      style={{
+                        maxWidth: '200px',
+                        maxHeight: '200px',
+                        borderRadius: '8px',
+                        border: '2px solid #e1e8ed',
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+              <div className="form-group-inventory-items-registration">
                 <label className="label-inventory-items-registration" htmlFor="sub_category_description">
                   Description
                 </label>
@@ -1014,6 +1423,139 @@ const InventoryItemsRegistration = () => {
                   type="button"
                   className="btn-cancel-inventory-items-registration"
                   onClick={() => setShowSubCategoryModal(false)}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Sub-Sub Category Modal */}
+      {showSubSubCategoryModal && (
+        <div className="modal-overlay-inventory-items" onClick={() => setShowSubSubCategoryModal(false)}>
+          <div className="modal-content-inventory-items" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header-inventory-items">
+              <h2>Add Sub-Sub Category</h2>
+              <button
+                type="button"
+                className="close-btn-inventory-items"
+                onClick={() => setShowSubSubCategoryModal(false)}
+              >
+                <FaTimes />
+              </button>
+            </div>
+            <form className="modal-body-inventory-items" onSubmit={handleCreateSubSubCategory}>
+              <div className="form-group-inventory-items-registration">
+                <label className="label-inventory-items-registration" htmlFor="sub_sub_category_parent">
+                  Sub Category <span className="required-inventory-items-registration">*</span>
+                </label>
+                <select
+                  id="sub_sub_category_parent"
+                  className="select-inventory-items-registration"
+                  value={subSubCategoryForm.sub_category_id}
+                  onChange={(e) => setSubSubCategoryForm((prev) => ({ ...prev, sub_category_id: e.target.value }))}
+                  required
+                >
+                  <option value="">Select Sub Category</option>
+                  {subCategories.map((sub) => (
+                    <option key={sub.id} value={sub.id}>
+                      {sub.sub_category_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-group-inventory-items-registration">
+                <label className="label-inventory-items-registration" htmlFor="sub_sub_category_code">
+                  Sub-Sub Category Code <span className="required-inventory-items-registration">*</span>
+                  <span className="estimated-code-hint" style={{ fontSize: '12px', color: '#666', marginLeft: '8px', fontWeight: 'normal' }}>
+                    (Auto-generated)
+                  </span>
+                </label>
+                <input
+                  type="text"
+                  id="sub_sub_category_code"
+                  className="input-inventory-items-registration"
+                  value={subSubCategoryForm.sub_sub_category_code || ''}
+                  readOnly
+                  disabled
+                  style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed' }}
+                  required
+                />
+              </div>
+              <div className="form-group-inventory-items-registration">
+                <label className="label-inventory-items-registration" htmlFor="sub_sub_category_name">
+                  Sub-Sub Category Name <span className="required-inventory-items-registration">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="sub_sub_category_name"
+                  className="input-inventory-items-registration"
+                  value={subSubCategoryForm.sub_sub_category_name}
+                  onChange={(e) => setSubSubCategoryForm((prev) => ({ ...prev, sub_sub_category_name: e.target.value }))}
+                  required
+                />
+              </div>
+              <div className="form-group-inventory-items-registration">
+                <label className="label-inventory-items-registration" htmlFor="sub_sub_category_image">
+                  Image
+                </label>
+                <input
+                  type="file"
+                  id="sub_sub_category_image"
+                  accept="image/*"
+                  className="input-inventory-items-registration"
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onloadend = () => {
+                        setSubSubCategoryForm((prev) => ({
+                          ...prev,
+                          image: file,
+                          imagePreview: reader.result,
+                        }));
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                />
+                {subSubCategoryForm.imagePreview && (
+                  <div style={{ marginTop: '10px' }}>
+                    <img
+                      src={subSubCategoryForm.imagePreview}
+                      alt="Preview"
+                      style={{
+                        maxWidth: '200px',
+                        maxHeight: '200px',
+                        borderRadius: '8px',
+                        border: '2px solid #e1e8ed',
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+              <div className="form-group-inventory-items-registration">
+                <label className="label-inventory-items-registration" htmlFor="sub_sub_category_description">
+                  Description
+                </label>
+                <textarea
+                  id="sub_sub_category_description"
+                  className="textarea-inventory-items-registration"
+                  value={subSubCategoryForm.description}
+                  onChange={(e) => setSubSubCategoryForm((prev) => ({ ...prev, description: e.target.value }))}
+                  style={{ height: '80px', minHeight: '80px' }}
+                />
+              </div>
+              <div className="modal-footer-inventory-items">
+                <button type="submit" className="btn-submit-inventory-items-registration">
+                  Add Sub-Sub Category
+                </button>
+                <button
+                  type="button"
+                  className="btn-cancel-inventory-items-registration"
+                  onClick={() => setShowSubSubCategoryModal(false)}
                 >
                   Cancel
                 </button>
@@ -1056,9 +1598,13 @@ const InventoryItemsRegistration = () => {
                   <span className="detail-value-inventory-items">{selectedItem.sub_category_name || '-'}</span>
                 </div>
                 <div className="detail-row-inventory-items">
+                  <span className="detail-label-inventory-items">Sub-Sub Category:</span>
+                  <span className="detail-value-inventory-items">{selectedItem.sub_sub_category_name || '-'}</span>
+                </div>
+                <div className="detail-row-inventory-items">
                   <span className="detail-label-inventory-items">Item Category:</span>
-                  <span className={`detail-value-inventory-items item-category-badge-inventory-items ${selectedItem.item_category === 'stock_item' ? 'stock-item' : 'inventory-item'}`}>
-                    {selectedItem.item_category === 'stock_item' ? 'Stock Item' : 'Inventory Item'}
+                  <span className={`detail-value-inventory-items item-category-badge-inventory-items ${selectedItem.item_category === 's' ? 'stock-item' : 'inventory-item'}`}>
+                    {selectedItem.item_category === 's' ? 'Stock Item' : 'Inventory Item'}
                   </span>
                 </div>
                 <div className="detail-row-inventory-items">
@@ -1070,12 +1616,12 @@ const InventoryItemsRegistration = () => {
                   <span className="detail-value-inventory-items">{selectedItem.description || '-'}</span>
                 </div>
                 <div className="detail-row-inventory-items">
-                  <span className="detail-label-inventory-items">Floor Stock:</span>
-                  <span className="detail-value-inventory-items">{selectedItem.floor_stock || 0}</span>
-                </div>
-                <div className="detail-row-inventory-items">
                   <span className="detail-label-inventory-items">Minimum Floor Stock:</span>
                   <span className="detail-value-inventory-items">{selectedItem.minimum_floor_stock || 0}</span>
+                </div>
+                <div className="detail-row-inventory-items">
+                  <span className="detail-label-inventory-items">Maximum Floor Stock:</span>
+                  <span className="detail-value-inventory-items">{selectedItem.maximum_floor_stock || 0}</span>
                 </div>
                 <div className="detail-row-inventory-items">
                   <span className="detail-label-inventory-items">Minimum Order Qty:</span>
@@ -1084,10 +1630,6 @@ const InventoryItemsRegistration = () => {
                 <div className="detail-row-inventory-items">
                   <span className="detail-label-inventory-items">Maximum Order Qty:</span>
                   <span className="detail-value-inventory-items">{selectedItem.maximum_order_qty || 0}</span>
-                </div>
-                <div className="detail-row-inventory-items">
-                  <span className="detail-label-inventory-items">Re-ordering Stock Level:</span>
-                  <span className="detail-value-inventory-items">{selectedItem.reordering_stock_level || 0}</span>
                 </div>
                 <div className="detail-row-inventory-items">
                   <span className="detail-label-inventory-items">Current Stock:</span>
@@ -1194,8 +1736,9 @@ const InventoryItemsRegistration = () => {
                     className="select-inventory-items-registration"
                     value={itemForm.main_category_id}
                     onChange={(e) => {
-                      setItemForm((prev) => ({ ...prev, main_category_id: e.target.value, sub_category_id: '' }));
+                      setItemForm((prev) => ({ ...prev, main_category_id: e.target.value, sub_category_id: '', sub_sub_category_id: '' }));
                       setSelectedMainCategory(e.target.value);
+                      setSelectedSubCategoryImage(null);
                     }}
                     required
                   >
@@ -1215,7 +1758,10 @@ const InventoryItemsRegistration = () => {
                     id="edit_sub_category"
                     className="select-inventory-items-registration"
                     value={itemForm.sub_category_id}
-                    onChange={(e) => setItemForm((prev) => ({ ...prev, sub_category_id: e.target.value }))}
+                    onChange={(e) => {
+                      setItemForm((prev) => ({ ...prev, sub_category_id: e.target.value, sub_sub_category_id: '' }));
+                      setSelectedSubCategory(e.target.value);
+                    }}
                     required
                     disabled={!itemForm.main_category_id}
                   >
@@ -1230,6 +1776,32 @@ const InventoryItemsRegistration = () => {
                   </select>
                 </div>
               </div>
+              <div className="form-row-inventory-items">
+                <div className="form-group-inventory-items-registration">
+                  <label className="label-inventory-items-registration" htmlFor="edit_sub_sub_category">
+                    Sub-Sub Category <span style={{ fontSize: '11px', color: '#999', fontWeight: 'normal' }}>(Optional)</span>
+                  </label>
+                  <select
+                    id="edit_sub_sub_category"
+                    className="select-inventory-items-registration"
+                    value={itemForm.sub_sub_category_id}
+                    onChange={(e) => {
+                      setItemForm((prev) => ({ ...prev, sub_sub_category_id: e.target.value }));
+                      setSelectedSubSubCategory(e.target.value);
+                    }}
+                    disabled={!itemForm.sub_category_id}
+                  >
+                    <option value="">Select Sub-Sub Category</option>
+                    {subSubCategories
+                      .filter((ssc) => ssc.sub_category_id === parseInt(itemForm.sub_category_id))
+                      .map((ssc) => (
+                        <option key={ssc.id} value={ssc.id}>
+                          {ssc.sub_sub_category_name}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+              </div>
               <div className="form-group-inventory-items-registration">
                 <label className="label-inventory-items-registration">Item Category</label>
                 <div className="checkbox-group-inventory-items">
@@ -1237,8 +1809,8 @@ const InventoryItemsRegistration = () => {
                     <input
                       type="radio"
                       name="edit_item_category"
-                      value="inventory_item"
-                      checked={itemForm.item_category === 'inventory_item'}
+                      value="i"
+                      checked={itemForm.item_category === 'i'}
                       onChange={(e) => setItemForm((prev) => ({ ...prev, item_category: e.target.value }))}
                     />
                     <span>Inventory Item</span>
@@ -1247,8 +1819,8 @@ const InventoryItemsRegistration = () => {
                     <input
                       type="radio"
                       name="edit_item_category"
-                      value="stock_item"
-                      checked={itemForm.item_category === 'stock_item'}
+                      value="s"
+                      checked={itemForm.item_category === 's'}
                       onChange={(e) => setItemForm((prev) => ({ ...prev, item_category: e.target.value }))}
                     />
                     <span>Stock Item</span>
@@ -1269,20 +1841,6 @@ const InventoryItemsRegistration = () => {
               </div>
               <div className="form-row-inventory-items">
                 <div className="form-group-inventory-items-registration">
-                  <label className="label-inventory-items-registration" htmlFor="edit_floor_stock">
-                    Floor Stock
-                  </label>
-                  <input
-                    type="number"
-                    id="edit_floor_stock"
-                    className="input-inventory-items-registration"
-                    value={itemForm.floor_stock}
-                    onChange={(e) => setItemForm((prev) => ({ ...prev, floor_stock: parseFloat(e.target.value) || 0 }))}
-                    min="0"
-                    step="0.01"
-                  />
-                </div>
-                <div className="form-group-inventory-items-registration">
                   <label className="label-inventory-items-registration" htmlFor="edit_minimum_floor_stock">
                     Minimum Floor Stock
                   </label>
@@ -1290,8 +1848,22 @@ const InventoryItemsRegistration = () => {
                     type="number"
                     id="edit_minimum_floor_stock"
                     className="input-inventory-items-registration"
-                    value={itemForm.minimum_floor_stock}
-                    onChange={(e) => setItemForm((prev) => ({ ...prev, minimum_floor_stock: parseFloat(e.target.value) || 0 }))}
+                    value={itemForm.minimum_floor_stock === 0 || itemForm.minimum_floor_stock === '' ? '' : itemForm.minimum_floor_stock}
+                    onChange={(e) => setItemForm((prev) => ({ ...prev, minimum_floor_stock: e.target.value === '' ? '' : (isNaN(parseFloat(e.target.value)) ? '' : parseFloat(e.target.value)) }))}
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+                <div className="form-group-inventory-items-registration">
+                  <label className="label-inventory-items-registration" htmlFor="edit_maximum_floor_stock">
+                    Maximum Floor Stock
+                  </label>
+                  <input
+                    type="number"
+                    id="edit_maximum_floor_stock"
+                    className="input-inventory-items-registration"
+                    value={itemForm.maximum_floor_stock === 0 || itemForm.maximum_floor_stock === '' ? '' : itemForm.maximum_floor_stock}
+                    onChange={(e) => setItemForm((prev) => ({ ...prev, maximum_floor_stock: e.target.value === '' ? '' : (isNaN(parseFloat(e.target.value)) ? '' : parseFloat(e.target.value)) }))}
                     min="0"
                     step="0.01"
                   />
@@ -1306,8 +1878,8 @@ const InventoryItemsRegistration = () => {
                     type="number"
                     id="edit_minimum_order_qty"
                     className="input-inventory-items-registration"
-                    value={itemForm.minimum_order_qty}
-                    onChange={(e) => setItemForm((prev) => ({ ...prev, minimum_order_qty: parseFloat(e.target.value) || 0 }))}
+                    value={itemForm.minimum_order_qty === 0 || itemForm.minimum_order_qty === '' ? '' : itemForm.minimum_order_qty}
+                    onChange={(e) => setItemForm((prev) => ({ ...prev, minimum_order_qty: e.target.value === '' ? '' : (isNaN(parseFloat(e.target.value)) ? '' : parseFloat(e.target.value)) }))}
                     min="0"
                     step="0.01"
                   />
@@ -1320,28 +1892,14 @@ const InventoryItemsRegistration = () => {
                     type="number"
                     id="edit_maximum_order_qty"
                     className="input-inventory-items-registration"
-                    value={itemForm.maximum_order_qty}
-                    onChange={(e) => setItemForm((prev) => ({ ...prev, maximum_order_qty: parseFloat(e.target.value) || 0 }))}
+                    value={itemForm.maximum_order_qty === 0 || itemForm.maximum_order_qty === '' ? '' : itemForm.maximum_order_qty}
+                    onChange={(e) => setItemForm((prev) => ({ ...prev, maximum_order_qty: e.target.value === '' ? '' : (isNaN(parseFloat(e.target.value)) ? '' : parseFloat(e.target.value)) }))}
                     min="0"
                     step="0.01"
                   />
                 </div>
               </div>
               <div className="form-row-inventory-items">
-                <div className="form-group-inventory-items-registration">
-                  <label className="label-inventory-items-registration" htmlFor="edit_reordering_stock_level">
-                    Re-ordering Stock Level
-                  </label>
-                  <input
-                    type="number"
-                    id="edit_reordering_stock_level"
-                    className="input-inventory-items-registration"
-                    value={itemForm.reordering_stock_level}
-                    onChange={(e) => setItemForm((prev) => ({ ...prev, reordering_stock_level: parseFloat(e.target.value) || 0 }))}
-                    min="0"
-                    step="0.01"
-                  />
-                </div>
                 <div className="form-group-inventory-items-registration">
                   <label className="label-inventory-items-registration" htmlFor="edit_current_stock">
                     Current Stock
@@ -1350,8 +1908,8 @@ const InventoryItemsRegistration = () => {
                     type="number"
                     id="edit_current_stock"
                     className="input-inventory-items-registration"
-                    value={itemForm.current_stock}
-                    onChange={(e) => setItemForm((prev) => ({ ...prev, current_stock: parseFloat(e.target.value) || 0 }))}
+                    value={itemForm.current_stock === 0 || itemForm.current_stock === '' ? '' : itemForm.current_stock}
+                    onChange={(e) => setItemForm((prev) => ({ ...prev, current_stock: e.target.value === '' ? '' : (isNaN(parseFloat(e.target.value)) ? '' : parseFloat(e.target.value)) }))}
                     min="0"
                     step="0.01"
                   />
@@ -1384,6 +1942,34 @@ const InventoryItemsRegistration = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Sub Category Image View Modal */}
+      {showSubCategoryImageModal && selectedSubCategoryImage && (
+        <div className="modal-overlay-inventory-items" onClick={() => setShowSubCategoryImageModal(false)}>
+          <div className="modal-content-inventory-items image-modal-inventory-items" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header-inventory-items">
+              <h2>Sub Category Image</h2>
+              <button
+                type="button"
+                className="close-btn-inventory-items"
+                onClick={() => setShowSubCategoryImageModal(false)}
+              >
+                <FaTimes />
+              </button>
+            </div>
+            <div className="modal-body-inventory-items image-modal-body-inventory-items">
+              <img 
+                src={selectedSubCategoryImage} 
+                alt="Sub Category" 
+                className="subcategory-full-image-inventory-items"
+                onError={(e) => {
+                  e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23ddd" width="400" height="300"/%3E%3Ctext fill="%23999" font-family="sans-serif" font-size="20" dy="10.5" font-weight="bold" x="50%25" y="50%25" text-anchor="middle"%3EImage not found%3C/text%3E%3C/svg%3E';
+                }}
+              />
+            </div>
           </div>
         </div>
       )}

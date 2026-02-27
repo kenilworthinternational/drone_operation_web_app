@@ -3,8 +3,10 @@ import { FaSearch, FaEdit, FaEye, FaTimes } from 'react-icons/fa';
 import '../../styles/supplierRegistration.css';
 import {
   useGetSuppliersQuery,
-  useGetSupplierQuery,
   useUpdateSupplierMutation,
+  useGetMainCategoriesQuery,
+  useGetSubCategoriesQuery,
+  useGetSubSubCategoriesQuery,
 } from '../../api/services NodeJs/stockAssetsApi';
 
 const SuppliersList = () => {
@@ -16,62 +18,57 @@ const SuppliersList = () => {
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState('');
 
-  // Fetch suppliers
+  const [editSelectedMainCategory, setEditSelectedMainCategory] = useState('');
+  const [editSelectedSubCategory, setEditSelectedSubCategory] = useState('');
+
   const { data: suppliersResponse, isLoading, error, refetch } = useGetSuppliersQuery({});
   const [updateSupplier] = useUpdateSupplierMutation();
 
-  // Handle API response structure
-  // Backend returns: { status: true, data: [...] }
-  // RTK Query with queryFn returns: { data: { status: true, data: [...] } } or { error: {...} }
-  // Debug logging
-  useEffect(() => {
-    if (suppliersResponse) {
-      console.log('Suppliers Response:', suppliersResponse);
-    }
-    if (error) {
-      console.error('Suppliers Error:', error);
-    }
-  }, [suppliersResponse, error]);
+  const { data: mainCategoriesResponse } = useGetMainCategoriesQuery({});
+  const { data: editSubCategoriesResponse } = useGetSubCategoriesQuery(
+    editSelectedMainCategory ? { main_category_id: editSelectedMainCategory } : {},
+    { skip: !editSelectedMainCategory }
+  );
+  const { data: editSubSubCategoriesResponse } = useGetSubSubCategoriesQuery(
+    editSelectedSubCategory ? { sub_category_id: editSelectedSubCategory } : {},
+    { skip: !editSelectedSubCategory }
+  );
 
-  // Extract suppliers from nested response
+  const mainCategories = Array.isArray(mainCategoriesResponse)
+    ? mainCategoriesResponse
+    : (mainCategoriesResponse?.data ? (Array.isArray(mainCategoriesResponse.data) ? mainCategoriesResponse.data : []) : []);
+  const editSubCategories = Array.isArray(editSubCategoriesResponse)
+    ? editSubCategoriesResponse
+    : (editSubCategoriesResponse?.data ? (Array.isArray(editSubCategoriesResponse.data) ? editSubCategoriesResponse.data : []) : []);
+  const editSubSubCategories = Array.isArray(editSubSubCategoriesResponse)
+    ? editSubSubCategoriesResponse
+    : (editSubSubCategoriesResponse?.data ? (Array.isArray(editSubSubCategoriesResponse.data) ? editSubSubCategoriesResponse.data : []) : []);
+
   const suppliers = useMemo(() => {
     if (!suppliersResponse) return [];
-    // Handle both direct data array and nested structure
-    if (Array.isArray(suppliersResponse)) {
-      return suppliersResponse;
-    }
-    if (suppliersResponse.data && Array.isArray(suppliersResponse.data)) {
-      return suppliersResponse.data;
-    }
-    if (suppliersResponse.data?.data && Array.isArray(suppliersResponse.data.data)) {
-      return suppliersResponse.data.data;
-    }
+    if (Array.isArray(suppliersResponse)) return suppliersResponse;
+    if (suppliersResponse.data && Array.isArray(suppliersResponse.data)) return suppliersResponse.data;
+    if (suppliersResponse.data?.data && Array.isArray(suppliersResponse.data.data)) return suppliersResponse.data.data;
     return [];
   }, [suppliersResponse]);
 
-  // Auto-clear success messages
   useEffect(() => {
     if (message && messageType === 'success') {
-      const timer = setTimeout(() => {
-        setMessage('');
-        setMessageType('');
-      }, 3000);
+      const timer = setTimeout(() => { setMessage(''); setMessageType(''); }, 3000);
       return () => clearTimeout(timer);
     }
   }, [message, messageType]);
 
-  // Filter suppliers based on search term
   const filteredSuppliers = useMemo(() => {
-    if (!searchTerm.trim()) {
-      return suppliers;
-    }
-
+    if (!searchTerm.trim()) return suppliers;
     return suppliers.filter((supplier) =>
       supplier.supplier_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       supplier.supplier_code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       supplier.contact_person?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       supplier.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      supplier.phone?.includes(searchTerm)
+      supplier.phone?.includes(searchTerm) ||
+      supplier.main_category_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      supplier.sub_category_name?.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [suppliers, searchTerm]);
 
@@ -89,34 +86,36 @@ const SuppliersList = () => {
       email: supplier.email || '',
       phone: supplier.phone || '',
       address: supplier.address || '',
+      main_category_id: supplier.main_category_id || '',
+      sub_category_id: supplier.sub_category_id || '',
+      sub_sub_category_id: supplier.sub_sub_category_id || '',
       status: supplier.status || 'active',
     });
+    setEditSelectedMainCategory(supplier.main_category_id || '');
+    setEditSelectedSubCategory(supplier.sub_category_id || '');
     setShowEditModal(true);
   };
 
   const handleEditInputChange = (e) => {
     const { name, value } = e.target;
-    setEditFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setEditFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleUpdateSupplier = async (e) => {
     e.preventDefault();
-
     if (!editFormData.supplier_name || !editFormData.contact_person || !editFormData.phone) {
       setMessage('Please fill in all required fields');
       setMessageType('error');
       return;
     }
-
     setMessage('');
-
     try {
       const userData = JSON.parse(localStorage.getItem('userData')) || {};
       const updateData = {
         ...editFormData,
+        main_category_id: editFormData.main_category_id || null,
+        sub_category_id: editFormData.sub_category_id || null,
+        sub_sub_category_id: editFormData.sub_sub_category_id || null,
         updated_by: userData.id || null,
       };
       const result = await updateSupplier(updateData).unwrap();
@@ -132,12 +131,13 @@ const SuppliersList = () => {
     }
   };
 
-
   const handleCloseModals = () => {
     setShowViewModal(false);
     setShowEditModal(false);
     setSelectedSupplier(null);
     setEditFormData({});
+    setEditSelectedMainCategory('');
+    setEditSelectedSubCategory('');
   };
 
   return (
@@ -146,13 +146,12 @@ const SuppliersList = () => {
         <h1 className="heading-suppliers-list-supplier-management">Suppliers</h1>
       </div>
 
-      {/* Search Section */}
       <div className="search-section-supplier-management">
         <div className="search-input-group-supplier-management">
           <input
             type="text"
             className="search-input-supplier-management"
-            placeholder="Search by name, code, contact person, email, or phone..."
+            placeholder="Search by name, code, contact person, email, phone, or category..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -162,28 +161,20 @@ const SuppliersList = () => {
         </div>
       </div>
 
-      {/* Message Display */}
       {message && (
-        <div className={`message-supplier-management ${messageType}`}>
-          {message}
-        </div>
+        <div className={`message-supplier-management ${messageType}`}>{message}</div>
       )}
-
-      {/* Error Display */}
       {error && (
         <div className="message-supplier-management error">
           {error?.data?.message || 'Failed to load suppliers. Please try again.'}
         </div>
       )}
 
-      {/* Table Container */}
       <div className="suppliers-table-container-supplier-management">
         {isLoading ? (
           <div className="loading-supplier-management">Loading suppliers...</div>
         ) : error ? (
-          <div className="no-data-supplier-management">
-            Error loading suppliers. Please refresh the page.
-          </div>
+          <div className="no-data-supplier-management">Error loading suppliers. Please refresh the page.</div>
         ) : filteredSuppliers.length === 0 ? (
           <div className="no-data-supplier-management">
             {searchTerm ? 'No suppliers found matching your search.' : 'No suppliers found.'}
@@ -194,8 +185,10 @@ const SuppliersList = () => {
               <tr>
                 <th>Supplier Code</th>
                 <th>Supplier Name</th>
+                <th>Main Category</th>
+                <th>Sub Category</th>
+                <th>Sub-Sub Category</th>
                 <th>Contact Person</th>
-                <th>Email</th>
                 <th>Phone</th>
                 <th>Status</th>
                 <th>Actions</th>
@@ -206,8 +199,10 @@ const SuppliersList = () => {
                 <tr key={supplier.id}>
                   <td>{supplier.supplier_code || '-'}</td>
                   <td>{supplier.supplier_name || '-'}</td>
+                  <td>{supplier.main_category_name || '-'}</td>
+                  <td>{supplier.sub_category_name || '-'}</td>
+                  <td>{supplier.sub_sub_category_name || '-'}</td>
                   <td>{supplier.contact_person || '-'}</td>
-                  <td>{supplier.email || '-'}</td>
                   <td>{supplier.phone || '-'}</td>
                   <td>
                     <span className={`status-badge-supplier-management ${supplier.status === 'active' ? 'status-active-supplier-management' : 'status-inactive-supplier-management'}`}>
@@ -243,11 +238,7 @@ const SuppliersList = () => {
           <div className="modal-content-supplier-management" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header-supplier-management">
               <h2>Supplier Details</h2>
-              <button
-                type="button"
-                className="close-btn-supplier-management"
-                onClick={handleCloseModals}
-              >
+              <button type="button" className="close-btn-supplier-management" onClick={handleCloseModals}>
                 <FaTimes />
               </button>
             </div>
@@ -259,6 +250,18 @@ const SuppliersList = () => {
               <div className="detail-row-supplier-management">
                 <span className="detail-label-supplier-management">Supplier Name:</span>
                 <span className="detail-value-supplier-management">{selectedSupplier.supplier_name || '-'}</span>
+              </div>
+              <div className="detail-row-supplier-management">
+                <span className="detail-label-supplier-management">Main Category:</span>
+                <span className="detail-value-supplier-management">{selectedSupplier.main_category_name || '-'}</span>
+              </div>
+              <div className="detail-row-supplier-management">
+                <span className="detail-label-supplier-management">Sub Category:</span>
+                <span className="detail-value-supplier-management">{selectedSupplier.sub_category_name || '-'}</span>
+              </div>
+              <div className="detail-row-supplier-management">
+                <span className="detail-label-supplier-management">Sub-Sub Category:</span>
+                <span className="detail-value-supplier-management">{selectedSupplier.sub_sub_category_name || '-'}</span>
               </div>
               <div className="detail-row-supplier-management">
                 <span className="detail-label-supplier-management">Contact Person:</span>
@@ -287,18 +290,11 @@ const SuppliersList = () => {
               <button
                 type="button"
                 className="btn-edit-modal-supplier-management"
-                onClick={() => {
-                  handleCloseModals();
-                  handleEditSupplier(selectedSupplier);
-                }}
+                onClick={() => { handleCloseModals(); handleEditSupplier(selectedSupplier); }}
               >
                 Edit
               </button>
-              <button
-                type="button"
-                className="btn-close-modal-supplier-management"
-                onClick={handleCloseModals}
-              >
+              <button type="button" className="btn-close-modal-supplier-management" onClick={handleCloseModals}>
                 Close
               </button>
             </div>
@@ -312,26 +308,19 @@ const SuppliersList = () => {
           <div className="modal-content-supplier-management" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header-supplier-management">
               <h2>Edit Supplier</h2>
-              <button
-                type="button"
-                className="close-btn-supplier-management"
-                onClick={handleCloseModals}
-              >
+              <button type="button" className="close-btn-supplier-management" onClick={handleCloseModals}>
                 <FaTimes />
               </button>
             </div>
             <form className="modal-body-supplier-management" onSubmit={handleUpdateSupplier}>
               <div className="form-group-supplier-registration">
-                <label className="label-supplier-registration" htmlFor="edit_supplier_code">
-                  Supplier Code
-                </label>
+                <label className="label-supplier-registration" htmlFor="edit_supplier_code">Supplier Code</label>
                 <input
                   type="text"
                   id="edit_supplier_code"
                   name="supplier_code"
                   className="input-supplier-registration"
                   value={editFormData.supplier_code || ''}
-                  onChange={handleEditInputChange}
                   readOnly
                 />
               </div>
@@ -367,9 +356,7 @@ const SuppliersList = () => {
               </div>
 
               <div className="form-group-supplier-registration">
-                <label className="label-supplier-registration" htmlFor="edit_email">
-                  Email
-                </label>
+                <label className="label-supplier-registration" htmlFor="edit_email">Email</label>
                 <input
                   type="email"
                   id="edit_email"
@@ -396,9 +383,7 @@ const SuppliersList = () => {
               </div>
 
               <div className="form-group-supplier-registration">
-                <label className="label-supplier-registration" htmlFor="edit_address">
-                  Address
-                </label>
+                <label className="label-supplier-registration" htmlFor="edit_address">Address</label>
                 <textarea
                   id="edit_address"
                   name="address"
@@ -410,9 +395,73 @@ const SuppliersList = () => {
               </div>
 
               <div className="form-group-supplier-registration">
-                <label className="label-supplier-registration" htmlFor="edit_status">
-                  Status
+                <label className="label-supplier-registration" htmlFor="edit_main_category_id">
+                  Main Category <span style={{ fontSize: '11px', color: '#999', fontWeight: 'normal' }}>(Optional)</span>
                 </label>
+                <select
+                  id="edit_main_category_id"
+                  className="select-supplier-registration"
+                  value={editFormData.main_category_id || ''}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setEditFormData((prev) => ({ ...prev, main_category_id: val, sub_category_id: '', sub_sub_category_id: '' }));
+                    setEditSelectedMainCategory(val);
+                    setEditSelectedSubCategory('');
+                  }}
+                >
+                  <option value="">Select Main Category</option>
+                  {mainCategories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>{cat.category_name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group-supplier-registration">
+                <label className="label-supplier-registration" htmlFor="edit_sub_category_id">
+                  Sub Category <span style={{ fontSize: '11px', color: '#999', fontWeight: 'normal' }}>(Optional)</span>
+                </label>
+                <select
+                  id="edit_sub_category_id"
+                  className="select-supplier-registration"
+                  value={editFormData.sub_category_id || ''}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setEditFormData((prev) => ({ ...prev, sub_category_id: val, sub_sub_category_id: '' }));
+                    setEditSelectedSubCategory(val);
+                  }}
+                  disabled={!editFormData.main_category_id}
+                >
+                  <option value="">Select Sub Category</option>
+                  {editSubCategories
+                    .filter((sub) => sub.main_category_id === parseInt(editFormData.main_category_id))
+                    .map((sub) => (
+                      <option key={sub.id} value={sub.id}>{sub.sub_category_name}</option>
+                    ))}
+                </select>
+              </div>
+
+              <div className="form-group-supplier-registration">
+                <label className="label-supplier-registration" htmlFor="edit_sub_sub_category_id">
+                  Sub-Sub Category <span style={{ fontSize: '11px', color: '#999', fontWeight: 'normal' }}>(Optional)</span>
+                </label>
+                <select
+                  id="edit_sub_sub_category_id"
+                  className="select-supplier-registration"
+                  value={editFormData.sub_sub_category_id || ''}
+                  onChange={(e) => setEditFormData((prev) => ({ ...prev, sub_sub_category_id: e.target.value }))}
+                  disabled={!editFormData.sub_category_id}
+                >
+                  <option value="">Select Sub-Sub Category</option>
+                  {editSubSubCategories
+                    .filter((ssc) => ssc.sub_category_id === parseInt(editFormData.sub_category_id))
+                    .map((ssc) => (
+                      <option key={ssc.id} value={ssc.id}>{ssc.sub_sub_category_name}</option>
+                    ))}
+                </select>
+              </div>
+
+              <div className="form-group-supplier-registration">
+                <label className="label-supplier-registration" htmlFor="edit_status">Status</label>
                 <select
                   id="edit_status"
                   name="status"
@@ -426,16 +475,8 @@ const SuppliersList = () => {
               </div>
 
               <div className="modal-footer-supplier-management">
-                <button type="submit" className="btn-submit-supplier-registration">
-                  Update Supplier
-                </button>
-                <button
-                  type="button"
-                  className="btn-cancel-supplier-registration"
-                  onClick={handleCloseModals}
-                >
-                  Cancel
-                </button>
+                <button type="submit" className="btn-submit-supplier-registration">Update Supplier</button>
+                <button type="button" className="btn-cancel-supplier-registration" onClick={handleCloseModals}>Cancel</button>
               </div>
             </form>
           </div>
@@ -446,4 +487,3 @@ const SuppliersList = () => {
 };
 
 export default SuppliersList;
-

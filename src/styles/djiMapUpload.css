@@ -253,7 +253,9 @@
   width: 90%;
   max-width: 600px;
   max-height: 90vh;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
 }
 
@@ -263,6 +265,7 @@
   align-items: center;
   padding: 20px;
   border-bottom: 1px solid #e0e0e0;
+  flex-shrink: 0;
 }
 
 .dji-modal-header h2 {
@@ -294,6 +297,7 @@
 .dji-modal-tabs {
   display: flex;
   border-bottom: 1px solid #e0e0e0;
+  flex-shrink: 0;
 }
 
 .dji-modal-tabs button {
@@ -316,6 +320,10 @@
 
 .dji-modal-body {
   padding: 20px;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
 }
 
 .dji-form {
@@ -383,13 +391,20 @@
 .dji-preview {
   margin-top: 10px;
   text-align: center;
+  max-height: 300px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 10px;
 }
 
 .dji-preview img {
   max-width: 100%;
-  max-height: 300px;
-  border: 1px solid #e0e0e0;
-  border-radius: 6px;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+  border-radius: 4px;
 }
 
 .dji-modal-footer {
@@ -398,6 +413,7 @@
   display: flex;
   justify-content: flex-end;
   gap: 10px;
+  flex-shrink: 0;
 }
 
 .dji-cancel-btn,

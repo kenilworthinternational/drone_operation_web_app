@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import '../styles/modernreport.css';
 import { FaChartLine, FaChartBar, FaChartPie, FaFileInvoiceDollar, FaPlane, FaUsers, FaTasks, FaCalendarCheck, FaTimesCircle, FaComments, FaSeedling } from 'react-icons/fa';
 
@@ -14,10 +15,12 @@ import OperationsReportLeaderWise from '../sections/opsroom/reports/OperationsRe
 import PilotSummaryPilotData from '../sections/opsroom/reports/PilotSummaryPilotData';
 import IncompleteOpsRoomRejected from '../sections/opsroom/reports/IncompleteOpsRoomRejected';
 import CanceledByPilots from '../sections/opsroom/reports/CanceledByPilots';
+import CanceledByOpsRoom from '../sections/opsroom/reports/CanceledByOpsRoom';
 import CancelledFieldsByTeamLead from '../sections/opsroom/reports/CancelledFieldsByTeamLead';
 import PilotPerformanceByDateOpsRoom from '../sections/opsroom/reports/PilotPerformanceByDateOpsRoom';
 import PilotPerformanceByDatePilot from '../sections/opsroom/reports/PilotPerformanceByDatePilot';
 import PilotFeedbacks from '../sections/opsroom/reports/PilotFeedbacks';
+import MonthlyPlantationReport from '../sections/opsroom/reports/MonthlyPlantationReport';
 import ChemicalsReport from '../features/plantation/ChemicalsReport';
 import PilotRevenueDaily from '../sections/corporate/charts/PilotRevenueDaily';
 import PilotSummaryMonthly from '../sections/corporate/charts/PilotSummaryMonthly';
@@ -60,6 +63,7 @@ const ComingSoonReport = ({ reportName }) => (
 );
 
 const ModernReportSection = ({ category = null }) => {
+  const navigate = useNavigate();
   // If category prop is provided, use it and disable category switching
   // If category is null or 'management', show all categories (Corporate/Management view with tabs)
   const isCorporateView = category === null || category === 'management';
@@ -194,6 +198,14 @@ const ModernReportSection = ({ category = null }) => {
           metrics: { label: 'Canceled', value: 'Track' }
         },
         {
+          id: 'canceled_ops_room',
+          name: 'Canceled by Ops Room',
+          description: 'Tasks canceled by ops room in day end process',
+          icon: FaTimesCircle,
+          component: CanceledByOpsRoom,
+          metrics: { label: 'Canceled', value: 'Track' }
+        },
+        {
           id: 'canceled_leader',
           name: 'Cancelled Fields by Team Lead',
           description: 'Team lead cancellations',
@@ -208,6 +220,14 @@ const ModernReportSection = ({ category = null }) => {
           icon: FaComments,
           component: PilotFeedbacks,
           metrics: { label: 'Feedbacks', value: 'All' }
+        },
+        {
+          id: 'monthly_plantation',
+          name: 'Monthly Plantation Report',
+          description: 'Planned, Assigned & Covered by estate per month',
+          icon: FaSeedling,
+          component: MonthlyPlantationReport,
+          metrics: { label: 'Monthly', value: 'All' }
         }
       ]
     },
@@ -327,6 +347,15 @@ const ModernReportSection = ({ category = null }) => {
       {!selectedReport && (
         <div className="report-selection-section">
           <div className="report-section-header">
+            {category === 'ops' && (
+              <button 
+                className="back-button-modernreport" 
+                onClick={() => navigate('/home/workflowDashboard')}
+                title="Back to Workflow Dashboard"
+              >
+                <span className="back-btn-icon-modernreport">←</span>
+              </button>
+            )}
             <h2>{currentCategory.title}</h2>
             <p>Select a report to view detailed analytics</p>
           </div>

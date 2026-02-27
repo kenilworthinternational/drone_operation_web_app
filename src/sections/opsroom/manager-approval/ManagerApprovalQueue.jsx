@@ -102,7 +102,7 @@ const ManagerApprovalQueue = () => {
           className="back-btn-manager-approval-managerqueue" 
           onClick={() => navigate('/home/workflowDashboard')}
         >
-          ← Back
+          ←
         </button>
         <h1>Plantation Manager Approval Queue</h1>
         <div className="queue-info-manager-approval-managerqueue">

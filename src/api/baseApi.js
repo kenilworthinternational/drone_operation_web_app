@@ -69,6 +69,20 @@ export const baseApi = createApi({
     'Brokers', 'PilotRevenue', 'DefaultValues',
     // Dropdowns
     'Sectors', 'Crops', 'MissionTypes', 'TimeSlots', 'ChemicalTypes', 'Stages',
+    // Notifications
+    'Notifications',
+    // Emergency Moving
+    'EmergencyMoving',
+    // HR & JD Management
+    'UserLevels', 'UserMemberTypes', 'UserJobRoles', 'UserJobDescriptions', 'Departments',
+    // Plantation Dashboard
+    'PlantationCalendarPlans', 'PlantationUpcomingPlans', 'PlantationCharts', 'PlantationMissionReports',
+    // Field Size Adjustments
+    'FieldSizeAdjustments',
+    // App Versions
+    'AppVersions',
+    // Task Cancel Status
+    'TaskCancelStatus',
     // Others
     'Calendar', 'Reasons', 'ASC'
   ],

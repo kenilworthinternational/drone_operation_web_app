@@ -1,0 +1,4225 @@
+.plantation-dashboard-container {
+  padding: 15px;
+  min-height: 100vh;
+  background-color: #f5f5f5;
+  position: relative;
+}
+
+.plantation-dashboard-header {
+  margin-bottom: 15px;
+  padding: 15px 20px;
+  background: linear-gradient(135deg, #2d8659 0%, #34a853 100%);
+  border-radius: 8px;
+  color: white;
+  box-shadow: 0 4px 6px rgba(45, 134, 89, 0.2);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.plantation-header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.plantation-user-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+  flex: 1;
+  justify-content: center;
+  margin: 0 20px;
+}
+
+.plantation-user-info-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: rgba(255, 255, 255, 0.15);
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.2s ease;
+}
+
+.plantation-user-info-item:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.plantation-user-info-label {
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0.9;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.plantation-user-info-value {
+  font-size: 14px;
+  font-weight: 500;
+  color: white;
+}
+
+.plantation-dashboard-title {
+  font-size: 32px;
+  font-weight: bold;
+  margin: 0 0 10px 0;
+}
+
+.plantation-dashboard-subtitle {
+  font-size: 16px;
+  opacity: 0.9;
+}
+
+.plantation-logout-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background-color: rgba(255, 255, 255, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 5px;
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.plantation-logout-btn:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-2px);
+}
+
+.plantation-dashboard-content {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+/* ============================================
+   Plantation Dashboard — Summary Bar + Metrics
+   ============================================ */
+
+.pd-summary-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  background: white;
+  padding: 14px 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 4px rgba(45, 134, 89, 0.1);
+  border: 1px solid #e8f5e9;
+}
+
+.pd-summary-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e3a2f;
+}
+
+.pd-summary-percent {
+  color: #2d8659;
+  font-weight: 600;
+}
+
+.pd-summary-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pd-calendar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 18px;
+  background: linear-gradient(135deg, #2d8659 0%, #34a853 100%);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(45, 134, 89, 0.25);
+}
+
+.pd-calendar-btn:hover {
+  background: linear-gradient(135deg, #246e49 0%, #2d8659 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(45, 134, 89, 0.35);
+}
+
+/* 6 Metric Cards Grid */
+.pd-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px;
+}
+
+.pd-metric-card {
+  background: white;
+  border-radius: 10px;
+  padding: 16px 18px;
+  border-left: 4px solid #ccc;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.pd-metric-card--clickable {
+  cursor: pointer;
+}
+
+.pd-metric-card--clickable:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+.pd-metric-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-bottom: 8px;
+}
+
+.pd-metric-value {
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1.2;
+  margin-bottom: 4px;
+}
+
+.pd-metric-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  margin-top: 6px;
+  transition: color 0.15s ease;
+}
+
+.pd-metric-card--clickable:hover .pd-metric-link {
+  color: #2d8659;
+}
+
+/* ============================================
+   Plantation Dashboard — Popups
+   ============================================ */
+
+.pd-popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: cbd-fade-in 0.2s ease;
+}
+
+.pd-popup {
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+  width: 85vw;
+  max-width: 1200px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: cbd-popup-in 0.25s ease;
+}
+
+.pd-popup--wide {
+  max-width: 1000px;
+  width: 90vw;
+}
+
+.pd-popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.pd-popup-header--red {
+  background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+}
+
+.pd-popup-header--purple {
+  background: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%);
+}
+
+.pd-popup-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.pd-popup-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.15s ease;
+  padding: 0;
+}
+
+.pd-popup-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.pd-popup-body {
+  flex: 1;
+  overflow: auto;
+  padding: 0;
+}
+
+.pd-popup-empty {
+  padding: 40px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 15px;
+}
+
+.pd-popup-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 40px;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.pd-popup-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.pd-popup-table thead th {
+  background: #f8fafc;
+  padding: 10px 14px;
+  text-align: left;
+  font-weight: 700;
+  color: #475569;
+  border-bottom: 2px solid #e2e8f0;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.pd-popup-table tbody td {
+  padding: 10px 14px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #334155;
+}
+
+.pd-popup-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.pd-popup-table tfoot td {
+  padding: 12px 14px;
+  background: #f8fafc;
+  border-top: 2px solid #e2e8f0;
+  color: #1e293b;
+}
+
+.pd-cancel-reason {
+  display: inline-block;
+  padding: 2px 8px;
+  background: #fef2f2;
+  color: #dc2626;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .pd-metrics-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .pd-metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .pd-metric-value {
+    font-size: 22px;
+  }
+
+  .pd-summary-bar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .pd-popup {
+    width: 96vw;
+    max-height: 92vh;
+  }
+
+  .pd-popup--wide {
+    width: 96vw;
+  }
+}
+
+@media (max-width: 480px) {
+  .pd-metrics-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Action Section */
+.plantation-action-section {
+  background: white;
+  padding: 12px 16px;
+  border-radius: 10px;
+  box-shadow: 0 2px 4px rgba(45, 134, 89, 0.1);
+  border: 1px solid #e8f5e9;
+  margin-bottom: 15px;
+  position: sticky;
+  top: 75px;
+  z-index: 99;
+}
+
+.plantation-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* Charts Controls Section - Compact Combined Selectors */
+.plantation-charts-controls-section {
+  background: white;
+  padding: 12px 16px;
+  border-radius: 10px;
+  box-shadow: 0 2px 4px rgba(45, 134, 89, 0.1);
+  border: 1px solid #e8f5e9;
+  margin-bottom: 15px;
+  overflow-x: auto;
+  overflow-y: visible;
+  position: sticky;
+  top: 75px;
+  z-index: 99;
+}
+
+.plantation-charts-controls-row {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: nowrap;
+}
+
+.plantation-charts-control-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  position: relative;
+  z-index: 1;
+}
+
+.plantation-charts-control-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #2d8659;
+  white-space: nowrap;
+}
+
+.plantation-date-display {
+  font-size: 18px;
+  font-weight: 600;
+  color: #2d8659;
+  padding: 10px 20px;
+  background-color: #e8f5e9;
+  border-radius: 5px;
+  border: 1px solid #c8e6c9;
+}
+
+.plantation-action-btn {
+  padding: 8px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  border: 2px solid #2d8659;
+  background-color: white;
+  color: #2d8659;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.plantation-action-btn:hover {
+  background-color: #e8f5e9;
+  transform: translateY(-2px);
+  border-color: #34a853;
+}
+
+.plantation-action-btn.active {
+  background-color: #2d8659;
+  color: white;
+  box-shadow: 0 4px 6px rgba(45, 134, 89, 0.3);
+}
+
+/* Cards Grid */
+.plantation-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.plantation-card {
+  background: white;
+  padding: 30px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(45, 134, 89, 0.1);
+  border: 1px solid #e8f5e9;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.plantation-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 12px rgba(45, 134, 89, 0.2);
+  border-color: #2d8659;
+}
+
+.plantation-card-icon {
+  font-size: 48px;
+  margin-bottom: 15px;
+}
+
+.plantation-card-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #2d8659;
+  margin-bottom: 10px;
+}
+
+.plantation-card-description {
+  font-size: 14px;
+  color: #666;
+  line-height: 1.5;
+}
+
+/* Summary Section */
+.plantation-summary-section {
+  background: white;
+  padding: 25px;
+  border-radius: 10px;
+  box-shadow: 0 2px 4px rgba(45, 134, 89, 0.1);
+  border: 1px solid #e8f5e9;
+}
+
+.plantation-section-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #2d8659;
+  margin-bottom: 20px;
+}
+
+.plantation-table-container {
+  overflow-x: auto;
+}
+
+.plantation-summary-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.plantation-table-header {
+  background-color: #2d8659;
+  color: white;
+  padding: 15px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.plantation-table-cell {
+  padding: 15px;
+  border-bottom: 1px solid #e0e0e0;
+  font-size: 15px;
+  color: #333;
+}
+
+.plantation-total-row {
+  background-color: #e8f5e9;
+  font-weight: 600;
+}
+
+.plantation-total-row .plantation-table-cell {
+  border-top: 2px solid #2d8659;
+  border-bottom: 2px solid #2d8659;
+  color: #1e6b47;
+}
+
+/* Tabs Navigation */
+.plantation-tabs {
+  display: flex;
+  gap: 10px;
+  background: white;
+  padding: 10px;
+  border-radius: 10px;
+  box-shadow: 0 2px 4px rgba(45, 134, 89, 0.1);
+  border: 1px solid #e8f5e9;
+  flex-wrap: wrap;
+  position: sticky;
+  top: 100px;
+  z-index: 99;
+}
+
+.plantation-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: 600;
+  border: 2px solid transparent;
+  background-color: white;
+  color: #2d8659;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.plantation-tab:hover {
+  background-color: #e8f5e9;
+  border-color: #c8e6c9;
+}
+
+.plantation-tab.active {
+  background-color: #2d8659;
+  color: white;
+  border-color: #2d8659;
+  box-shadow: 0 2px 4px rgba(45, 134, 89, 0.3);
+}
+
+/* Tab Content */
+.plantation-tab-content {
+  margin-top: 15px;
+}
+
+/* Charts Section */
+.plantation-charts-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
+  gap: 20px;
+}
+
+.plantation-chart-card {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(45, 134, 89, 0.1);
+  border: 1px solid #e8f5e9;
+}
+
+.plantation-chart-title-wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #e8f5e9;
+}
+
+.plantation-chart-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #2d8659;
+  margin: 0;
+  flex: 1;
+}
+
+.plantation-chart-excel-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3);
+}
+
+.plantation-chart-excel-btn:hover:not(:disabled) {
+  background-color: #c82333;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(220, 53, 69, 0.4);
+}
+
+.plantation-chart-excel-btn:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.plantation-chart-excel-btn svg {
+  font-size: 18px;
+}
+
+.plantation-chart-container {
+  margin: 15px 0;
+}
+
+.plantation-chart-loading,
+.plantation-chart-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  gap: 15px;
+  color: #666;
+}
+
+.plantation-chart-error {
+  color: #dc3545;
+}
+
+.plantation-chart-footer {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e8f5e9;
+}
+
+.plantation-chart-description {
+  font-size: 13px;
+  color: #666;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Calendar Section */
+.plantation-calendar-section {
+  background: white;
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(45, 134, 89, 0.1);
+  border: 1px solid #e8f5e9;
+}
+
+.plantation-calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 15px 20px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  border-radius: 10px;
+  border: 1px solid #e8f5e9;
+  box-shadow: 0 2px 4px rgba(45, 134, 89, 0.1);
+}
+
+.plantation-calendar-nav-btn {
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  border: 2px solid #2d8659;
+  background-color: white;
+  color: #2d8659;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 2px 4px rgba(45, 134, 89, 0.1);
+}
+
+.plantation-calendar-nav-btn:hover {
+  background: linear-gradient(135deg, #2d8659 0%, #34a853 100%);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(45, 134, 89, 0.2);
+  border-color: #2d8659;
+}
+
+.plantation-calendar-month-title {
+  font-size: 26px;
+  font-weight: 700;
+  color: #1e6b47;
+  margin: 0;
+  text-transform: capitalize;
+  letter-spacing: 0.5px;
+}
+
+.plantation-calendar-loading,
+.plantation-calendar-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  gap: 15px;
+  color: #666;
+}
+
+.plantation-calendar-error {
+  color: #dc3545;
+}
+
+.plantation-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 10px;
+  margin-top: 10px;
+  align-items: stretch;
+}
+
+.plantation-calendar-weekday {
+  padding: 14px 8px;
+  text-align: center;
+  font-weight: 700;
+  color: #1e6b47;
+  background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+  border-radius: 6px;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: 1px solid rgba(45, 134, 89, 0.2);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.plantation-calendar-day-blank {
+  min-height: 120px;
+  height: 100%;
+  background-color: #f8f9fa;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  opacity: 0.5;
+}
+
+.plantation-calendar-day {
+  min-height: 120px;
+  height: 100%;
+  padding: 10px;
+  border: 2px solid #e8f5e9;
+  border-radius: 8px;
+  background-color: white;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
+  position: relative;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  align-items: stretch;
+}
+
+.plantation-calendar-day:hover {
+  background-color: #f8f9fa;
+  border-color: #2d8659;
+  box-shadow: 0 2px 6px rgba(45, 134, 89, 0.15);
+  transform: translateY(-2px);
+}
+
+.plantation-calendar-day.today {
+  background: linear-gradient(135deg, #e8f5e9 0%, #f1f8f4 100%);
+  border: 2px solid #2d8659;
+  box-shadow: 0 2px 8px rgba(45, 134, 89, 0.2);
+}
+
+.plantation-calendar-day.today .plantation-calendar-day-header {
+  background-color: #2d8659;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  display: inline-flex;
+  width: fit-content;
+  margin: 0 auto;
+}
+
+.plantation-calendar-day.today .plantation-calendar-day-number {
+  color: white;
+}
+
+.plantation-calendar-day.today .plantation-calendar-plan-count {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.plantation-calendar-day-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.plantation-calendar-day-number {
+  font-weight: 700;
+  color: #2d8659;
+  font-size: 15px;
+  line-height: 1.2;
+}
+
+.plantation-calendar-day-plans {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  overflow: visible;
+  min-height: 0;
+  width: 100%;
+}
+
+.plantation-calendar-plan-count {
+  font-size: 11px;
+  color: #666;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.plantation-calendar-plan-item {
+  font-size: 11px;
+  color: #1e6b47;
+  background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+  padding: 5px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid rgba(45, 134, 89, 0.2);
+  font-weight: 500;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.plantation-calendar-plan-item:hover {
+  background: linear-gradient(135deg, #2d8659 0%, #34a853 100%);
+  color: white;
+  transform: translateX(2px);
+  box-shadow: 0 2px 4px rgba(45, 134, 89, 0.3);
+  border-color: #2d8659;
+}
+
+.plantation-calendar-plan-more {
+  font-size: 10px;
+  color: #2d8659;
+  font-style: italic;
+  padding: 4px 8px;
+  background-color: #f0f7f3;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px dashed #2d8659;
+  text-align: center;
+  font-weight: 500;
+}
+
+.plantation-calendar-plan-more:hover {
+  background-color: #2d8659;
+  color: white;
+  border-style: solid;
+}
+
+/* Upcoming Plans Section */
+.plantation-upcoming-section {
+  background: white;
+  padding: 25px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(45, 134, 89, 0.1);
+  border: 1px solid #e8f5e9;
+}
+
+.plantation-plans-table-container {
+  overflow-x: auto;
+  margin-top: 20px;
+}
+
+.plantation-plans-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.plantation-table-row {
+  transition: background-color 0.2s ease;
+}
+
+.plantation-table-row:hover {
+  background-color: #f5f5f5;
+}
+
+.plantation-status-badge {
+  display: inline-block;
+  padding: 5px 12px;
+  border-radius: 15px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.plantation-status-badge.completed {
+  background-color: #34a853;
+  color: white;
+}
+
+.plantation-status-badge.pending {
+  background-color: #ffc107;
+  color: #333;
+}
+
+/* Reports Section */
+.plantation-reports-section {
+  background: white;
+  padding: 25px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(45, 134, 89, 0.1);
+  border: 1px solid #e8f5e9;
+}
+
+.plantation-reports-section-relative {
+  position: relative;
+}
+
+/* Loading overlay when month changes (refetching) */
+.plantation-reports-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  z-index: 10;
+}
+
+.plantation-reports-loading-overlay-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: #2d8659;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.plantation-reports-info {
+  margin-bottom: 20px;
+  padding: 10px;
+  background-color: #e8f5e9;
+  border-radius: 5px;
+  color: #2d8659;
+  font-size: 14px;
+}
+
+.plantation-reports-table-container {
+  overflow-x: auto;
+  margin-top: 20px;
+}
+
+.plantation-reports-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.plantation-completion-badge {
+  display: inline-block;
+  padding: 5px 12px;
+  border-radius: 15px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.plantation-completion-badge.complete {
+  background-color: #34a853;
+  color: white;
+}
+
+.plantation-completion-badge.good {
+  background-color: #ffc107;
+  color: #333;
+}
+
+.plantation-completion-badge.low {
+  background-color: #dc3545;
+  color: white;
+}
+
+/* Loading and Error States */
+.plantation-loading,
+.plantation-error,
+.plantation-no-data {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  gap: 15px;
+  color: #666;
+}
+
+.plantation-error {
+  color: #dc3545;
+}
+
+.plantation-no-data {
+  color: #999;
+  font-style: italic;
+}
+
+/* Chart Modal Styles */
+.plantation-chart-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+  padding: 20px;
+}
+
+.plantation-chart-modal-content {
+  background: white;
+  border-radius: 12px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  animation: plantationModalSlideIn 0.3s ease;
+}
+
+@keyframes plantationModalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.plantation-chart-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 25px;
+  border-bottom: 2px solid #e8f5e9;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  border-radius: 12px 12px 0 0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.plantation-chart-modal-header h3 {
+  margin: 0;
+  color: #2d8659;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.plantation-chart-modal-close {
+  background: none;
+  border: none;
+  font-size: 28px;
+  color: #666;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.plantation-chart-modal-close:hover {
+  background: #f0f0f0;
+  color: #2d8659;
+  transform: rotate(90deg);
+}
+
+.plantation-chart-modal-body {
+  padding: 25px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.plantation-chart-detail-section {
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #2d8659;
+  margin-bottom: 10px;
+}
+
+.plantation-chart-detail-section h4 {
+  margin: 0 0 10px 0;
+  color: #2d8659;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.plantation-chart-detail-text {
+  margin: 8px 0;
+  color: #333;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.plantation-chart-detail-text strong {
+  color: #2d8659;
+  font-weight: 600;
+}
+
+.plantation-chart-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.plantation-chart-detail-item {
+  background: white;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid #e8f5e9;
+  transition: all 0.2s ease;
+}
+
+.plantation-chart-detail-item:hover {
+  box-shadow: 0 2px 8px rgba(45, 134, 89, 0.1);
+  transform: translateY(-2px);
+}
+
+.plantation-chart-detail-label {
+  font-size: 12px;
+  color: #666;
+  font-weight: 500;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.plantation-chart-detail-value {
+  font-size: 20px;
+  font-weight: 600;
+  color: #2d8659;
+}
+
+/* Breakdown Table Styles */
+.plantation-breakdown-table-container {
+  overflow-x: auto;
+  margin-top: 8px;
+  max-height: 400px;
+  overflow-y: auto;
+  border-radius: 6px;
+  border: 1px solid #e8f5e9;
+  background: white;
+}
+
+.plantation-breakdown-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.plantation-breakdown-table .plantation-table-header {
+  background-color: #2d8659;
+  color: white;
+  padding: 6px 10px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.plantation-breakdown-table .plantation-table-cell {
+  padding: 6px 10px;
+  border-bottom: 1px solid #e8f5e9;
+  font-size: 12px;
+  color: #333;
+}
+
+.plantation-breakdown-table .plantation-table-row:hover {
+  background-color: #f5f5f5;
+}
+
+/* Month Selector Styles */
+.plantation-month-selector-section {
+  background: white;
+  padding: 12px 16px;
+  border-radius: 10px;
+  box-shadow: 0 2px 4px rgba(45, 134, 89, 0.1);
+  border: 1px solid #e8f5e9;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.plantation-month-selector-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #2d8659;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.plantation-month-selector-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.plantation-month-input {
+  padding: 6px 10px;
+  font-size: 13px;
+  border: 2px solid #2d8659;
+  border-radius: 5px;
+  color: #2d8659;
+  background-color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  min-width: 140px;
+}
+
+.plantation-month-input:hover {
+  border-color: #34a853;
+  background-color: #f5f5f5;
+}
+
+.plantation-month-input:focus {
+  outline: none;
+  border-color: #34a853;
+  box-shadow: 0 0 0 3px rgba(45, 134, 89, 0.1);
+}
+
+.plantation-month-selector-separator {
+  font-size: 13px;
+  color: #666;
+  font-weight: 500;
+  white-space: nowrap;
+  margin: 0 2px;
+}
+
+.plantation-month-selector-info {
+  font-size: 12px;
+  color: #666;
+  font-style: italic;
+  white-space: nowrap;
+}
+
+/* Custom Month Picker Styles */
+.plantation-month-range-picker,
+.plantation-single-month-picker {
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+}
+
+.plantation-month-range-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
+.plantation-month-range-input-wrapper {
+  position: relative;
+  z-index: 1;
+}
+
+.plantation-month-range-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 13px;
+  border: 2px solid #2d8659;
+  border-radius: 5px;
+  color: #2d8659;
+  background-color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  min-width: 140px;
+  justify-content: center;
+}
+
+.plantation-month-range-btn:hover {
+  border-color: #34a853;
+  background-color: #f0f8f4;
+}
+
+.plantation-month-range-btn:active {
+  transform: scale(0.98);
+}
+
+.plantation-month-icon {
+  font-size: 14px;
+}
+
+.plantation-month-range-separator {
+  font-size: 13px;
+  color: #666;
+  font-weight: 500;
+  white-space: nowrap;
+  margin: 0 4px;
+}
+
+.plantation-month-range-info {
+  font-size: 12px;
+  color: #666;
+  font-style: italic;
+  white-space: nowrap;
+  margin-left: 4px;
+}
+
+.plantation-month-picker-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  background: white;
+  border: 2px solid #2d8659;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 9999;
+  min-width: 240px;
+  padding: 12px;
+  animation: plantationPickerSlideDown 0.2s ease;
+}
+
+.plantation-month-picker-dropdown-fixed {
+  position: fixed;
+  top: auto;
+  left: auto;
+}
+
+@keyframes plantationPickerSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.plantation-month-picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e8f5e9;
+}
+
+.plantation-month-picker-year {
+  font-size: 16px;
+  font-weight: 700;
+  color: #2d8659;
+}
+
+.plantation-month-picker-nav {
+  background: none;
+  border: none;
+  color: #2d8659;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.plantation-month-picker-nav:hover:not(:disabled) {
+  background-color: #e8f5e9;
+  color: #1e6b47;
+}
+
+.plantation-month-picker-nav:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.plantation-month-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.plantation-month-picker-item {
+  padding: 8px 4px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid #e8f5e9;
+  border-radius: 4px;
+  background: white;
+  color: #2d8659;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.plantation-month-picker-item:hover:not(.disabled):not(.selected) {
+  background-color: #f0f8f4;
+  border-color: #2d8659;
+  transform: translateY(-1px);
+}
+
+.plantation-month-picker-item.selected {
+  background: linear-gradient(135deg, #2d8659 0%, #34a853 100%);
+  color: white;
+  border-color: #2d8659;
+  box-shadow: 0 2px 4px rgba(45, 134, 89, 0.3);
+}
+
+.plantation-month-picker-item.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background-color: #f5f5f5;
+  color: #999;
+}
+
+.plantation-month-picker-quick-actions {
+  display: flex;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px solid #e8f5e9;
+  flex-wrap: wrap;
+}
+
+.plantation-month-picker-quick-actions button {
+  flex: 1;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid #c8e6c9;
+  border-radius: 4px;
+  background: #f0f8f4;
+  color: #2d8659;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.plantation-month-picker-quick-actions button:hover {
+  background: #e8f5e9;
+  border-color: #2d8659;
+  transform: translateY(-1px);
+}
+
+.plantation-month-picker-quick-actions button:active {
+  transform: translateY(0);
+}
+
+/* Responsive adjustments for month pickers */
+@media (max-width: 768px) {
+  .plantation-month-range-display {
+    flex-wrap: wrap;
+  }
+  
+  .plantation-month-range-info {
+    width: 100%;
+    margin-left: 0;
+    margin-top: 4px;
+  }
+  
+  .plantation-month-picker-dropdown {
+    left: 0;
+    right: 0;
+    min-width: auto;
+  }
+  
+  .plantation-month-picker-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .plantation-month-picker-quick-actions {
+    flex-direction: column;
+  }
+  
+  .plantation-month-picker-quick-actions button {
+    width: 100%;
+  }
+}
+
+/* Plan Details Modal Styles */
+.plantation-plan-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+  padding: 20px;
+}
+
+.plantation-plan-modal-content {
+  background: white;
+  border-radius: 12px;
+  max-width: 800px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  animation: plantationModalSlideIn 0.3s ease;
+}
+
+.plantation-plan-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 18px;
+  border-bottom: 1px solid #e8f5e9;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  border-radius: 12px 12px 0 0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.plantation-plan-modal-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.plantation-plan-modal-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e6b47;
+  margin: 0;
+}
+
+.plantation-plan-modal-subtitle {
+  font-size: 12px;
+  color: #666;
+  margin: 0;
+}
+
+.plantation-plan-modal-close {
+  background: none;
+  border: none;
+  font-size: 28px;
+  color: #666;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.plantation-plan-modal-close:hover {
+  background: #f0f0f0;
+  color: #2d8659;
+  transform: rotate(90deg);
+}
+
+.plantation-plan-modal-body {
+  padding: 15px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.plantation-plan-modal-loading,
+.plantation-plan-modal-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px 20px;
+  gap: 12px;
+}
+
+.plantation-plan-modal-error {
+  color: #dc3545;
+}
+
+/* Contacts Card */
+.plantation-plan-contacts-card {
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e8f5e9;
+  overflow: hidden;
+}
+
+.plantation-plan-contacts-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+  border-bottom: 1px solid #c8e6c9;
+}
+
+.plantation-plan-contacts-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e6b47;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.plantation-plan-contacts-body {
+  padding: 12px;
+}
+
+.plantation-plan-contacts-loading,
+.plantation-plan-contacts-error {
+  text-align: center;
+  padding: 12px;
+  color: #666;
+  font-size: 13px;
+}
+
+.plantation-plan-contacts-error {
+  color: #dc3545;
+}
+
+.plantation-plan-contact-primary {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.plantation-plan-contact-role {
+  font-size: 10px;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.plantation-plan-contact-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1e6b47;
+}
+
+.plantation-plan-contact-phone {
+  font-size: 14px;
+  color: #2d8659;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.plantation-plan-contact-phone:hover {
+  color: #34a853;
+  text-decoration: underline;
+}
+
+.plantation-plan-contacts-empty {
+  text-align: center;
+  color: #999;
+  font-style: italic;
+  padding: 12px;
+  font-size: 13px;
+}
+
+/* Summary Row */
+.plantation-plan-summary-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e8f5e9;
+}
+
+.plantation-plan-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #e8f5e9;
+  color: #1e6b47;
+  border: 1px solid #c8e6c9;
+  white-space: nowrap;
+}
+
+.plantation-plan-badge-success {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #34a853;
+  color: white;
+  white-space: nowrap;
+}
+
+.plantation-plan-badge-warn {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #ffc107;
+  color: #333;
+  white-space: nowrap;
+}
+
+.plantation-plan-pilot-btn {
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 2px solid #2d8659;
+  background-color: white;
+  color: #2d8659;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.plantation-plan-pilot-btn:hover {
+  background: linear-gradient(135deg, #2d8659 0%, #34a853 100%);
+  color: white;
+  transform: translateY(-2px);
+}
+
+/* Divisions List */
+.plantation-plan-divisions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.plantation-plan-division-card {
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e8f5e9;
+  padding: 10px 12px;
+}
+
+.plantation-plan-division-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #e8f5e9;
+}
+
+.plantation-plan-division-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e6b47;
+}
+
+.plantation-plan-division-count {
+  font-size: 11px;
+  color: #666;
+  background: #e8f5e9;
+  padding: 3px 8px;
+  border-radius: 10px;
+}
+
+.plantation-plan-fields-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 8px;
+}
+
+.plantation-plan-field-tile {
+  background: white;
+  border: 1px solid #e8f5e9;
+  border-radius: 5px;
+  padding: 8px;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.plantation-plan-field-tile-active {
+  border-color: #2d8659;
+  background: linear-gradient(135deg, #f0f7f3 0%, #ffffff 100%);
+}
+
+.plantation-plan-field-tile-inactive {
+  border-color: #ccc;
+  background: #f5f5f5;
+  opacity: 0.6;
+}
+
+.plantation-plan-field-tile-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1e6b47;
+  margin-bottom: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plantation-plan-field-tile-area {
+  font-size: 11px;
+  color: #666;
+}
+
+.plantation-plan-no-fields,
+.plantation-plan-no-divisions {
+  text-align: center;
+  padding: 15px;
+  color: #999;
+  font-style: italic;
+  font-size: 13px;
+  background: #f8f9fa;
+  border-radius: 5px;
+  border: 1px dashed #e8f5e9;
+}
+
+/* Pilot Details */
+.plantation-plan-pilot-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.plantation-plan-pilot-section {
+  background: #f8f9fa;
+  border-radius: 6px;
+  padding: 10px 12px;
+  border: 1px solid #e8f5e9;
+}
+
+.plantation-plan-contacts-section-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1e6b47;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.plantation-plan-contacts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.plantation-plan-contact-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  background: white;
+  border-radius: 5px;
+  border: 1px solid #e8f5e9;
+}
+
+.plantation-plan-contact-row-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.plantation-plan-contact-row-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e6b47;
+}
+
+.plantation-plan-contact-row-role {
+  font-size: 11px;
+  color: #666;
+}
+
+.plantation-plan-contact-row-phone {
+  font-size: 12px;
+  color: #2d8659;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.plantation-plan-contact-row-phone:hover {
+  color: #34a853;
+  text-decoration: underline;
+}
+
+.plantation-plan-modal-footer {
+  padding: 10px 18px;
+  border-top: 1px solid #e8f5e9;
+  display: flex;
+  justify-content: flex-end;
+  background: #f8f9fa;
+  border-radius: 0 0 12px 12px;
+}
+
+.plantation-plan-modal-close-btn {
+  padding: 8px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 2px solid #2d8659;
+  background-color: white;
+  color: #2d8659;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.plantation-plan-modal-close-btn:hover {
+  background: linear-gradient(135deg, #2d8659 0%, #34a853 100%);
+  color: white;
+  transform: translateY(-2px);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .plantation-dashboard-container {
+    padding: 10px;
+  }
+
+  .plantation-dashboard-title {
+    font-size: 24px;
+  }
+
+  .plantation-cards-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .plantation-actions-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .plantation-action-btn {
+    width: 100%;
+  }
+
+  .plantation-tabs {
+    flex-direction: column;
+  }
+
+  .plantation-tab {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .plantation-charts-section {
+    grid-template-columns: 1fr;
+  }
+
+  .plantation-charts-controls-row {
+    flex-wrap: wrap;
+  }
+
+  .plantation-charts-control-group {
+    flex-wrap: wrap;
+  }
+
+  .plantation-calendar-grid {
+    gap: 4px;
+  }
+
+  .plantation-calendar-day {
+    min-height: 80px;
+    padding: 5px;
+  }
+
+  .plantation-calendar-plan-item {
+    font-size: 10px;
+    padding: 2px 4px;
+  }
+
+  .plantation-plan-modal-content {
+    max-width: 95%;
+    padding: 15px;
+  }
+
+  .plantation-plan-fields-grid {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  }
+}
+
+/* Page Header Styles */
+.plantation-page-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 15px;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #2d8659 0%, #34a853 100%);
+  border-radius: 8px;
+  color: white;
+  box-shadow: 0 4px 6px rgba(45, 134, 89, 0.2);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.plantation-back-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background-color: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.plantation-back-btn:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: translateX(-2px);
+}
+
+.plantation-page-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.plantation-page-content {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.plantation-welcome-section {
+  text-align: center;
+  padding: 60px 20px;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.plantation-welcome-section h2 {
+  color: #2d8659;
+  margin-bottom: 15px;
+}
+
+.plantation-welcome-section p {
+  color: #64748b;
+  font-size: 16px;
+}
+
+/* Expandable Metric Sections */
+.plantation-metric-expandable {
+  margin-bottom: 12px;
+}
+
+.plantation-metric-header {
+  transition: all 0.2s ease;
+}
+
+.plantation-metric-header:hover {
+  transform: translateX(2px);
+}
+
+.plantation-metric-content {
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 1000px;
+  }
+}
+
+/* ============================================
+   Chart Breakdown Page - Professional UI Styles
+   All classNames end with "class-breakdown"
+   ============================================ */
+
+/* Container */
+.container-class-breakdown {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
+  padding: 16px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  position: relative;
+}
+
+/* Header */
+.header-class-breakdown {
+  background: linear-gradient(135deg, #1e6b47 0%, #2d8659 50%, #34a853 100%);
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-bottom: 12px;
+  box-shadow: 0 8px 24px rgba(30, 107, 71, 0.25), 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  overflow: hidden;
+  width: 100%;
+  box-sizing: border-box;
+  flex-wrap: wrap;
+}
+
+.header-class-breakdown--dataviewer {
+  background: linear-gradient(135deg, #004B71 0%, #0066a1 100%);
+}
+
+.header-scope-class-breakdown {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+
+.header-scope-item-class-breakdown {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 8px;
+  backdrop-filter: blur(10px);
+}
+
+.header-scope-label-class-breakdown {
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.header-scope-value-class-breakdown {
+  color: white;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.header-class-breakdown::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 100%);
+  pointer-events: none;
+}
+
+.back-btn-class-breakdown {
+  background: rgba(255, 255, 255, 0.15);
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  color: white;
+  padding: 12px 20px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(10px);
+  position: relative;
+  z-index: 1;
+}
+
+.back-btn-class-breakdown:hover {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: translateX(-4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.back-btn-class-breakdown:active {
+  transform: translateX(-2px);
+}
+
+.title-class-breakdown {
+  margin: 0;
+  color: white;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: relative;
+  z-index: 1;
+}
+
+/* Content Wrapper */
+.content-class-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+/* Re-skin DataViewer filter controls when reused in chart breakdown cards */
+.container-class-breakdown .global-charts-filters-dataviewer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.container-class-breakdown .global-filter-select-dataviewer {
+  background: #ffffff;
+  color: #0f172a;
+  border: 1px solid #cbd5e1;
+  min-width: 170px;
+  max-width: 240px;
+  padding: 8px 10px;
+}
+
+.container-class-breakdown .global-filter-select-dataviewer:hover,
+.container-class-breakdown .global-filter-select-dataviewer:focus {
+  background: #ffffff;
+  color: #0f172a;
+  border-color: #2d8659;
+}
+
+.container-class-breakdown .global-filter-select-dataviewer option {
+  background: #ffffff;
+  color: #0f172a;
+}
+
+/* Chart breakdown: single date range picker - hide month navigation arrows */
+.chart-breakdown-datepicker-popper .react-datepicker__navigation {
+  display: none;
+}
+
+.chart-breakdown-date-range-picker .chart-breakdown-range-input {
+  min-width: 220px;
+}
+
+/* Card Styles */
+.card-class-breakdown {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06), 0 1px 4px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid #e2e8f0;
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.card-class-breakdown::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #2d8659, #34a853);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.card-class-breakdown:hover {
+  box-shadow: 0 8px 32px rgba(45, 134, 89, 0.12), 0 4px 16px rgba(0, 0, 0, 0.08);
+  transform: translateY(-4px);
+  border-color: #cbd5e1;
+}
+
+.card-class-breakdown:hover::before {
+  opacity: 1;
+}
+
+.card-header-class-breakdown {
+  background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+  padding: 18px 24px;
+  border-bottom: 2px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+}
+
+.card-header-class-breakdown::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #2d8659, transparent);
+  opacity: 0.3;
+}
+
+.card-title-class-breakdown {
+  margin: 0;
+  color: #0f172a;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.card-title-class-breakdown::before {
+  content: '';
+  width: 4px;
+  height: 24px;
+  background: linear-gradient(135deg, #2d8659, #34a853);
+  border-radius: 2px;
+}
+
+.card-body-class-breakdown {
+  padding: 20px 24px;
+}
+
+/* Scope Info */
+.scope-info-class-breakdown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+}
+
+.scope-item-class-breakdown {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #f1f5f9 0%, #ffffff 100%);
+  border-radius: 12px;
+  border-left: 4px solid #2d8659;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.scope-item-class-breakdown::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(135deg, #2d8659, #34a853);
+}
+
+.scope-item-class-breakdown:hover {
+  transform: translateX(4px);
+  box-shadow: 0 4px 12px rgba(45, 134, 89, 0.12);
+}
+
+.scope-label-class-breakdown {
+  font-weight: 600;
+  color: #64748b;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.scope-value-class-breakdown {
+  color: #0f172a;
+  font-weight: 700;
+  font-size: 15px;
+}
+
+/* Metrics Grid */
+.metrics-grid-class-breakdown {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.metric-card-class-breakdown {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 2px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 24px;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.metric-card-class-breakdown::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  background: linear-gradient(90deg, #2d8659, #34a853);
+  transform: scaleX(0);
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 16px 16px 0 0;
+}
+
+.metric-card-class-breakdown::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(45, 134, 89, 0.02), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.metric-card-class-breakdown:hover {
+  border-color: #2d8659;
+  transform: translateY(-6px);
+  box-shadow: 0 12px 32px rgba(45, 134, 89, 0.18), 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.metric-card-class-breakdown:hover::before {
+  transform: scaleX(1);
+}
+
+.metric-card-class-breakdown:hover::after {
+  opacity: 1;
+}
+
+.metric-card-class-breakdown.active-class-breakdown {
+  border-color: #2d8659;
+  background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
+  box-shadow: 0 8px 24px rgba(45, 134, 89, 0.25), 0 4px 16px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.metric-card-class-breakdown.active-class-breakdown::before {
+  transform: scaleX(1);
+}
+
+.metric-card-class-breakdown.active-class-breakdown::after {
+  opacity: 1;
+}
+
+.metric-label-class-breakdown {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.metric-label-class-breakdown::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #cbd5e1;
+}
+
+.metric-value-class-breakdown {
+  font-size: 32px;
+  font-weight: 800;
+  margin-bottom: 8px;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.5px;
+}
+
+.metric-primary-class-breakdown {
+  color: #2563eb;
+  background: linear-gradient(135deg, #2563eb, #3b82f6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.metric-success-class-breakdown {
+  color: #059669;
+  background: linear-gradient(135deg, #059669, #10b981);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.metric-danger-class-breakdown {
+  color: #dc2626;
+  background: linear-gradient(135deg, #dc2626, #ef4444);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.metric-info-class-breakdown {
+  color: #0891b2;
+  background: linear-gradient(135deg, #0891b2, #06b6d4);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.metric-secondary-class-breakdown {
+  color: #7c3aed;
+  background: linear-gradient(135deg, #7c3aed, #8b5cf6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.metric-hint-class-breakdown {
+  font-size: 12px;
+  color: #94a3b8;
+  font-style: italic;
+  margin-top: 4px;
+  font-weight: 500;
+}
+
+/* Breakdown Controls */
+.breakdown-controls-class-breakdown {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding: 14px 18px;
+  background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+  border-radius: 10px;
+  border: 2px solid #e2e8f0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.breakdown-label-class-breakdown {
+  font-weight: 700;
+  color: #475569;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.breakdown-select-class-breakdown {
+  padding: 10px 18px;
+  border: 2px solid #cbd5e1;
+  border-radius: 10px;
+  background: white;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+.breakdown-select-class-breakdown:hover {
+  border-color: #2d8659;
+  box-shadow: 0 4px 8px rgba(45, 134, 89, 0.12);
+  transform: translateY(-1px);
+}
+
+.breakdown-select-class-breakdown:focus {
+  outline: none;
+  border-color: #2d8659;
+  box-shadow: 0 0 0 4px rgba(45, 134, 89, 0.15);
+}
+
+.breakdown-level-class-breakdown {
+  color: #2d8659;
+  font-weight: 700;
+  font-size: 15px;
+  padding: 10px 18px;
+  background: #f0fdf4;
+  border-radius: 10px;
+  border: 2px solid #c8e6c9;
+}
+
+/* Header Controls */
+.header-controls-class-breakdown {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.select-label-class-breakdown {
+  font-weight: 700;
+  color: #475569;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.header-select-class-breakdown {
+  padding: 8px 16px;
+  border: 2px solid #cbd5e1;
+  border-radius: 10px;
+  background: white;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+.header-select-class-breakdown:hover {
+  border-color: #2d8659;
+  box-shadow: 0 4px 8px rgba(45, 134, 89, 0.12);
+  transform: translateY(-1px);
+}
+
+.header-select-class-breakdown:focus {
+  outline: none;
+  border-color: #2d8659;
+  box-shadow: 0 0 0 4px rgba(45, 134, 89, 0.15);
+}
+
+.close-btn-class-breakdown {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  border: 2px solid #fca5a5;
+  color: #dc2626;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.2);
+}
+
+.close-btn-class-breakdown:hover {
+  background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
+  border-color: #ef4444;
+  transform: rotate(90deg) scale(1.1);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+}
+
+.close-btn-class-breakdown:active {
+  transform: rotate(90deg) scale(0.95);
+}
+
+/* Table Styles */
+.table-wrapper-class-breakdown {
+  overflow-x: auto;
+  border-radius: 10px;
+  border: 2px solid #e2e8f0;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+  /* Hide scrollbar completely for Firefox */
+  scrollbar-width: none;
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+/* Hide scrollbar completely for WebKit browsers */
+.table-wrapper-class-breakdown::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+  background: transparent;
+}
+
+.table-wrapper-class-breakdown::-webkit-scrollbar-track {
+  display: none;
+  background: transparent;
+}
+
+.table-wrapper-class-breakdown::-webkit-scrollbar-thumb {
+  display: none;
+  background: transparent;
+}
+
+.table-class-breakdown {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 14px;
+}
+
+.table-class-breakdown thead {
+  background: linear-gradient(135deg, #1e6b47 0%, #2d8659 50%, #34a853 100%);
+  color: white !important;
+  position: relative;
+}
+
+.table-class-breakdown thead::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.table-class-breakdown th {
+  padding: 16px 20px;
+  text-align: left;
+  font-weight: 700;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  white-space: nowrap;
+  color: white !important;
+}
+
+.table-class-breakdown th:first-child {
+  border-radius: 12px 0 0 0;
+}
+
+.table-class-breakdown th:last-child {
+  border-radius: 0 12px 0 0;
+}
+
+.table-class-breakdown tbody tr {
+  border-bottom: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.table-class-breakdown tbody tr:last-child {
+  border-bottom: none;
+}
+
+.table-class-breakdown tbody tr:hover {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  transform: scale(1.01);
+  box-shadow: 0 2px 8px rgba(45, 134, 89, 0.08);
+}
+
+.table-class-breakdown tbody tr:nth-child(even) {
+  background: #fafbfc;
+}
+
+.table-class-breakdown tbody tr:nth-child(even):hover {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.table-cell-name-class-breakdown {
+  padding: 16px 20px;
+  font-weight: 700;
+  color: #0f172a;
+  font-size: 14px;
+}
+
+.table-cell-value-class-breakdown {
+  padding: 16px 20px;
+  color: #475569;
+  font-weight: 700;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-size: 14px;
+}
+
+.table-cell-danger-class-breakdown {
+  color: #dc2626;
+  font-weight: 800;
+}
+
+.table-cell-reason-class-breakdown {
+  padding: 16px 20px;
+  color: #64748b;
+  font-size: 13px;
+  max-width: 300px;
+  line-height: 1.5;
+}
+
+/* Loading & Empty States */
+.loading-class-breakdown {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: #64748b;
+}
+
+.loading-breakdown p {
+  margin-top: 16px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.empty-class-breakdown {
+  text-align: center;
+  padding: 60px 20px;
+  color: #94a3b8;
+  font-size: 14px;
+  font-style: italic;
+}
+
+/* ============================================
+   Card-Based Breakdown Visualization
+   ============================================ */
+
+.breakdown-cards-grid-class-breakdown {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 24px;
+  padding: 8px 0;
+}
+
+.breakdown-card-class-breakdown {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 2px solid #e2e8f0;
+  border-radius: 16px;
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06), 0 1px 4px rgba(0, 0, 0, 0.04);
+  position: relative;
+}
+
+.breakdown-card-class-breakdown::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #2d8659, #34a853);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.breakdown-card-class-breakdown:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 32px rgba(45, 134, 89, 0.15), 0 4px 16px rgba(0, 0, 0, 0.1);
+  border-color: #2d8659;
+}
+
+.breakdown-card-class-breakdown:hover::before {
+  transform: scaleX(1);
+}
+
+.breakdown-card-header-class-breakdown {
+  background: linear-gradient(135deg, #f1f5f9 0%, #ffffff 100%);
+  padding: 20px 24px;
+  border-bottom: 2px solid #e2e8f0;
+  position: relative;
+}
+
+.breakdown-card-header-class-breakdown::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 24px;
+  right: 24px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #2d8659, transparent);
+  opacity: 0.3;
+}
+
+.breakdown-card-title-class-breakdown {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: 0.2px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.breakdown-card-title-class-breakdown::before {
+  content: '';
+  width: 6px;
+  height: 24px;
+  background: linear-gradient(135deg, #2d8659, #34a853);
+  border-radius: 3px;
+  box-shadow: 0 2px 4px rgba(45, 134, 89, 0.3);
+}
+
+.breakdown-card-body-class-breakdown {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.breakdown-metric-item-class-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.breakdown-completion-metric-class-breakdown {
+  margin-top: 8px;
+  padding-top: 20px;
+  border-top: 2px dashed #e2e8f0;
+}
+
+.breakdown-metric-header-class-breakdown {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.breakdown-metric-label-class-breakdown {
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  flex: 1;
+}
+
+.breakdown-metric-value-class-breakdown {
+  font-size: 16px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.3px;
+  white-space: nowrap;
+}
+
+.breakdown-metric-primary-class-breakdown {
+  color: #2563eb;
+}
+
+.breakdown-metric-success-class-breakdown {
+  color: #059669;
+}
+
+.breakdown-metric-danger-class-breakdown {
+  color: #dc2626;
+}
+
+.breakdown-metric-info-class-breakdown {
+  color: #0891b2;
+}
+
+.breakdown-metric-secondary-class-breakdown {
+  color: #7c3aed;
+}
+
+.breakdown-progress-bar-class-breakdown {
+  width: 100%;
+  height: 10px;
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+.breakdown-progress-bar-class-breakdown::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  pointer-events: none;
+}
+
+.breakdown-progress-fill-class-breakdown {
+  height: 100%;
+  border-radius: 8px;
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.breakdown-progress-fill-class-breakdown::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.2), transparent, rgba(255, 255, 255, 0.2));
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.breakdown-progress-primary-class-breakdown {
+  background: linear-gradient(90deg, #2563eb 0%, #3b82f6 50%, #60a5fa 100%);
+}
+
+.breakdown-progress-success-class-breakdown {
+  background: linear-gradient(90deg, #059669 0%, #10b981 50%, #34d399 100%);
+}
+
+.breakdown-progress-danger-class-breakdown {
+  background: linear-gradient(90deg, #dc2626 0%, #ef4444 50%, #f87171 100%);
+}
+
+.breakdown-progress-info-class-breakdown {
+  background: linear-gradient(90deg, #0891b2 0%, #06b6d4 50%, #22d3ee 100%);
+}
+
+.breakdown-progress-secondary-class-breakdown {
+  background: linear-gradient(90deg, #7c3aed 0%, #8b5cf6 50%, #a78bfa 100%);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .container-class-breakdown {
+    padding: 12px;
+  }
+
+  .header-class-breakdown {
+    padding: 16px 20px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+  }
+
+  .header-scope-class-breakdown {
+    width: 100%;
+    margin-left: 0;
+    gap: 10px;
+  }
+
+  .header-scope-item-class-breakdown {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
+  .header-scope-label-class-breakdown {
+    font-size: 11px;
+  }
+
+  .header-scope-value-class-breakdown {
+    font-size: 12px;
+  }
+
+  .title-class-breakdown {
+    font-size: 20px;
+  }
+
+  .card-body-class-breakdown {
+    padding: 20px;
+  }
+
+  .card-header-class-breakdown {
+    padding: 18px 20px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .metrics-grid-class-breakdown {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .metric-value-class-breakdown {
+    font-size: 28px;
+  }
+
+  .scope-info-class-breakdown {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .scope-item-class-breakdown {
+    width: 100%;
+  }
+
+  .breakdown-controls-class-breakdown {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .header-controls-class-breakdown {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .table-class-breakdown {
+    font-size: 12px;
+  }
+
+  .table-class-breakdown th,
+  .table-class-breakdown td {
+    padding: 12px 14px;
+  }
+
+  .table-wrapper-class-breakdown {
+    border-radius: 8px;
+  }
+
+  .breakdown-cards-grid-class-breakdown {
+    grid-template-columns: 1fr;
+    gap: 20px;
+    padding: 4px 0;
+  }
+
+  .breakdown-card-header-class-breakdown {
+    padding: 16px 20px;
+  }
+
+  .breakdown-card-title-class-breakdown {
+    font-size: 18px;
+  }
+
+  .breakdown-card-body-class-breakdown {
+    padding: 20px;
+    gap: 16px;
+  }
+
+  .breakdown-metric-label-class-breakdown {
+    font-size: 12px;
+  }
+
+  .breakdown-metric-value-class-breakdown {
+    font-size: 14px;
+  }
+
+  .breakdown-metric-header-class-breakdown {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+}
+
+/* ============================================
+   Filter Indicator & Clickable Cards
+   ============================================ */
+
+.filter-indicator-class-breakdown {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.filter-badge-class-breakdown {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border: 2px solid #2d8659;
+  border-radius: 10px;
+  font-weight: 600;
+  color: #1e6b47;
+  box-shadow: 0 2px 8px rgba(45, 134, 89, 0.15);
+}
+
+.filter-type-class-breakdown {
+  font-weight: 700;
+  opacity: 0.8;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+}
+
+.filter-back-btn-class-breakdown {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 2px solid #2d8659;
+  border-radius: 10px;
+  color: #1e6b47;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(45, 134, 89, 0.1);
+}
+
+.filter-back-btn-class-breakdown:hover {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border-color: #1e6b47;
+  transform: translateX(-2px);
+  box-shadow: 0 4px 8px rgba(45, 134, 89, 0.2);
+}
+
+.filter-back-btn-class-breakdown:active {
+  transform: translateX(0);
+}
+
+.filter-back-btn-class-breakdown svg {
+  font-size: 12px;
+}
+
+.filter-close-btn-class-breakdown {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 2px solid #dc2626;
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  border-radius: 50%;
+  color: #dc2626;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+  font-size: 14px;
+}
+
+.filter-close-btn-class-breakdown:hover {
+  background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
+  border-color: #b91c1c;
+  transform: scale(1.1);
+}
+
+.filter-close-btn-class-breakdown:active {
+  transform: scale(0.95);
+}
+
+.breakdown-card-clickable-class-breakdown {
+  position: relative;
+}
+
+.breakdown-card-clickable-class-breakdown::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 16px;
+  border: 2px solid transparent;
+  transition: all 0.3s ease;
+  pointer-events: none;
+}
+
+.breakdown-card-clickable-class-breakdown:hover::after {
+  border-color: #2d8659;
+  box-shadow: 0 0 0 4px rgba(45, 134, 89, 0.1);
+}
+
+.breakdown-card-drilldown-icon-class-breakdown {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 18px;
+  color: #2d8659;
+  font-weight: 700;
+  opacity: 0.7;
+  transition: all 0.3s ease;
+}
+
+.breakdown-card-clickable-class-breakdown:hover .breakdown-card-drilldown-icon-class-breakdown {
+  opacity: 1;
+  transform: translateX(4px);
+}
+
+/* ============================================
+   Skeleton Loading Effects
+   ============================================ */
+
+.breakdown-card-skeleton-class-breakdown {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.breakdown-card-skeleton-class-breakdown::before {
+  display: none;
+}
+
+.skeleton-text-class-breakdown {
+  display: inline-block;
+  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  background-size: 200% 100%;
+  border-radius: 4px;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+}
+
+.skeleton-title-class-breakdown {
+  width: 120px;
+  height: 24px;
+}
+
+.skeleton-label-class-breakdown {
+  width: 140px;
+  height: 14px;
+}
+
+.skeleton-value-class-breakdown {
+  width: 60px;
+  height: 16px;
+}
+
+.skeleton-progress-fill-class-breakdown {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  background-size: 200% 100%;
+  border-radius: 8px;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite, skeleton-progress 2s ease-in-out infinite;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes skeleton-progress {
+  0%, 100% {
+    width: 30%;
+  }
+  50% {
+    width: 70%;
+  }
+}
+
+/* ============================================
+   Chart Breakdown — Accordion UI
+   Estate → Plan → Field → Details + View Map
+   ============================================ */
+
+/* Plan count badge in card header */
+.cbd-plan-count-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 14px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: 0.3px;
+}
+
+/* Accordion container */
+.cbd-accordion {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---- Loading skeleton ---- */
+.cbd-accordion-loading {
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cbd-skeleton-row {
+  height: 52px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.cbd-skeleton-bar {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+}
+
+/* ---- Plan Item (Level 1) ---- */
+.cbd-plan-item {
+  border-bottom: 1px solid #e8f5e9;
+}
+
+.cbd-plan-item:last-child {
+  border-bottom: none;
+}
+
+.cbd-plan-item--expanded {
+  background: #fafffe;
+}
+
+.cbd-plan-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  user-select: none;
+}
+
+.cbd-plan-header:hover {
+  background-color: #f0fdf4;
+}
+
+.cbd-plan-chevron {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  min-width: 24px;
+  height: 24px;
+  color: #2d8659;
+  font-size: 13px;
+  transition: transform 0.2s ease;
+}
+
+.cbd-plan-item--expanded > .cbd-plan-header .cbd-plan-chevron {
+  transform: none;
+}
+
+.cbd-plan-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.cbd-plan-estate {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e3a2f;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cbd-plan-icon {
+  color: #2d8659;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.cbd-plan-meta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.cbd-plan-date,
+.cbd-plan-id {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.cbd-plan-meta-icon {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+/* Summary pills on the right */
+.cbd-plan-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.cbd-plan-summary-item {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.cbd-planned {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.cbd-sprayed {
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+.cbd-rate {
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-weight: 700;
+}
+
+.cbd-rate--good {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.cbd-rate--mid {
+  background: #fef9c3;
+  color: #a16207;
+}
+
+.cbd-rate--low {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+/* ---- Fields container (Level 2) ---- */
+.cbd-fields-container {
+  border-top: 1px solid #e8f5e9;
+  margin-left: 36px;
+  margin-right: 12px;
+  margin-bottom: 8px;
+  background: #ffffff;
+  border-radius: 0 0 10px 10px;
+  border: 1px solid #e0efe6;
+  border-top: none;
+  overflow: hidden;
+}
+
+.cbd-no-fields {
+  padding: 16px 20px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 13px;
+  font-style: italic;
+}
+
+/* ---- Field Item (Level 2 row) ---- */
+.cbd-field-item {
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.cbd-field-item:last-child {
+  border-bottom: none;
+}
+
+.cbd-field-item--expanded {
+  background: #f8fffe;
+}
+
+.cbd-field-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 16px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  user-select: none;
+}
+
+.cbd-field-header:hover {
+  background-color: #f0fdf4;
+}
+
+.cbd-field-chevron {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  min-width: 20px;
+  height: 20px;
+  color: #64748b;
+  font-size: 11px;
+}
+
+.cbd-field-name {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cbd-field-area {
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1d4ed8;
+  background: #eff6ff;
+  padding: 3px 10px;
+  border-radius: 5px;
+}
+
+/* ---- Field Details (Level 3) ---- */
+.cbd-field-details {
+  padding: 12px 16px 16px 46px;
+  border-top: 1px dashed #e0efe6;
+  background: #f8fcfa;
+}
+
+.cbd-field-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.cbd-field-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 12px;
+  background: #fff;
+  border-radius: 8px;
+  border: 1px solid #e8f5e9;
+}
+
+.cbd-field-metric-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.cbd-field-metric-value {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.cbd-metric-primary {
+  color: #1d4ed8;
+}
+
+.cbd-metric-info {
+  color: #0891b2;
+}
+
+.cbd-metric-success {
+  color: #15803d;
+}
+
+.cbd-metric-good {
+  color: #15803d;
+}
+
+.cbd-metric-mid {
+  color: #a16207;
+}
+
+.cbd-metric-low {
+  color: #dc2626;
+}
+
+/* Progress bar */
+.cbd-field-progress {
+  height: 6px;
+  background: #e2e8f0;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+
+.cbd-field-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #2d8659, #34a853);
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+/* Cancelled field styles */
+.cbd-field-item--cancelled {
+  background: #fef2f2;
+}
+
+.cbd-field-item--partial {
+  background: #fffbf5;
+}
+
+.cbd-field-header--cancelled {
+  border-left: 3px solid #ef4444;
+}
+
+.cbd-field-header--cancelled:hover {
+  background-color: #fee2e2 !important;
+}
+
+.cbd-field-header--partial {
+  border-left: 3px solid #f97316;
+}
+
+.cbd-field-header--partial:hover {
+  background-color: #fff7ed !important;
+}
+
+.cbd-field-name--cancelled {
+  color: #dc2626;
+}
+
+.cbd-cancelled-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 10px;
+  letter-spacing: 0.3px;
+  vertical-align: middle;
+}
+
+.cbd-cancelled-badge--partial {
+  background: #f97316;
+  color: #fff;
+}
+
+.cbd-field-name--partial {
+  color: #ea580c;
+}
+
+.cbd-field-cancel-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  border-radius: 6px;
+  color: #dc2626;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 10px;
+}
+
+.cbd-field-cancel-info--partial {
+  background: #fff7ed;
+  border-color: #fdba74;
+  color: #c2410c;
+}
+
+.cbd-cancel-icon {
+  flex-shrink: 0;
+  font-size: 14px;
+}
+
+.cbd-field-progress--cancelled {
+  background: #fecaca;
+}
+
+.cbd-field-progress-fill--cancelled {
+  background: linear-gradient(90deg, #ef4444, #f87171) !important;
+}
+
+.cbd-field-progress--partial {
+  background: #ffedd5;
+}
+
+.cbd-field-progress-fill--partial {
+  background: linear-gradient(90deg, #f97316, #fb923c) !important;
+}
+
+/* View Map button */
+.cbd-view-map-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 18px;
+  background: linear-gradient(135deg, #2d8659 0%, #34a853 100%);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(45, 134, 89, 0.25);
+}
+
+.cbd-view-map-btn:hover {
+  background: linear-gradient(135deg, #246e49 0%, #2d8659 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(45, 134, 89, 0.35);
+  color: #fff;
+  text-decoration: none;
+}
+
+.cbd-view-map-btn:active {
+  transform: translateY(0);
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 768px) {
+  .cbd-plan-header {
+    padding: 12px 14px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .cbd-plan-info {
+    flex: 1 1 100%;
+    order: 2;
+  }
+
+  .cbd-plan-chevron {
+    order: 1;
+  }
+
+  .cbd-plan-summary {
+    order: 3;
+    flex: 1 1 100%;
+    justify-content: flex-start;
+    margin-left: 36px;
+  }
+
+  .cbd-plan-estate {
+    font-size: 14px;
+  }
+
+  .cbd-fields-container {
+    margin-left: 12px;
+    margin-right: 6px;
+  }
+
+  .cbd-field-details {
+    padding-left: 16px;
+  }
+
+  .cbd-field-metrics {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .cbd-plan-summary {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .cbd-field-metrics {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================
+   Map Image Popup
+   ============================================ */
+
+.cbd-map-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: cbd-fade-in 0.2s ease;
+}
+
+@keyframes cbd-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.cbd-map-popup {
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  width: 90vw;
+  max-width: 900px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: cbd-popup-in 0.25s ease;
+}
+
+@keyframes cbd-popup-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.cbd-map-popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  background: linear-gradient(135deg, #2d8659 0%, #34a853 100%);
+  color: #fff;
+  flex-shrink: 0;
+  gap: 12px;
+}
+
+.cbd-map-popup-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+  font-weight: 700;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cbd-map-popup-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.cbd-map-zoom-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.15s ease;
+  text-decoration: none;
+  padding: 0;
+}
+
+.cbd-map-zoom-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+  color: #fff;
+  text-decoration: none;
+}
+
+.cbd-map-zoom-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.cbd-map-zoom-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+  min-width: 38px;
+  text-align: center;
+}
+
+.cbd-map-close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(220, 38, 38, 0.3);
+  color: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.15s ease;
+  margin-left: 4px;
+  padding: 0;
+}
+
+.cbd-map-close-btn:hover {
+  background: rgba(220, 38, 38, 0.6);
+  border-color: rgba(220, 38, 38, 0.5);
+}
+
+.cbd-map-popup-body {
+  flex: 1;
+  overflow: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  background: #f1f5f9;
+  position: relative;
+}
+
+.cbd-map-image {
+  max-width: 100%;
+  max-height: 75vh;
+  object-fit: contain;
+  transition: transform 0.2s ease, opacity 0.3s ease;
+  transform-origin: center center;
+  cursor: grab;
+}
+
+.cbd-map-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 500;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.cbd-map-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #2d8659;
+  border-radius: 50%;
+  animation: cbd-spin 0.7s linear infinite;
+}
+
+@keyframes cbd-spin {
+  to { transform: rotate(360deg); }
+}
+
+.cbd-map-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 40px;
+  color: #dc2626;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.cbd-map-error-link {
+  font-size: 13px;
+  color: #2d8659;
+  text-decoration: underline;
+}
+
+/* Responsive popup */
+@media (max-width: 768px) {
+  .cbd-map-overlay {
+    padding: 12px;
+  }
+
+  .cbd-map-popup {
+    width: 96vw;
+    max-height: 94vh;
+  }
+
+  .cbd-map-popup-header {
+    padding: 12px 14px;
+    flex-wrap: wrap;
+  }
+
+  .cbd-map-popup-title {
+    font-size: 14px;
+  }
+
+  .cbd-map-zoom-btn,
+  .cbd-map-close-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
+}

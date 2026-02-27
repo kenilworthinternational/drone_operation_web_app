@@ -1,129 +1,346 @@
 .container-dataviewer {
-  max-height: max-content;
-  display: flex;
-  flex-direction: column;
-  height: max-content;
-  overflow: hidden; /* Prevent parent from scrolling to avoid double scrollbars */
-}
-.title-dataviewer {
-  font-size: 24px;
-  font-weight: bold;
-  color: #004B71;
-  margin-bottom: 20px;
-  text-align: center;
-}
-.grid-container-dataviewer {
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(2, 50%);
-  gap: 10px;
-  max-height: max-content; /* Keep the max height */
-  overflow: hidden; /* Enable vertical scrolling */
-  width: 99%;
+  width: 100%;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
+  padding: 3px;
   box-sizing: border-box;
-  scrollbar-width: thin;
-  scrollbar-color: #004B71 #f1f1f1;
-}
-.grid-container-dataviewer.one-col {
-  grid-template-columns: 1fr;
-}
-.grid-container-dataviewer::-webkit-scrollbar {
-  width: 8px; /* Scrollbar width */
 }
 
-.grid-container-dataviewer::-webkit-scrollbar-thumb {
-  background-color: #004B71; /* Dark blue thumb */
-  border-radius: 4px; /* Rounded corners */
+.dataviewer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  background: linear-gradient(135deg, #004B71 0%, #0066a1 100%);
+  padding: 10px 18px;
+  border-radius: 6px;
 }
 
-.grid-container-dataviewer::-webkit-scrollbar-track {
-  background-color: #f1f1f1; /* Light gray track for contrast */
-}
-.grid-item-dataviewer {
-  width: 100%;
-  padding: 10px 30px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-  background: white;
+.date-range-selector-plans {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  padding: 0;
-  justify-content: center;
-  min-height: 500px;
-}
-.grid-item-dataviewer h3 {
-  font-size: 18px;
-  color: #004B71;
-  margin-bottom: 10px;
-}
-.grid-item-dataviewer p {
-  font-size: 14px;
-  color: #555;
-  text-align: center;
-}
-.grid-container-dataviewer::-webkit-scrollbar {
-  width: 8px;
-}
-.grid-container-dataviewer::-webkit-scrollbar-thumb {
-  background-color: #888;
-  border-radius: 4px;
-}
-.grid-container-dataviewer::-webkit-scrollbar-track {
-  background-color: #f1f1f1;
-}
-.grid-container-dataviewer::-webkit-scrollbar-thumb:hover {
-  background: #00334d;
-}
-.date-range-selector-plans{
-  display: flex;
-  flex-direction: row;
+  align-items: stretch;
+  gap: 2px;
   width: 100%;
-  justify-content: space-evenly;
-  margin: 10px 10px;
 }
+
 .date-set-dataview {
-  width: max-content;
-  display: block;
-  
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 12px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e9ecef;
 }
+
 .rdrCalendarWrapper {
-  width: max-content;
+  width: 100%;
+  max-width: 900px;
   font-size: 14px;
   background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
 }
+
+.rdrMonthAndYearWrapper {
+  background: linear-gradient(135deg, #004B71 0%, #0066a1 100%);
+  color: white;
+  padding: 2px;
+}
+
+.rdrMonthAndYearPickers select {
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  padding: 6px 12px;
+}
+
+.rdrWeekDays {
+  background: #f8f9fa;
+  padding: 8px 0;
+  border-bottom: 2px solid #e9ecef;
+}
+
+.rdrWeekDay {
+  color: #004B71;
+  font-weight: 600;
+}
+
+.rdrDay {
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.rdrDay:hover {
+  background: #e3f2fd;
+}
+
+.rdrDayActive {
+  background: #004B71 !important;
+  color: white !important;
+}
+
+.rdrDayInRange {
+  background: #e3f2fd;
+  color: #004B71;
+}
+
+.rdrDayStartOfMonth,
+.rdrDayEndOfMonth {
+  background: #004B71;
+  color: white;
+}
+
+.rdrDayStartOfWeek,
+.rdrDayEndOfWeek {
+  background: #004B71;
+  color: white;
+}
+
 .rdrDefinedRangesWrapper {
   width: 150px !important;
   border-right: 1px solid #e0e0e0;
 }
+
 .rdrDateDisplayWrapper {
   background: #f5f5f5;
 }
-.rdrStaticRange{max-width: 100px;}
-.rdrInputRanges{
+
+.rdrStaticRange {
+  max-width: 100px;
+}
+
+.rdrInputRanges {
   display: none;
 }
 
-.rdrMonth{
-  min-width:max-content;
+.rdrMonth {
+  min-width: max-content;
 }
-.rdrDay{
+
+.rdrDay {
   margin: 0;
 }
+
 .toggle-picker-button {
-  margin-bottom: 10px;
-  padding: 8px 16px;
-  background-color: #004B71;
-  color: white;
-  border: none;
-  border-radius: 6px;
+  padding: 6px 16px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 5px;
   cursor: pointer;
-  height: 40px;
+  font-size: 13px;
+  font-weight: 600;
+  transition: background 0.2s, border-color 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  letter-spacing: 0.3px;
 }
 
 .toggle-picker-button:hover {
-  background-color: #004B71;
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.toggle-picker-button:active {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.grid-container-dataviewer {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  margin-bottom: 2px;
+  width: 100%;
+}
+
+.grid-item-dataviewer {
+  width: 100%;
+}
+
+.chart-card {
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
+}
+
+/* Global Plantation Overview Section */
+.global-charts-section-dataviewer {
+  margin-bottom: 4px;
+}
+
+.global-charts-header-dataviewer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  background: linear-gradient(135deg, #004B71 0%, #0066a1 100%);
+  padding: 10px 18px;
+  border-radius: 6px 6px 0 0;
+}
+
+.global-charts-title-dataviewer {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.3px;
+}
+
+.global-charts-controls-dataviewer {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.global-charts-filters-dataviewer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.global-filter-select-dataviewer {
+  padding: 5px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 5px;
+  font-size: 12px;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  outline: none;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+  min-width: 130px;
+  max-width: 180px;
+}
+
+.global-filter-select-dataviewer:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.global-filter-select-dataviewer:focus {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: #fff;
+}
+
+.global-filter-select-dataviewer option {
+  background: #004B71;
+  color: #fff;
+}
+
+.global-charts-month-picker-dataviewer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.global-charts-month-picker-dataviewer label {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.month-input-dataviewer {
+  padding: 5px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 5px;
+  font-size: 13px;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  outline: none;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.month-input-dataviewer:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.month-input-dataviewer:focus {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: #fff;
+}
+
+.month-input-dataviewer::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  cursor: pointer;
+}
+
+/* Global chart card inner styles */
+.chart-card-dataviewer-inner { padding: 12px; }
+.chart-title-dataviewer { font-size: 14px; font-weight: 700; color: #1a202c; margin: 0 0 8px; }
+
+.flight-numbers-container {
+  width: 100%;
+  margin-top: 0;
+}
+
+.flight-numbers-container .chart-card {
+  min-height: 600px;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .grid-container-dataviewer {
+    grid-template-columns: 1fr;
+  }
+  
+  .dataviewer-title {
+    font-size: 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .container-dataviewer {
+    padding: 8px;
+  }
+  
+  .dataviewer-header {
+    padding: 8px;
+    margin-bottom: 8px;
+  }
+  
+  .grid-container-dataviewer {
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  
+  .chart-card {
+    padding: 8px;
+  }
+  
+  .toggle-picker-button {
+    width: 100%;
+    min-width: auto;
+    font-size: 14px;
+    padding: 10px 20px;
+  }
+  
+  .date-set-dataview {
+    padding: 8px;
+  }
+  
+  .rdrCalendarWrapper {
+    font-size: 12px;
+  }
 }
 .calender-data-ceo {
   flex: 1; /* Takes remaining space */

@@ -1,43 +1,5 @@
 import { baseApi } from '../baseApi';
-import { fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-
-// Node.js Backend Base URL Configuration
-const getNodeBackendUrl = () => {
-  const hostname = window.location.hostname;
-  
-  if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    return 'https://dsms-web-api-dev.kenilworthinternational.com';
-  }
-  
-  if (hostname.includes('dev') || hostname.includes('kenilworthinternational.com')) {
-    return 'https://dsms-web-api-dev.kenilworthinternational.com';
-  }
-  
-  if (hostname.includes('test')) {
-    return 'https://dsms-api-test.kenilworth.international.com';
-  }
-  
-  return 'https://dsms-api.kenilworth.international.com';
-};
-
-// Helper function to get token
-const getToken = () => {
-  const storedUser = JSON.parse(localStorage.getItem('userData'));
-  return storedUser?.token || null;
-};
-
-// Custom base query for Node.js backend
-const nodeBackendBaseQuery = fetchBaseQuery({
-  baseUrl: getNodeBackendUrl(),
-  prepareHeaders: (headers) => {
-    const token = getToken();
-    if (token) {
-      headers.set('Authorization', `Bearer ${token}`);
-    }
-    headers.set('Content-Type', 'application/json');
-    return headers;
-  },
-});
+import { nodeBackendBaseQuery } from './nodeBackendConfig';
 
 export const pilotAssignmentApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({

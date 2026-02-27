@@ -25,8 +25,10 @@ import './requestsApi';
 import './groupAssignmentsApi';
 // Node.js backend APIs are in 'services NodeJs' folder
 import '../services NodeJs/stockAssetsApi';
+import '../services NodeJs/centralProcurementApi';
 import '../services NodeJs/djiImagesApi';
 import '../services NodeJs/dayEndProcessApi';
+import '../services NodeJs/notificationsApi';
 
 // Export the complete API
 export { baseApi };
@@ -49,8 +51,10 @@ export * from './requestsApi';
 export * from './groupAssignmentsApi';
 // Re-export Node.js backend APIs
 export * from '../services NodeJs/stockAssetsApi';
+export * from '../services NodeJs/centralProcurementApi';
 export * from '../services NodeJs/djiImagesApi';
 export * from '../services NodeJs/dayEndProcessApi';
+export * from '../services NodeJs/notificationsApi';
 
 /**
  * Total Endpoint Count: 165+

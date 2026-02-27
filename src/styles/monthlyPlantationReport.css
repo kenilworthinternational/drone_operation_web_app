@@ -1,0 +1,505 @@
+/* ===== Monthly Plantation Report — Professional UI ===== */
+.mpr-container {
+  padding: 0;
+}
+
+/* ─── Filter Cards Grid ─── */
+.mpr-filters-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.mpr-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  transition: box-shadow 0.2s;
+}
+
+.mpr-card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.07);
+}
+
+.mpr-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border-bottom: 1px solid #f1f5f9;
+  background: #fafbfc;
+}
+
+.mpr-card-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.mpr-icon-green {
+  background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+}
+
+.mpr-icon-blue {
+  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+}
+
+.mpr-card-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.mpr-card-count {
+  font-size: 12px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.mpr-select-all-btn {
+  margin-left: auto;
+  padding: 5px 14px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #3b82f6;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.mpr-select-all-btn:hover {
+  background: #dbeafe;
+  border-color: #93c5fd;
+}
+
+.mpr-card-body {
+  padding: 14px 18px;
+  max-height: 170px;
+  overflow-y: auto;
+}
+
+/* ─── Chips ─── */
+.mpr-chip-box {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.mpr-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1.5px solid #e2e8f0;
+  background: #fff;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.mpr-chip:hover {
+  border-color: #16a34a;
+  color: #16a34a;
+  background: #f0fdf4;
+}
+
+.mpr-chip-active {
+  background: #16a34a;
+  color: #fff;
+  border-color: #16a34a;
+  font-weight: 600;
+}
+
+.mpr-chip-active:hover {
+  background: #15803d;
+  border-color: #15803d;
+  color: #fff;
+}
+
+.mpr-chip-check {
+  font-size: 10px;
+  font-weight: 800;
+}
+
+/* Month chips - different color */
+.mpr-chip-month {
+  border-color: #e2e8f0;
+}
+
+.mpr-chip-month:hover {
+  border-color: #3b82f6;
+  color: #3b82f6;
+  background: #eff6ff;
+}
+
+.mpr-chip-month-active {
+  background: #3b82f6;
+  color: #fff;
+  border-color: #3b82f6;
+  font-weight: 600;
+}
+
+.mpr-chip-month-active:hover {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+}
+
+.mpr-loading-text {
+  font-size: 13px;
+  color: #94a3b8;
+  padding: 8px 0;
+}
+
+/* ─── Action Bar ─── */
+.mpr-action-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px 18px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.mpr-action-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mpr-action-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mpr-action-hint {
+  font-size: 12px;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+/* ─── Buttons ─── */
+.mpr-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 22px;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.2px;
+}
+
+.mpr-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.mpr-btn-icon {
+  font-size: 11px;
+}
+
+.mpr-btn-primary {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(59,130,246,0.3);
+}
+
+.mpr-btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  box-shadow: 0 4px 14px rgba(59,130,246,0.4);
+  transform: translateY(-1px);
+}
+
+.mpr-btn-excel {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(34,197,94,0.25);
+}
+
+.mpr-btn-excel:hover:not(:disabled) {
+  background: linear-gradient(135deg, #16a34a, #15803d);
+  transform: translateY(-1px);
+}
+
+.mpr-btn-pdf {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(239,68,68,0.25);
+}
+
+.mpr-btn-pdf:hover:not(:disabled) {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  transform: translateY(-1px);
+}
+
+/* Spinner */
+.mpr-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: mprSpin 0.6s linear infinite;
+}
+
+@keyframes mprSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* ─── Loading ─── */
+.mpr-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 0;
+  gap: 16px;
+}
+
+.mpr-loading-label {
+  color: #94a3b8;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* ─── Empty State ─── */
+.mpr-empty-state {
+  text-align: center;
+  padding: 70px 30px;
+  background: #fff;
+  border: 1px dashed #d1d5db;
+  border-radius: 14px;
+}
+
+.mpr-empty-icon {
+  font-size: 48px;
+  margin-bottom: 14px;
+  opacity: 0.6;
+}
+
+.mpr-empty-state h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #475569;
+  margin: 0 0 6px 0;
+}
+
+.mpr-empty-state p {
+  font-size: 14px;
+  color: #94a3b8;
+  margin: 0;
+}
+
+/* ─── Table ─── */
+.mpr-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid #d1d5db;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+
+.mpr-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+.mpr-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.mpr-table th {
+  background: #1e3a5f;
+  color: #fff;
+  padding: 11px 14px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 12px;
+  border: 1px solid #163050;
+  white-space: nowrap;
+  letter-spacing: 0.3px;
+}
+
+.mpr-th-fixed {
+  background: #1e3a5f;
+  vertical-align: middle;
+}
+
+.mpr-th-month {
+  background: #1a6e4e !important;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  padding: 10px 14px;
+}
+
+.mpr-th-sub {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 7px 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.mpr-th-planned {
+  background: #2563eb !important;
+}
+
+.mpr-th-assigned {
+  background: #d97706 !important;
+}
+
+.mpr-th-covered {
+  background: #16a34a !important;
+}
+
+.mpr-table td {
+  padding: 9px 12px;
+  border: 1px solid #e5e7eb;
+  vertical-align: middle;
+}
+
+.mpr-td-plantation {
+  font-weight: 700;
+  color: #1e3a5f;
+  background: #eef4ff !important;
+  white-space: nowrap;
+  border-right: 2px solid #c7d5e6 !important;
+  font-size: 12.5px;
+}
+
+.mpr-td-region {
+  font-weight: 600;
+  color: #334155;
+  background: #f5f7fa !important;
+  white-space: nowrap;
+  font-size: 12.5px;
+}
+
+.mpr-td-estate {
+  font-weight: 500;
+  color: #475569;
+  white-space: nowrap;
+}
+
+.mpr-td-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: #1e293b;
+  font-weight: 500;
+  font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
+  font-size: 12px;
+}
+
+.mpr-td-assigned {
+  color: #b45309;
+}
+
+.mpr-td-covered {
+  color: #16a34a;
+  font-weight: 600;
+}
+
+/* ─── Total row ─── */
+.mpr-total-row td {
+  background: #fef9c3 !important;
+  border-top: 2px solid #eab308 !important;
+}
+
+.mpr-td-total-label {
+  font-weight: 800;
+  color: #92400e;
+  text-align: right;
+  padding-right: 18px !important;
+  font-size: 13px;
+  letter-spacing: 0.3px;
+}
+
+.mpr-td-total {
+  font-weight: 800;
+  color: #92400e !important;
+}
+
+/* ─── Row styles ─── */
+.mpr-table tbody tr:nth-child(even):not(.mpr-total-row) td:not(.mpr-td-plantation):not(.mpr-td-region) {
+  background: #f9fafb;
+}
+
+.mpr-table tbody tr:hover:not(.mpr-total-row) td:not(.mpr-td-plantation):not(.mpr-td-region) {
+  background: #eef2ff;
+}
+
+/* ─── Responsive ─── */
+@media (max-width: 1024px) {
+  .mpr-filters-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .mpr-action-bar {
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start;
+  }
+
+  .mpr-action-right {
+    width: 100%;
+  }
+
+  .mpr-card-body {
+    max-height: 140px;
+  }
+}
+
+/* ─── Scrollbar ─── */
+.mpr-card-body::-webkit-scrollbar,
+.mpr-table-wrapper::-webkit-scrollbar {
+  height: 8px;
+  width: 6px;
+}
+
+.mpr-card-body::-webkit-scrollbar-track,
+.mpr-table-wrapper::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 10px;
+}
+
+.mpr-card-body::-webkit-scrollbar-thumb,
+.mpr-table-wrapper::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+
+.mpr-card-body::-webkit-scrollbar-thumb:hover,
+.mpr-table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}

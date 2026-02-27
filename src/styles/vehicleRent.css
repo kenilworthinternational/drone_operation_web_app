@@ -1,0 +1,107 @@
+/* Vehicle Rent - Finance Section (View Only) */
+.vehicle-rent-container {
+  width: 100%;
+  height: 100%;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.vehicle-rent-header {
+  margin-bottom: 24px;
+}
+
+.vehicle-rent-header h1 {
+  font-size: 28px;
+  font-weight: 600;
+  color: #1a202c;
+  margin: 0 0 8px 0;
+}
+
+.vehicle-rent-header p {
+  font-size: 14px;
+  color: #64748b;
+  margin: 0;
+}
+
+.vehicle-rent-content {
+  width: 100%;
+  min-height: 400px;
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Smooth transitions for cards */
+.vehicle-rent-container .MuiCard-root {
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.vehicle-rent-container .MuiCard-root:hover {
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Table row hover effects */
+.vehicle-rent-container .MuiTableRow-root {
+  transition: background-color 0.2s ease-in-out;
+}
+
+/* Button hover effects */
+.vehicle-rent-container .MuiButton-root {
+  transition: all 0.2s ease-in-out;
+}
+
+.vehicle-rent-container .MuiButton-root:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Chip animations */
+.vehicle-rent-container .MuiChip-root {
+  transition: transform 0.2s ease-in-out;
+}
+
+.vehicle-rent-container .MuiChip-root:hover {
+  transform: scale(1.05);
+}
+
+/* Stats card animations */
+.vehicle-rent-container .vehicle-rent-stats-card {
+  transition: transform 0.3s ease-in-out;
+}
+
+.vehicle-rent-container .vehicle-rent-stats-card:hover {
+  transform: translateY(-4px);
+}
+
+/* Tab styling */
+.vehicle-rent-container .MuiTab-root {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Icon button hover */
+.vehicle-rent-container .MuiIconButton-root {
+  transition: all 0.2s ease-in-out;
+}
+
+.vehicle-rent-container .MuiIconButton-root:hover {
+  transform: scale(1.1);
+}
+
+/* Filter card styling */
+.vehicle-rent-container .vehicle-rent-filter-card {
+  transition: all 0.3s ease-in-out;
+}
+
+.vehicle-rent-container .vehicle-rent-filter-card:hover {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12) !important;
+}
+
+/* Form control styling */
+.vehicle-rent-container .vehicle-rent-filter-card .MuiFormControl-root {
+  transition: all 0.2s ease-in-out;
+}
+
+.vehicle-rent-container .vehicle-rent-filter-card .MuiFormControl-root:focus-within {
+  transform: translateY(-1px);
+}

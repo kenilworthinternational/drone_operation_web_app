@@ -29,10 +29,10 @@ const ReportPart1 = ({ dateRange }) => {
   const [loadingEstate, setLoadingEstate] = useState(false);
   const [error, setError] = useState(null);
   
-  // Get filters from Redux
-  const selectedGroup = useAppSelector((state) => selectReportFilter(state, 'selectedGroup'));
-  const selectedPlantation = useAppSelector((state) => selectReportFilter(state, 'selectedPlantation'));
-  const selectedRegion = useAppSelector((state) => selectReportFilter(state, 'selectedRegion'));
+  // Use local state for selections - completely separate from other graphs
+  const [selectedGroup, setSelectedGroup] = useState(null);
+  const [selectedPlantation, setSelectedPlantation] = useState(null);
+  const [selectedRegion, setSelectedRegion] = useState(null);
   const selectedType = useAppSelector((state) => selectReportFilter(state, 'selectedType'));
 
   // Wrap long labels into up to two lines with ellipsis
@@ -303,53 +303,53 @@ const ReportPart1 = ({ dateRange }) => {
   // Handle bar clicks
   const handleGroupBarClick = (data) => {
     if (data && data.group_id) {
-      dispatch(setReportFilter({ filterName: 'selectedGroup', value: { id: data.group_id, name: data.group_name } }));
+      setSelectedGroup({ id: data.group_id, name: data.group_name });
+      setSelectedPlantation(null);
+      setSelectedRegion(null);
       setPlantationData([]);
       setRegionData([]);
       setEstateData([]);
-      dispatch(setReportFilter({ filterName: 'selectedPlantation', value: null }));
-      dispatch(setReportFilter({ filterName: 'selectedRegion', value: null }));
       fetchPlantationData(data.group_id);
     }
   };
 
   const handlePlantationBarClick = (data) => {
     if (data && data.plantation_id) {
-      dispatch(setReportFilter({ filterName: 'selectedPlantation', value: { id: data.plantation_id, name: data.plantation_name } }));
+      setSelectedPlantation({ id: data.plantation_id, name: data.plantation_name });
+      setSelectedRegion(null);
       setRegionData([]);
       setEstateData([]);
-      dispatch(setReportFilter({ filterName: 'selectedRegion', value: null }));
       fetchRegionData(data.plantation_id);
     }
   };
 
   const handleRegionBarClick = (data) => {
     if (data && data.region_id) {
-      dispatch(setReportFilter({ filterName: 'selectedRegion', value: { id: data.region_id, name: data.region_name } }));
+      setSelectedRegion({ id: data.region_id, name: data.region_name });
       setEstateData([]);
       fetchEstateData(data.region_id);
     }
   };
 
-  // Handle navigation back
+  // Handle navigation back - one level at a time
   const handleBackToGroups = () => {
-    dispatch(setReportFilter({ filterName: 'selectedGroup', value: null }));
-    dispatch(setReportFilter({ filterName: 'selectedPlantation', value: null }));
-    dispatch(setReportFilter({ filterName: 'selectedRegion', value: null }));
+    setSelectedGroup(null);
+    setSelectedPlantation(null);
+    setSelectedRegion(null);
     setPlantationData([]);
     setRegionData([]);
     setEstateData([]);
   };
 
   const handleBackToPlantations = () => {
-    dispatch(setReportFilter({ filterName: 'selectedPlantation', value: null }));
-    dispatch(setReportFilter({ filterName: 'selectedRegion', value: null }));
+    setSelectedPlantation(null);
+    setSelectedRegion(null);
     setRegionData([]);
     setEstateData([]);
   };
 
   const handleBackToRegions = () => {
-    dispatch(setReportFilter({ filterName: 'selectedRegion', value: null }));
+    setSelectedRegion(null);
     setEstateData([]);
   };
 
@@ -360,13 +360,13 @@ const ReportPart1 = ({ dateRange }) => {
 
   // Reset selections when date range changes
   useEffect(() => {
-    dispatch(setReportFilter({ filterName: 'selectedGroup', value: null }));
-    dispatch(setReportFilter({ filterName: 'selectedPlantation', value: null }));
-    dispatch(setReportFilter({ filterName: 'selectedRegion', value: null }));
+    setSelectedGroup(null);
+    setSelectedPlantation(null);
+    setSelectedRegion(null);
     setPlantationData([]);
     setRegionData([]);
     setEstateData([]);
-  }, [dateRange.startDate, dateRange.endDate, dispatch]);
+  }, [dateRange.startDate, dateRange.endDate]);
 
   if (loading) return (
     <div className="report-part1 loading">
@@ -402,7 +402,7 @@ const ReportPart1 = ({ dateRange }) => {
         <div className="chart-container">
           <div className="chart-header">
             <button className="back-button" onClick={handleBackToRegions}>
-              ← Back to Regions
+              ← Back
             </button>
             <h2 
               className="chart-title"
@@ -487,7 +487,7 @@ const ReportPart1 = ({ dateRange }) => {
         <div className="chart-container">
           <div className="chart-header">
             <button className="back-button" onClick={handleBackToPlantations}>
-              ← Back to Plantations
+              ← Back
             </button>
             <h2 
               className="chart-title"
@@ -578,7 +578,7 @@ const ReportPart1 = ({ dateRange }) => {
         <div className="chart-container">
           <div className="chart-header">
             <button className="back-button" onClick={handleBackToGroups}>
-              ← Back to Groups
+              ← Back
             </button>
             <h2 
               className="chart-title"
