@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   FaArrowLeft,
@@ -11,10 +11,13 @@ import {
   FaHashtag,
   FaTimes,
   FaTimesCircle,
+  FaAdjust,
+  FaMoon,
   FaSearchPlus,
   FaSearchMinus,
   FaExpand,
   FaExternalLinkAlt,
+  FaCheckCircle,
 } from 'react-icons/fa';
 import * as XLSX from 'xlsx';
 import {
@@ -25,6 +28,31 @@ import { useGetAllEstatesQuery } from '../../../../api/services/estatesApi';
 import { Bars } from 'react-loader-spinner';
 import '../../../../styles/plantationDashboard.css';
 import { appendShellParams } from '../../../../utils/shellSearchParams';
+
+/**
+ * Field workflow status from estate-plan breakdown rows only (same API as chart-breakdown).
+ * Uses planned_area, total_sprayed (DJI covered), is_cancelled, reason_flag — no main dashboard API.
+ */
+function getFieldWorkflowStatus(field) {
+  const planned = parseFloat(field?.planned_area || 0);
+  const covered = parseFloat(field?.total_sprayed || 0);
+  const isCancelled = Boolean(field?.is_cancelled);
+  const reasonFlag = String(field?.reason_flag || '').toLowerCase();
+
+  if (isCancelled && reasonFlag === 'h') {
+    return { label: 'Partially Completed', variant: 'partial' };
+  }
+  if (isCancelled) {
+    return { label: 'Cancelled', variant: 'cancelled' };
+  }
+  if (planned <= 0) {
+    return { label: 'Planned', variant: 'planned' };
+  }
+  if (covered > 0) {
+    return { label: 'Completed', variant: 'completed' };
+  }
+  return { label: 'Planned', variant: 'planned' };
+}
 
 const ChartBreakdownPage = ({ basePath = '/home/plantation-dashboard' } = {}) => {
   const isInternalDashboard =
@@ -90,6 +118,7 @@ const ChartBreakdownPage = ({ basePath = '/home/plantation-dashboard' } = {}) =>
 
   // Map popup state
   const [mapPopup, setMapPopup] = useState(null); // { url, fieldName }
+  const [detailPopup, setDetailPopup] = useState(null); // 'cancelled' | 'executed' | 'partial' | 'dayEnd' | null
 
   const openMapPopup = (url, fieldName) => {
     setMapPopup({ url, fieldName });
@@ -99,14 +128,20 @@ const ChartBreakdownPage = ({ basePath = '/home/plantation-dashboard' } = {}) =>
     setMapPopup(null);
   }, []);
 
-  // Close map popup on Escape
+  const closeDetailPopup = useCallback(() => {
+    setDetailPopup(null);
+  }, []);
+
+  // Close map / detail popups on Escape
   useEffect(() => {
     const handleEsc = (e) => {
-      if (e.key === 'Escape') closeMapPopup();
+      if (e.key !== 'Escape') return;
+      closeMapPopup();
+      closeDetailPopup();
     };
     window.addEventListener('keydown', handleEsc);
     return () => window.removeEventListener('keydown', handleEsc);
-  }, [closeMapPopup]);
+  }, [closeMapPopup, closeDetailPopup]);
 
   const [isExporting, setIsExporting] = useState(false);
 
@@ -122,6 +157,11 @@ const ChartBreakdownPage = ({ basePath = '/home/plantation-dashboard' } = {}) =>
       return fieldSum + parseFloat(field.planned_area || 0);
     }, 0);
   }, [isFullyCancelledField]);
+
+  const estatePlansSectionRef = useRef(null);
+  const scrollToEstatePlans = useCallback(() => {
+    estatePlansSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, []);
 
   // Effective month for API: from date filter when set, otherwise from URL/state
   const effectiveMonth = dateFrom ? dateFrom.substring(0, 7) : month;
@@ -241,36 +281,180 @@ const ChartBreakdownPage = ({ basePath = '/home/plantation-dashboard' } = {}) =>
     });
   }, [allPlans, estateById, selectedRegion, selectedEstate, dateFrom, dateTo]);
 
+  /** Field-level rows for detail popups (same filters as `plans`) */
+  const breakdownDetailRows = useMemo(() => {
+    const cancelled = [];
+    const partial = [];
+    const dayEnd = [];
+    const executed = [];
+    plans.forEach((plan) => {
+      const estate = plan.estate_name || '';
+      const pilot = plan.pilot_name || plan.pilotName || '—';
+      const date = plan.picked_date || '';
+      const pid = plan.plan_id;
+      (plan.fields || []).forEach((field) => {
+        const planned = parseFloat(field.planned_area || 0);
+        const covered = parseFloat(field.total_sprayed || 0);
+        const isCancelled = Boolean(field.is_cancelled);
+        const reasonFlag = String(field.reason_flag || '').toLowerCase();
+        if (isFullyCancelledField(field)) {
+          cancelled.push({
+            key: `${pid}-${field.field_id}`,
+            planId: pid,
+            pickedDate: date,
+            estateName: estate,
+            fieldName: field.field_name || '',
+            fieldArea: planned,
+            pilotName: pilot,
+            cancelReason: field.cancel_reason || '—',
+          });
+        }
+        if (reasonFlag === 'h' && isCancelled) {
+          partial.push({
+            key: `${pid}-${field.field_id}`,
+            planId: pid,
+            pickedDate: date,
+            estateName: estate,
+            fieldName: field.field_name || '',
+            fieldArea: planned,
+            completedArea: covered,
+            pilotName: pilot,
+            partialReason: field.cancel_reason || '—',
+          });
+        }
+        const execHa = parseFloat(field.actual_sprayed_fields_extent || 0);
+        if (execHa > 0) {
+          const opsName = plan.operator_name
+            ? String(plan.operator_name).trim()
+            : '';
+          executed.push({
+            key: `exec-${pid}-${field.field_id}`,
+            planId: pid,
+            pickedDate: date,
+            estateName: estate,
+            fieldName: field.field_name || '',
+            executedHa: execHa,
+            coveredHa: covered,
+            pilotName: pilot,
+            opsRoomOperatorName: opsName || '—',
+          });
+        }
+        const de = parseFloat(field.day_end_incomplete_extent || 0);
+        if (de > 0) {
+          const opsName = plan.operator_name
+            ? String(plan.operator_name).trim()
+            : '';
+          dayEnd.push({
+            key: `${pid}-${field.field_id}`,
+            planId: pid,
+            pickedDate: date,
+            estateName: estate,
+            fieldName: field.field_name || '',
+            plannedHa: planned,
+            coveredHa: covered,
+            dayEndHa: de,
+            pilotName: pilot,
+            opsRoomOperatorName: opsName || '—',
+          });
+        }
+      });
+    });
+    return { cancelled, partial, dayEnd, executed };
+  }, [plans, isFullyCancelledField]);
+
   const summaryData = useMemo(() => {
-    if (selectedChartData) return selectedChartData;
-    const teaRevenueExtent = 0;
-    const plannedExtent = plans.reduce((sum, plan) => sum + parseFloat(plan.total_planned || 0), 0);
-    const actualSprayedFieldsExtent = plans.reduce(
-      (sum, plan) => sum + parseFloat(plan.actual_sprayed_fields_extent || 0),
+    if (isTeaRevenueChart) {
+      if (selectedChartData) {
+        const tr = parseFloat(selectedChartData.teaRevenueExtent || 0);
+        const plannedTotal =
+          selectedChartData.plannedExtent != null && selectedChartData.plannedExtent !== ''
+            ? parseFloat(selectedChartData.plannedExtent)
+            : parseFloat(selectedChartData.plannedSprayingExtent || 0) +
+              parseFloat(selectedChartData.plannedSpreadingExtent || 0);
+        return {
+          teaRevenueExtent: tr,
+          plannedExtentTotal: plannedTotal,
+          planningRatePct: tr > 0 ? (plannedTotal / tr) * 100 : 0,
+        };
+      }
+      const plannedExtentTotal = plans.reduce(
+        (s, p) => s + parseFloat(p.plan_total_extent || 0),
+        0
+      );
+      return {
+        teaRevenueExtent: 0,
+        plannedExtentTotal,
+        planningRatePct: 0,
+      };
+    }
+
+    const planCount = plans.length;
+    const totalPlannedExtent = planCount * 15;
+    const estateApprovedExtent = plans.reduce((s, p) => {
+      const ma = p.manager_approval === 1 || p.manager_approval === '1';
+      return s + (ma ? parseFloat(p.total_planned || 0) : 0);
+    }, 0);
+    const executedExtent = plans.reduce(
+      (s, p) => s + parseFloat(p.actual_sprayed_fields_extent || 0),
       0
     );
-    const sprayedExtent = plans.reduce((sum, plan) => sum + parseFloat(plan.total_sprayed || 0), 0);
-    const canceledExtent = plans.reduce((sum, plan) => {
+    const coveredExtent = plans.reduce(
+      (s, p) => s + parseFloat(p.total_sprayed || 0),
+      0
+    );
+    const cancelledExtent = plans.reduce((sum, plan) => {
       const fields = Array.isArray(plan.fields) ? plan.fields : [];
-      return sum + fields.reduce((fieldSum, field) => {
-        if (!isFullyCancelledField(field)) return fieldSum;
-        return fieldSum + parseFloat(field.planned_area || 0);
-      }, 0);
+      return (
+        sum +
+        fields.reduce((fieldSum, field) => {
+          if (!isFullyCancelledField(field)) return fieldSum;
+          return fieldSum + parseFloat(field.planned_area || 0);
+        }, 0)
+      );
     }, 0);
+    const partiallyCompletedExtent = plans.reduce((sum, plan) => {
+      const fields = Array.isArray(plan.fields) ? plan.fields : [];
+      return (
+        sum +
+        fields.reduce((fs, field) => {
+          if (String(field?.reason_flag || '').toLowerCase() !== 'h') return fs;
+          if (!Boolean(field?.is_cancelled)) return fs;
+          return fs + parseFloat(field.planned_area || 0);
+        }, 0)
+      );
+    }, 0);
+    const pilotNotSprayedExtent = Math.max(0, executedExtent - coveredExtent);
+    const dayEndIncompleteExtent = plans.reduce((s, plan) => {
+      const fields = Array.isArray(plan.fields) ? plan.fields : [];
+      return (
+        s +
+        fields.reduce(
+          (fs, field) => fs + parseFloat(field.day_end_incomplete_extent || 0),
+          0
+        )
+      );
+    }, 0);
+
     return {
-      teaRevenueExtent,
-      plannedExtent,
-      actualSprayedFieldsExtent,
-      sprayedExtent,
-      canceledExtent,
-      planningRate: 0,
-      completionRate: (actualSprayedFieldsExtent - canceledExtent) > 0
-        ? (sprayedExtent / (actualSprayedFieldsExtent - canceledExtent)) * 100
-        : 0,
-      sprayPlanCount: missionType === 'spy' ? plans.length : 0,
-      spreadPlanCount: missionType === 'spd' ? plans.length : 0,
+      planCount,
+      totalPlannedExtent,
+      estateApprovedExtent,
+      cancelledExtent,
+      partiallyCompletedExtent,
+      executedExtent,
+      coveredExtent,
+      pilotNotSprayedExtent,
+      dayEndIncompleteExtent,
+      sprayPlanCount: missionType === 'spy' ? planCount : 0,
+      spreadPlanCount: missionType === 'spd' ? planCount : 0,
     };
-  }, [selectedChartData, plans, missionType, isFullyCancelledField]);
+  }, [
+    isTeaRevenueChart,
+    selectedChartData,
+    plans,
+    missionType,
+    isFullyCancelledField,
+  ]);
 
   // Sort fields within a plan: completed (sprayed > 0) first, then 0-value last
   const getSortedFields = useCallback((fields) => {
@@ -315,7 +499,7 @@ const ChartBreakdownPage = ({ basePath = '/home/plantation-dashboard' } = {}) =>
     });
   };
 
-  // Excel export — uses only on-screen data (selectedChartData + plans from accordion)
+  // Excel export — summary matches filtered `plans` (same as Estate Plans accordion + summary cards)
   const handleExportToExcel = () => {
     if (!effectiveMonth) {
       alert('No month selected');
@@ -326,39 +510,27 @@ const ChartBreakdownPage = ({ basePath = '/home/plantation-dashboard' } = {}) =>
       const workbook = XLSX.utils.book_new();
       const reportDate = effectiveMonth ? `${effectiveMonth}-01` : '';
 
-      // Summary sheet: exactly what's shown in the metrics cards on screen
-      const teaRevenueVal = parseFloat(summaryData?.teaRevenueExtent || 0);
-      const plannedVal = parseFloat(summaryData?.plannedExtent || 0);
-      const executedVal = parseFloat(summaryData?.actualSprayedFieldsExtent || 0);
-      const coveredVal = parseFloat(summaryData?.sprayedExtent || 0);
-      const canceledVal = parseFloat(summaryData?.canceledExtent || 0);
-      const completionBase = Math.max(executedVal - canceledVal, 0);
-      const completionRate = completionBase > 0
-        ? ((coveredVal / completionBase) * 100).toFixed(1)
-        : '0.0';
-      const planningRate = teaRevenueVal > 0
-        ? ((plannedVal / teaRevenueVal) * 100).toFixed(1)
-        : '0.0';
-
       const summaryRows = isTeaRevenueChart
         ? [
             {
               Date: reportDate,
-              'Tea Revenue Extent (Ha)': teaRevenueVal.toFixed(2),
-              'Planned Extent (Ha)': plannedVal.toFixed(2),
-              'Planning Rate (%)': planningRate,
+              'Tea Revenue Extent (Ha)': parseFloat(summaryData?.teaRevenueExtent || 0).toFixed(2),
+              'Planned Extent (Ha)': parseFloat(summaryData?.plannedExtentTotal || 0).toFixed(2),
+              'Planning Rate (%)': (summaryData?.planningRatePct ?? 0).toFixed(1),
             },
           ]
         : [
             {
               Date: reportDate,
-              'Tea Revenue Extent (Ha)': teaRevenueVal.toFixed(2),
-              'Planned Extent (Ha)': plannedVal.toFixed(2),
-              'Executed Extent (Ha)': executedVal.toFixed(2),
-              'Covered Area (Ha)': coveredVal.toFixed(2),
-              'Canceled Extent (Ha)': canceledVal.toFixed(2),
-              'Completion Rate (%)': completionRate,
-              'Planning Rate (%)': planningRate,
+              'Plan count': summaryData?.planCount ?? 0,
+              'Total Planned Extent (Ha)': parseFloat(summaryData?.totalPlannedExtent || 0).toFixed(2),
+              'Estate Approved Extent (Ha)': parseFloat(summaryData?.estateApprovedExtent || 0).toFixed(2),
+              'Executed Extent (Ha)': parseFloat(summaryData?.executedExtent || 0).toFixed(2),
+              'Covered Extent (Ha)': parseFloat(summaryData?.coveredExtent || 0).toFixed(2),
+              'Partially Completed (Ha)': parseFloat(summaryData?.partiallyCompletedExtent || 0).toFixed(2),
+              'Cancelled Before Execution (Ha)': parseFloat(summaryData?.cancelledExtent || 0).toFixed(2),
+              'Pilot Not Sprayed Extent (Ha)': parseFloat(summaryData?.pilotNotSprayedExtent || 0).toFixed(2),
+              'DayEnd Incomplete Extent (Ha)': parseFloat(summaryData?.dayEndIncompleteExtent || 0).toFixed(2),
             },
           ];
       const summarySheet = XLSX.utils.json_to_sheet(summaryRows);
@@ -394,8 +566,9 @@ const ChartBreakdownPage = ({ basePath = '/home/plantation-dashboard' } = {}) =>
                 Field: f.field_name || '',
                 'Planned (Ha)': planned.toFixed(2),
                 'Covered Area (Ha)': sprayed.toFixed(2),
+                'DayEnd Incomplete (Ha)': parseFloat(f.day_end_incomplete_extent || 0).toFixed(2),
                 'Completion (%)': completionPct,
-                'Status': f.is_cancelled ? (f.reason_flag === 'h' ? 'Partially' : 'Cancelled') : 'Active',
+                Status: getFieldWorkflowStatus(f).label,
                 'Cancel Reason': f.is_cancelled && f.cancel_reason ? f.cancel_reason : '',
               });
             });
@@ -418,6 +591,129 @@ const ChartBreakdownPage = ({ basePath = '/home/plantation-dashboard' } = {}) =>
       setIsExporting(false);
     }
   };
+
+  const exportCancelledDetailExcel = useCallback(() => {
+    const fields = breakdownDetailRows.cancelled;
+    if (fields.length === 0) return;
+    const data = fields.map((f) => ({
+      'Plan ID': f.planId,
+      Date: f.pickedDate,
+      Estate: f.estateName,
+      Field: f.fieldName,
+      'Area (Ha)': parseFloat(f.fieldArea.toFixed(2)),
+      Pilot: f.pilotName,
+      Reason: f.cancelReason,
+    }));
+    data.push({
+      'Plan ID': '',
+      Date: '',
+      Estate: '',
+      Field: 'TOTAL',
+      'Area (Ha)': parseFloat((summaryData?.cancelledExtent || 0).toFixed(2)),
+      Pilot: '',
+      Reason: '',
+    });
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Cancelled');
+    XLSX.writeFile(wb, `ChartBreakdown_Cancelled_${effectiveMonth || 'export'}.xlsx`);
+  }, [breakdownDetailRows, summaryData?.cancelledExtent, effectiveMonth]);
+
+  const exportExecutedDetailExcel = useCallback(() => {
+    const fields = breakdownDetailRows.executed;
+    if (fields.length === 0) return;
+    const data = fields.map((f) => ({
+      'Plan ID': f.planId,
+      Date: f.pickedDate,
+      Estate: f.estateName,
+      Field: f.fieldName,
+      'Executed (Ha)': parseFloat(f.executedHa.toFixed(2)),
+      'DJI Covered (Ha)': parseFloat(f.coveredHa.toFixed(2)),
+      Pilot: f.pilotName,
+      'Ops room operator': f.opsRoomOperatorName || '—',
+    }));
+    const totalCovered = fields.reduce((s, f) => s + f.coveredHa, 0);
+    data.push({
+      'Plan ID': '',
+      Date: '',
+      Estate: '',
+      Field: 'TOTAL',
+      'Executed (Ha)': parseFloat((summaryData?.executedExtent || 0).toFixed(2)),
+      'DJI Covered (Ha)': parseFloat(totalCovered.toFixed(2)),
+      Pilot: '',
+      'Ops room operator': '',
+    });
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Executed');
+    XLSX.writeFile(wb, `ChartBreakdown_ExecutedExtent_${effectiveMonth || 'export'}.xlsx`);
+  }, [breakdownDetailRows, summaryData?.executedExtent, effectiveMonth]);
+
+  const exportPartialDetailExcel = useCallback(() => {
+    const fields = breakdownDetailRows.partial;
+    if (fields.length === 0) return;
+    const data = fields.map((f) => {
+      const pct = f.fieldArea > 0 ? ((f.completedArea / f.fieldArea) * 100).toFixed(1) : '0.0';
+      return {
+        'Plan ID': f.planId,
+        Date: f.pickedDate,
+        Estate: f.estateName,
+        Field: f.fieldName,
+        'Field Size (Ha)': parseFloat(f.fieldArea.toFixed(2)),
+        'Completed (Ha)': parseFloat(f.completedArea.toFixed(2)),
+        'Completion %': parseFloat(pct),
+        Pilot: f.pilotName,
+        Reason: f.partialReason,
+      };
+    });
+    const totalArea = fields.reduce((s, f) => s + f.fieldArea, 0);
+    const totalCompleted = fields.reduce((s, f) => s + f.completedArea, 0);
+    data.push({
+      'Plan ID': '',
+      Date: '',
+      Estate: '',
+      Field: 'TOTAL',
+      'Field Size (Ha)': parseFloat(totalArea.toFixed(2)),
+      'Completed (Ha)': parseFloat(totalCompleted.toFixed(2)),
+      'Completion %': totalArea > 0 ? parseFloat(((totalCompleted / totalArea) * 100).toFixed(1)) : 0,
+      Pilot: '',
+      Reason: '',
+    });
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Partial');
+    XLSX.writeFile(wb, `ChartBreakdown_Partial_${effectiveMonth || 'export'}.xlsx`);
+  }, [breakdownDetailRows, effectiveMonth]);
+
+  const exportDayEndDetailExcel = useCallback(() => {
+    const fields = breakdownDetailRows.dayEnd;
+    if (fields.length === 0) return;
+    const data = fields.map((f) => ({
+      'Plan ID': f.planId,
+      Date: f.pickedDate,
+      Estate: f.estateName,
+      Field: f.fieldName,
+      'Planned (Ha)': parseFloat(f.plannedHa.toFixed(2)),
+      'DJI Covered (Ha)': parseFloat(f.coveredHa.toFixed(2)),
+      Pilot: f.pilotName,
+      'Ops room operator': f.opsRoomOperatorName || '—',
+    }));
+    const totalPlanned = fields.reduce((s, f) => s + f.plannedHa, 0);
+    data.push({
+      'Plan ID': '',
+      Date: '',
+      Estate: '',
+      Field: 'TOTAL',
+      'Planned (Ha)': parseFloat(totalPlanned.toFixed(2)),
+      'DJI Covered (Ha)': '',
+      Pilot: '',
+      'Ops room operator': '',
+    });
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'DayEnd');
+    XLSX.writeFile(wb, `ChartBreakdown_DayEndIncomplete_${effectiveMonth || 'export'}.xlsx`);
+  }, [breakdownDetailRows, effectiveMonth]);
 
   // No chart data passed via navigation or URL params
   if (!selectedChartData && !effectiveMonth) {
@@ -542,156 +838,227 @@ const ChartBreakdownPage = ({ basePath = '/home/plantation-dashboard' } = {}) =>
           </div>
           <div className="card-body-class-breakdown">
             <div className="metrics-grid-class-breakdown">
-              {summaryData?.teaRevenueExtent !== undefined && (
-                <div className="metric-card-class-breakdown">
-                  <div className="metric-label-class-breakdown">
-                    Tea Revenue Extent
-                  </div>
-                  <div className="metric-value-class-breakdown metric-info-class-breakdown">
-                    {parseFloat(summaryData.teaRevenueExtent || 0).toFixed(
-                      2
-                    )}{' '}
-                    Ha
-                  </div>
-                  <div className="metric-hint-class-breakdown">
-                    Total Tea Revenue Extent
-                  </div>
-                </div>
-              )}
-              {summaryData?.plannedExtent !== undefined && (
-                <div className="metric-card-class-breakdown">
-                  <div className="metric-label-class-breakdown">
-                    Planned Extent
-                  </div>
-                  <div className="metric-value-class-breakdown metric-primary-class-breakdown">
-                    {parseFloat(summaryData.plannedExtent || 0).toFixed(2)}{' '}
-                    Ha
-                  </div>
-                  <div className="metric-hint-class-breakdown">
-                    Total Planned Extent for the month
-                  </div>
-                </div>
-              )}
-              {!isTeaRevenueChart && summaryData?.actualSprayedFieldsExtent !== undefined && (
-                <div className="metric-card-class-breakdown">
-                  <div className="metric-label-class-breakdown">
-                    Executed Extent
-                  </div>
-                  <div className="metric-value-class-breakdown metric-success-class-breakdown">
-                    {parseFloat(
-                      summaryData.actualSprayedFieldsExtent || 0
-                    ).toFixed(2)}{' '}
-                    Ha
-                  </div>
-                  <div className="metric-hint-class-breakdown">
-                    Executed Extent Summation
-                  </div>
-                </div>
-              )}
-              {!isTeaRevenueChart && summaryData?.sprayedExtent !== undefined && (
-                <div className="metric-card-class-breakdown">
-                  <div className="metric-label-class-breakdown">
-                    Covered Area
-                  </div>
-                  <div className="metric-value-class-breakdown metric-info-class-breakdown">
-                    {parseFloat(summaryData.sprayedExtent || 0).toFixed(2)}{' '}
-                    Ha
-                  </div>
-                  <div className="metric-hint-class-breakdown">
-                    Covered Area according to DJI
-                  </div>
-                </div>
-              )}
-              {!isTeaRevenueChart && summaryData?.canceledExtent > 0 && (
-                <div className="metric-card-class-breakdown">
-                  <div className="metric-label-class-breakdown">
-                    Canceled Extent
-                  </div>
-                  <div className="metric-value-class-breakdown metric-danger-class-breakdown">
-                    {parseFloat(summaryData.canceledExtent || 0).toFixed(
-                      2
-                    )}{' '}
-                    Ha
-                  </div>
-                  <div className="metric-hint-class-breakdown">
-                    See breakdown below
-                  </div>
-                </div>
-              )}
-              {!isTeaRevenueChart && summaryData?.actualSprayedFieldsExtent !== undefined &&
-                summaryData?.sprayedExtent !== undefined && (
+              {isTeaRevenueChart ? (
+                <>
                   <div className="metric-card-class-breakdown">
-                    <div className="metric-label-class-breakdown">
-                      Completion Rate
+                    <div className="metric-label-class-breakdown">Tea Revenue Extent</div>
+                    <div className="metric-value-class-breakdown metric-info-class-breakdown">
+                      {parseFloat(summaryData?.teaRevenueExtent || 0).toFixed(2)} Ha
                     </div>
+                    <div className="metric-hint-class-breakdown">Total tea revenue area</div>
+                  </div>
+                  <div className="metric-card-class-breakdown">
+                    <div className="metric-label-class-breakdown">Planned Extent</div>
+                    <div className="metric-value-class-breakdown metric-primary-class-breakdown">
+                      {parseFloat(summaryData?.plannedExtentTotal || 0).toFixed(2)} Ha
+                    </div>
+                    <div className="metric-hint-class-breakdown">Planned extent for the month</div>
+                  </div>
+                  <div className="metric-card-class-breakdown">
+                    <div className="metric-label-class-breakdown">Planning Rate</div>
                     <div className="metric-value-class-breakdown metric-secondary-class-breakdown">
-                      {(summaryData.actualSprayedFieldsExtent - (summaryData.canceledExtent || 0)) > 0
-                        ? (
-                            (summaryData.sprayedExtent /
-                              (summaryData.actualSprayedFieldsExtent - (summaryData.canceledExtent || 0))) *
-                            100
-                          ).toFixed(1)
-                        : '0.0'}
-                      %
+                      {(summaryData?.planningRatePct ?? 0).toFixed(1)}%
+                    </div>
+                    <div className="metric-hint-class-breakdown">Planned / Tea Revenue</div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="metric-card-class-breakdown">
+                    <div className="metric-label-class-breakdown">Total Planned Extent</div>
+                    <div className="metric-value-class-breakdown metric-primary-class-breakdown">
+                      {parseFloat(summaryData?.totalPlannedExtent || 0).toFixed(2)} Ha
+                    </div>
+                    <div className="metric-subvalue-class-breakdown">
+                      {summaryData?.planCount ?? 0}{' '}
+                      {(summaryData?.planCount ?? 0) === 1 ? 'plan' : 'plans'}
+                    </div>
+                    <div className="metric-hint-class-breakdown">× 15 Ha per plan</div>
+                  </div>
+                  <div className="metric-card-class-breakdown">
+                    <div className="metric-label-class-breakdown">Estate Approved Extent</div>
+                    <div className="metric-value-class-breakdown metric-success-class-breakdown">
+                      {parseFloat(summaryData?.estateApprovedExtent || 0).toFixed(2)} Ha
                     </div>
                     <div className="metric-hint-class-breakdown">
-                      Covered Area / (Executed Extent - Canceled Extent)
+                      Planned field areas where the estate manager approved the plan
                     </div>
                   </div>
-                )}
-              {summaryData?.plannedExtent !== undefined &&
-                summaryData?.teaRevenueExtent !== undefined && (
-                  <div className="metric-card-class-breakdown">
-                    <div className="metric-label-class-breakdown">
-                      Planning Rate
-                    </div>
+                  <div
+                    className="metric-card-class-breakdown"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setDetailPopup('executed')}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setDetailPopup('executed');
+                      }
+                    }}
+                  >
+                    <div className="metric-label-class-breakdown">Executed Extent</div>
                     <div className="metric-value-class-breakdown metric-secondary-class-breakdown">
-                      {summaryData.teaRevenueExtent > 0
-                        ? (
-                            (summaryData.plannedExtent /
-                              summaryData.teaRevenueExtent) *
-                            100
-                          ).toFixed(1)
-                        : '0.0'}
-                      %
+                      {parseFloat(summaryData?.executedExtent || 0).toFixed(2)} Ha
+                    </div>
+                    <button
+                      type="button"
+                      className="cbd-metric-view-details"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        scrollToEstatePlans();
+                      }}
+                    >
+                      View Details <FaChevronRight />
+                    </button>
+                    <div className="metric-hint-class-breakdown">
+                      Field area where DJI flight data exists (actually executed)
+                    </div>
+                  </div>
+                  <div className="metric-card-class-breakdown">
+                    <div className="metric-label-class-breakdown">Covered Extent</div>
+                    <div className="metric-value-class-breakdown metric-info-class-breakdown">
+                      {parseFloat(summaryData?.coveredExtent || 0).toFixed(2)} Ha
                     </div>
                     <div className="metric-hint-class-breakdown">
-                      Planned / Tea Revenue
+                      DJI reported sprayed area (completed part; includes partial jobs)
                     </div>
                   </div>
-                )}
-              {summaryData?.sprayPlanCount !== undefined && (
-                <div className="metric-card-class-breakdown">
-                  <div className="metric-label-class-breakdown">
-                    Spray Plans
+                  {isInternalDashboard && (
+                    <div
+                      className="metric-card-class-breakdown"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => setDetailPopup('partial')}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setDetailPopup('partial');
+                        }
+                      }}
+                    >
+                      <div className="metric-label-class-breakdown">Partially Completed</div>
+                      <div
+                        className="metric-value-class-breakdown"
+                        style={{ color: '#ea580c', fontWeight: 800 }}
+                      >
+                        {parseFloat(summaryData?.partiallyCompletedExtent || 0).toFixed(2)} Ha
+                      </div>
+                      <button
+                        type="button"
+                        className="cbd-metric-view-details"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          scrollToEstatePlans();
+                        }}
+                      >
+                        View Details <FaChevronRight />
+                      </button>
+                      <div className="metric-hint-class-breakdown">
+                        Sprayed but not to full planned extent (covered above includes this)
+                      </div>
+                    </div>
+                  )}
+                  <div
+                    className="metric-card-class-breakdown"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setDetailPopup('cancelled')}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setDetailPopup('cancelled');
+                      }
+                    }}
+                  >
+                    <div className="metric-label-class-breakdown">Cancelled Before Execution</div>
+                    <div className="metric-value-class-breakdown metric-danger-class-breakdown">
+                      {parseFloat(summaryData?.cancelledExtent || 0).toFixed(2)} Ha
+                    </div>
+                    <button
+                      type="button"
+                      className="cbd-metric-view-details"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        scrollToEstatePlans();
+                      }}
+                    >
+                      View Details <FaChevronRight />
+                    </button>
+                    <div className="metric-hint-class-breakdown">
+                      No spray / narration only — full cancel (not partial)
+                    </div>
                   </div>
-                  <div className="metric-value-class-breakdown metric-primary-class-breakdown">
-                    {summaryData.sprayPlanCount} ({(summaryData.sprayPlanCount * 15).toFixed(0)} Ha)
+                  <div className="metric-card-class-breakdown">
+                    <div className="metric-label-class-breakdown">Pilot Not Sprayed Extent</div>
+                    <div
+                      className="metric-value-class-breakdown"
+                      style={{ color: '#d97706', fontWeight: 800 }}
+                    >
+                      {parseFloat(summaryData?.pilotNotSprayedExtent || 0).toFixed(2)} Ha
+                    </div>
+                    <div className="metric-hint-class-breakdown">
+                      Field extent flown vs DJI-reported area (Executed − Covered)
+                    </div>
                   </div>
-                  <div className="metric-hint-class-breakdown">
-                    Planned spray plans (count x 15 Ha)
+                  <div
+                    className="metric-card-class-breakdown"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setDetailPopup('dayEnd')}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setDetailPopup('dayEnd');
+                      }
+                    }}
+                  >
+                    <div className="metric-label-class-breakdown">DayEnd Incomplete Extent</div>
+                    <div
+                      className="metric-value-class-breakdown"
+                      style={{ color: '#b45309', fontWeight: 800 }}
+                    >
+                      {parseFloat(summaryData?.dayEndIncompleteExtent || 0).toFixed(2)} Ha
+                    </div>
+                    <div className="metric-hint-class-breakdown">
+                      DJI area null/0 (no spray), not cancelled before execution — planned Ha
+                    </div>
+                    <button
+                      type="button"
+                      className="cbd-metric-view-details"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        scrollToEstatePlans();
+                      }}
+                    >
+                      View Details <FaChevronRight />
+                    </button>
                   </div>
-                </div>
-              )}
-              {summaryData?.spreadPlanCount !== undefined && (
-                <div className="metric-card-class-breakdown">
-                  <div className="metric-label-class-breakdown">
-                    Spread Plans
-                  </div>
-                  <div className="metric-value-class-breakdown metric-secondary-class-breakdown">
-                    {summaryData.spreadPlanCount} ({(summaryData.spreadPlanCount * 15).toFixed(0)} Ha)
-                  </div>
-                  <div className="metric-hint-class-breakdown">
-                    Planned spread plans (count x 15 Ha)
-                  </div>
-                </div>
+                  {!isInternalDashboard && summaryData?.sprayPlanCount !== undefined && (
+                    <div className="metric-card-class-breakdown">
+                      <div className="metric-label-class-breakdown">Spray Plans</div>
+                      <div className="metric-value-class-breakdown metric-primary-class-breakdown">
+                        {summaryData.sprayPlanCount} ({(summaryData.sprayPlanCount * 15).toFixed(0)} Ha)
+                      </div>
+                      <div className="metric-hint-class-breakdown">Planned spray plans (count × 15 Ha)</div>
+                    </div>
+                  )}
+                  {!isInternalDashboard && summaryData?.spreadPlanCount !== undefined && (
+                    <div className="metric-card-class-breakdown">
+                      <div className="metric-label-class-breakdown">Spread Plans</div>
+                      <div className="metric-value-class-breakdown metric-secondary-class-breakdown">
+                        {summaryData.spreadPlanCount} ({(summaryData.spreadPlanCount * 15).toFixed(0)} Ha)
+                      </div>
+                      <div className="metric-hint-class-breakdown">Planned spread plans (count × 15 Ha)</div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>
         </div>
 
         {/* Estate Plans Accordion */}
-        <div className="card-class-breakdown">
+        <div className="card-class-breakdown" ref={estatePlansSectionRef}>
           <div className="card-header-class-breakdown">
             <h3 className="card-title-class-breakdown">
               Estate Plans - {effectiveMonthName || month}
@@ -734,15 +1101,12 @@ const ChartBreakdownPage = ({ basePath = '/home/plantation-dashboard' } = {}) =>
                     plan.drone_no ||
                     plan.droneNo ||
                     'N/A';
-                  const completionBase = Math.max(
-                    parseFloat(plan.actual_sprayed_fields_extent || 0) - cancelledExtent,
-                    0
-                  );
                   const isPlanExpanded = !!expandedPlans[plan.plan_id];
-                  const completionRate = completionBase > 0
+                  const completionRate =
+                    nonCancelledTotal > 0
                       ? (
-                          (plan.total_sprayed /
-                            completionBase) *
+                          (parseFloat(plan.total_sprayed || 0) /
+                            nonCancelledTotal) *
                           100
                         ).toFixed(1)
                       : '0.0';
@@ -820,7 +1184,7 @@ const ChartBreakdownPage = ({ basePath = '/home/plantation-dashboard' } = {}) =>
                                   ? 'cbd-rate--mid'
                                   : 'cbd-rate--low'
                               }`}
-                              title="Percentage (Completed Extent / Executed Extent)"
+                              title="Covered ÷ (planned − cancelled) × 100"
                             >
                               {completionRate}%
                             </span>
@@ -844,15 +1208,16 @@ const ChartBreakdownPage = ({ basePath = '/home/plantation-dashboard' } = {}) =>
                                       100
                                     ).toFixed(1)
                                   : '0.0';
+                              const workflow = getFieldWorkflowStatus(field);
 
                               return (
                                 <div
                                   key={fieldKey}
-                                  className={`cbd-field-item ${isFieldExpanded ? 'cbd-field-item--expanded' : ''} ${field.is_cancelled ? (field.reason_flag === 'h' ? 'cbd-field-item--partial' : 'cbd-field-item--cancelled') : ''}`}
+                                  className={`cbd-field-item ${isFieldExpanded ? 'cbd-field-item--expanded' : ''} cbd-field-item--${workflow.variant}`}
                                 >
                                   {/* Field Row */}
                                   <div
-                                    className={`cbd-field-header ${field.is_cancelled ? (field.reason_flag === 'h' ? 'cbd-field-header--partial' : 'cbd-field-header--cancelled') : ''}`}
+                                    className={`cbd-field-header cbd-field-header--${workflow.variant}`}
                                     onClick={() =>
                                       toggleField(
                                         plan.plan_id,
@@ -867,13 +1232,11 @@ const ChartBreakdownPage = ({ basePath = '/home/plantation-dashboard' } = {}) =>
                                         <FaChevronRight />
                                       )}
                                     </div>
-                                    <span className={`cbd-field-name ${field.is_cancelled ? (field.reason_flag === 'h' ? 'cbd-field-name--partial' : 'cbd-field-name--cancelled') : ''}`}>
+                                    <span className={`cbd-field-name cbd-field-name--${workflow.variant}`}>
                                       {field.field_name}
-                                      {field.is_cancelled && (
-                                        <span className={`cbd-cancelled-badge ${field.reason_flag === 'h' ? 'cbd-cancelled-badge--partial' : ''}`}>
-                                          {field.reason_flag === 'h' ? 'Partially' : 'Cancelled'}
-                                        </span>
-                                      )}
+                                      <span className={`cbd-field-status-badge cbd-field-status-badge--${workflow.variant}`}>
+                                        {workflow.label}
+                                      </span>
                                     </span>
                                     <span className="cbd-field-area">
                                       {parseFloat(
@@ -887,6 +1250,14 @@ const ChartBreakdownPage = ({ basePath = '/home/plantation-dashboard' } = {}) =>
                                   {isFieldExpanded && (
                                     <div className="cbd-field-details">
                                       <div className="cbd-field-metrics">
+                                        <div className="cbd-field-metric">
+                                          <span className="cbd-field-metric-label">
+                                            Status
+                                          </span>
+                                          <span className="cbd-field-metric-value cbd-metric-primary">
+                                            {workflow.label}
+                                          </span>
+                                        </div>
                                         <div className="cbd-field-metric">
                                           <span className="cbd-field-metric-label">
                                             Field Area
@@ -911,7 +1282,18 @@ const ChartBreakdownPage = ({ basePath = '/home/plantation-dashboard' } = {}) =>
                                         </div>
                                         <div className="cbd-field-metric">
                                           <span className="cbd-field-metric-label">
-                                            Covered Area
+                                            Executed
+                                          </span>
+                                          <span className="cbd-field-metric-value cbd-metric-info">
+                                            {parseFloat(
+                                              field.actual_sprayed_fields_extent || 0
+                                            ).toFixed(2)}{' '}
+                                            Ha
+                                          </span>
+                                        </div>
+                                        <div className="cbd-field-metric">
+                                          <span className="cbd-field-metric-label">
+                                            Covered (DJI)
                                           </span>
                                           <span className="cbd-field-metric-value cbd-metric-success">
                                             {parseFloat(
@@ -942,13 +1324,13 @@ const ChartBreakdownPage = ({ basePath = '/home/plantation-dashboard' } = {}) =>
                                       {field.is_cancelled && (
                                         <div className={`cbd-field-cancel-info ${field.reason_flag === 'h' ? 'cbd-field-cancel-info--partial' : ''}`}>
                                           <FaTimesCircle className="cbd-cancel-icon" />
-                                          <span>{field.reason_flag === 'h' ? 'Partially' : 'Cancelled'}{field.cancel_reason ? `: ${field.cancel_reason}` : ''}</span>
+                                          <span>{workflow.label}{field.cancel_reason ? `: ${field.cancel_reason}` : ''}</span>
                                         </div>
                                       )}
                                       {/* Progress bar */}
-                                      <div className={`cbd-field-progress ${field.is_cancelled ? (field.reason_flag === 'h' ? 'cbd-field-progress--partial' : 'cbd-field-progress--cancelled') : ''}`}>
+                                      <div className={`cbd-field-progress ${workflow.variant === 'partial' ? 'cbd-field-progress--partial' : workflow.variant === 'cancelled' ? 'cbd-field-progress--cancelled' : ''}`}>
                                         <div
-                                          className={`cbd-field-progress-fill ${field.is_cancelled ? (field.reason_flag === 'h' ? 'cbd-field-progress-fill--partial' : 'cbd-field-progress-fill--cancelled') : ''}`}
+                                          className={`cbd-field-progress-fill ${workflow.variant === 'partial' ? 'cbd-field-progress-fill--partial' : workflow.variant === 'cancelled' ? 'cbd-field-progress-fill--cancelled' : ''}`}
                                           style={{
                                             width: `${Math.min(
                                               parseFloat(fieldCompletion),
@@ -994,6 +1376,309 @@ const ChartBreakdownPage = ({ basePath = '/home/plantation-dashboard' } = {}) =>
           </div>
         </div>
       </div>
+
+      {/* Detail list popups (same layout as main dashboard) */}
+      {!isTeaRevenueChart && detailPopup === 'cancelled' && (
+        <div className="pd-popup-overlay" onClick={closeDetailPopup}>
+          <div className="pd-popup" onClick={(e) => e.stopPropagation()}>
+            <div className="pd-popup-header pd-popup-header--red">
+              <span className="pd-popup-title">
+                <FaTimesCircle /> Cancelled Before Execution
+              </span>
+              <div className="pd-popup-header-actions">
+                {breakdownDetailRows.cancelled.length > 0 && (
+                  <button type="button" className="pd-popup-excel-btn" onClick={exportCancelledDetailExcel}>
+                    <FaFileExcel /> Excel
+                  </button>
+                )}
+                <button type="button" className="pd-popup-close" onClick={closeDetailPopup}>
+                  <FaTimes />
+                </button>
+              </div>
+            </div>
+            <div className="pd-popup-body">
+              {breakdownDetailRows.cancelled.length === 0 ? (
+                <div className="pd-popup-empty">No cancelled fields for this view</div>
+              ) : (
+                <table className="pd-popup-table">
+                  <thead>
+                    <tr>
+                      <th>Plan ID</th>
+                      <th>Date</th>
+                      <th>Estate</th>
+                      <th>Field</th>
+                      <th>Area (Ha)</th>
+                      <th>Pilot</th>
+                      <th>Reason</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {breakdownDetailRows.cancelled.map((f) => (
+                      <tr key={f.key}>
+                        <td>{f.planId}</td>
+                        <td>{f.pickedDate}</td>
+                        <td>{f.estateName}</td>
+                        <td>{f.fieldName}</td>
+                        <td style={{ textAlign: 'center' }}>{f.fieldArea.toFixed(2)}</td>
+                        <td>{f.pilotName}</td>
+                        <td>
+                          <span className="pd-cancel-reason">{f.cancelReason}</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <td colSpan={4} style={{ fontWeight: 700 }}>
+                        Total Cancelled
+                      </td>
+                      <td style={{ fontWeight: 700, textAlign: 'center' }}>
+                        {(summaryData?.cancelledExtent || 0).toFixed(2)}
+                      </td>
+                      <td colSpan={2} />
+                    </tr>
+                  </tfoot>
+                </table>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!isTeaRevenueChart && detailPopup === 'executed' && (
+        <div className="pd-popup-overlay" onClick={closeDetailPopup}>
+          <div className="pd-popup pd-popup--wide" onClick={(e) => e.stopPropagation()}>
+            <div className="pd-popup-header pd-popup-header--purple">
+              <span className="pd-popup-title">
+                <FaCheckCircle /> Executed Extent ({effectiveMonthName || effectiveMonth})
+              </span>
+              <div className="pd-popup-header-actions">
+                {breakdownDetailRows.executed.length > 0 && (
+                  <button type="button" className="pd-popup-excel-btn" onClick={exportExecutedDetailExcel}>
+                    <FaFileExcel /> Excel
+                  </button>
+                )}
+                <button type="button" className="pd-popup-close" onClick={closeDetailPopup}>
+                  <FaTimes />
+                </button>
+              </div>
+            </div>
+            <div className="pd-popup-body">
+              <p className="pd-popup-intro" style={{ margin: '0 0 12px', fontSize: 13, color: '#64748b' }}>
+                Field area where DJI flight data exists (actually executed), per field.
+              </p>
+              {breakdownDetailRows.executed.length === 0 ? (
+                <div className="pd-popup-empty">No executed fields for this view</div>
+              ) : (
+                <table className="pd-popup-table">
+                  <thead>
+                    <tr>
+                      <th>Plan ID</th>
+                      <th>Date</th>
+                      <th>Estate</th>
+                      <th>Field</th>
+                      <th style={{ textAlign: 'center' }}>Executed (Ha)</th>
+                      <th style={{ textAlign: 'center' }}>DJI Covered (Ha)</th>
+                      <th>Pilot</th>
+                      <th>Ops room operator</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {breakdownDetailRows.executed.map((f) => (
+                      <tr key={f.key}>
+                        <td>{f.planId}</td>
+                        <td>{f.pickedDate}</td>
+                        <td>{f.estateName}</td>
+                        <td>{f.fieldName}</td>
+                        <td style={{ textAlign: 'center', fontWeight: 700 }}>
+                          {f.executedHa.toFixed(2)}
+                        </td>
+                        <td style={{ textAlign: 'center' }}>{f.coveredHa.toFixed(2)}</td>
+                        <td>{f.pilotName}</td>
+                        <td>{f.opsRoomOperatorName}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <td colSpan={4} style={{ fontWeight: 700 }}>
+                        Total executed extent
+                      </td>
+                      <td style={{ fontWeight: 700, textAlign: 'center' }}>
+                        {(summaryData?.executedExtent || 0).toFixed(2)}
+                      </td>
+                      <td style={{ fontWeight: 700, textAlign: 'center' }}>
+                        {breakdownDetailRows.executed
+                          .reduce((s, f) => s + f.coveredHa, 0)
+                          .toFixed(2)}
+                      </td>
+                      <td colSpan={2} />
+                    </tr>
+                  </tfoot>
+                </table>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!isTeaRevenueChart && isInternalDashboard && detailPopup === 'partial' && (
+        <div className="pd-popup-overlay" onClick={closeDetailPopup}>
+          <div className="pd-popup pd-popup--wide" onClick={(e) => e.stopPropagation()}>
+            <div className="pd-popup-header pd-popup-header--orange">
+              <span className="pd-popup-title">
+                <FaAdjust /> Partially Completed Fields ({effectiveMonthName || effectiveMonth})
+              </span>
+              <div className="pd-popup-header-actions">
+                {breakdownDetailRows.partial.length > 0 && (
+                  <button type="button" className="pd-popup-excel-btn" onClick={exportPartialDetailExcel}>
+                    <FaFileExcel /> Excel
+                  </button>
+                )}
+                <button type="button" className="pd-popup-close" onClick={closeDetailPopup}>
+                  <FaTimes />
+                </button>
+              </div>
+            </div>
+            <div className="pd-popup-body">
+              {breakdownDetailRows.partial.length === 0 ? (
+                <div className="pd-popup-empty">No partially completed fields for this view</div>
+              ) : (
+                <table className="pd-popup-table">
+                  <thead>
+                    <tr>
+                      <th>Plan ID</th>
+                      <th>Date</th>
+                      <th>Estate</th>
+                      <th>Field</th>
+                      <th style={{ textAlign: 'center' }}>Field Size (Ha)</th>
+                      <th style={{ textAlign: 'center' }}>Completed (Ha)</th>
+                      <th style={{ textAlign: 'center' }}>%</th>
+                      <th>Pilot</th>
+                      <th>Reason</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {breakdownDetailRows.partial.map((f) => {
+                      const pct = f.fieldArea > 0 ? ((f.completedArea / f.fieldArea) * 100).toFixed(1) : '0.0';
+                      return (
+                        <tr key={f.key}>
+                          <td>{f.planId}</td>
+                          <td>{f.pickedDate}</td>
+                          <td>{f.estateName}</td>
+                          <td>{f.fieldName}</td>
+                          <td style={{ textAlign: 'center' }}>{f.fieldArea.toFixed(2)}</td>
+                          <td style={{ textAlign: 'center', color: '#ea580c' }}>
+                            {f.completedArea.toFixed(2)}
+                          </td>
+                          <td style={{ textAlign: 'center' }}>
+                            <span
+                              className={`plantation-completion-badge ${
+                                parseFloat(pct) >= 100 ? 'complete' : parseFloat(pct) >= 50 ? 'good' : 'low'
+                              }`}
+                            >
+                              {pct}%
+                            </span>
+                          </td>
+                          <td>{f.pilotName}</td>
+                          <td>
+                            <span className="pd-partial-reason">{f.partialReason}</span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <td colSpan={4} style={{ fontWeight: 700 }}>
+                        Total Partially Completed
+                      </td>
+                      <td style={{ fontWeight: 700, textAlign: 'center' }}>
+                        {(summaryData?.partiallyCompletedExtent || 0).toFixed(2)}
+                      </td>
+                      <td style={{ fontWeight: 700, textAlign: 'center' }}>
+                        {breakdownDetailRows.partial.reduce((s, f) => s + f.completedArea, 0).toFixed(2)}
+                      </td>
+                      <td colSpan={3} />
+                    </tr>
+                  </tfoot>
+                </table>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!isTeaRevenueChart && detailPopup === 'dayEnd' && (
+        <div className="pd-popup-overlay" onClick={closeDetailPopup}>
+          <div className="pd-popup pd-popup--wide" onClick={(e) => e.stopPropagation()}>
+            <div className="pd-popup-header pd-popup-header--amber">
+              <span className="pd-popup-title">
+                <FaMoon /> DayEnd Incomplete ({effectiveMonthName || effectiveMonth})
+              </span>
+              <div className="pd-popup-header-actions">
+                {breakdownDetailRows.dayEnd.length > 0 && (
+                  <button type="button" className="pd-popup-excel-btn" onClick={exportDayEndDetailExcel}>
+                    <FaFileExcel /> Excel
+                  </button>
+                )}
+                <button type="button" className="pd-popup-close" onClick={closeDetailPopup}>
+                  <FaTimes />
+                </button>
+              </div>
+            </div>
+            <div className="pd-popup-body">
+              {breakdownDetailRows.dayEnd.length === 0 ? (
+                <div className="pd-popup-empty">No day-end incomplete fields for this view</div>
+              ) : (
+                <table className="pd-popup-table">
+                  <thead>
+                    <tr>
+                      <th>Plan ID</th>
+                      <th>Date</th>
+                      <th>Estate</th>
+                      <th>Field</th>
+                      <th style={{ textAlign: 'center' }}>Planned (Ha)</th>
+                      <th style={{ textAlign: 'center' }}>DJI Covered (Ha)</th>
+                      <th>Pilot</th>
+                      <th>Ops room operator</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {breakdownDetailRows.dayEnd.map((f) => (
+                      <tr key={f.key}>
+                        <td>{f.planId}</td>
+                        <td>{f.pickedDate}</td>
+                        <td>{f.estateName}</td>
+                        <td>{f.fieldName}</td>
+                        <td style={{ textAlign: 'center' }}>{f.plannedHa.toFixed(2)}</td>
+                        <td style={{ textAlign: 'center' }}>{f.coveredHa.toFixed(2)}</td>
+                        <td>{f.pilotName}</td>
+                        <td>{f.opsRoomOperatorName}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <td colSpan={4} style={{ fontWeight: 700 }}>
+                        Total DayEnd Incomplete
+                      </td>
+                      <td style={{ fontWeight: 700, textAlign: 'center' }}>
+                        {breakdownDetailRows.dayEnd
+                          .reduce((s, f) => s + f.plannedHa, 0)
+                          .toFixed(2)}
+                      </td>
+                      <td />
+                      <td />
+                      <td />
+                    </tr>
+                  </tfoot>
+                </table>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Map Image Popup */}
       {mapPopup && (

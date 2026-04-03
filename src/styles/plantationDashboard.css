@@ -275,6 +275,10 @@
   background: linear-gradient(135deg, #ea580c 0%, #f97316 100%);
 }
 
+.pd-popup-header--amber {
+  background: linear-gradient(135deg, #b45309 0%, #d97706 100%);
+}
+
 .pd-popup-title {
   display: flex;
   align-items: center;
@@ -2789,12 +2793,48 @@
   background-clip: text;
 }
 
+.metric-subvalue-class-breakdown {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 600;
+  margin-top: 4px;
+  margin-bottom: 2px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
 .metric-hint-class-breakdown {
   font-size: 12px;
   color: #94a3b8;
   font-style: italic;
   margin-top: 4px;
   font-weight: 500;
+}
+
+.cbd-metric-view-details {
+  margin-top: 6px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: #2563eb;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cbd-metric-view-details:hover {
+  text-decoration: underline;
+}
+
+.container-class-breakdown--internal .cbd-metric-view-details {
+  color: #93c5fd;
+}
+
+.container-class-breakdown--internal .metric-subvalue-class-breakdown {
+  color: #94a3b8;
 }
 
 /* Breakdown Controls */
@@ -4005,6 +4045,86 @@
   color: #ea580c;
 }
 
+.cbd-field-item--planned {
+  background: #eff6ff;
+}
+
+.cbd-field-item--executed {
+  background: #f5f3ff;
+}
+
+.cbd-field-item--completed {
+  background: #f0fdf4;
+}
+
+.cbd-field-header--planned {
+  border-left: 3px solid #2563eb;
+}
+
+.cbd-field-header--planned:hover {
+  background-color: #dbeafe !important;
+}
+
+.cbd-field-header--executed {
+  border-left: 3px solid #7c3aed;
+}
+
+.cbd-field-header--executed:hover {
+  background-color: #ede9fe !important;
+}
+
+.cbd-field-header--completed {
+  border-left: 3px solid #15803d;
+}
+
+.cbd-field-header--completed:hover {
+  background-color: #dcfce7 !important;
+}
+
+.cbd-field-name--planned {
+  color: #1d4ed8;
+}
+
+.cbd-field-name--executed {
+  color: #6d28d9;
+}
+
+.cbd-field-name--completed {
+  color: #15803d;
+}
+
+.cbd-field-status-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 10px;
+  letter-spacing: 0.3px;
+  vertical-align: middle;
+}
+
+.cbd-field-status-badge--planned {
+  background: #2563eb;
+}
+
+.cbd-field-status-badge--executed {
+  background: #7c3aed;
+}
+
+.cbd-field-status-badge--completed {
+  background: #15803d;
+}
+
+.cbd-field-status-badge--cancelled {
+  background: #ef4444;
+}
+
+.cbd-field-status-badge--partial {
+  background: #f97316;
+}
+
 .cbd-field-cancel-info {
   display: flex;
   align-items: center;
@@ -4668,6 +4788,26 @@
 
 .container-class-breakdown--internal .cbd-field-header:hover {
   background-color: #e8f4fa;
+}
+
+.container-class-breakdown--internal .cbd-field-header--planned:hover {
+  background-color: #dbeafe !important;
+}
+
+.container-class-breakdown--internal .cbd-field-header--executed:hover {
+  background-color: #ede9fe !important;
+}
+
+.container-class-breakdown--internal .cbd-field-header--completed:hover {
+  background-color: #dcfce7 !important;
+}
+
+.container-class-breakdown--internal .cbd-field-header--cancelled:hover {
+  background-color: #fee2e2 !important;
+}
+
+.container-class-breakdown--internal .cbd-field-header--partial:hover {
+  background-color: #fff7ed !important;
 }
 
 .container-class-breakdown--internal .cbd-field-details {

@@ -157,12 +157,12 @@ export const plantationDashboardApi = baseApi.injectEndpoints({
 
     // Get dashboard summary (6 metric cards for main page)
     getDashboardSummary: builder.query({
-      queryFn: async ({ yearMonth, missionType, completedPlansOnly = true }) => {
+      queryFn: async ({ yearMonth, missionType, completedPlansOnly = true, planCountPickedDate }) => {
         const result = await nodeBackendBaseQuery(
           {
             url: '/api/plantation-dashboard/dashboard-summary',
             method: 'POST',
-            body: { yearMonth, missionType, completedPlansOnly },
+            body: { yearMonth, missionType, completedPlansOnly, ...(planCountPickedDate ? { planCountPickedDate } : {}) },
           },
           {},
           {}

@@ -136,9 +136,16 @@ const PlantationDashboard = ({
     };
   }, [userData, groups, plantations, regions, estates, jobRoles]);
 
-  // Fetch summary for current month
+  const todayYmd = format(new Date(), 'yyyy-MM-dd');
+
+  // Fetch summary for current month; internal dashboard: plan count / total planned = today only (picked date)
   const { data: summaryResponse, isLoading: summaryLoading } = useGetDashboardSummaryQuery(
-    { yearMonth: getCurrentYearMonth(), missionType, completedPlansOnly },
+    {
+      yearMonth: getCurrentYearMonth(),
+      missionType,
+      completedPlansOnly,
+      ...(isInternalDashboard ? { planCountPickedDate: todayYmd } : {}),
+    },
     { refetchOnMountOrArgChange: true }
   );
   const summary = summaryResponse?.data || {};
