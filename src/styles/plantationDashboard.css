@@ -202,6 +202,15 @@
   margin-bottom: 4px;
 }
 
+.pd-metric-subtitle {
+  font-size: 11px;
+  font-weight: 500;
+  color: #64748b;
+  line-height: 1.35;
+  margin-top: 2px;
+  margin-bottom: 2px;
+}
+
 .pd-metric-link {
   display: inline-flex;
   align-items: center;

@@ -137,24 +137,31 @@ const PlantationDashboard = ({
   }, [userData, groups, plantations, regions, estates, jobRoles]);
 
   const todayYmd = format(new Date(), 'yyyy-MM-dd');
+  const currentYearMonth = getCurrentYearMonth();
+  const planCountFromMonthStart = `${currentYearMonth}-01`;
 
-  // Fetch summary for current month; internal dashboard: plan count / total planned = today only (picked date)
+  // Fetch summary for current month; internal dashboard: plan count / total planned = picked date from 1st of month through today
   const { data: summaryResponse, isLoading: summaryLoading } = useGetDashboardSummaryQuery(
     {
-      yearMonth: getCurrentYearMonth(),
+      yearMonth: currentYearMonth,
       missionType,
       completedPlansOnly,
-      ...(isInternalDashboard ? { planCountPickedDate: todayYmd } : {}),
+      ...(isInternalDashboard
+        ? { planCountPickedFrom: planCountFromMonthStart, planCountPickedTo: todayYmd }
+        : {}),
     },
     { refetchOnMountOrArgChange: true }
   );
   const summary = summaryResponse?.data || {};
 
   // Fetch completed reports for executed popup (current month)
-  const currentYM = getCurrentYearMonth();
-  const monthStart = `${currentYM}-01`;
-  const monthEndDate = new Date(parseInt(currentYM.split('-')[0]), parseInt(currentYM.split('-')[1]), 0);
-  const monthEnd = `${currentYM}-${String(monthEndDate.getDate()).padStart(2, '0')}`;
+  const monthStart = planCountFromMonthStart;
+  const monthEndDate = new Date(
+    parseInt(currentYearMonth.split('-')[0]),
+    parseInt(currentYearMonth.split('-')[1]),
+    0
+  );
+  const monthEnd = `${currentYearMonth}-${String(monthEndDate.getDate()).padStart(2, '0')}`;
 
   const { data: reportsData, isLoading: reportsLoading } = useGetCompletedMissionReportsQuery(
     { startDate: monthStart, endDate: monthEnd, missionType, completedPlansOnly },
@@ -249,6 +256,10 @@ const PlantationDashboard = ({
       bg: '#eff6ff',
       border: '#1d4ed8',
       clickable: false,
+      subtitle:
+        summary.planCount != null
+          ? `${summary.planCount} ${summary.planCount === 1 ? 'plan' : 'plans'}`
+          : null,
     },
     {
       key: 'estateApproved',
@@ -439,6 +450,9 @@ const PlantationDashboard = ({
                   </>
                 )}
               </div>
+              {card.subtitle != null && !summaryLoading && (
+                <div className="pd-metric-subtitle">{card.subtitle}</div>
+              )}
               {card.clickable && (
                 <span className="pd-metric-link">
                   View Details <FaChevronRight />
