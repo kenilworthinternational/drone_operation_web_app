@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   BarChart,
   Bar,
@@ -20,10 +20,12 @@ import { FaFileExcel } from 'react-icons/fa';
 import * as XLSX from 'xlsx';
 import { plantationDashboardApi } from '../../../../api/services NodeJs/plantationDashboardApi';
 import { useAppDispatch } from '../../../../store/hooks';
+import { appendShellParams } from '../../../../utils/shellSearchParams';
 
-const PlannedVsTeaRevenueChart = ({ missionType, months = 6, startMonth, endMonth }) => {
+const PlannedVsTeaRevenueChart = ({ missionType, months = 6, startMonth, endMonth, basePath = '/home/plantation-dashboard' }) => {
   const navigate = useNavigate();
-  const { data, isLoading, error } = useGetPlannedVsTeaRevenueChartQuery({
+  const routerLocation = useLocation();
+  const { data, isLoading, isFetching, error } = useGetPlannedVsTeaRevenueChartQuery({
     missionType,
     months,
     startMonth,
@@ -221,9 +223,12 @@ const PlannedVsTeaRevenueChart = ({ missionType, months = 6, startMonth, endMont
     return (
       <div className="plantation-chart-card">
         <h3 className="plantation-chart-title">Planned vs Tea Revenue Extent (Ha)</h3>
-        <div className="plantation-chart-loading">
-          <Bars height="40" width="40" color="#3b82f6" />
-          <span>Loading chart data...</span>
+        <div className="plantation-chart-loading plantation-chart-loading--initial" aria-busy="true">
+          <div className="plantation-chart-loading-shimmer" aria-hidden />
+          <div className="plantation-chart-loading-inner">
+            <Bars height="40" width="40" color="#3b82f6" />
+            <span>Loading chart data...</span>
+          </div>
         </div>
       </div>
     );
@@ -280,7 +285,13 @@ const PlannedVsTeaRevenueChart = ({ missionType, months = 6, startMonth, endMont
           {isExporting ? 'Exporting...' : ''}
         </button>
       </div>
-      <div className="plantation-chart-container">
+      <div className="plantation-chart-container plantation-chart-container--loadable">
+        {isFetching && (
+          <div className="plantation-chart-loading-overlay" aria-busy="true" aria-live="polite">
+            <Bars height="36" width="36" color="#3b82f6" />
+            <span>Updating chart...</span>
+          </div>
+        )}
         <ResponsiveContainer width="100%" height={400}>
           <BarChart 
             data={chartData} 
@@ -292,17 +303,30 @@ const PlannedVsTeaRevenueChart = ({ missionType, months = 6, startMonth, endMont
                 const clickedMetric = clickedBar.dataKey;
                 
                 // Navigate to breakdown page with chart data
-                navigate('/home/plantation-dashboard/chart-breakdown', {
-                  state: {
-                    chartType: 'planned-vs-tea-revenue',
-                    missionType,
-                    month: clickedData.month,
-                    monthName: clickedData.monthName,
-                    chartData: clickedData,
-                    expandedMetric: clickedMetric === 'teaRevenueExtent' ? 'teaRevenue' : 
-                                   clickedMetric === 'plannedExtent' ? 'planned' : null
+                const shell = new URLSearchParams();
+                appendShellParams(shell, routerLocation.search);
+                const shellQs = shell.toString();
+                navigate(
+                  {
+                    pathname: `${basePath}/chart-breakdown`,
+                    ...(shellQs ? { search: `?${shellQs}` } : {}),
+                  },
+                  {
+                    state: {
+                      chartType: 'planned-vs-tea-revenue',
+                      missionType,
+                      month: clickedData.month,
+                      monthName: clickedData.monthName,
+                      chartData: clickedData,
+                      expandedMetric:
+                        clickedMetric === 'teaRevenueExtent'
+                          ? 'teaRevenue'
+                          : clickedMetric === 'plannedExtent'
+                            ? 'planned'
+                            : null,
+                    },
                   }
-                });
+                );
               }
             }}
           >

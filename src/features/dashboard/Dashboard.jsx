@@ -1,13 +1,8 @@
 import React from 'react';
-import '../../styles/dashboard.css';
+import PlantationDashboard from '../../sections/plantation/plantationDashboard/PlantationDashboard';
 
-const Services = () => {
-  return (
-    <div className="services">
-      <h2>Our Dashboard</h2>
-      <p>Details about the Dashboard will go here...</p>
-    </div>
-  );
+const Dashboard = () => {
+  return <PlantationDashboard basePath="/home/dashboard" showUserHierarchy={false} />;
 };
 
-export default Services;
+export default Dashboard;

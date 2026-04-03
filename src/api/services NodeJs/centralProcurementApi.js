@@ -1,5 +1,5 @@
 import { baseApi } from '../baseApi';
-import { nodeBackendBaseQuery } from './nodeBackendConfig';
+import { nodeBackendBaseQuery, getNodeBackendUrl, getToken } from './nodeBackendConfig';
 
 const postQuery = async (url, body = {}) => nodeBackendBaseQuery(
   {
@@ -10,6 +10,23 @@ const postQuery = async (url, body = {}) => nodeBackendBaseQuery(
   {},
   {}
 );
+
+const postFormData = async (url, formData) => {
+  const baseUrl = getNodeBackendUrl();
+  const token = getToken();
+  const headers = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const res = await fetch(`${baseUrl}${url}`, {
+    method: 'POST',
+    headers,
+    body: formData,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    return { error: { status: res.status, data: data?.message || data?.error || 'Request failed' } };
+  }
+  return { data };
+};
 
 export const centralProcurementApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
@@ -139,9 +156,27 @@ export const centralProcurementApi = baseApi.injectEndpoints({
         return { data: result.data?.data || [] };
       },
     }),
+    getQuotation: builder.query({
+      queryFn: async (id) => {
+        const result = await postQuery('/api/stock-assets/procurement/quotations/view', { id });
+        if (result.error) return { error: result.error };
+        return { data: result.data?.data || null };
+      },
+    }),
     createSupplierQuotation: builder.mutation({
       queryFn: async (payload) => {
-        const result = await postQuery('/api/stock-assets/procurement/quotations/create', payload);
+        const { file, items, ...rest } = payload;
+        if (file && file instanceof File) {
+          const formData = new FormData();
+          Object.entries(rest).forEach(([k, v]) => {
+            if (v != null && v !== '') formData.append(k, typeof v === 'object' ? JSON.stringify(v) : String(v));
+          });
+          if (Array.isArray(items) && items.length) formData.append('items', JSON.stringify(items));
+          formData.append('scanned_document', file);
+          const result = await postFormData('/api/stock-assets/procurement/quotations/create', formData);
+          return result.error ? { error: result.error } : { data: result.data?.data || null };
+        }
+        const result = await postQuery('/api/stock-assets/procurement/quotations/create', { ...rest, items });
         return result.error ? { error: result.error } : { data: result.data?.data || null };
       },
     }),
@@ -167,9 +202,10 @@ export const centralProcurementApi = baseApi.injectEndpoints({
     // PO + GRN
     getPurchaseOrders: builder.query({
       queryFn: async (filters = {}) => {
-        const result = await postQuery('/api/stock-assets/procurement/purchase-orders', filters);
+        const result = await postQuery('/api/stock-assets/procurement/purchase-orders', filters || {});
         if (result.error) return { error: result.error };
-        return { data: result.data?.data || [] };
+        const list = result.data?.data ?? result.data;
+        return { data: Array.isArray(list) ? list : [] };
       },
     }),
     getPurchaseOrder: builder.query({
@@ -220,6 +256,7 @@ export const {
   useGetNeedToProcureQueueQuery,
   useGetProcurementRequestsQuery,
   useGetProcurementRequestQuery,
+  useLazyGetProcurementRequestQuery,
   useCreateProcurementRequestMutation,
   useUpdateProcurementRequestStatusMutation,
   useGetApprovedProcureQueueQuery,
@@ -227,14 +264,18 @@ export const {
   useCreateRfqMutation,
   useGetPendingQuotationsQueueQuery,
   useGetSupplierQuotationsQuery,
+  useGetQuotationQuery,
+  useLazyGetQuotationQuery,
   useCreateSupplierQuotationMutation,
   useSaveQuotationEvaluationMutation,
   useSaveTechnicalEvaluationMutation,
   useFinalizeQuotationMutation,
   useGetPurchaseOrdersQuery,
   useGetPurchaseOrderQuery,
+  useLazyGetPurchaseOrderQuery,
   useCreatePurchaseOrderMutation,
   useGetGrnsQuery,
   useGetGrnQuery,
+  useLazyGetGrnQuery,
   useCreateGrnMutation,
 } = centralProcurementApi;

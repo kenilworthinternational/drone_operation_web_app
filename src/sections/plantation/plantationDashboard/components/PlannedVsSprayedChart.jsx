@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
-  BarChart,
+  ComposedChart,
   Bar,
   XAxis,
   YAxis,
@@ -9,8 +9,10 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  Cell
+  Cell,
+  Customized,
 } from 'recharts';
+import createPilotReferenceLinesRenderer from './PilotReferenceLinesLayer';
 import { 
   useGetTeaRevenueVsSprayedChartQuery
 } from '../../../../api/services NodeJs/plantationDashboardApi';
@@ -20,17 +22,48 @@ import { FaFileExcel } from 'react-icons/fa';
 import * as XLSX from 'xlsx';
 import { plantationDashboardApi } from '../../../../api/services NodeJs/plantationDashboardApi';
 import { useAppDispatch } from '../../../../store/hooks';
+import { appendShellParams } from '../../../../utils/shellSearchParams';
 
-const PlannedVsSprayedChart = ({ missionType, months = 6, startMonth, endMonth }) => {
+const PlannedVsSprayedChart = ({
+  missionType,
+  months = 6,
+  startMonth,
+  endMonth,
+  basePath = '/home/plantation-dashboard',
+}) => {
   const navigate = useNavigate();
-  const { data, isLoading, error } = useGetTeaRevenueVsSprayedChartQuery({
+  const routerLocation = useLocation();
+  const { data, isLoading, isFetching, error } = useGetTeaRevenueVsSprayedChartQuery({
     missionType,
     months,
     startMonth,
     endMonth
   });
 
-  const chartData = data?.data || [];
+  // Pilot reference lines only on internal `#/home/dashboard` (and sub-routes), never on `#/home/plantation-dashboard`.
+  const bp = String(basePath || '');
+  const locPath = String(routerLocation.pathname || '');
+  const shouldShowMinimumLine =
+    bp === '/home/dashboard' ||
+    bp.startsWith('/home/dashboard/') ||
+    locPath === '/home/dashboard' ||
+    locPath.startsWith('/home/dashboard/');
+
+  // Reference lines: min = count×7 Ha, avg = count×15 Ha. Use API only when it sends pilotExtentMin / pilotExtentAvg
+  // (do not use legacy pilotExtent as avg — production often sends pilotExtent = count×7, which would collapse both lines).
+  const PILOT_MIN_HA = 7;
+  const PILOT_AVG_HA = 15;
+  const chartData = (data?.data || []).map((row) => {
+    if (!shouldShowMinimumLine) return row;
+    const executedPlanCount = parseInt(row?.executedPlanCount, 10) || 0;
+    let pilotExtentMin = executedPlanCount * PILOT_MIN_HA;
+    let pilotExtentAvg = executedPlanCount * PILOT_AVG_HA;
+    const rawMin = parseFloat(row?.pilotExtentMin);
+    const rawAvg = parseFloat(row?.pilotExtentAvg);
+    if (Number.isFinite(rawMin)) pilotExtentMin = rawMin;
+    if (Number.isFinite(rawAvg)) pilotExtentAvg = rawAvg;
+    return { ...row, pilotExtentMin, pilotExtentAvg };
+  });
   const userData = getUserData();
   const dispatch = useAppDispatch();
   const [isExporting, setIsExporting] = useState(false);
@@ -75,6 +108,16 @@ const PlannedVsSprayedChart = ({ missionType, months = 6, startMonth, endMonth }
           <p style={{ margin: '4px 0', color: '#e8923b' }}>
             &nbsp;&nbsp;Covered Spreading: {parseFloat(d.coveredSpreadingExtent || 0).toFixed(2)} Ha
           </p>
+          {shouldShowMinimumLine && (
+            <>
+              <p style={{ margin: '6px 0 0', color: '#dc2626', fontWeight: 600 }}>
+                Minimum (deployed pilot×7Ha): {parseFloat(d.pilotExtentMin || 0).toFixed(2)} Ha ({d.executedPlanCount || 0} plans)
+              </p>
+              <p style={{ margin: '4px 0 0', color: '#2563eb', fontWeight: 600 }}>
+                Average (deployed pilot×15Ha): {parseFloat(d.pilotExtentAvg || 0).toFixed(2)} Ha
+              </p>
+            </>
+          )}
         </div>
       );
     }
@@ -199,9 +242,12 @@ const PlannedVsSprayedChart = ({ missionType, months = 6, startMonth, endMonth }
     return (
       <div className="plantation-chart-card">
         <h3 className="plantation-chart-title">Planned vs Executed (Ha)</h3>
-        <div className="plantation-chart-loading">
-          <Bars height="40" width="40" color="#3b82f6" />
-          <span>Loading chart data...</span>
+        <div className="plantation-chart-loading plantation-chart-loading--initial" aria-busy="true">
+          <div className="plantation-chart-loading-shimmer" aria-hidden />
+          <div className="plantation-chart-loading-inner">
+            <Bars height="40" width="40" color="#3b82f6" />
+            <span>Loading chart data...</span>
+          </div>
         </div>
       </div>
     );
@@ -232,26 +278,41 @@ const PlannedVsSprayedChart = ({ missionType, months = 6, startMonth, endMonth }
           {isExporting ? 'Exporting...' : ''}
         </button>
       </div>
-      <div className="plantation-chart-container">
+      <div className="plantation-chart-container plantation-chart-container--loadable">
+        {isFetching && (
+          <div className="plantation-chart-loading-overlay" aria-busy="true" aria-live="polite">
+            <Bars height="36" width="36" color="#3b82f6" />
+            <span>Updating chart...</span>
+          </div>
+        )}
         <ResponsiveContainer width="100%" height={400}>
-          <BarChart 
-            data={chartData} 
+          <ComposedChart
+            data={chartData}
             margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
             onClick={(data) => {
               if (data && data.activePayload && data.activePayload.length > 0) {
                 const clickedBar = data.activePayload[0];
                 const clickedData = clickedBar.payload;
-                
-                navigate('/home/plantation-dashboard/chart-breakdown', {
-                  state: {
-                    chartType: 'tea-revenue-vs-sprayed',
-                    missionType,
-                    month: clickedData.month,
-                    monthName: clickedData.monthName,
-                    chartData: clickedData,
-                    expandedMetric: 'planned'
+
+                const shell = new URLSearchParams();
+                appendShellParams(shell, routerLocation.search);
+                const shellQs = shell.toString();
+                navigate(
+                  {
+                    pathname: `${basePath}/chart-breakdown`,
+                    ...(shellQs ? { search: `?${shellQs}` } : {}),
+                  },
+                  {
+                    state: {
+                      chartType: 'tea-revenue-vs-sprayed',
+                      missionType,
+                      month: clickedData.month,
+                      monthName: clickedData.monthName,
+                      chartData: clickedData,
+                      expandedMetric: 'planned',
+                    },
                   }
-                });
+                );
               }
             }}
           >
@@ -267,16 +328,30 @@ const PlannedVsSprayedChart = ({ missionType, months = 6, startMonth, endMonth }
               label={{ value: 'Hectares (Ha)', angle: -90, position: 'insideLeft', style: { fill: '#64748b' } }}
             />
             <Tooltip content={<CustomChartTooltip />} />
-            <Legend content={({ payload }) => (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 24px', justifyContent: 'center', padding: '8px 0', fontSize: 13 }}>
-                {payload && payload.map((entry, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span style={{ width: 12, height: 12, borderRadius: 2, backgroundColor: entry.color, display: 'inline-block', flexShrink: 0 }} />
-                    <span style={{ color: '#555' }}>{entry.value}</span>
-                  </div>
-                ))}
-              </div>
-            )} />
+            <Legend
+              content={({ payload }) => (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 24px', justifyContent: 'center', padding: '8px 0', fontSize: 13 }}>
+                  {payload && payload.map((entry, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ width: 12, height: 12, borderRadius: 2, backgroundColor: entry.color, display: 'inline-block', flexShrink: 0 }} />
+                      <span style={{ color: '#555' }}>{entry.value}</span>
+                    </div>
+                  ))}
+                  {shouldShowMinimumLine && (
+                    <>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ width: 14, height: 3, borderRadius: 1, backgroundColor: '#dc2626', display: 'inline-block', flexShrink: 0 }} />
+                        <span style={{ color: '#555' }}>Minimum (deployed pilot×7Ha)</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ width: 14, height: 3, borderRadius: 1, backgroundColor: '#2563eb', display: 'inline-block', flexShrink: 0 }} />
+                        <span style={{ color: '#555' }}>Average (deployed pilot×15Ha)</span>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+            />
             {/* Stacked Bar 1: Executed (bottom, dark green) + Remaining Approved (top, light green) */}
             <Bar 
               dataKey="executedExtent" 
@@ -323,7 +398,16 @@ const PlannedVsSprayedChart = ({ missionType, months = 6, startMonth, endMonth }
                 <Cell key={`cell-cov-spread-${index}`} fill="#fdba74" />
               ))}
             </Bar>
-          </BarChart>
+            {shouldShowMinimumLine && (
+              <Customized
+                component={createPilotReferenceLinesRenderer({
+                  chartData,
+                  minKey: 'pilotExtentMin',
+                  maxKey: 'pilotExtentAvg',
+                })}
+              />
+            )}
+          </ComposedChart>
         </ResponsiveContainer>
       </div>
       <div className="plantation-chart-footer">

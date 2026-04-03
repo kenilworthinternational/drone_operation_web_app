@@ -30,6 +30,27 @@
   max-width: 48rem;
 }
 
+.auth-controls-sync-btn {
+  padding: 8px 16px;
+  background: #64748b;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.auth-controls-sync-btn:hover:not(:disabled) {
+  background: #475569;
+}
+
+.auth-controls-sync-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* Tab Navigation */
 .auth-controls-tabs {
   display: flex;

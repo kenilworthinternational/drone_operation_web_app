@@ -29,14 +29,14 @@ const Login = () => {
           if (userData.member_type === 'e') {
             navigate('/home/plantation-dashboard');
           } else {
-            navigate('/home/create');
+            navigate('/home');
           }
         } catch (error) {
           console.error('Error parsing userData:', error);
-          navigate('/home/create');
+          navigate('/home');
         }
       } else {
-        navigate('/home/create');
+        navigate('/home');
       }
     }
   }, [isAuthenticated, navigate]);

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import '../styles/modernreport.css';
 import { FaChartLine, FaChartBar, FaChartPie, FaFileInvoiceDollar, FaPlane, FaUsers, FaTasks, FaCalendarCheck, FaTimesCircle, FaComments, FaSeedling } from 'react-icons/fa';
 
@@ -64,6 +64,7 @@ const ComingSoonReport = ({ reportName }) => (
 
 const ModernReportSection = ({ category = null }) => {
   const navigate = useNavigate();
+  const routerLocation = useLocation();
   // If category prop is provided, use it and disable category switching
   // If category is null or 'management', show all categories (Corporate/Management view with tabs)
   const isCorporateView = category === null || category === 'management';
@@ -350,7 +351,7 @@ const ModernReportSection = ({ category = null }) => {
             {category === 'ops' && (
               <button 
                 className="back-button-modernreport" 
-                onClick={() => navigate('/home/workflowDashboard')}
+                onClick={() => navigate({ pathname: '/home/workflowDashboard', search: routerLocation.search })}
                 title="Back to Workflow Dashboard"
               >
                 <span className="back-btn-icon-modernreport">←</span>

@@ -8,16 +8,50 @@ function getTodayYYYYMMDD() {
   return new Date().toISOString().split('T')[0];
 }
 
-/** Derive current status label for a field row */
+/** Format datetime for display (handles ISO string or time-only); returns local readable string */
+function formatFieldDateTime(val) {
+  if (val == null || val === '') return '';
+  const s = String(val).trim();
+  if (!s) return '';
+  try {
+    const d = new Date(s);
+    if (Number.isNaN(d.getTime())) return s;
+    const date = d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+    const time = d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+    return `${date} ${time}`;
+  } catch (_) {
+    return s;
+  }
+}
+
+/** Google Maps URL for lat,lng */
+function getMapUrl(lat, lng) {
+  if (lat == null && lng == null) return null;
+  const la = lat != null ? Number(lat) : 0;
+  const ln = lng != null ? Number(lng) : 0;
+  if (Number.isNaN(la) || Number.isNaN(ln)) return null;
+  return `https://www.google.com/maps?q=${la},${ln}`;
+}
+
+/** Treat 0 or null as empty for area-based status */
+function hasArea(val) {
+  return val != null && Number(val) > 0 && !Number.isNaN(Number(val));
+}
+
+/** Derive current status label for a field row from area metrics (waypoint, pilot, DJI) */
 function getFieldStatus(f) {
   const finalStatus = (f.final_status || '').toLowerCase();
   const remaining = f.remainingOptions != null && f.remainingOptions !== 0;
-  if (finalStatus === 'x') return { label: 'Cancelled', className: 'field-status-cancelled-com' };
-  if (finalStatus === 'c') {
-    if (!remaining) return { label: 'Completed', className: 'field-status-completed-com' };
-    return { label: 'Partial completed', reason: f.remaining_reason || '', className: 'field-status-partial-com' };
-  }
-  return { label: 'In progress', className: 'field-status-inprogress-com' };
+  if (finalStatus === 'x') return { label: 'Cancelled', reason: f.cancel_reason || '', className: 'field-status-cancelled-com' };
+  if (finalStatus === 'c' && remaining) return { label: 'Partial completed', reason: f.remaining_reason || '', className: 'field-status-partial-com' };
+
+  const waypoint = hasArea(f.waypoint_area_ha);
+  const pilot = hasArea(f.pilot_field_area_ha);
+  const dji = hasArea(f.dji_field_area_ha);
+  if (!waypoint) return { label: 'Pending', className: 'field-status-pending-com' };
+  if (!pilot) return { label: 'In progress', className: 'field-status-inprogress-com' };
+  if (!dji) return { label: 'OPS not confirmed', className: 'field-status-need-approval-com' };
+  return { label: 'Completed', className: 'field-status-completed-com' };
 }
 
 const TodayPlans = () => {
@@ -208,13 +242,31 @@ const TodayPlans = () => {
                                 <span className="field-detail-value-com">{f.start_time != null && f.start_time !== '' ? String(f.start_time) : '—'}</span>
                               </div>
                               <div className="today-plan-field-detail-row-com">
+                                <span className="field-detail-label-com">Field size:</span>
+                                <span className="field-detail-value-com">{f.field_size_ha != null ? `${f.field_size_ha} Ha` : '—'}</span>
+                              </div>
+                              <div className="today-plan-field-detail-row-com">
+                                <span className="field-detail-label-com">Waypoint size:</span>
+                                <span className="field-detail-value-com">{f.waypoint_area_ha != null ? `${f.waypoint_area_ha} Ha` : '—'}</span>
+                              </div>
+                              <div className="today-plan-field-detail-row-com">
+                                <span className="field-detail-label-com">Plot completed field area:</span>
+                                <span className="field-detail-value-com">{f.pilot_field_area_ha != null ? `${f.pilot_field_area_ha} Ha` : '—'}</span>
+                              </div>
+                              <div className="today-plan-field-detail-row-com">
+                                <span className="field-detail-label-com">Ops room field area (DJI):</span>
+                                <span className="field-detail-value-com">{f.dji_field_area_ha != null ? `${f.dji_field_area_ha} Ha` : '—'}</span>
+                              </div>
+                              <div className="today-plan-field-detail-row-com">
                                 <span className="field-detail-label-com">Water received:</span>
                                 <span className="field-detail-value-com">
                                   {f.water_received === 1 ? 'Yes' : 'No'}
                                   {f.water_received === 1 && (f.water_received_time || f.water_latitude || f.water_longitude) && (
                                     <span className="field-detail-sub-com">
-                                      {f.water_received_time && ` ${String(f.water_received_time)}`}
-                                      {(f.water_latitude || f.water_longitude) && ` @ ${[f.water_latitude, f.water_longitude].filter(Boolean).join(', ')}`}
+                                      {f.water_received_time && ` ${formatFieldDateTime(f.water_received_time)}`}
+                                      {getMapUrl(f.water_latitude, f.water_longitude) && (
+                                        <a href={getMapUrl(f.water_latitude, f.water_longitude)} target="_blank" rel="noopener noreferrer" className="field-detail-map-link-com">View in map</a>
+                                      )}
                                     </span>
                                   )}
                                 </span>
@@ -225,8 +277,10 @@ const TodayPlans = () => {
                                   {f.chemical_received === 1 ? 'Yes' : 'No'}
                                   {f.chemical_received === 1 && (f.chemical_received_time || f.chemical_latitude || f.chemical_longitude) && (
                                     <span className="field-detail-sub-com">
-                                      {f.chemical_received_time && ` ${String(f.chemical_received_time)}`}
-                                      {(f.chemical_latitude || f.chemical_longitude) && ` @ ${[f.chemical_latitude, f.chemical_longitude].filter(Boolean).join(', ')}`}
+                                      {f.chemical_received_time && ` ${formatFieldDateTime(f.chemical_received_time)}`}
+                                      {getMapUrl(f.chemical_latitude, f.chemical_longitude) && (
+                                        <a href={getMapUrl(f.chemical_latitude, f.chemical_longitude)} target="_blank" rel="noopener noreferrer" className="field-detail-map-link-com">View in map</a>
+                                      )}
                                     </span>
                                   )}
                                 </span>

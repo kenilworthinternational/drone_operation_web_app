@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
@@ -37,6 +37,7 @@ const getBackendUrl = () => {
 
 const DjiMapUpload = () => {
   const navigate = useNavigate();
+  const routerLocation = useLocation();
   const userData = JSON.parse(localStorage.getItem('userData')) || {};
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showAddModal, setShowAddModal] = useState(false);
@@ -396,7 +397,7 @@ const DjiMapUpload = () => {
       <div className="dji-map-upload-header">
         <button 
           className="dji-back-btn" 
-          onClick={() => navigate('/home/workflowDashboard')}
+          onClick={() => navigate({ pathname: '/home/workflowDashboard', search: routerLocation.search })}
         >
           ←
         </button>

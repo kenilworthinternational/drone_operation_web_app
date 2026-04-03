@@ -271,12 +271,49 @@
   background: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%);
 }
 
+.pd-popup-header--orange {
+  background: linear-gradient(135deg, #ea580c 0%, #f97316 100%);
+}
+
 .pd-popup-title {
   display: flex;
   align-items: center;
   gap: 10px;
   font-size: 16px;
   font-weight: 700;
+}
+
+.pd-popup-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.pd-popup-excel-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #fff;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.pd-popup-excel-btn:hover {
+  background: rgba(255, 255, 255, 0.35);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-1px);
+}
+
+.pd-popup-excel-btn svg {
+  font-size: 15px;
 }
 
 .pd-popup-close {
@@ -365,6 +402,16 @@
   padding: 2px 8px;
   background: #fef2f2;
   color: #dc2626;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.pd-partial-reason {
+  display: inline-block;
+  padding: 2px 8px;
+  background: #fff7ed;
+  color: #ea580c;
   border-radius: 4px;
   font-size: 12px;
   font-weight: 500;
@@ -721,6 +768,93 @@
   padding: 60px 20px;
   gap: 15px;
   color: #666;
+}
+
+/* Initial chart load: shimmer + spinner (Planned vs Tea Revenue / Planned vs Executed) */
+.plantation-chart-loading--initial {
+  min-height: 400px;
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.plantation-chart-loading--initial.plantation-chart-loading--daily {
+  min-height: 320px;
+}
+
+.plantation-chart-loading-shimmer {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    #f1f5f9 0%,
+    #f1f5f9 40%,
+    #e8f0f6 50%,
+    #f1f5f9 60%,
+    #f1f5f9 100%
+  );
+  background-size: 200% 100%;
+  animation: plantation-chart-shimmer 1.35s ease-in-out infinite;
+}
+
+@keyframes plantation-chart-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+.plantation-chart-loading-inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+}
+
+/* Refetch / range change: overlay on top of existing chart */
+.plantation-chart-container--loadable {
+  position: relative;
+  min-height: 400px;
+}
+
+.plantation-chart-container--loadable.plantation-chart-container--daily {
+  min-height: 320px;
+}
+
+.plantation-chart-loading-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  border-radius: 8px;
+  animation: plantation-chart-overlay-in 0.2s ease;
+  pointer-events: none;
+}
+
+.plantation-chart-loading-overlay span {
+  font-size: 13px;
+  font-weight: 500;
+  color: #475569;
+}
+
+@keyframes plantation-chart-overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .plantation-chart-error {
@@ -4222,4 +4356,351 @@
     height: 28px;
     font-size: 12px;
   }
+}
+
+/* =============================================================================
+   Internal dashboard (/#/home/dashboard) — corporate blue (#004B71), not green
+   ============================================================================= */
+.plantation-dashboard-container--internal {
+  background-color: #f4f8fb;
+}
+
+.plantation-dashboard-container--internal .pd-summary-bar {
+  box-shadow: 0 2px 4px rgba(0, 75, 113, 0.1);
+  border: 1px solid #d0e4ef;
+}
+
+.plantation-dashboard-container--internal .pd-metrics-grid {
+  grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+}
+
+.plantation-dashboard-container--internal .pd-summary-percent {
+  color: #004b71;
+}
+
+.plantation-dashboard-container--internal .pd-calendar-btn {
+  background: linear-gradient(135deg, #004b71 0%, #006396 100%);
+  box-shadow: 0 2px 6px rgba(0, 75, 113, 0.25);
+}
+
+.plantation-dashboard-container--internal .pd-calendar-btn:hover {
+  background: linear-gradient(135deg, #003a57 0%, #004b71 100%);
+  box-shadow: 0 4px 12px rgba(0, 75, 113, 0.35);
+}
+
+.plantation-dashboard-container--internal .plantation-action-btn {
+  border-color: #004b71;
+  color: #004b71;
+}
+
+.plantation-dashboard-container--internal .plantation-action-btn:hover {
+  background-color: #e8f4fa;
+  border-color: #006396;
+}
+
+.plantation-dashboard-container--internal .plantation-action-btn.active {
+  background-color: #004b71;
+  color: #fff;
+  box-shadow: 0 4px 6px rgba(0, 75, 113, 0.3);
+}
+
+.plantation-dashboard-container--internal .plantation-charts-controls-section {
+  box-shadow: 0 2px 4px rgba(0, 75, 113, 0.1);
+  border: 1px solid #d0e4ef;
+}
+
+.plantation-dashboard-container--internal .plantation-charts-control-label {
+  color: #004b71;
+}
+
+.plantation-dashboard-container--internal .pd-metric-card--clickable:hover .pd-metric-link {
+  color: #004b71;
+}
+
+.plantation-dashboard-container--internal .plantation-chart-card {
+  box-shadow: 0 2px 8px rgba(0, 75, 113, 0.1);
+  border: 1px solid #d0e4ef;
+}
+
+.plantation-dashboard-container--internal .plantation-chart-title-wrapper {
+  border-bottom-color: #d0e4ef;
+}
+
+.plantation-dashboard-container--internal .plantation-chart-title {
+  color: #004b71;
+}
+
+.plantation-dashboard-container--internal .plantation-chart-footer {
+  border-top-color: #d0e4ef;
+}
+
+.plantation-dashboard-container--internal .plantation-month-range-btn {
+  border-color: #004b71;
+  color: #004b71;
+}
+
+.plantation-dashboard-container--internal .plantation-month-range-btn:hover {
+  border-color: #006396;
+  background-color: #e8f4fa;
+}
+
+.plantation-dashboard-container--internal .plantation-month-picker-dropdown {
+  border-color: #004b71;
+}
+
+.plantation-dashboard-container--internal .plantation-month-picker-header {
+  border-bottom-color: #d0e4ef;
+}
+
+.plantation-dashboard-container--internal .plantation-month-picker-year {
+  color: #004b71;
+}
+
+.plantation-dashboard-container--internal .plantation-month-picker-nav {
+  color: #004b71;
+}
+
+.plantation-dashboard-container--internal .plantation-month-picker-nav:hover:not(:disabled) {
+  background-color: #e8f4fa;
+  color: #003a57;
+}
+
+.plantation-dashboard-container--internal .plantation-month-picker-item {
+  border-color: #d0e4ef;
+  color: #004b71;
+}
+
+.plantation-dashboard-container--internal .plantation-month-picker-item:hover:not(.disabled):not(.selected) {
+  background-color: #e8f4fa;
+  border-color: #004b71;
+}
+
+.plantation-dashboard-container--internal .plantation-month-picker-item.selected {
+  background: linear-gradient(135deg, #004b71 0%, #006396 100%);
+  border-color: #004b71;
+  box-shadow: 0 2px 4px rgba(0, 75, 113, 0.3);
+}
+
+.plantation-dashboard-container--internal .plantation-month-picker-quick-actions {
+  border-top-color: #d0e4ef;
+}
+
+.plantation-dashboard-container--internal .plantation-month-picker-quick-actions button {
+  border-color: #b8d4e6;
+  background: #e8f4fa;
+  color: #004b71;
+}
+
+.plantation-dashboard-container--internal .plantation-month-picker-quick-actions button:hover {
+  background: #dbe9f3;
+  border-color: #004b71;
+}
+
+/* =============================================================================
+   Chart breakdown (internal /#/home/dashboard/... only) — corporate blue chrome
+   ============================================================================= */
+.container-class-breakdown--internal {
+  background: linear-gradient(135deg, #f4f8fb 0%, #e8eef4 100%);
+}
+
+.container-class-breakdown--internal .header-class-breakdown {
+  background: linear-gradient(135deg, #004b71 0%, #006396 100%);
+  box-shadow: 0 8px 24px rgba(0, 75, 113, 0.25), 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.container-class-breakdown--internal .global-filter-select-dataviewer:hover,
+.container-class-breakdown--internal .global-filter-select-dataviewer:focus {
+  border-color: #004b71;
+}
+
+.container-class-breakdown--internal .card-class-breakdown::before {
+  background: linear-gradient(90deg, #004b71, #006396);
+}
+
+.container-class-breakdown--internal .card-class-breakdown:hover {
+  box-shadow: 0 8px 32px rgba(0, 75, 113, 0.12), 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.container-class-breakdown--internal .card-header-class-breakdown::after {
+  background: linear-gradient(90deg, transparent, #004b71, transparent);
+}
+
+.container-class-breakdown--internal .card-title-class-breakdown::before {
+  background: linear-gradient(135deg, #004b71, #006396);
+}
+
+.container-class-breakdown--internal .scope-item-class-breakdown {
+  border-left-color: #004b71;
+}
+
+.container-class-breakdown--internal .scope-item-class-breakdown::before {
+  background: linear-gradient(135deg, #004b71, #006396);
+}
+
+.container-class-breakdown--internal .scope-item-class-breakdown:hover {
+  box-shadow: 0 4px 12px rgba(0, 75, 113, 0.12);
+}
+
+.container-class-breakdown--internal .metric-card-class-breakdown::before {
+  background: linear-gradient(90deg, #004b71, #006396);
+}
+
+.container-class-breakdown--internal .metric-card-class-breakdown::after {
+  background: linear-gradient(135deg, rgba(0, 75, 113, 0.04), transparent);
+}
+
+.container-class-breakdown--internal .metric-card-class-breakdown:hover {
+  border-color: #004b71;
+  box-shadow: 0 12px 32px rgba(0, 75, 113, 0.15), 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.container-class-breakdown--internal .metric-card-class-breakdown.active-class-breakdown {
+  border-color: #004b71;
+  background: linear-gradient(135deg, #e8f4fa 0%, #ffffff 100%);
+  box-shadow: 0 8px 24px rgba(0, 75, 113, 0.25), 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.container-class-breakdown--internal .breakdown-select-class-breakdown:hover {
+  border-color: #004b71;
+  box-shadow: 0 4px 8px rgba(0, 75, 113, 0.12);
+}
+
+.container-class-breakdown--internal .breakdown-select-class-breakdown:focus {
+  border-color: #004b71;
+  box-shadow: 0 0 0 4px rgba(0, 75, 113, 0.15);
+}
+
+.container-class-breakdown--internal .breakdown-level-class-breakdown {
+  color: #004b71;
+  background: #e8f4fa;
+  border-color: #b8d4e6;
+}
+
+.container-class-breakdown--internal .header-select-class-breakdown:hover {
+  border-color: #004b71;
+  box-shadow: 0 4px 8px rgba(0, 75, 113, 0.12);
+}
+
+.container-class-breakdown--internal .header-select-class-breakdown:focus {
+  border-color: #004b71;
+  box-shadow: 0 0 0 4px rgba(0, 75, 113, 0.15);
+}
+
+.container-class-breakdown--internal .table-class-breakdown thead {
+  background: linear-gradient(135deg, #003a57 0%, #004b71 50%, #006396 100%);
+}
+
+.container-class-breakdown--internal .table-class-breakdown tbody tr:hover {
+  box-shadow: 0 2px 8px rgba(0, 75, 113, 0.08);
+}
+
+.container-class-breakdown--internal .breakdown-card-class-breakdown::before {
+  background: linear-gradient(90deg, #004b71, #006396);
+}
+
+.container-class-breakdown--internal .breakdown-card-class-breakdown:hover {
+  box-shadow: 0 12px 32px rgba(0, 75, 113, 0.15), 0 4px 16px rgba(0, 0, 0, 0.1);
+  border-color: #004b71;
+}
+
+.container-class-breakdown--internal .breakdown-card-header-class-breakdown::after {
+  background: linear-gradient(90deg, transparent, #004b71, transparent);
+}
+
+.container-class-breakdown--internal .breakdown-card-title-class-breakdown::before {
+  background: linear-gradient(135deg, #004b71, #006396);
+  box-shadow: 0 2px 4px rgba(0, 75, 113, 0.3);
+}
+
+.container-class-breakdown--internal .filter-badge-class-breakdown {
+  background: linear-gradient(135deg, #e8f4fa 0%, #dbe9f3 100%);
+  border-color: #004b71;
+  color: #003a57;
+  box-shadow: 0 2px 8px rgba(0, 75, 113, 0.15);
+}
+
+.container-class-breakdown--internal .filter-back-btn-class-breakdown {
+  border-color: #004b71;
+  color: #003a57;
+  box-shadow: 0 2px 4px rgba(0, 75, 113, 0.1);
+}
+
+.container-class-breakdown--internal .filter-back-btn-class-breakdown:hover {
+  background: linear-gradient(135deg, #e8f4fa 0%, #dbe9f3 100%);
+  border-color: #003a57;
+  box-shadow: 0 4px 8px rgba(0, 75, 113, 0.2);
+}
+
+.container-class-breakdown--internal .breakdown-card-clickable-class-breakdown:hover::after {
+  border-color: #004b71;
+  box-shadow: 0 0 0 4px rgba(0, 75, 113, 0.1);
+}
+
+.container-class-breakdown--internal .breakdown-card-drilldown-icon-class-breakdown {
+  color: #004b71;
+}
+
+/* Accordion + map (chart breakdown page) */
+.container-class-breakdown--internal .cbd-plan-item {
+  border-bottom-color: #d0e4ef;
+}
+
+.container-class-breakdown--internal .cbd-plan-item--expanded {
+  background: #f4f8fb;
+}
+
+.container-class-breakdown--internal .cbd-plan-header:hover {
+  background-color: #e8f4fa;
+}
+
+.container-class-breakdown--internal .cbd-plan-chevron {
+  color: #004b71;
+}
+
+.container-class-breakdown--internal .cbd-plan-icon {
+  color: #004b71;
+}
+
+.container-class-breakdown--internal .cbd-fields-container {
+  border-color: #d0e4ef;
+  background: #ffffff;
+}
+
+.container-class-breakdown--internal .cbd-field-header:hover {
+  background-color: #e8f4fa;
+}
+
+.container-class-breakdown--internal .cbd-field-details {
+  border-top-color: #d0e4ef;
+  background: #f4f8fb;
+}
+
+.container-class-breakdown--internal .cbd-field-metric {
+  border-color: #d0e4ef;
+}
+
+.container-class-breakdown--internal .cbd-field-progress-fill {
+  background: linear-gradient(90deg, #004b71, #006396);
+}
+
+.container-class-breakdown--internal .cbd-view-map-btn {
+  background: linear-gradient(135deg, #004b71 0%, #006396 100%);
+  box-shadow: 0 2px 6px rgba(0, 75, 113, 0.25);
+}
+
+.container-class-breakdown--internal .cbd-view-map-btn:hover {
+  background: linear-gradient(135deg, #003a57 0%, #004b71 100%);
+  box-shadow: 0 4px 12px rgba(0, 75, 113, 0.35);
+}
+
+.container-class-breakdown--internal .cbd-map-popup-header {
+  background: linear-gradient(135deg, #004b71 0%, #006396 100%);
+}
+
+.container-class-breakdown--internal .cbd-map-spinner {
+  border-top-color: #004b71;
+}
+
+.container-class-breakdown--internal .cbd-map-error-link {
+  color: #004b71;
 }

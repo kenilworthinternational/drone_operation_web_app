@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Bars } from 'react-loader-spinner';
 import { toast } from 'react-toastify';
 import {
@@ -11,6 +11,7 @@ import '../../../styles/droneUnlockingQueue.css';
 
 const DroneUnlockingQueue = () => {
   const navigate = useNavigate();
+  const routerLocation = useLocation();
   const { data: queueData, isLoading: loading, error: queryError, refetch } = useGetDroneUnlockingQueueQuery();
   const [updatePlanUnlock, { isLoading: updatingPlan }] = useUpdatePlanDroneUnlockMutation();
   const [updateMissionUnlock, { isLoading: updatingMission }] = useUpdateMissionDroneUnlockMutation();
@@ -83,7 +84,7 @@ const DroneUnlockingQueue = () => {
       <div className="drone-unlocking-queue-header-unlockqueue">
         <button
           className="back-btn-drone-unlocking-unlockqueue"
-          onClick={() => navigate('/home/workflowDashboard')}
+          onClick={() => navigate({ pathname: '/home/workflowDashboard', search: routerLocation.search })}
         >
           ←
         </button>

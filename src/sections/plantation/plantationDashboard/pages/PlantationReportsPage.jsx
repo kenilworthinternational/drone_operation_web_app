@@ -5,7 +5,7 @@ import CompletedMissionReports from '../components/CompletedMissionReports';
 import SingleMonthPicker from '../components/SingleMonthPicker';
 import '../../../../styles/plantationDashboard.css';
 
-const PlantationReportsPage = () => {
+const PlantationReportsPage = ({ basePath = '/home/plantation-dashboard' } = {}) => {
   const navigate = useNavigate();
   const [reportsMonth, setReportsMonth] = useState(new Date());
 
@@ -21,7 +21,7 @@ const PlantationReportsPage = () => {
   return (
     <div className="plantation-dashboard-container">
       <div className="plantation-page-header">
-        <button className="plantation-back-btn" onClick={() => navigate('/home/plantation-dashboard')}>
+        <button className="plantation-back-btn" onClick={() => navigate(basePath)}>
           <FaArrowLeft /> Back
         </button>
         <h1 className="plantation-page-title">Completed Reports</h1>

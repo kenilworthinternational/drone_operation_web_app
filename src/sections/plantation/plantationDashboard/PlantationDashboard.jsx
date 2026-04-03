@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAppDispatch } from '../../../store/hooks';
 import { useQueryClient } from '@tanstack/react-query';
 import { logout } from '../../../store/slices/authSlice';
@@ -16,7 +16,10 @@ import {
   FaExclamationTriangle,
   FaTimes,
   FaChevronRight,
+  FaAdjust,
+  FaFileExcel,
 } from 'react-icons/fa';
+import * as XLSX from 'xlsx';
 import {
   useGetGroupsQuery,
   useGetAllPlantationsQuery,
@@ -30,9 +33,18 @@ import MonthRangePicker from './components/MonthRangePicker';
 import { format } from 'date-fns';
 import { Bars } from 'react-loader-spinner';
 import '../../../styles/plantationDashboard.css';
+import { appendShellParams } from '../../../utils/shellSearchParams';
 
-const PlantationDashboard = () => {
+const PlantationDashboard = ({
+  basePath = '/home/plantation-dashboard',
+  showUserHierarchy = true,
+  showTopHeader = undefined,
+} = {}) => {
+  const shouldShowTopHeader = showTopHeader ?? basePath !== '/home/dashboard';
+  const isInternalDashboard =
+    basePath === '/home/dashboard' || basePath.startsWith('/home/dashboard/');
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useAppDispatch();
   const queryClient = useQueryClient();
   const userData = getUserData();
@@ -71,7 +83,7 @@ const PlantationDashboard = () => {
   }, [chartMonthRange]);
 
   // Popup state
-  const [activePopup, setActivePopup] = useState(null); // 'cancelled' | 'executed' | null
+  const [activePopup, setActivePopup] = useState(null); // 'cancelled' | 'executed' | 'partial' | null
 
   const closePopup = useCallback(() => setActivePopup(null), []);
 
@@ -153,6 +165,69 @@ const PlantationDashboard = () => {
     navigate('/login');
   };
 
+  const exportCancelledToExcel = useCallback(() => {
+    const fields = summary.cancelledFields || [];
+    if (fields.length === 0) return;
+    const rows = fields.map((f) => ({
+      'Plan ID': f.planId,
+      'Date': f.pickedDate,
+      'Estate': f.estateName,
+      'Field': f.fieldName,
+      'Area (Ha)': parseFloat(f.fieldArea.toFixed(2)),
+      'Pilot': f.pilotName,
+      'Reason': f.cancelReason,
+    }));
+    rows.push({
+      'Plan ID': '',
+      'Date': '',
+      'Estate': '',
+      'Field': 'TOTAL',
+      'Area (Ha)': parseFloat((summary.cancelledExtent || 0).toFixed(2)),
+      'Pilot': '',
+      'Reason': '',
+    });
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Cancelled Fields');
+    XLSX.writeFile(wb, `Cancelled_Fields_${getCurrentYearMonth()}.xlsx`);
+  }, [summary]);
+
+  const exportPartialToExcel = useCallback(() => {
+    const fields = summary.partiallyCompletedFields || [];
+    if (fields.length === 0) return;
+    const rows = fields.map((f) => {
+      const pct = f.fieldArea > 0 ? ((f.completedArea / f.fieldArea) * 100).toFixed(1) : '0.0';
+      return {
+        'Plan ID': f.planId,
+        'Date': f.pickedDate,
+        'Estate': f.estateName,
+        'Field': f.fieldName,
+        'Field Size (Ha)': parseFloat(f.fieldArea.toFixed(2)),
+        'Completed (Ha)': parseFloat(f.completedArea.toFixed(2)),
+        'Completion %': parseFloat(pct),
+        'Pilot': f.pilotName,
+        'Reason': f.partialReason,
+      };
+    });
+    const totalArea = fields.reduce((s, f) => s + f.fieldArea, 0);
+    const totalCompleted = fields.reduce((s, f) => s + f.completedArea, 0);
+    rows.push({
+      'Plan ID': '',
+      'Date': '',
+      'Estate': '',
+      'Field': 'TOTAL',
+      'Field Size (Ha)': parseFloat(totalArea.toFixed(2)),
+      'Completed (Ha)': parseFloat(totalCompleted.toFixed(2)),
+      'Completion %': totalArea > 0 ? parseFloat(((totalCompleted / totalArea) * 100).toFixed(1)) : 0,
+      'Pilot': '',
+      'Reason': '',
+    });
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Partially Completed');
+    XLSX.writeFile(wb, `Partially_Completed_${getCurrentYearMonth()}.xlsx`);
+  }, [summary]);
+
   const summaryCards = [
     {
       key: 'totalPlanned',
@@ -188,6 +263,22 @@ const PlantationDashboard = () => {
       clickable: true,
       onClick: () => setActivePopup('cancelled'),
     },
+    ...(isInternalDashboard
+      ? [
+          {
+            key: 'partial',
+            label: 'Partially Completed',
+            value: summary.partiallyCompletedExtent || 0,
+            unit: 'Ha',
+            icon: <FaAdjust />,
+            color: '#ea580c',
+            bg: '#fff7ed',
+            border: '#ea580c',
+            clickable: true,
+            onClick: () => setActivePopup('partial'),
+          },
+        ]
+      : []),
     {
       key: 'executed',
       label: 'Executed Extent',
@@ -199,9 +290,12 @@ const PlantationDashboard = () => {
       border: '#7c3aed',
       clickable: true,
       onClick: () => {
-        // Navigate to ChartBreakdownPage with current month pre-selected
         const currentMonth = getCurrentYearMonth();
-        navigate(`/home/plantation-dashboard/chart-breakdown?month=${currentMonth}&chart=planned-vs-sprayed`);
+        const sp = new URLSearchParams();
+        sp.set('month', currentMonth);
+        sp.set('chart', 'planned-vs-sprayed');
+        appendShellParams(sp, location.search);
+        navigate(`${basePath}/chart-breakdown?${sp.toString()}`);
       },
     },
     {
@@ -229,53 +323,57 @@ const PlantationDashboard = () => {
   ];
 
   return (
-    <div className="plantation-dashboard-container">
+    <div
+      className={`plantation-dashboard-container${isInternalDashboard ? ' plantation-dashboard-container--internal' : ''}`}
+    >
       {/* Header */}
-      <div className="plantation-dashboard-header">
-        <div className="plantation-header-content">
-          <div>
-            <h1 className="plantation-dashboard-title">Plantation Dashboard</h1>
-            <div className="plantation-dashboard-subtitle">
-              Welcome, {userData?.name || userData?.username || 'User'}
+      {shouldShowTopHeader && (
+        <div className="plantation-dashboard-header">
+          <div className="plantation-header-content">
+            <div>
+              <h1 className="plantation-dashboard-title">Plantation Dashboard</h1>
+              <div className="plantation-dashboard-subtitle">
+                Welcome, {userData?.name || userData?.username || 'User'}
+              </div>
             </div>
+            <div className="plantation-user-info">
+              {userInfo.designation && (
+                <div className="plantation-user-info-item">
+                  <span className="plantation-user-info-label">Designation:</span>
+                  <span className="plantation-user-info-value">{userInfo.designation}</span>
+                </div>
+              )}
+              {showUserHierarchy && userInfo.group && (
+                <div className="plantation-user-info-item">
+                  <span className="plantation-user-info-label">Group:</span>
+                  <span className="plantation-user-info-value">{userInfo.group}</span>
+                </div>
+              )}
+              {showUserHierarchy && userInfo.plantation && (
+                <div className="plantation-user-info-item">
+                  <span className="plantation-user-info-label">Plantation:</span>
+                  <span className="plantation-user-info-value">{userInfo.plantation}</span>
+                </div>
+              )}
+              {showUserHierarchy && userInfo.region && (
+                <div className="plantation-user-info-item">
+                  <span className="plantation-user-info-label">Region:</span>
+                  <span className="plantation-user-info-value">{userInfo.region}</span>
+                </div>
+              )}
+              {showUserHierarchy && userInfo.estate && (
+                <div className="plantation-user-info-item">
+                  <span className="plantation-user-info-label">Estate:</span>
+                  <span className="plantation-user-info-value">{userInfo.estate}</span>
+                </div>
+              )}
+            </div>
+            <button className="plantation-logout-btn" onClick={handleLogout}>
+              <FaSignOutAlt /> Logout
+            </button>
           </div>
-          <div className="plantation-user-info">
-            {userInfo.designation && (
-              <div className="plantation-user-info-item">
-                <span className="plantation-user-info-label">Designation:</span>
-                <span className="plantation-user-info-value">{userInfo.designation}</span>
-              </div>
-            )}
-            {userInfo.group && (
-              <div className="plantation-user-info-item">
-                <span className="plantation-user-info-label">Group:</span>
-                <span className="plantation-user-info-value">{userInfo.group}</span>
-              </div>
-            )}
-            {userInfo.plantation && (
-              <div className="plantation-user-info-item">
-                <span className="plantation-user-info-label">Plantation:</span>
-                <span className="plantation-user-info-value">{userInfo.plantation}</span>
-              </div>
-            )}
-            {userInfo.region && (
-              <div className="plantation-user-info-item">
-                <span className="plantation-user-info-label">Region:</span>
-                <span className="plantation-user-info-value">{userInfo.region}</span>
-              </div>
-            )}
-            {userInfo.estate && (
-              <div className="plantation-user-info-item">
-                <span className="plantation-user-info-label">Estate:</span>
-                <span className="plantation-user-info-value">{userInfo.estate}</span>
-              </div>
-            )}
-          </div>
-          <button className="plantation-logout-btn" onClick={handleLogout}>
-            <FaSignOutAlt /> Logout
-          </button>
         </div>
-      </div>
+      )}
 
       <div className="plantation-dashboard-content">
         {/* Summary Bar with Mission Type toggle */}
@@ -301,12 +399,14 @@ const PlantationDashboard = () => {
                 Spread
               </button>
             </div>
-            <button
-              className="pd-calendar-btn"
-              onClick={() => navigate('/home/plantation-dashboard/calendar')}
-            >
-              <FaCalendarAlt /> View Calendar
-            </button>
+            {basePath !== '/home/dashboard' && (
+              <button
+                className="pd-calendar-btn"
+                onClick={() => navigate(`${basePath}/calendar`)}
+              >
+                <FaCalendarAlt /> View Calendar
+              </button>
+            )}
           </div>
         </div>
 
@@ -360,12 +460,14 @@ const PlantationDashboard = () => {
             months={chartMonths}
             startMonth={`${chartMonthRange.start.getFullYear()}-${String(chartMonthRange.start.getMonth() + 1).padStart(2, '0')}`}
             endMonth={`${chartMonthRange.end.getFullYear()}-${String(chartMonthRange.end.getMonth() + 1).padStart(2, '0')}`}
+            basePath={basePath}
           />
           <PlannedVsSprayedChart
             missionType={missionType}
             months={chartMonths}
             startMonth={`${chartMonthRange.start.getFullYear()}-${String(chartMonthRange.start.getMonth() + 1).padStart(2, '0')}`}
             endMonth={`${chartMonthRange.end.getFullYear()}-${String(chartMonthRange.end.getMonth() + 1).padStart(2, '0')}`}
+            basePath={basePath}
           />
         </div>
       </div>
@@ -378,7 +480,14 @@ const PlantationDashboard = () => {
               <span className="pd-popup-title">
                 <FaTimesCircle /> Cancelled Before Execution
               </span>
-              <button className="pd-popup-close" onClick={closePopup}><FaTimes /></button>
+              <div className="pd-popup-header-actions">
+                {(summary.cancelledFields || []).length > 0 && (
+                  <button className="pd-popup-excel-btn" onClick={exportCancelledToExcel}>
+                    <FaFileExcel /> Excel
+                  </button>
+                )}
+                <button className="pd-popup-close" onClick={closePopup}><FaTimes /></button>
+              </div>
             </div>
             <div className="pd-popup-body">
               {(summary.cancelledFields || []).length === 0 ? (
@@ -478,6 +587,84 @@ const PlantationDashboard = () => {
                       );
                     })}
                   </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Partially Completed Fields Popup (internal dashboard only) */}
+      {activePopup === 'partial' && isInternalDashboard && (
+        <div className="pd-popup-overlay" onClick={closePopup}>
+          <div className="pd-popup pd-popup--wide" onClick={(e) => e.stopPropagation()}>
+            <div className="pd-popup-header pd-popup-header--orange">
+              <span className="pd-popup-title">
+                <FaAdjust /> Partially Completed Fields ({getCurrentMonthName()})
+              </span>
+              <div className="pd-popup-header-actions">
+                {(summary.partiallyCompletedFields || []).length > 0 && (
+                  <button className="pd-popup-excel-btn" onClick={exportPartialToExcel}>
+                    <FaFileExcel /> Excel
+                  </button>
+                )}
+                <button className="pd-popup-close" onClick={closePopup}><FaTimes /></button>
+              </div>
+            </div>
+            <div className="pd-popup-body">
+              {(summary.partiallyCompletedFields || []).length === 0 ? (
+                <div className="pd-popup-empty">No partially completed fields for this month</div>
+              ) : (
+                <table className="pd-popup-table">
+                  <thead>
+                    <tr>
+                      <th>Plan ID</th>
+                      <th>Date</th>
+                      <th>Estate</th>
+                      <th>Field</th>
+                      <th style={{ textAlign: 'center' }}>Field Size (Ha)</th>
+                      <th style={{ textAlign: 'center' }}>Completed (Ha)</th>
+                      <th style={{ textAlign: 'center' }}>%</th>
+                      <th>Pilot</th>
+                      <th>Reason</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {summary.partiallyCompletedFields.map((f, idx) => {
+                      const pct = f.fieldArea > 0
+                        ? ((f.completedArea / f.fieldArea) * 100).toFixed(1)
+                        : '0.0';
+                      return (
+                        <tr key={f.taskId || idx}>
+                          <td>{f.planId}</td>
+                          <td>{f.pickedDate}</td>
+                          <td>{f.estateName}</td>
+                          <td>{f.fieldName}</td>
+                          <td style={{ textAlign: 'center' }}>{f.fieldArea.toFixed(2)}</td>
+                          <td style={{ textAlign: 'center', color: '#ea580c' }}>{f.completedArea.toFixed(2)}</td>
+                          <td style={{ textAlign: 'center' }}>
+                            <span className={`plantation-completion-badge ${parseFloat(pct) >= 100 ? 'complete' : parseFloat(pct) >= 50 ? 'good' : 'low'}`}>
+                              {pct}%
+                            </span>
+                          </td>
+                          <td>{f.pilotName}</td>
+                          <td><span className="pd-partial-reason">{f.partialReason}</span></td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <td colSpan={4} style={{ fontWeight: 700 }}>Total Partially Completed</td>
+                      <td style={{ fontWeight: 700, textAlign: 'center' }}>
+                        {(summary.partiallyCompletedExtent || 0).toFixed(2)}
+                      </td>
+                      <td style={{ fontWeight: 700, textAlign: 'center' }}>
+                        {(summary.partiallyCompletedFields || []).reduce((s, f) => s + f.completedArea, 0).toFixed(2)}
+                      </td>
+                      <td colSpan={3}></td>
+                    </tr>
+                  </tfoot>
                 </table>
               )}
             </div>

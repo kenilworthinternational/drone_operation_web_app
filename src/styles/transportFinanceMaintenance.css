@@ -1,0 +1,340 @@
+.maintenance-finance-root-transport-finance {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  gap: 12px;
+  padding: 8px;
+  box-sizing: border-box;
+}
+
+.maintenance-finance-root-embedded-transport-finance {
+  padding: 0;
+}
+
+.maintenance-finance-toolbar-transport-finance {
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.maintenance-finance-toolbar-title-transport-finance {
+  font-weight: 700;
+  color: #173247;
+  font-size: 14px;
+}
+
+.maintenance-finance-filters-row-transport-finance {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.maintenance-finance-filter-label-transport-finance {
+  display: grid;
+  gap: 4px;
+  min-width: 220px;
+}
+
+.maintenance-finance-filter-label-title-transport-finance {
+  font-size: 12px;
+  color: #4b5563;
+  font-weight: 600;
+}
+
+.maintenance-finance-select-transport-finance {
+  border: 1px solid #c8d9e7;
+  border-radius: 10px;
+  background: #fff;
+  color: #0f2a3d;
+  padding: 8px 10px;
+  min-width: 220px;
+  box-sizing: border-box;
+}
+
+.maintenance-finance-loading-transport-finance {
+  min-height: 220px;
+  border: 1px solid #d9e5ef;
+  border-radius: 14px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.maintenance-finance-table-wrap-transport-finance {
+  width: 100%;
+  min-width: 0;
+  display: block;
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex: 1;
+  min-height: 0;
+}
+
+.maintenance-finance-table-transport-finance {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 960px;
+  background: #ffffff;
+  border: 1px solid #dde6ee;
+}
+
+.maintenance-finance-table-transport-finance th,
+.maintenance-finance-table-transport-finance td {
+  border: 1px solid #dde6ee;
+  padding: 10px;
+  text-align: left;
+  font-size: 13px;
+  color: #1e293b;
+}
+
+.maintenance-finance-table-transport-finance th {
+  background: #f2f7fb;
+  font-weight: 700;
+  color: #16364a;
+}
+
+.maintenance-finance-no-rows-transport-finance {
+  border: 1px solid #dde6ee;
+  padding: 12px;
+  color: #475569;
+}
+
+.maintenance-finance-chip-transport-finance {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.maintenance-finance-chip-hr-approved-transport-finance {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.maintenance-finance-chip-hr-declined-transport-finance {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.maintenance-finance-chip-hr-pending-transport-finance {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.maintenance-finance-chip-finance-approved-transport-finance {
+  background: #dbeafe;
+  color: #1e3a8a;
+}
+
+.maintenance-finance-chip-finance-declined-transport-finance {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.maintenance-finance-chip-finance-pending-transport-finance {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.maintenance-finance-chip-paid-transport-finance {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.maintenance-finance-chip-not-paid-transport-finance {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.maintenance-finance-muted-transport-finance {
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.maintenance-finance-actions-row-transport-finance {
+  display: inline-flex;
+  gap: 8px;
+}
+
+.maintenance-finance-proof-grid-transport-finance {
+  display: grid;
+  gap: 6px;
+}
+
+.maintenance-finance-proof-link-transport-finance {
+  color: #005786;
+  font-size: 12px;
+  text-decoration: none;
+}
+
+.maintenance-finance-proof-link-transport-finance:hover {
+  text-decoration: underline;
+}
+
+.maintenance-finance-proof-filename-transport-finance {
+  color: #6b7280;
+}
+
+.maintenance-finance-text-input-transport-finance {
+  width: 100%;
+  border: 1px solid #c8d9e7;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+  box-sizing: border-box;
+}
+
+.maintenance-finance-btn-outline-transport-finance {
+  border: 1px solid #0b6e9f;
+  background: #ffffff;
+  color: #0b3d5c;
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.maintenance-finance-btn-outline-transport-finance:hover {
+  background: #e8f4fa;
+  border-color: #004b71;
+  color: #004b71;
+}
+
+.maintenance-finance-btn-secondary-transport-finance {
+  background: #f3f7fa;
+  color: #2d4557;
+  border: 1px solid #c4d3df;
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.maintenance-finance-btn-secondary-transport-finance:hover {
+  background: #e8eff5;
+}
+
+.maintenance-finance-btn-secondary-transport-finance:disabled,
+.maintenance-finance-btn-outline-transport-finance:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.maintenance-finance-modal-overlay-transport-finance {
+  position: fixed;
+  inset: 0;
+  z-index: 6200;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.maintenance-finance-modal-card-transport-finance {
+  background: #ffffff;
+  border-radius: 14px;
+  max-width: 760px;
+  width: 100%;
+  max-height: 88vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25);
+  border: 1px solid #d8e2ea;
+}
+
+.maintenance-finance-modal-toolbar-transport-finance {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f8fafc;
+}
+
+.maintenance-finance-modal-title-transport-finance {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #0b2234;
+}
+
+.maintenance-finance-modal-body-transport-finance {
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.maintenance-finance-modal-hint-transport-finance {
+  margin: 0;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.maintenance-finance-modal-field-transport-finance {
+  display: grid;
+  gap: 6px;
+}
+
+.maintenance-finance-modal-label-transport-finance {
+  font-weight: 600;
+  font-size: 13px;
+  color: #1f2937;
+}
+
+.maintenance-finance-modal-textarea-transport-finance {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 13px;
+  resize: vertical;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.maintenance-finance-modal-confirm-text-transport-finance {
+  margin: 0;
+  color: #334155;
+  font-size: 14px;
+}
+
+.maintenance-finance-modal-error-transport-finance {
+  margin: 0;
+  color: #b91c1c;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.maintenance-finance-modal-actions-transport-finance {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.maintenance-finance-notice-text-transport-finance {
+  margin: 0;
+  font-weight: 600;
+}
+
+.maintenance-finance-notice-error-transport-finance {
+  color: #b91c1c;
+}
+
+.maintenance-finance-notice-success-transport-finance {
+  color: #14532d;
+}
+

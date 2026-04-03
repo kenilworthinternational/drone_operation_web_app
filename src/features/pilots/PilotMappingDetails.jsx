@@ -86,11 +86,19 @@ const PilotMappingDetails = ({ estateIds, startDate, endDate }) => {
                         <div key={pilot.pilot_id} className="pilot-card-details">
                             <div className="pilot-header">
                                 <div className="left-set-area">
-                                    <img
-                                        src={pilot.image ? pilot.image.replace('http://', 'https://') : ''} // Convert HTTP to HTTPS
-                                        alt="Profile"
-                                        className="profile-image-mapping"
-                                    /><span>
+                                    {pilot.image ? (
+                                        <img
+                                            src={pilot.image.replace('http://', 'https://')}
+                                            alt="Profile"
+                                            className="profile-image-mapping"
+                                        />
+                                    ) : (
+                                        <div
+                                            className="profile-image-mapping"
+                                            style={{ backgroundColor: '#e0e0e0', flexShrink: 0 }}
+                                            aria-hidden
+                                        />
+                                    )}<span>
                                         {pilot.pilot_name}{' '} | {' '}{pilot.pilot_mobile_no} {' '}| {' '}Total :{' '}
                                         {pilot.plans.reduce((sum, plan) => sum + plan.field_area, 0).toFixed(2)} Ha
                                     </span>

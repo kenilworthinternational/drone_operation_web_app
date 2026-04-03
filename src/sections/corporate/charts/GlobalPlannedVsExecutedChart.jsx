@@ -1,12 +1,13 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  ComposedChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Line
+  ComposedChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Customized,
 } from 'recharts';
 import { useGetGlobalTeaRevenueVsSprayedChartQuery } from '../../../api/services NodeJs/plantationDashboardApi';
+import createPilotReferenceLinesRenderer from '../../plantation/plantationDashboard/components/PilotReferenceLinesLayer';
 import { Bars } from 'react-loader-spinner';
 
-const GlobalPlannedVsExecutedChart = ({ startMonth, endMonth, months, plantationId, regionId, estateId }) => {
+const GlobalPlannedVsExecutedChart = ({ startMonth, endMonth, months, plantationId, regionId, estateId, basePath = '/home/dataViewer' }) => {
   const navigate = useNavigate();
 
   const { data, isLoading, error } = useGetGlobalTeaRevenueVsSprayedChartQuery({
@@ -19,7 +20,18 @@ const GlobalPlannedVsExecutedChart = ({ startMonth, endMonth, months, plantation
     estateId: estateId || undefined,
   });
 
-  const chartData = data?.data || [];
+  const PILOT_MIN_HA = 7;
+  const PILOT_AVG_HA = 15;
+  const chartData = (data?.data || []).map((row) => {
+    const executedPlanCount = parseInt(row?.executedPlanCount, 10) || 0;
+    let pilotExtentMin = executedPlanCount * PILOT_MIN_HA;
+    let pilotExtentAvg = executedPlanCount * PILOT_AVG_HA;
+    const rawMin = parseFloat(row?.pilotExtentMin);
+    const rawAvg = parseFloat(row?.pilotExtentAvg);
+    if (Number.isFinite(rawMin)) pilotExtentMin = rawMin;
+    if (Number.isFinite(rawAvg)) pilotExtentAvg = rawAvg;
+    return { ...row, pilotExtentMin, pilotExtentAvg };
+  });
 
   const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
@@ -47,8 +59,11 @@ const GlobalPlannedVsExecutedChart = ({ startMonth, endMonth, months, plantation
             &nbsp;&nbsp;Covered Spreading: {parseFloat(d.coveredSpreadingExtent || 0).toFixed(2)} Ha
           </p>
           <hr style={{ margin: '6px 0', border: 'none', borderTop: '1px solid #e2e8f0' }} />
-          <p style={{ margin: '4px 0', color: '#e04a2f', fontWeight: 600 }}>
-            Minimum (deployed pilot×4Ha): {parseFloat(d.pilotExtent || 0).toFixed(2)} Ha ({d.executedPlanCount || 0} plans)
+          <p style={{ margin: '4px 0', color: '#dc2626', fontWeight: 600 }}>
+            Minimum (deployed pilot×7Ha): {parseFloat(d.pilotExtentMin || 0).toFixed(2)} Ha ({d.executedPlanCount || 0} plans)
+          </p>
+          <p style={{ margin: '4px 0', color: '#2563eb', fontWeight: 600 }}>
+            Average (deployed pilot×15Ha): {parseFloat(d.pilotExtentAvg || 0).toFixed(2)} Ha
           </p>
         </div>
       );
@@ -87,7 +102,7 @@ const GlobalPlannedVsExecutedChart = ({ startMonth, endMonth, months, plantation
           onClick={(data) => {
             if (data && data.activePayload && data.activePayload.length > 0) {
               const clickedData = data.activePayload[0].payload;
-              navigate('/home/dataViewer/chart-breakdown', {
+              navigate(`${basePath}/chart-breakdown`, {
                 state: {
                   chartType: 'tea-revenue-vs-sprayed',
                   missionType: 'spy',
@@ -109,21 +124,37 @@ const GlobalPlannedVsExecutedChart = ({ startMonth, endMonth, months, plantation
           <XAxis dataKey="monthName" stroke="#64748b" style={{ fontSize: '11px' }} />
           <YAxis stroke="#64748b" style={{ fontSize: '11px' }} label={{ value: 'Hectares (Ha)', angle: -90, position: 'insideLeft', style: { fill: '#64748b', fontSize: 11 } }} />
           <Tooltip content={<CustomTooltip />} />
-          <Legend content={({ payload }) => (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 20px', justifyContent: 'center', padding: '6px 0', fontSize: 11 }}>
-              {payload && payload.map((entry, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <span style={{ width: 10, height: 10, borderRadius: 2, backgroundColor: entry.color, display: 'inline-block', flexShrink: 0 }} />
-                  <span style={{ color: '#555' }}>{entry.value}</span>
+          <Legend
+            content={({ payload }) => (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 20px', justifyContent: 'center', padding: '6px 0', fontSize: 11 }}>
+                {payload && payload.map((entry, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <span style={{ width: 10, height: 10, borderRadius: 2, backgroundColor: entry.color, display: 'inline-block', flexShrink: 0 }} />
+                    <span style={{ color: '#555' }}>{entry.value}</span>
+                  </div>
+                ))}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <span style={{ width: 12, height: 3, borderRadius: 1, backgroundColor: '#dc2626', display: 'inline-block', flexShrink: 0 }} />
+                  <span style={{ color: '#555' }}>Minimum (deployed pilot×7Ha)</span>
                 </div>
-              ))}
-            </div>
-          )} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <span style={{ width: 12, height: 3, borderRadius: 1, backgroundColor: '#2563eb', display: 'inline-block', flexShrink: 0 }} />
+                  <span style={{ color: '#555' }}>Average (deployed pilot×15Ha)</span>
+                </div>
+              </div>
+            )}
+          />
           <Bar dataKey="executedExtent" name="Executed Extent" fill="#15803d" stackId="approved" style={{ cursor: 'pointer' }} />
           <Bar dataKey="approvedRemaining" name="Estate Approved Extent" fill="#bbf7d0" stackId="approved" style={{ cursor: 'pointer' }} />
           <Bar dataKey="coveredSprayingExtent" name="Covered Spraying Extent" fill="#c2410c" stackId="covered" style={{ cursor: 'pointer' }} />
           <Bar dataKey="coveredSpreadingExtent" name="Covered Spreading Extent" fill="#fdba74" stackId="covered" style={{ cursor: 'pointer' }} />
-          <Line type="monotone" dataKey="pilotExtent" name="Minimum (deployed pilot×4Ha)" stroke="#e04a2f" strokeWidth={2.5} dot={{ r: 4, fill: '#e04a2f' }} activeDot={{ r: 6 }} />
+          <Customized
+            component={createPilotReferenceLinesRenderer({
+              chartData,
+              minKey: 'pilotExtentMin',
+              maxKey: 'pilotExtentAvg',
+            })}
+          />
         </ComposedChart>
       </ResponsiveContainer>
     </div>

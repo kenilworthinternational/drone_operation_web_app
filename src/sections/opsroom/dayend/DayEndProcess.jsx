@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import '../../../styles/dayendprocess.css';
 import { FaCalendarAlt, FaRegArrowAltCircleRight, FaArrowCircleDown, FaArrowCircleUp, FaCheck, FaTimes, FaMinus } from 'react-icons/fa';
@@ -33,6 +33,7 @@ const getBackendUrl = () => {
 
 const DayEndProcess = () => {
   const navigate = useNavigate();
+  const routerLocation = useLocation();
   const dispatch = useAppDispatch();
   const [missions, setMissions] = useState([]);
   const [selectedMission, setSelectedMission] = useState(null);
@@ -48,6 +49,7 @@ const DayEndProcess = () => {
   const [currentTask, setCurrentTask] = useState(null);
   const [currentField, setCurrentField] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [taskLoading, setTaskLoading] = useState(null); // Track which task is loading
   const userData = JSON.parse(localStorage.getItem('userData')) || {};
   const [selectedMissionId, setSelectedMissionId] = useState(null);
   const [djiData, setDjiData] = useState({
@@ -58,22 +60,22 @@ const DayEndProcess = () => {
     dji_flying_duration: '',
     dji_no_of_flights: '',
   });
-  
+
   // Get all DJI images for selected date (to show both linked and unlinked)
   const selectedDateStr = selectedDate.toISOString().split('T')[0];
   const { data: allDjiImagesData } = useGetAllDjiImagesQuery({ date: selectedDateStr });
   const allDjiImages = allDjiImagesData?.data || [];
-  
+
   // Separate linked and unlinked images
   const unlinkedDjiImages = allDjiImages.filter(img => !img.linked_task || img.linked_task === 0);
   const linkedDjiImages = allDjiImages.filter(img => img.linked_task && img.linked_task !== 0);
-  
+
   // Link DJI image mutation
   const [linkDjiImage] = useLinkDjiImageToTaskMutation();
-  
+
   // Update ops_task_status mutation
   const [updateOpsTaskStatus] = useUpdateOpsTaskStatusMutation();
-  
+
   // Cancel task state
   const { data: cancelReasons = [] } = useGetCancelReasonsQuery();
   const [cancelTask] = useCancelTaskMutation();
@@ -268,7 +270,7 @@ const DayEndProcess = () => {
     try {
       setSelectedDate(date);
       const formattedDate = date.toLocaleDateString('en-CA');
-      
+
       // Fetch both plantation and non-plantation plans to get all plans for the date
       let plantationResponse = { status: 'false', count: 0 };
       let nonPlantationResponse = { status: 'false', count: 0 };
@@ -290,10 +292,10 @@ const DayEndProcess = () => {
       } else if (nonPlantationResult.data) {
         nonPlantationResponse = nonPlantationResult.data;
       }
-      
+
       // Combine both responses
       let allPlans = [];
-      
+
       // Process plantation plans
       if (plantationResponse.status === 'true' && Object.keys(plantationResponse).length > 2) {
         const plantationArray = Object.keys(plantationResponse)
@@ -301,7 +303,7 @@ const DayEndProcess = () => {
           .map((key) => plantationResponse[key]);
         allPlans = [...allPlans, ...plantationArray];
       }
-      
+
       // Process non-plantation plans
       if (nonPlantationResponse.status === 'true' && Object.keys(nonPlantationResponse).length > 2) {
         const nonPlantationArray = Object.keys(nonPlantationResponse)
@@ -309,7 +311,7 @@ const DayEndProcess = () => {
           .map((key) => nonPlantationResponse[key]);
         allPlans = [...allPlans, ...nonPlantationArray];
       }
-      
+
       if (allPlans.length > 0) {
         // Filter plans based on user role
         let filteredMissionArray = allPlans;
@@ -317,7 +319,7 @@ const DayEndProcess = () => {
           // For ops users with specific criteria, only show their assigned plans
           filteredMissionArray = allPlans.filter(plan => plan.operator === userData.id);
         }
-        
+
         // Fetch completion stats for all plans
         let completionStatsMap = {};
         try {
@@ -342,15 +344,15 @@ const DayEndProcess = () => {
           console.error('Error fetching completion stats:', error);
           // Continue without stats if fetch fails
         }
-        
+
         const missionOptions = filteredMissionArray.map((plan) => {
-          const stats = completionStatsMap[plan.id] || { 
-            totalFields: 0, 
-            completedFields: 0, 
-            pendingFields: 0, 
-            completionPercentage: 0 
+          const stats = completionStatsMap[plan.id] || {
+            totalFields: 0,
+            completedFields: 0,
+            pendingFields: 0,
+            completionPercentage: 0
           };
-          
+
           return {
             id: plan.id,
             group: `${plan.estate}(${(plan.estate_id)}) - ${plan.area} Ha`,
@@ -365,7 +367,7 @@ const DayEndProcess = () => {
             completionStats: stats,
           };
         });
-        
+
         setMissions(missionOptions);
       } else {
         setMissions([]);
@@ -388,7 +390,7 @@ const DayEndProcess = () => {
       setExpandedDivisions([]);
       setExpandedFields([]);
       setTaskCancelStatusMap({});
-      
+
       const summaryResult = await dispatch(
         baseApi.endpoints.getPlanSummary.initiate(missionId)
       );
@@ -441,12 +443,12 @@ const DayEndProcess = () => {
         ? prev.filter((id) => id !== fieldId)
         : [...prev, fieldId]
     );
-    
+
     // Always fetch fresh data when clicking a field to ensure we have correct data for current mission
     // This prevents showing stale data from previous missions with same field IDs
     const existingFieldData = fieldTasks[fieldId];
     const shouldFetch = !existingFieldData || existingFieldData.mission_id !== selectedMission.id;
-    
+
     if (shouldFetch) {
       setLoadingFields((prev) => ({ ...prev, [fieldId]: true }));
       try {
@@ -476,8 +478,8 @@ const DayEndProcess = () => {
         } else {
           setFieldTasks((prev) => ({
             ...prev,
-            [fieldId]: { 
-              tasks: [], 
+            [fieldId]: {
+              tasks: [],
               field_id: fieldId,
               mission_id: selectedMission.id, // Store mission ID even for empty tasks
             },
@@ -512,6 +514,7 @@ const DayEndProcess = () => {
   }, []);
 
   const handleTaskApproveClick = async (fieldId, taskData) => {
+    setTaskLoading(taskData.task_id); // Set loading for this specific task
     try {
       // Find the correct field from the mission data
       let fieldInfo = null;
@@ -524,16 +527,16 @@ const DayEndProcess = () => {
           }
         }
       }
-      
-        const taskResult = await dispatch(
-          baseApi.endpoints.getTasksByPlanAndField.initiate(
-            {
-              planId: selectedMission.id,
-              fieldId,
-            },
-            { forceRefetch: true }
-          )
-        );
+
+      const taskResult = await dispatch(
+        baseApi.endpoints.getTasksByPlanAndField.initiate(
+          {
+            planId: selectedMission.id,
+            fieldId,
+          },
+          { forceRefetch: true }
+        )
+      );
       const freshData = taskResult.data || {};
       const freshTask = freshData.tasks?.find((t) => t.task_id === taskData.task_id) || taskData;
       setCurrentTask({ ...freshTask, field_id: fieldId });
@@ -547,7 +550,7 @@ const DayEndProcess = () => {
         dji_no_of_flights: freshTask.dji_no_of_flights || '',
       });
       // Crop image is now handled automatically from DJI image, no need to reset
-      
+
       // Fetch existing report data to show button color immediately
       try {
         const reportResult = await dispatch(
@@ -564,11 +567,13 @@ const DayEndProcess = () => {
         console.error('Error fetching report data:', reportError);
         setExistingReportData(null);
       }
-      
+
       setShowTaskPopup(true);
     } catch (error) {
       console.error('Error refreshing task data:', error);
       toast.error('Failed to load latest task data');
+    } finally {
+      setTaskLoading(null); // Clear loading state
     }
   };
 
@@ -633,29 +638,29 @@ const DayEndProcess = () => {
     }
     return null;
   };
-  
+
   // Fetch DJI image file as Blob for upload to old API
   const fetchDjiImageFile = async (imageId) => {
     try {
       const selectedImage = allDjiImages.find(img => img.id === parseInt(imageId));
       if (!selectedImage) return null;
-      
+
       const baseUrl = getBackendUrl();
       const imageUrl = `${baseUrl}/api/dji-images/file/${selectedImage.image_filename}`;
-      
+
       const userData = JSON.parse(localStorage.getItem('userData')) || {};
       const token = userData.token;
-      
+
       const response = await fetch(imageUrl, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to fetch image');
       }
-      
+
       const blob = await response.blob();
       // Create a File object from the blob with the original filename
       const file = new File([blob], selectedImage.image_filename, { type: blob.type });
@@ -681,7 +686,7 @@ const DayEndProcess = () => {
       formData.append('dji_spraying_litres', formatNumber(djiData.dji_spraying_litres));
       formData.append('dji_flying_duration', formatNumber(djiData.dji_flying_duration));
       formData.append('dji_no_of_flights', formatNumber(djiData.dji_no_of_flights));
-      
+
       // Fetch and upload DJI image file to old API if image is selected
       // Send DJI image as both 'image' and 'image_crop' (same image for both)
       if (djiData.dji_image_id) {
@@ -693,7 +698,7 @@ const DayEndProcess = () => {
           toast.warning('Selected DJI image could not be loaded. Proceeding without image.');
         }
       }
-      
+
       const submitResult = await dispatch(baseApi.endpoints.submitDJIRecord.initiate(formData));
       const response = submitResult.data;
       if (response?.success || response?.status === 'true') {
@@ -703,7 +708,7 @@ const DayEndProcess = () => {
             taskId: currentTask.task_id,
             status: 's'
           }).unwrap();
-          
+
           // Refresh completion stats for the plan
           if (selectedMission && selectedMission.id) {
             const backendUrl = getBackendUrl();
@@ -720,9 +725,9 @@ const DayEndProcess = () => {
             if (statsResult.status === true && statsResult.data) {
               const updatedStats = statsResult.data.find(stat => stat.planId === selectedMission.id);
               if (updatedStats) {
-                setMissions(prevMissions => 
-                  prevMissions.map(mission => 
-                    mission.id === selectedMission.id 
+                setMissions(prevMissions =>
+                  prevMissions.map(mission =>
+                    mission.id === selectedMission.id
                       ? { ...mission, completionStats: updatedStats }
                       : mission
                   )
@@ -734,7 +739,7 @@ const DayEndProcess = () => {
           console.error('Error updating ops_task_status:', updateError);
           // Don't fail the whole submission if this update fails
         }
-        
+
         // Link DJI image to task after successful submission to old API
         if (djiData.dji_image_id) {
           try {
@@ -848,9 +853,9 @@ const DayEndProcess = () => {
   return (
     <div className="dayendprocess">
       <div className="dayendprocess-header">
-        <button 
-          className="dayendprocess-back-btn" 
-          onClick={() => navigate('/home/workflowDashboard')}
+        <button
+          className="dayendprocess-back-btn"
+          onClick={() => navigate({ pathname: '/home/workflowDashboard', search: routerLocation.search })}
           title="Go back to Workflow Dashboard"
         >
           <span className="back-btn-icon-dayend">←</span>
@@ -868,284 +873,285 @@ const DayEndProcess = () => {
       </div>
       <div className="dayendprocess-content">
         <div className="left-dayend">
-        <div className="dayendprocess-missions-list">
-          {loadingMissions ? (
-            <Bars height="50" width="50" color="#004B71" ariaLabel="loading" />
-          ) : (
-            [...missions]
-              .sort((a, b) => {
-                // Missions with activated === 0 go to the end
-                if (a.activated === 0 && b.activated !== 0) return 1;
-                if (a.activated !== 0 && b.activated === 0) return -1;
-                // Missions with team_assigned === 0 go before activated === 0 but after others
-                if (a.team_assigned !== 0 && b.team_assigned === 0) return -1;
-                if (a.team_assigned === 0 && b.team_assigned !== 0) return 1;
-                // Missions with pending subs (total_sub_task_ops_room_pending_subs !== 0) go first
-                if (a.total_sub_task_ops_room_pending_subs !== 0 && b.total_sub_task_ops_room_pending_subs === 0) return -1;
-                if (a.total_sub_task_ops_room_pending_subs === 0 && b.total_sub_task_ops_room_pending_subs !== 0) return 1;
+          <div className="dayendprocess-missions-list">
+            {loadingMissions ? (
+              <Bars height="50" width="50" color="#004B71" ariaLabel="loading" />
+            ) : (
+              [...missions]
+                .sort((a, b) => {
+                  // Missions with activated === 0 go to the end
+                  if (a.activated === 0 && b.activated !== 0) return 1;
+                  if (a.activated !== 0 && b.activated === 0) return -1;
+                  // Missions with team_assigned === 0 go before activated === 0 but after others
+                  if (a.team_assigned !== 0 && b.team_assigned === 0) return -1;
+                  if (a.team_assigned === 0 && b.team_assigned !== 0) return 1;
+                  // Missions with pending subs (total_sub_task_ops_room_pending_subs !== 0) go first
+                  if (a.total_sub_task_ops_room_pending_subs !== 0 && b.total_sub_task_ops_room_pending_subs === 0) return -1;
+                  if (a.total_sub_task_ops_room_pending_subs === 0 && b.total_sub_task_ops_room_pending_subs !== 0) return 1;
 
-                // Missions with rejected subs (total_sub_task_ops_room_rejected_subs !== 0) go next
-                if (a.total_sub_task_ops_room_rejected_subs !== 0 && b.total_sub_task_ops_room_rejected_subs === 0) return -1;
-                if (a.total_sub_task_ops_room_rejected_subs === 0 && b.total_sub_task_ops_room_rejected_subs !== 0) return 1;
+                  // Missions with rejected subs (total_sub_task_ops_room_rejected_subs !== 0) go next
+                  if (a.total_sub_task_ops_room_rejected_subs !== 0 && b.total_sub_task_ops_room_rejected_subs === 0) return -1;
+                  if (a.total_sub_task_ops_room_rejected_subs === 0 && b.total_sub_task_ops_room_rejected_subs !== 0) return 1;
 
-                // For the rest, maintain original order or sort by another criterion (e.g., id)
-                return a.id - b.id;
-              })
-              .map((mission) => (
-                <div
-                  key={mission.id}
-                  className={`dayendprocess-mission-container ${mission.activated === 0
-                    ? 'mission-canceled-byops'
-                    : mission.team_assigned === 0
-                      ? 'team-not-assigned'
-                      : mission.completed === 1
-                        ? 'completed-mission'
-                        : 'incomplete-mission'
-                    } ${selectedMissionId === mission.id ? 'clicked-one' : ''}`}
-                  onClick={() => handleContainerClick(mission.id)}
-                >
-                  <div className="mission-container-left">
-                    <p><strong>{mission.group} - ({mission.id})</strong> </p>
-                    <p><strong>Ops Assignment: </strong>{mission.operator_name && mission.operator_name.trim() !== '' ? mission.operator_name : 'Not Assigned'}</p>
-                    {mission.completionStats && mission.completionStats.totalFields > 0 && (
-                      <div className="ops-completion-stats-dayend">
-                        <span className="ops-completion-label-dayend">OPS Completed - {mission.completionStats.completionPercentage}%</span>
-                        <span className="ops-completion-detail-dayend">
-                          ({mission.completionStats.completedFields}/{mission.completionStats.totalFields})
-                        </span>
-                      </div>
-                    )}
-                    <div className="completion-checkbox" onClick={(e) => e.stopPropagation()}>
-                      <label className="dir-opstext">
-                        Dir-Ops Approval
-                        <input
-                          type="checkbox"
-                          checked={mission.completed === 1}
-                          disabled={userData.job_role !== 'dops' || mission.activated === 0 || mission.team_assigned === 0}
-                          onChange={async (e) => {
-                            if (userData.job_role !== 'dops') {
-                              toast.error("You don't have permission to modify approvals");
-                              return;
-                            }
-                            const newStatus = e.target.checked ? 1 : 0;
-                            try {
-                              const updatedMissions = missions.map((m) =>
-                                m.id === mission.id ? { ...m, completed: newStatus } : m
-                              );
-                              setMissions(updatedMissions);
-                              const approvalResult = await dispatch(
-                                baseApi.endpoints.updateOpsApproval.initiate({
-                                  plan: mission.id,
-                                  status: newStatus,
-                                })
-                              );
-                              const response = approvalResult.data || {};
-                              if (response.status === 'true' || response.success === true) {
-                                toast.success('Status updated successfully');
-                                await handleDateChange(selectedDate);
-                              } else {
-                                setMissions(missions);
-                                toast.error(response.message || 'Update failed');
-                              }
-                            } catch (error) {
-                              console.error('Update error:', error);
-                              setMissions(missions);
-                              toast.error('Failed to update status');
-                            }
-                          }}
-                        />
-                      </label>
-                    </div>
-                    {mission.activated === 0 && (
-                      <div className="deactivate_alert">Deactivated Plan</div>
-                    )}
-                    {mission.team_assigned === 0 && (
-                      <div className="deactivate_alert">Team Not Assigned</div>
-                    )}
-                  </div>
-                  <div className="mission-container-right">
-                    <FaRegArrowAltCircleRight />
-                  </div>
-                </div>
-              ))
-          )}
-        </div>
-      </div>
-      <div className="right-dayend">
-        {loadingMissionDetails && (
-          <Bars height="50" width="50" color="#004B71" ariaLabel="loading" />
-        )}
-        {(!loadingMissionDetails && selectedMission) ? (
-          <div className="mission-details-container">
-            <h3>
-              {selectedMission?.estateName ?? 'Unknown Estate'} - {calculateTotalExtent()} Ha
-            </h3>
-            {selectedMission.divisions && selectedMission.divisions.length > 0 ? (
-              selectedMission.divisions.map((division) => (
-              <div key={division.divisionId} className="division-container">
-                <div
-                  className="division-header"
-                  onClick={() => toggleDivision(division.divisionId)}
-                >
-                  <span>{division.divisionName}</span>
-                  <span className="division-total-dayend">
-                    {division.checkedFields
-                      .reduce((sum, field) => sum + (parseFloat(field.field_area) || 0), 0)
-                      .toFixed(2)} Ha
-                    {expandedDivisions.includes(division.divisionId) ? (
-                      <FaArrowCircleUp className="toggle-icon" />
-                    ) : (
-                      <FaArrowCircleDown className="toggle-icon" />
-                    )}
-                  </span>
-                </div>
-                {expandedDivisions.includes(division.divisionId) && (
-                  <div className="fields-list">
-                    {division.checkedFields.map((field) => (
-                      <div
-                        key={field.field_id}
-                        className={`field-item ${field.field_pilots?.status === 'false' ? 'field-pilot-warning' : ''}`}
-                      >
-                        <div
-                          className="field-header"
-                          onClick={() => handleFieldClick(field.field_id)}
-                        >
-                          <span>
-                            <span
-                              style={{
-                                color: field.activated ? '#4CAF50' : '#f44336',
-                                fontSize: '25px',
-                              }}
-                              title={field.activated ? 'Active Field' : 'Inactive Field'}
-                            >
-                              ●
-                            </span>
-                            {field.field_name} - ({field.field_id})
-                          </span>
-                          <span>
-                            {field.field_pilots?.status === 'false' && (
-                              <span className="warning-badge">⚠️ No Pilot Assigned</span>
-                            )}
-                            {field.field_area} Ha
-                            {loadingFields[field.field_id] ? (
-                              <Bars height="20" width="20" color="#004B71" />
-                            ) : expandedFields.includes(field.field_id) ? (
-                              <FaArrowCircleUp className="toggle-icon" />
-                            ) : (
-                              <FaArrowCircleDown className="toggle-icon" />
-                            )}
+                  // For the rest, maintain original order or sort by another criterion (e.g., id)
+                  return a.id - b.id;
+                })
+                .map((mission) => (
+                  <div
+                    key={mission.id}
+                    className={`dayendprocess-mission-container ${mission.activated === 0
+                      ? 'mission-canceled-byops'
+                      : mission.team_assigned === 0
+                        ? 'team-not-assigned'
+                        : mission.completed === 1
+                          ? 'completed-mission'
+                          : 'incomplete-mission'
+                      } ${selectedMissionId === mission.id ? 'clicked-one' : ''}`}
+                    onClick={() => handleContainerClick(mission.id)}
+                  >
+                    <div className="mission-container-left">
+                      <p><strong>{mission.group} - ({mission.id})</strong> </p>
+                      <p><strong>Ops Assignment: </strong>{mission.operator_name && mission.operator_name.trim() !== '' ? mission.operator_name : 'Not Assigned'}</p>
+                      {mission.completionStats && mission.completionStats.totalFields > 0 && (
+                        <div className="ops-completion-stats-dayend">
+                          <span className="ops-completion-label-dayend">OPS Completed - {mission.completionStats.completionPercentage}%</span>
+                          <span className="ops-completion-detail-dayend">
+                            ({mission.completionStats.completedFields}/{mission.completionStats.totalFields})
                           </span>
                         </div>
-                        {expandedFields.includes(field.field_id) && (
-                          <div className="field-tasks-container">
-                            {(fieldTasks[field.field_id]?.tasks || []).map((task, taskIndex) => (
-                              <div key={`task-${task.task_id}-${taskIndex}`} className="task-details-dayend">
-                                <div
-                                  className={`task-header ${(taskCancelStatusMap[task.task_id]?.pilot_cancel_id || taskCancelStatusMap[task.task_id]?.ops_cancel_id) ? 'task-header-cancelled' : ''}`}
-                                  style={{
-                                    backgroundColor: (taskCancelStatusMap[task.task_id]?.pilot_cancel_id || taskCancelStatusMap[task.task_id]?.ops_cancel_id) ? '#ffebee' : getStatusBackground(task.task_status_text),
-                                    transition: 'all 0.3s ease',
-                                  }}
-                                  onClick={() => toggleTaskExpansion(field.field_id, taskIndex)}
-                                >
-                                  <h4>
-                                    Task {taskIndex + 1} : {task.drone_tag} - {task.pilot}
-                                    {taskCancelStatusMap[task.task_id]?.pilot_cancel_id > 0 && (
-                                      <span className="cancelled-badge cancelled-badge-pilot">Pilot Cancelled</span>
-                                    )}
-                                    {taskCancelStatusMap[task.task_id]?.ops_cancel_id > 0 && (
-                                      <span className="cancelled-badge cancelled-badge-ops">Ops Cancelled</span>
-                                    )}
-                                  </h4>
-                                  {task.expanded ? <FaArrowCircleUp /> : <FaArrowCircleDown />}
-                                </div>
-                                {task.expanded && (
-                                  <div className="tasks-all">
-                                    <div className="task-content">
-                                      <div className="task-content-left">
-                                        <div className="task-text">
-                                          <p>Task ID: {task.task_id}</p>
-                                          <p>Field Area: {parseFloat(task.task_fieldArea || 0).toFixed(2)} Ha</p>
-                                          <p>Sprayed Area: {parseFloat(task.task_sprayedArea || 0).toFixed(2)}</p>
-                                          <p>Obstacle Area: {parseFloat(task.task_obstacleArea || 0).toFixed(2)}</p>
-                                        </div>
-                                        <div className="task-text">
-                                          <p>Margin Area: {parseFloat(task.task_marginArea || 0).toFixed(2)}</p>
-                                          <p>Liters Used: {parseFloat(task.task_sprayedLiters || 0).toFixed(2)}</p>
-                                          <p>Status: {task.task_status_text}</p>
-                                          <p>Pilot: {task.pilot}</p>
-                                          <p>Drone: {task.drone_tag}</p>
-                                        </div>
-                                      </div>
-                                      <div className="task-image-container">
-                                        <img
-                                          src={task.task_image || '/assets/images/no-plan-found.png'}
-                                          alt="Field task"
-                                          className="task-image"
-                                          onClick={() => openImage(task.task_image)}
-                                        />
-                                      </div>
-                                    </div>
-                                    {/* Show pilot cancel reason */}
-                                    {taskCancelStatusMap[task.task_id]?.pilot_cancel_id > 0 && (
-                                      <div className="cancel-reason-display cancel-reason-pilot">
-                                        <span className="cancel-reason-label">Pilot Cancel:</span>
-                                        <span className="cancel-reason-value">
-                                          {taskCancelStatusMap[task.task_id].pilot_cancel_reason || 'Unknown'}
-                                        </span>
-                                      </div>
-                                    )}
-                                    {/* Show ops room cancel reason */}
-                                    {taskCancelStatusMap[task.task_id]?.ops_cancel_id > 0 && (
-                                      <div className="cancel-reason-display cancel-reason-ops">
-                                        <span className="cancel-reason-label">Ops Cancel:</span>
-                                        <span className="cancel-reason-value">
-                                          {taskCancelStatusMap[task.task_id].ops_cancel_reason || 'Unknown'}
-                                        </span>
-                                      </div>
-                                    )}
-                                    <div className="button-set-dayend">
-                                      <button
-                                        className="confirm-button-dayend"
-                                        onClick={() => handleTaskApproveClick(field.field_id, task)}
-                                      >
-                                        Task
-                                      </button>
-                                      <button
-                                        className={`cancel-button-dayend ${taskCancelStatusMap[task.task_id]?.ops_cancel_id > 0 ? 'cancel-button-edit' : ''}`}
-                                        onClick={() => handleCancelTaskClick(field.field_id, task)}
-                                      >
-                                        {taskCancelStatusMap[task.task_id]?.ops_cancel_id > 0 ? 'Edit Cancel' : 'Cancel Task'}
-                                      </button>
-                                      {taskCancelStatusMap[task.task_id]?.pilot_cancel_id > 0 && (
-                                        <button
-                                          className="reset-button-dayend"
-                                          onClick={() => handleResetPilotCancel(field.field_id, task)}
-                                          title="Reset pilot cancel status"
-                                        >
-                                          Pilot Cancel Reset
-                                        </button>
-                                      )}
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        )}
+                      )}
+                      <div className="completion-checkbox" onClick={(e) => e.stopPropagation()}>
+                        <label className="dir-opstext">
+                          Dir-Ops Approval
+                          <input
+                            type="checkbox"
+                            checked={mission.completed === 1}
+                            disabled={userData.job_role !== 'dops' || mission.activated === 0 || mission.team_assigned === 0}
+                            onChange={async (e) => {
+                              if (userData.job_role !== 'dops') {
+                                toast.error("You don't have permission to modify approvals");
+                                return;
+                              }
+                              const newStatus = e.target.checked ? 1 : 0;
+                              try {
+                                const updatedMissions = missions.map((m) =>
+                                  m.id === mission.id ? { ...m, completed: newStatus } : m
+                                );
+                                setMissions(updatedMissions);
+                                const approvalResult = await dispatch(
+                                  baseApi.endpoints.updateOpsApproval.initiate({
+                                    plan: mission.id,
+                                    status: newStatus,
+                                  })
+                                );
+                                const response = approvalResult.data || {};
+                                if (response.status === 'true' || response.success === true) {
+                                  toast.success('Status updated successfully');
+                                  await handleDateChange(selectedDate);
+                                } else {
+                                  setMissions(missions);
+                                  toast.error(response.message || 'Update failed');
+                                }
+                              } catch (error) {
+                                console.error('Update error:', error);
+                                setMissions(missions);
+                                toast.error('Failed to update status');
+                              }
+                            }}
+                          />
+                        </label>
                       </div>
-                    ))}
+                      {mission.activated === 0 && (
+                        <div className="deactivate_alert">Deactivated Plan</div>
+                      )}
+                      {mission.team_assigned === 0 && (
+                        <div className="deactivate_alert">Team Not Assigned</div>
+                      )}
+                    </div>
+                    <div className="mission-container-right">
+                      <FaRegArrowAltCircleRight />
+                    </div>
                   </div>
-                )}
-              </div>
-            ))
-            ) : (
-              <div className="placeholder-text">Select a mission to view details</div>
+                ))
             )}
           </div>
-        ) : null}
-      </div>
-      {/* Full-screen image modal - Using Portal to render outside component hierarchy */}
+        </div>
+        <div className="right-dayend">
+          {loadingMissionDetails && (
+            <Bars height="50" width="50" color="#004B71" ariaLabel="loading" />
+          )}
+          {(!loadingMissionDetails && selectedMission) ? (
+            <div className="mission-details-container">
+              <h3>
+                {selectedMission?.estateName ?? 'Unknown Estate'} - {calculateTotalExtent()} Ha
+              </h3>
+              {selectedMission.divisions && selectedMission.divisions.length > 0 ? (
+                selectedMission.divisions.map((division) => (
+                  <div key={division.divisionId} className="division-container">
+                    <div
+                      className="division-header"
+                      onClick={() => toggleDivision(division.divisionId)}
+                    >
+                      <span>{division.divisionName}</span>
+                      <span className="division-total-dayend">
+                        {division.checkedFields
+                          .reduce((sum, field) => sum + (parseFloat(field.field_area) || 0), 0)
+                          .toFixed(2)} Ha
+                        {expandedDivisions.includes(division.divisionId) ? (
+                          <FaArrowCircleUp className="toggle-icon" />
+                        ) : (
+                          <FaArrowCircleDown className="toggle-icon" />
+                        )}
+                      </span>
+                    </div>
+                    {expandedDivisions.includes(division.divisionId) && (
+                      <div className="fields-list">
+                        {division.checkedFields.map((field) => (
+                          <div
+                            key={field.field_id}
+                            className={`field-item ${field.field_pilots?.status === 'false' ? 'field-pilot-warning' : ''}`}
+                          >
+                            <div
+                              className="field-header"
+                              onClick={() => handleFieldClick(field.field_id)}
+                            >
+                              <span>
+                                <span
+                                  style={{
+                                    color: field.activated ? '#4CAF50' : '#f44336',
+                                    fontSize: '25px',
+                                  }}
+                                  title={field.activated ? 'Active Field' : 'Inactive Field'}
+                                >
+                                  ●
+                                </span>
+                                {field.field_name} - ({field.field_id})
+                              </span>
+                              <span>
+                                {field.field_pilots?.status === 'false' && (
+                                  <span className="warning-badge">⚠️ No Pilot Assigned</span>
+                                )}
+                                {field.field_area} Ha
+                                {loadingFields[field.field_id] ? (
+                                  <Bars height="20" width="20" color="#004B71" />
+                                ) : expandedFields.includes(field.field_id) ? (
+                                  <FaArrowCircleUp className="toggle-icon" />
+                                ) : (
+                                  <FaArrowCircleDown className="toggle-icon" />
+                                )}
+                              </span>
+                            </div>
+                            {expandedFields.includes(field.field_id) && (
+                              <div className="field-tasks-container">
+                                {(fieldTasks[field.field_id]?.tasks || []).map((task, taskIndex) => (
+                                  <div key={`task-${task.task_id}-${taskIndex}`} className="task-details-dayend">
+                                    <div
+                                      className={`task-header ${(taskCancelStatusMap[task.task_id]?.pilot_cancel_id || taskCancelStatusMap[task.task_id]?.ops_cancel_id) ? 'task-header-cancelled' : ''}`}
+                                      style={{
+                                        backgroundColor: (taskCancelStatusMap[task.task_id]?.pilot_cancel_id || taskCancelStatusMap[task.task_id]?.ops_cancel_id) ? '#ffebee' : getStatusBackground(task.task_status_text),
+                                        transition: 'all 0.3s ease',
+                                      }}
+                                      onClick={() => toggleTaskExpansion(field.field_id, taskIndex)}
+                                    >
+                                      <h4>
+                                        Task {taskIndex + 1} : {task.drone_tag} - {task.pilot}
+                                        {taskCancelStatusMap[task.task_id]?.pilot_cancel_id > 0 && (
+                                          <span className="cancelled-badge cancelled-badge-pilot">Pilot Cancelled</span>
+                                        )}
+                                        {taskCancelStatusMap[task.task_id]?.ops_cancel_id > 0 && (
+                                          <span className="cancelled-badge cancelled-badge-ops">Ops Cancelled</span>
+                                        )}
+                                      </h4>
+                                      {task.expanded ? <FaArrowCircleUp /> : <FaArrowCircleDown />}
+                                    </div>
+                                    {task.expanded && (
+                                      <div className="tasks-all">
+                                        <div className="task-content">
+                                          <div className="task-content-left">
+                                            <div className="task-text">
+                                              <p>Task ID: {task.task_id}</p>
+                                              <p>Field Area: {parseFloat(task.task_fieldArea || 0).toFixed(2)} Ha</p>
+                                              <p>Sprayed Area: {parseFloat(task.task_sprayedArea || 0).toFixed(2)}</p>
+                                              <p>Obstacle Area: {parseFloat(task.task_obstacleArea || 0).toFixed(2)}</p>
+                                            </div>
+                                            <div className="task-text">
+                                              <p>Margin Area: {parseFloat(task.task_marginArea || 0).toFixed(2)}</p>
+                                              <p>Liters Used: {parseFloat(task.task_sprayedLiters || 0).toFixed(2)}</p>
+                                              <p>Status: {task.task_status_text}</p>
+                                              <p>Pilot: {task.pilot}</p>
+                                              <p>Drone: {task.drone_tag}</p>
+                                            </div>
+                                          </div>
+                                          <div className="task-image-container">
+                                            <img
+                                              src={task.task_image || '/assets/images/no-plan-found.png'}
+                                              alt="Field task"
+                                              className="task-image"
+                                              onClick={() => openImage(task.task_image)}
+                                            />
+                                          </div>
+                                        </div>
+                                        {/* Show pilot cancel reason */}
+                                        {taskCancelStatusMap[task.task_id]?.pilot_cancel_id > 0 && (
+                                          <div className="cancel-reason-display cancel-reason-pilot">
+                                            <span className="cancel-reason-label">Pilot Cancel:</span>
+                                            <span className="cancel-reason-value">
+                                              {taskCancelStatusMap[task.task_id].pilot_cancel_reason || 'Unknown'}
+                                            </span>
+                                          </div>
+                                        )}
+                                        {/* Show ops room cancel reason */}
+                                        {taskCancelStatusMap[task.task_id]?.ops_cancel_id > 0 && (
+                                          <div className="cancel-reason-display cancel-reason-ops">
+                                            <span className="cancel-reason-label">Ops Cancel:</span>
+                                            <span className="cancel-reason-value">
+                                              {taskCancelStatusMap[task.task_id].ops_cancel_reason || 'Unknown'}
+                                            </span>
+                                          </div>
+                                        )}
+                                        <div className="button-set-dayend">
+                                          <button
+                                            className="confirm-button-dayend"
+                                            onClick={() => handleTaskApproveClick(field.field_id, task)}
+                                            disabled={taskLoading === task.task_id}
+                                          >
+                                            {taskLoading === task.task_id ? 'Loading...' : 'Task'}
+                                          </button>
+                                          <button
+                                            className={`cancel-button-dayend ${taskCancelStatusMap[task.task_id]?.ops_cancel_id > 0 ? 'cancel-button-edit' : ''}`}
+                                            onClick={() => handleCancelTaskClick(field.field_id, task)}
+                                          >
+                                            {taskCancelStatusMap[task.task_id]?.ops_cancel_id > 0 ? 'Edit Cancel' : 'Cancel Task'}
+                                          </button>
+                                          {taskCancelStatusMap[task.task_id]?.pilot_cancel_id > 0 && (
+                                            <button
+                                              className="reset-button-dayend"
+                                              onClick={() => handleResetPilotCancel(field.field_id, task)}
+                                              title="Reset pilot cancel status"
+                                            >
+                                              Pilot Cancel Reset
+                                            </button>
+                                          )}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className="placeholder-text">Select a mission to view details</div>
+              )}
+            </div>
+          ) : null}
+        </div>
+        {/* Full-screen image modal - Using Portal to render outside component hierarchy */}
         {selectedImage && createPortal(
           <div className="image_modal" onClick={closeImage}>
             <div className="image_modal_content_wrapper" onClick={(e) => e.stopPropagation()}>
@@ -1186,10 +1192,10 @@ const DayEndProcess = () => {
                         ? existingReportData.status === 'a'
                           ? '#2fc653'
                           : existingReportData.status === 'r'
-                          ? '#ff4d4f'
-                          : existingReportData.status === 'p'
-                          ? '#948F62FF'
-                          : '#004B71'
+                            ? '#ff4d4f'
+                            : existingReportData.status === 'p'
+                              ? '#948F62FF'
+                              : '#004B71'
                         : '#004B71',
                       color: '#fff',
                       border: existingReportData ? '1.5px solid #888' : undefined,
@@ -1295,7 +1301,15 @@ const DayEndProcess = () => {
                             dji_field_area: e.target.value,
                           }))
                         }
+                        style={{
+                          borderColor: parseFloat(djiData.dji_field_area) > parseFloat(currentField?.field_area || currentTask.task_fieldArea || 0) ? '#ef4444' : ''
+                        }}
                       />
+                      {parseFloat(djiData.dji_field_area) > parseFloat(currentField?.field_area || currentTask.task_fieldArea || 0) && (
+                        <span style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', display: 'block' }}>
+                          Cannot exceed field size ({currentField?.field_area || currentTask.task_fieldArea} Ha)
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div className="data-row">
@@ -1319,7 +1333,15 @@ const DayEndProcess = () => {
                             dji_spraying_area: e.target.value,
                           }))
                         }
+                        style={{
+                          borderColor: parseFloat(djiData.dji_spraying_area) > parseFloat(currentField?.field_area || currentTask.task_fieldArea || 0) ? '#ef4444' : ''
+                        }}
                       />
+                      {parseFloat(djiData.dji_spraying_area) > parseFloat(currentField?.field_area || currentTask.task_fieldArea || 0) && (
+                        <span style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', display: 'block' }}>
+                          Cannot exceed field size ({currentField?.field_area || currentTask.task_fieldArea} Ha)
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div className="data-row">
@@ -1385,7 +1407,9 @@ const DayEndProcess = () => {
                         !djiData.dji_no_of_flights ||
                         !djiData.dji_field_area ||
                         !djiData.dji_spraying_litres ||
-                        !djiData.dji_spraying_area
+                        !djiData.dji_spraying_area ||
+                        parseFloat(djiData.dji_field_area) > parseFloat(currentField?.field_area || currentTask.task_fieldArea || 0) ||
+                        parseFloat(djiData.dji_spraying_area) > parseFloat(currentField?.field_area || currentTask.task_fieldArea || 0)
                       }
                     >
                       {isSubmitting ? 'Submitting...' : 'Submit DJI Data'}

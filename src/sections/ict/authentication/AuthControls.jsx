@@ -5,23 +5,29 @@ import {
   useGetJobRolesQuery,
   useBulkUpdateCategoryPermissionsMutation,
   useUpsertFeaturePermissionMutation,
+  useSyncNavbarPathsMutation,
   useGetFeaturePermissionsQuery,
 } from '../../../api/services NodeJs/featurePermissionsApi';
 import navbarCategoriesRaw from '../../../config/navbarCategories';
 import '../../../styles/authControls.css';
 
-const navbarCategories = navbarCategoriesRaw.map(cat => ({
-  title: cat.title,
-  children: (cat.children || []).flatMap(child => {
-    const items = [{ path: child.path, label: child.label }];
-    if (child.subItems) {
-      child.subItems.forEach(sub => {
-        items.push({ path: sub.path, label: sub.label });
-      });
+const navbarCategories = navbarCategoriesRaw.map((cat) => {
+  const uniqueByPath = new Map();
+  (cat.children || []).forEach((child) => {
+    if (child?.path && child?.label && !uniqueByPath.has(child.path)) {
+      uniqueByPath.set(child.path, { path: child.path, label: child.label });
     }
-    return items;
-  }),
-}));
+    (child.subItems || []).forEach((sub) => {
+      if (sub?.path && sub?.label && !uniqueByPath.has(sub.path)) {
+        uniqueByPath.set(sub.path, { path: sub.path, label: sub.label });
+      }
+    });
+  });
+  return {
+    title: cat.title,
+    children: Array.from(uniqueByPath.values()),
+  };
+});
 
 const AuthControls = () => {
   const [permissions, setPermissions] = useState({});
@@ -42,6 +48,7 @@ const AuthControls = () => {
   const { data: jobRoles = [], isLoading: loadingRoles } = useGetJobRolesQuery();
   const [bulkUpdatePermissions, { isLoading: updating }] = useBulkUpdateCategoryPermissionsMutation();
   const [upsertPermission] = useUpsertFeaturePermissionMutation();
+  const [syncNavbarPaths, { isLoading: syncing }] = useSyncNavbarPathsMutation();
 
   // Fetch individual feature permissions
   const { data: allFeaturePermissions = [], isLoading: loadingFeaturePerms } = useGetFeaturePermissionsQuery({ feature_type: 'feature' });
@@ -532,6 +539,28 @@ const AuthControls = () => {
     }));
   };
 
+  const validNavbarItems = useMemo(() => {
+    return navbarCategories.flatMap((cat) => (cat.children || []).map((child) => ({
+      path: child.path,
+      label: child.label,
+      category: cat.title,
+    }))).filter((row) => row.path);
+  }, []);
+
+  const handleSyncNavbarPaths = async () => {
+    try {
+      const result = await syncNavbarPaths(validNavbarItems).unwrap();
+      const added = Number(result?.added_definitions || 0);
+      const updated = Number(result?.updated_definitions || 0);
+      const removed = Number(result?.deactivated_definitions || 0);
+      const permsRemoved = Number(result?.deactivated_permissions || 0);
+      const msg = `Sync complete. Added ${added}, updated ${updated}, removed ${removed} path definition(s). Deactivated ${permsRemoved} permission record(s) for removed items.`;
+      alert(msg);
+    } catch (err) {
+      alert(err?.data?.error || err?.message || 'Sync failed.');
+    }
+  };
+
   if (loading) {
     return (
       <div className="auth-controls-page">
@@ -549,6 +578,15 @@ const AuthControls = () => {
           <h1>Access Control Management</h1>
           <p>Manage which job roles can access navigation sections and specific features.</p>
         </div>
+        <button
+          type="button"
+          className="auth-controls-sync-btn"
+          onClick={handleSyncNavbarPaths}
+          disabled={syncing || updating}
+          title="Sync new, updated, and removed navbar items with auth controls"
+        >
+          {syncing ? 'Syncing...' : 'Sync Navbar Items'}
+        </button>
       </header>
 
       {/* Tab Navigation */}

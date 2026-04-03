@@ -17,6 +17,8 @@ import './jdManagementApi';
 import './plantationDashboardApi';
 import './fieldSizeAdjustmentsApi';
 import './mappingHierarchyApi';
+import './fieldHistoryApi';
+import './vehicleAppApi';
 
 // Export the complete API
 export { baseApi };
@@ -31,6 +33,8 @@ export * from './jdManagementApi';
 export * from './plantationDashboardApi';
 export * from './fieldSizeAdjustmentsApi';
 export * from './mappingHierarchyApi';
+export * from './fieldHistoryApi';
+export * from './vehicleAppApi';
 
 /**
  * Node.js Backend Services:

@@ -22,6 +22,7 @@ import {
 import { useGetMonitoringDashboardDataQuery } from '../../../api/services NodeJs/monitoringDashboardApi';
 import { useGetPendingAdHocRequestsQuery, useGetPendingRescheduleRequestsByManagerQuery } from '../../../api/services/requestsApi';
 import { getUserData } from '../../../utils/authUtils';
+import { COMPANY } from '../../../config/companyConstants';
 import '../../../styles/monitoringDashboard.css';
 
 const REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes
@@ -119,7 +120,7 @@ const MonitoringDashboard = () => {
     refetchReschedule();
   }, [refetch, refetchAdhoc, refetchReschedule]);
 
-  // Calculate elapsed time since start for mission timer
+  // Elapsed time since start (seconds)
   const getElapsedTime = useCallback((startTime) => {
     if (!startTime) return null;
     const now = currentTime;
@@ -137,8 +138,26 @@ const MonitoringDashboard = () => {
     return {
       display: `${String(h).padStart(2, '0')} : ${String(m).padStart(2, '0')} : ${String(s).padStart(2, '0')}`,
       hours: h, minutes: m, seconds: s,
+      totalSeconds: diff,
     };
   }, [currentTime]);
+
+  // Countdown remaining: minutes per Ha from COMPANY.minutesPerHa (e.g. 30 = 1 Ha per 30 min); count down to 0
+  const getCountdownRemaining = useCallback((startTime, waypointArea) => {
+    const elapsed = getElapsedTime(startTime);
+    if (!elapsed || !waypointArea || waypointArea <= 0) return null;
+    const minutesPerHa = COMPANY.minutesPerHa ?? 30;
+    const totalMinutes = waypointArea * minutesPerHa;
+    const totalSeconds = Math.floor(totalMinutes * 60);
+    const remainingSeconds = Math.max(0, totalSeconds - elapsed.totalSeconds);
+    const h = Math.floor(remainingSeconds / 3600);
+    const m = Math.floor((remainingSeconds % 3600) / 60);
+    const s = remainingSeconds % 60;
+    return {
+      display: `${String(h).padStart(2, '0')} : ${String(m).padStart(2, '0')} : ${String(s).padStart(2, '0')}`,
+      remainingSeconds,
+    };
+  }, [getElapsedTime]);
 
   // Close expanded card on Escape
   useEffect(() => {
@@ -275,7 +294,7 @@ const MonitoringDashboard = () => {
             <div className="monitoring-empty">No active missions</div>
           ) : (
             pilotStartMissions.map((item, idx) => (
-              <PilotStartItem key={`psm-${idx}`} item={item} getElapsedTime={getElapsedTime} />
+              <PilotStartItem key={`psm-${idx}`} item={item} getElapsedTime={getElapsedTime} getCountdownRemaining={getCountdownRemaining} />
             ))
           )}
         </DashboardCard>
@@ -415,6 +434,7 @@ const MonitoringDashboard = () => {
           cardKey={expandedCard}
           onClose={() => setExpandedCard(null)}
           getElapsedTime={getElapsedTime}
+          getCountdownRemaining={getCountdownRemaining}
           navigate={navigate}
           adhocCount={adhocCount}
           rescheduleCount={rescheduleCount}
@@ -466,7 +486,7 @@ const ManagerApprovalItem = ({ item }) => (
   </div>
 );
 
-const PilotStartItem = ({ item, getElapsedTime }) => (
+const PilotStartItem = ({ item, getElapsedTime, getCountdownRemaining }) => (
   <div className="monitoring-item">
     <div className="monitoring-item-icon blue"><FaPlayCircle /></div>
     <div className="monitoring-item-content">
@@ -481,6 +501,11 @@ const PilotStartItem = ({ item, getElapsedTime }) => (
         <div className="monitoring-waypoint">
           <FaMapMarked className="monitoring-waypoint-icon" />
           <span>Way-Point Extent - {item.waypointArea} Ha</span>
+          {item.waypointMapUrl && (
+            <a href={item.waypointMapUrl} target="_blank" rel="noopener noreferrer" className="monitoring-waypoint-view">
+              View
+            </a>
+          )}
         </div>
       )}
       <div className="monitoring-item-details">
@@ -503,7 +528,14 @@ const PilotStartItem = ({ item, getElapsedTime }) => (
           <strong>Chemical:</strong> {item.chemicalReceived ? (item.chemicalTime ? formatMonitoringDateTime(item.chemicalTime) : 'Yes') : 'No'}
         </span>
       </div>
-      {item.startTime && getElapsedTime && <MissionTimer startTime={item.startTime} getElapsedTime={getElapsedTime} />}
+      {item.startTime && (getElapsedTime || getCountdownRemaining) && (
+        <MissionTimer
+          startTime={item.startTime}
+          waypointArea={item.waypointArea}
+          getElapsedTime={getElapsedTime}
+          getCountdownRemaining={getCountdownRemaining}
+        />
+      )}
     </div>
   </div>
 );
@@ -704,19 +736,25 @@ const DayEndItem = ({ item }) => (
     <div className="monitoring-item-content">
       <div className="monitoring-item-top">
         <span className="monitoring-item-id">ID: {item.planId}</span>
-        <span className="monitoring-item-field">Day-End Completed</span>
-        <span className="monitoring-item-time">{item.time}</span>
+        <span className="monitoring-item-field">{item.estateName}</span>
+        <span className="monitoring-item-time">{item.time || '—'}</span>
       </div>
       <div className="monitoring-item-details">
         <span className="monitoring-item-detail">
-          By : {item.completedByName}
-          {item.completedByPhone && (<><span className="detail-separator">|</span>{item.completedByPhone}</>)}
+          By: {item.completedByName}
+          {item.completedByPhone && (<><span className="detail-separator"> | </span>{item.completedByPhone}</>)}
         </span>
       </div>
-      {item.fieldDetails && (
+      {item.fields && item.fields.length > 0 && (
         <div className="monitoring-division-details">
-          {item.fieldDetails.split(', ').map((fd, i) => (
-            <span key={i} className="monitoring-division-chip">{fd}</span>
+          {item.fields.map((f, i) => (
+            <span
+              key={f.fieldId || i}
+              className={`monitoring-division-chip ${f.completed ? 'approved' : 'not-approved'}`}
+              title={f.completed ? `Completed${f.completedAt ? ` at ${f.completedAt}` : ''}` : 'Not completed'}
+            >
+              {f.fieldName} – {f.fieldArea.toFixed(2)} Ha {f.completed ? '✓' : '—'}
+            </span>
           ))}
         </div>
       )}
@@ -759,7 +797,9 @@ const PlanRequestCard = ({ adhocCount, rescheduleCount, navigate }) => (
 
 const itemRenderers = {
   managerApprovals: (item, idx, props) => <ManagerApprovalItem key={`exp-ma-${idx}`} item={item} />,
-  pilotStartMissions: (item, idx, props) => <PilotStartItem key={`exp-psm-${idx}`} item={item} getElapsedTime={props.getElapsedTime} />,
+  pilotStartMissions: (item, idx, props) => (
+    <PilotStartItem key={`exp-psm-${idx}`} item={item} getElapsedTime={props.getElapsedTime} getCountdownRemaining={props.getCountdownRemaining} />
+  ),
   droneUnlockRequests: (item, idx) => <DroneUnlockItem key={`exp-dur-${idx}`} item={item} />,
   pilotCompleteMissions: (item, idx) => <PilotCompleteItem key={`exp-pcm-${idx}`} item={item} />,
   comOperatorAssign: (item, idx) => <COMOperatorAssignItem key={`exp-coa-${idx}`} item={item} />,
@@ -769,7 +809,7 @@ const itemRenderers = {
   dayEndCompleted: (item, idx) => <DayEndItem key={`exp-dec-${idx}`} item={item} />,
 };
 
-const ExpandedCardModal = ({ section, cardKey, onClose, getElapsedTime, navigate, adhocCount, rescheduleCount, adhocRequests, rescheduleRequests }) => {
+const ExpandedCardModal = ({ section, cardKey, onClose, getElapsedTime, getCountdownRemaining, navigate, adhocCount, rescheduleCount, adhocRequests, rescheduleRequests }) => {
   // Special handling for Plan Requests expanded view
   if (cardKey === 'planRequests') {
     return (
@@ -875,7 +915,7 @@ const ExpandedCardModal = ({ section, cardKey, onClose, getElapsedTime, navigate
           {section.data.length === 0 ? (
             <div className="monitoring-empty">No items</div>
           ) : (
-            section.data.map((item, idx) => renderer(item, idx, { getElapsedTime }))
+            section.data.map((item, idx) => renderer(item, idx, { getElapsedTime, getCountdownRemaining }))
           )}
         </div>
       </div>
@@ -904,14 +944,26 @@ const DashboardCard = ({ title, count, headerColor, onExpand, children }) => (
   </div>
 );
 
-const MissionTimer = ({ startTime, getElapsedTime }) => {
-  const elapsed = getElapsedTime(startTime);
+const MissionTimer = ({ startTime, waypointArea, getElapsedTime, getCountdownRemaining }) => {
+  // 1 Ha = 30 min: count down from (waypointArea * 30) min to 0
+  if (waypointArea > 0 && getCountdownRemaining) {
+    const remaining = getCountdownRemaining(startTime, waypointArea);
+    if (!remaining) return null;
+    return (
+      <div className="monitoring-countdown">
+        <FaClock className="monitoring-countdown-icon" />
+        <span>{remaining.display}</span>
+        <span className="monitoring-countdown-label">remaining</span>
+      </div>
+    );
+  }
+  const elapsed = getElapsedTime?.(startTime);
   if (!elapsed) return null;
   return (
     <div className="monitoring-countdown">
       <FaClock className="monitoring-countdown-icon" />
       <span>{elapsed.display}</span>
-      <span className="monitoring-countdown-label">mins</span>
+      <span className="monitoring-countdown-label">elapsed</span>
     </div>
   );
 };

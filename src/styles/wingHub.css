@@ -1,0 +1,449 @@
+.wing-hub {
+  flex: 0 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  background: #ffffff;
+}
+
+.wing-hub-header {
+  background: linear-gradient(135deg, #0a2342 0%, #1e4a7a 45%, #0f2744 100%);
+  padding: 1rem 1.25rem 1.25rem;
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+  box-shadow: 0 4px 24px rgba(10, 35, 66, 0.15);
+}
+
+.wing-hub-header::before {
+  content: '';
+  position: absolute;
+  width: 420px;
+  height: 420px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  top: -120px;
+  right: -80px;
+  pointer-events: none;
+}
+
+.wing-hub-header-inner {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding-left: clamp(1rem, 3vw, 2.5rem);
+  padding-right: clamp(1rem, 3vw, 2.5rem);
+  box-sizing: border-box;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  position: relative;
+  z-index: 1;
+}
+
+.wing-hub-brand-logo {
+  height: 56px;
+  width: auto;
+  object-fit: contain;
+}
+
+.wing-hub-comb-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: #fff;
+  border-radius: 12px;
+  padding: 0.5rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow:
+    0 8px 28px rgba(0, 0, 0, 0.14),
+    0 0 0 1px rgba(10, 35, 66, 0.04) inset;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.wing-hub-comb-card--action:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 12px 32px rgba(0, 0, 0, 0.18),
+    0 0 0 1px rgba(10, 35, 66, 0.06) inset;
+}
+
+.wing-hub-comb-card--action {
+  border: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  max-width: 100%;
+}
+
+.wing-hub-comb-card--action:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.7);
+  outline-offset: 2px;
+}
+
+.wing-hub-bee {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+}
+
+.wing-hub-comb-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.wing-hub-comb-title {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #0a2342;
+  letter-spacing: 0.02em;
+}
+
+.wing-hub-comb-sub {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1e3a5f;
+  max-width: 260px;
+  line-height: 1.25;
+}
+
+.wing-hub-header-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.wing-hub-logout-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  padding: 0.35rem;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow:
+    0 6px 20px rgba(0, 0, 0, 0.12),
+    0 0 0 1px rgba(10, 35, 66, 0.04) inset;
+  cursor: pointer;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.wing-hub-logout-btn:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 10px 28px rgba(0, 0, 0, 0.16),
+    0 0 0 1px rgba(10, 35, 66, 0.06) inset;
+}
+
+.wing-hub-logout-btn:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.7);
+  outline-offset: 2px;
+}
+
+.wing-hub-logout-btn img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.wing-hub-logout-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10000;
+}
+
+.wing-hub-logout-dialog {
+  position: relative;
+  z-index: 10001;
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  max-width: 400px;
+  width: 90%;
+  border: 1px solid #ddd;
+}
+
+.wing-hub-logout-dialog h3 {
+  margin-bottom: 10px;
+  font-size: 1.5rem;
+  color: #333;
+  font-weight: 600;
+}
+
+.wing-hub-logout-dialog p {
+  margin-bottom: 20px;
+  color: #555;
+  font-size: 1rem;
+}
+
+.wing-hub-logout-dialog-buttons {
+  display: flex;
+  justify-content: space-around;
+  gap: 10px;
+}
+
+.wing-hub-logout-cancel,
+.wing-hub-logout-confirm {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.2s ease;
+}
+
+.wing-hub-logout-cancel {
+  background: #ccc;
+  color: #333;
+}
+
+.wing-hub-logout-confirm {
+  background: #ff4d4f;
+  color: #fff;
+}
+
+.wing-hub-logout-cancel:hover {
+  background: #bbb;
+}
+
+.wing-hub-logout-confirm:hover {
+  background: #e04042;
+}
+
+.wing-hub-body {
+  flex: 0 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 1.25rem clamp(1rem, 3vw, 2.5rem) 2rem;
+  box-sizing: border-box;
+  background: #ffffff;
+}
+
+.wing-hub-loading,
+.wing-hub-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: #64748b;
+  padding: 3rem 2rem;
+  min-height: 12rem;
+}
+
+.wing-hub-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  grid-auto-rows: auto;
+  gap: 1.15rem;
+  align-content: start;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Unwrap for grid sizing: card is the grid cell */
+.wing-hub-card-wrap {
+  display: contents;
+}
+
+@media (min-width: 1400px) {
+  .wing-hub-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.wing-hub-card {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  border: none;
+  border-radius: 14px;
+  padding: 0.85rem 1.05rem;
+  min-height: 160px;
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  cursor: pointer;
+  text-align: left;
+  color: #fff;
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.12),
+    0 0 0 1px rgba(0, 0, 0, 0.06) inset;
+  transition:
+    transform 0.3s cubic-bezier(0.34, 1.45, 0.64, 1),
+    box-shadow 0.3s ease,
+    filter 0.3s ease;
+}
+
+/* Light gloss on hover — does not replace inline background colors */
+.wing-hub-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.22) 0%,
+    transparent 42%,
+    rgba(0, 0, 0, 0.06) 100%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.wing-hub-card:hover::before {
+  opacity: 1;
+}
+
+.wing-hub-card:hover {
+  transform: translateY(-5px) scale(1.02);
+  box-shadow:
+    0 16px 36px rgba(0, 0, 0, 0.2),
+    0 0 0 1px rgba(255, 255, 255, 0.18) inset;
+  filter: brightness(1.04);
+}
+
+/* Wing visible in ACL but zero navbar paths: keep full card color; red strip + non-interactive */
+.wing-hub-card--no-nav-access {
+  cursor: not-allowed;
+  pointer-events: auto;
+  padding-bottom: 2rem;
+}
+
+.wing-hub-card--no-nav-access:hover {
+  transform: none;
+  filter: none;
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.12),
+    0 0 0 1px rgba(0, 0, 0, 0.06) inset;
+}
+
+.wing-hub-card--no-nav-access:hover::before {
+  opacity: 0;
+}
+
+.wing-hub-card--no-nav-access:hover .wing-hub-card-icon {
+  transform: none;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.wing-hub-card-no-access-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  padding: 0.4rem 0.5rem;
+  background: #b91c1c;
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-align: center;
+  text-transform: uppercase;
+  line-height: 1.2;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.wing-hub-card:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.85);
+  outline-offset: 3px;
+}
+
+.wing-hub-card-icon {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 10px;
+  font-size: 1.1rem;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.25) inset;
+  transition: transform 0.3s cubic-bezier(0.34, 1.45, 0.64, 1), background 0.3s ease;
+}
+
+.wing-hub-card:hover .wing-hub-card-icon {
+  transform: scale(1.06);
+  background: rgba(255, 255, 255, 0.26);
+}
+
+.wing-hub-card-text {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
+.wing-hub-card-label {
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.wing-hub-card-abbr {
+  font-size: 0.8rem;
+  font-weight: 600;
+  opacity: 0.95;
+}
+
+/* Match TargetCursor: hide hand only when custom cursor is in use (fine pointer, motion ok) */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .wing-hub-card:not(.wing-hub-card--no-nav-access) {
+    cursor: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wing-hub-card,
+  .wing-hub-card::before,
+  .wing-hub-card-icon {
+    transition: none;
+  }
+
+  .wing-hub-card:hover:not(.wing-hub-card--no-nav-access) {
+    transform: none;
+    filter: none;
+  }
+
+  .wing-hub-card:hover:not(.wing-hub-card--no-nav-access) .wing-hub-card-icon {
+    transform: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .wing-hub-header-inner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .wing-hub-comb-card {
+    width: 100%;
+  }
+}

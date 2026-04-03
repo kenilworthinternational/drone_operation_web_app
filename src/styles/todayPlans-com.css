@@ -297,6 +297,16 @@
   color: #1e40af;
 }
 
+.field-status-pending-com {
+  background-color: #f1f5f9;
+  color: #475569;
+}
+
+.field-status-need-approval-com {
+  background-color: #fed7aa;
+  color: #9a3412;
+}
+
 .today-plan-field-reason-com {
   font-weight: 500;
   text-transform: none;
@@ -332,6 +342,17 @@
   color: #64748b;
   font-weight: 400;
   margin-left: 2px;
+}
+
+.field-detail-map-link-com {
+  margin-left: 8px;
+  color: #2563eb;
+  text-decoration: underline;
+  font-size: 0.9em;
+}
+
+.field-detail-map-link-com:hover {
+  color: #1d4ed8;
 }
 
 /* Custom scrollbar for section */

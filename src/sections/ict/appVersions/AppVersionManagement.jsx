@@ -1,10 +1,12 @@
 import React, { useState, useMemo } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   useGetAppVersionsQuery,
   useCreateAppVersionMutation,
   useUpdateAppVersionMutation,
   useDeleteAppVersionMutation,
 } from '../../../api/services NodeJs/appVersionsApi';
+import '../../../styles/ictDevelopment.css';
 import './appVersionManagement.css';
 
 const PLATFORM_OPTIONS = [
@@ -28,6 +30,8 @@ const emptyForm = {
 };
 
 export default function AppVersionManagement() {
+  const routerLocation = useLocation();
+  const navigate = useNavigate();
   const { data: versions = [], isLoading, refetch } = useGetAppVersionsQuery();
   const [createAppVersion, { isLoading: creating }] = useCreateAppVersionMutation();
   const [updateAppVersion, { isLoading: updating }] = useUpdateAppVersionMutation();
@@ -125,16 +129,23 @@ export default function AppVersionManagement() {
   };
 
   return (
-    <div className="avm-container">
+    <div className="avm-container ict-dev-page ict-dev-stack">
       {/* Header */}
-      <div className="avm-header">
-        <div className="avm-header-left">
-          <h1 className="avm-title">App Version Management</h1>
-          <p className="avm-subtitle">Manage minimum required versions for all Kenilworth apps</p>
+      <div className="ict-dev-page-header ict-dev-page-header-balanced">
+        <div className="ict-dev-page-actions">
+          <button className="avm-btn avm-btn-cancel" type="button" onClick={() => navigate({ pathname: '/home/ict/development/dev-center', search: routerLocation.search })}>
+            Back to Dev Center
+          </button>
         </div>
-        <button className="avm-btn avm-btn-primary" onClick={openCreate}>
-          + Add New App
-        </button>
+        <div className="ict-dev-page-center">
+          <h2 className="ict-dev-page-title">App Version Management</h2>
+          <p className="ict-dev-page-subtitle">Manage minimum required versions for all applications from one panel.</p>
+        </div>
+        <div className="ict-dev-page-actions">
+          <button className="avm-btn avm-btn-primary" type="button" onClick={openCreate}>
+            Add New App
+          </button>
+        </div>
       </div>
 
       {/* Flash Messages */}
@@ -142,7 +153,7 @@ export default function AppVersionManagement() {
       {errorMsg && <div className="avm-flash avm-flash-error">{errorMsg}</div>}
 
       {/* Search */}
-      <div className="avm-search-bar">
+      <div className="avm-search-bar ict-dev-card">
         <input
           type="text"
           placeholder="Search by app name, ID, or version..."
@@ -155,13 +166,14 @@ export default function AppVersionManagement() {
 
       {/* Table */}
       {isLoading ? (
-        <div className="avm-loading">Loading...</div>
+        <div className="avm-loading ict-dev-loading-state">Loading...</div>
       ) : filtered.length === 0 ? (
-        <div className="avm-empty">
+        <div className="avm-empty ict-dev-empty-state">
           <p>No app versions found.</p>
         </div>
       ) : (
-        <div className="avm-table-wrap">
+        <div className="avm-table-wrap ict-dev-card ict-dev-section">
+          <h3 className="ict-dev-section-title">App Version List</h3>
           <table className="avm-table">
             <thead>
               <tr>
@@ -191,7 +203,7 @@ export default function AppVersionManagement() {
                   </td>
                   <td>
                     <span className={`avm-badge ${row.maintenance ? 'badge-maintenance' : 'badge-normal'}`}>
-                      {row.maintenance ? '🔧 On' : 'Off'}
+                      {row.maintenance ? 'On' : 'Off'}
                     </span>
                   </td>
                   <td>
@@ -202,14 +214,14 @@ export default function AppVersionManagement() {
                   <td>
                     <div className="avm-actions">
                       <button className="avm-btn avm-btn-edit" onClick={() => openEdit(row)} title="Edit">
-                        ✏️
+                        Edit
                       </button>
                       <button
                         className="avm-btn avm-btn-delete"
                         onClick={() => setShowDeleteConfirm(row)}
                         title="Delete"
                       >
-                        🗑️
+                        Delete
                       </button>
                     </div>
                   </td>
@@ -331,7 +343,7 @@ export default function AppVersionManagement() {
 
                 {/* ── Maintenance Section ── */}
                 <div className="avm-field-full avm-section-divider">
-                  <span className="avm-section-label">🔧 Maintenance Mode</span>
+                  <span className="avm-section-label">Maintenance Mode</span>
                 </div>
                 <div className="avm-field avm-field-toggle">
                   <label>Maintenance</label>
@@ -343,7 +355,7 @@ export default function AppVersionManagement() {
                     />
                     <span className="avm-toggle-slider avm-toggle-slider-orange" />
                     <span className="avm-toggle-label">
-                      {form.maintenance ? '🔧 ON — app blocked for all users' : 'OFF — normal operation'}
+                      {form.maintenance ? 'ON - app blocked for all users' : 'OFF - normal operation'}
                     </span>
                   </label>
                 </div>
@@ -358,11 +370,11 @@ export default function AppVersionManagement() {
                 </div>
               </div>
               <div className="avm-form-actions">
-                <button type="button" className="avm-btn avm-btn-cancel" onClick={() => setShowModal(false)}>
-                  Cancel
-                </button>
                 <button type="submit" className="avm-btn avm-btn-primary" disabled={creating || updating}>
                   {creating || updating ? 'Saving...' : editingId ? 'Update' : 'Create'}
+                </button>
+                <button type="button" className="avm-btn avm-btn-cancel" onClick={() => setShowModal(false)}>
+                  Cancel
                 </button>
               </div>
             </form>
@@ -384,15 +396,15 @@ export default function AppVersionManagement() {
               <p className="avm-delete-warn">This action cannot be undone.</p>
             </div>
             <div className="avm-form-actions">
-              <button className="avm-btn avm-btn-cancel" onClick={() => setShowDeleteConfirm(null)}>
-                Cancel
-              </button>
               <button
                 className="avm-btn avm-btn-danger"
                 onClick={() => handleDelete(showDeleteConfirm.id)}
                 disabled={deleting}
               >
                 {deleting ? 'Deleting...' : 'Delete'}
+              </button>
+              <button className="avm-btn avm-btn-cancel" onClick={() => setShowDeleteConfirm(null)}>
+                Cancel
               </button>
             </div>
           </div>

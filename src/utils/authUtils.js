@@ -33,7 +33,7 @@ export const getCategoryVisibility = (userData, permissions, categories) => {
   // For all other users (including internal non-developers), use backend permissions only
   // Backend format: permissions[category] = true/false (boolean)
   // If no permissions object or category not found, default to false (no access)
-  return categoryTitles.reduce((acc, title) => {
+  const result = categoryTitles.reduce((acc, title) => {
     // Check if permissions exist and category is explicitly granted
     if (permissions && permissions.hasOwnProperty(title)) {
       acc[title] = permissions[title] === true;
@@ -43,6 +43,86 @@ export const getCategoryVisibility = (userData, permissions, categories) => {
     }
     return acc;
   }, {});
+
+  // Legacy ACL: stock/assets category; items now under Administration Wing
+  if (
+    permissions &&
+    permissions['Stock and Assets Management'] === true &&
+    Object.prototype.hasOwnProperty.call(result, 'Administration Wing')
+  ) {
+    result['Administration Wing'] = true;
+  }
+
+  // Legacy ACL: Fleet Management items moved under Administration Wing
+  if (
+    permissions &&
+    permissions['Fleet Management'] === true &&
+    Object.prototype.hasOwnProperty.call(result, 'Administration Wing')
+  ) {
+    result['Administration Wing'] = true;
+  }
+
+  // Legacy ACL: single "HR and Admin" category split into two nav groups
+  if (permissions && permissions['HR and Admin'] === true) {
+    if (Object.prototype.hasOwnProperty.call(result, 'Human Resource Management')) {
+      result['Human Resource Management'] = true;
+    }
+    if (Object.prototype.hasOwnProperty.call(result, 'Administration Wing')) {
+      result['Administration Wing'] = true;
+    }
+  }
+
+  // Legacy ACL keys for ICT area (merged under ICT Wing)
+  if (
+    permissions &&
+    permissions['ICT - System Admin'] === true &&
+    Object.prototype.hasOwnProperty.call(result, 'ICT Wing')
+  ) {
+    result['ICT Wing'] = true;
+  }
+  if (
+    permissions &&
+    permissions['System Administration'] === true &&
+    Object.prototype.hasOwnProperty.call(result, 'ICT Wing')
+  ) {
+    result['ICT Wing'] = true;
+  }
+  if (
+    permissions &&
+    permissions['ICT - Development'] === true &&
+    Object.prototype.hasOwnProperty.call(result, 'ICT Wing')
+  ) {
+    result['ICT Wing'] = true;
+  }
+
+  // Legacy ACL: Corporate + Planning and Monitoring merged into strategic wing
+  if (
+    permissions &&
+    (permissions['Corporate'] === true || permissions['Planning and Monitoring'] === true) &&
+    Object.prototype.hasOwnProperty.call(result, 'Strategic Planning and Monitoring wing')
+  ) {
+    result['Strategic Planning and Monitoring wing'] = true;
+  }
+
+  // Legacy ACL: Central Operation Management renamed to Operation Digitalization & Digital Monitoring & Evaluation Wing
+  if (
+    permissions &&
+    permissions['Central Operation Management'] === true &&
+    Object.prototype.hasOwnProperty.call(result, 'Operation Digitalization & Digital Monitoring & Evaluation Wing')
+  ) {
+    result['Operation Digitalization & Digital Monitoring & Evaluation Wing'] = true;
+  }
+
+  // Legacy ACL: Management renamed to Field Operations Wing
+  if (
+    permissions &&
+    permissions.Management === true &&
+    Object.prototype.hasOwnProperty.call(result, 'Field Operations Wing')
+  ) {
+    result['Field Operations Wing'] = true;
+  }
+
+  return result;
 };
 
 /**

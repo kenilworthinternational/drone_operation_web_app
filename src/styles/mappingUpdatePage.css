@@ -331,6 +331,69 @@
   color: rgba(255, 255, 255, 0.85);
 }
 
+/* Estate finalized status: light green = finalized, light red = not finalized */
+.item-estate-finalized-map-update {
+  background: #dcfce7;
+  border-color: #bbf7d0;
+}
+.item-estate-finalized-map-update:hover {
+  background: #bbf7d0;
+}
+.item-estate-not-finalized-map-update {
+  background: #fee2e2;
+  border-color: #fecaca;
+}
+.item-estate-not-finalized-map-update:hover {
+  background: #fecaca;
+}
+
+/* Estate context menu (right-click) */
+.estate-context-menu-backdrop-map-update {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  background: rgba(0, 0, 0, 0.12);
+  cursor: default;
+}
+
+.estate-context-menu-map-update {
+  position: fixed;
+  z-index: 9999;
+  min-width: 200px;
+  padding: 0;
+  background: #fff;
+  border: 1px solid var(--mu-gray-200);
+  border-radius: var(--mu-radius);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.estate-context-menu-title-map-update {
+  padding: 10px 14px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--mu-gray-500);
+  border-bottom: 1px solid var(--mu-gray-100);
+}
+
+.estate-context-menu-item-map-update {
+  display: block;
+  width: 100%;
+  padding: 10px 14px;
+  text-align: left;
+  border: none;
+  background: none;
+  font-size: 13px;
+  color: var(--mu-gray-800);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.estate-context-menu-item-map-update:hover {
+  background: var(--mu-gray-100);
+}
+
 .item-disabled-map-update {
   opacity: 0.65;
 }

@@ -30,9 +30,9 @@ const detectTabFromPath = (path) => {
 const EMPTY_LINE = { inventory_item_id: '', requested_qty: '' };
 
 const CentralStores = () => {
-  const location = useLocation();
+  const routerLocation = useLocation();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState(detectTabFromPath(location.pathname));
+  const [activeTab, setActiveTab] = useState(detectTabFromPath(routerLocation.pathname));
   const [requestForm, setRequestForm] = useState({
     wing_id: '',
     sector_id: '',
@@ -63,8 +63,8 @@ const CentralStores = () => {
   const [sendRequestToNeedToProcure, { isLoading: sendingToProcure }] = useSendRequestToNeedToProcureMutation();
 
   useEffect(() => {
-    setActiveTab(detectTabFromPath(location.pathname));
-  }, [location.pathname]);
+    setActiveTab(detectTabFromPath(routerLocation.pathname));
+  }, [routerLocation.pathname]);
 
   const selectedWing = useMemo(
     () => wings.find((w) => String(w.id) === String(requestForm.wing_id)),
@@ -179,7 +179,7 @@ const CentralStores = () => {
             type="button"
             onClick={() => {
               setActiveTab(tab.key);
-              navigate(tab.path);
+              navigate({ pathname: tab.path, search: routerLocation.search });
             }}
             className={`central-stores-tab-btn ${activeTab === tab.key ? 'active' : ''}`}
           >
@@ -190,68 +190,83 @@ const CentralStores = () => {
 
       {activeTab === 'request' && (
         <form onSubmit={submitRequest} className="central-stores-form">
-          <div className="central-stores-row-two">
-            <select
-              value={requestForm.wing_id}
-              onChange={(e) => setRequestForm((prev) => ({ ...prev, wing_id: e.target.value, sector_id: '' }))}
-              required
-            >
-              <option value="">Select Wing</option>
-              {wings.map((w) => (
-                <option key={w.id} value={w.id}>
-                  {w.wing} ({w.wingsCode})
-                </option>
-              ))}
-            </select>
-            {isDroneWing && (
+          <div className="central-stores-row-two central-stores-form-group">
+            <div className="central-stores-form-group">
+              <label htmlFor="request-wing">Wing</label>
               <select
-                value={requestForm.sector_id}
-                onChange={(e) => setRequestForm((prev) => ({ ...prev, sector_id: e.target.value }))}
+                id="request-wing"
+                value={requestForm.wing_id}
+                onChange={(e) => setRequestForm((prev) => ({ ...prev, wing_id: e.target.value, sector_id: '' }))}
                 required
               >
-                <option value="">Select Sector</option>
-                {sectors.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.sector}
+                <option value="">Select Wing</option>
+                {wings.map((w) => (
+                  <option key={w.id} value={w.id}>
+                    {w.wing} ({w.wingsCode})
                   </option>
                 ))}
               </select>
+            </div>
+            {isDroneWing && (
+              <div className="central-stores-form-group">
+                <label htmlFor="request-sector">Sector</label>
+                <select
+                  id="request-sector"
+                  value={requestForm.sector_id}
+                  onChange={(e) => setRequestForm((prev) => ({ ...prev, sector_id: e.target.value }))}
+                  required
+                >
+                  <option value="">Select Sector</option>
+                  {sectors.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.sector}
+                    </option>
+                  ))}
+                </select>
+              </div>
             )}
           </div>
 
-          <textarea
-            value={requestForm.remarks}
-            onChange={(e) => setRequestForm((prev) => ({ ...prev, remarks: e.target.value }))}
-            placeholder="Remarks"
-            rows={2}
-          />
+          <div className="central-stores-form-group">
+            <label htmlFor="request-remarks">Remarks</label>
+            <textarea
+              id="request-remarks"
+              value={requestForm.remarks}
+              onChange={(e) => setRequestForm((prev) => ({ ...prev, remarks: e.target.value }))}
+              placeholder="Add any notes or comments (optional)"
+              rows={2}
+            />
+          </div>
 
-          {requestForm.items.map((line, idx) => (
-            <div key={`line-${idx}`} className="central-stores-item-line">
-              <select
-                value={line.inventory_item_id}
-                onChange={(e) => updateRequestLine(idx, 'inventory_item_id', e.target.value)}
-                required
-              >
-                <option value="">Select Item</option>
-                {inventoryItems.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.item_code} - {item.item_name}
-                  </option>
-                ))}
-              </select>
-              <input
-                type="number"
-                min="0.01"
-                step="0.01"
-                value={line.requested_qty}
-                onChange={(e) => updateRequestLine(idx, 'requested_qty', e.target.value)}
-                placeholder="Qty"
-                required
-              />
-              <button type="button" onClick={() => removeRequestLine(idx)}>Remove</button>
-            </div>
-          ))}
+          <div className="central-stores-form-group">
+            <label>Request Items</label>
+            {requestForm.items.map((line, idx) => (
+              <div key={`line-${idx}`} className="central-stores-item-line">
+                <select
+                  value={line.inventory_item_id}
+                  onChange={(e) => updateRequestLine(idx, 'inventory_item_id', e.target.value)}
+                  required
+                >
+                  <option value="">Select Item</option>
+                  {inventoryItems.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.item_code} - {item.item_name}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  value={line.requested_qty}
+                  onChange={(e) => updateRequestLine(idx, 'requested_qty', e.target.value)}
+                  placeholder="Requested Qty"
+                  required
+                />
+                <button type="button" onClick={() => removeRequestLine(idx)}>Remove</button>
+              </div>
+            ))}
+          </div>
           <div className="central-stores-actions">
             <button type="button" onClick={addRequestLine}>+ Add Item</button>
             <button type="submit" disabled={creatingRequest}>
@@ -318,15 +333,16 @@ const CentralStores = () => {
                     <td>{row.status}</td>
                     <td>{row.total_remaining_qty}</td>
                     <td>
-                      <button type="button" onClick={() => setIssueRequestId(String(row.id))}>Issue</button>
-                      {' '}
-                      <button
-                        type="button"
-                        disabled={sendingToProcure}
-                        onClick={() => sendCurrentRequestToProcure(row.id)}
-                      >
-                        Send to Procure
-                      </button>
+                      <div className="central-stores-issue-actions-cell">
+                        <button type="button" onClick={() => setIssueRequestId(String(row.id))}>Issue</button>
+                        <button
+                          type="button"
+                          disabled={sendingToProcure}
+                          onClick={() => sendCurrentRequestToProcure(row.id)}
+                        >
+                          Procure
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -345,28 +361,33 @@ const CentralStores = () => {
                   <div>{item.item_code} - {item.item_name}</div>
                   <div>Remaining: {item.remaining_qty}</div>
                   <div>Stock: {item.current_stock}</div>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    max={item.remaining_qty}
-                    value={issueQtyMap[item.id] || ''}
-                    onChange={(e) => setIssueQtyMap((prev) => ({ ...prev, [item.id]: e.target.value }))}
-                    placeholder="Issue qty"
-                  />
+                  <div className="central-stores-form-group">
+                    <label htmlFor={`issue-qty-${item.id}`}>Issue Qty</label>
+                    <input
+                      id={`issue-qty-${item.id}`}
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      max={item.remaining_qty}
+                      value={issueQtyMap[item.id] || ''}
+                      onChange={(e) => setIssueQtyMap((prev) => ({ ...prev, [item.id]: e.target.value }))}
+                      placeholder="Qty to issue"
+                    />
+                  </div>
                 </div>
               ))}
-              <button type="button" disabled={issuingItems} onClick={submitIssue}>
-                {issuingItems ? 'Issuing...' : 'Issue Selected'}
-              </button>
-              {' '}
-              <button
-                type="button"
-                disabled={sendingToProcure}
-                onClick={() => sendCurrentRequestToProcure(issueRequestId)}
-              >
-                {sendingToProcure ? 'Sending...' : 'Send Remaining to Procure'}
-              </button>
+              <div className="central-stores-issue-actions-cell" style={{ marginTop: '12px' }}>
+                <button type="button" disabled={issuingItems} onClick={submitIssue}>
+                  {issuingItems ? 'Issuing...' : 'Issue Selected'}
+                </button>
+                <button
+                  type="button"
+                  disabled={sendingToProcure}
+                  onClick={() => sendCurrentRequestToProcure(issueRequestId)}
+                >
+                  {sendingToProcure ? 'Sending...' : 'Procure Remaining'}
+                </button>
+              </div>
             </div>
           )}
         </div>

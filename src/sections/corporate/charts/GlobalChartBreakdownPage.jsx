@@ -25,7 +25,7 @@ import {
 import { Bars } from 'react-loader-spinner';
 import '../../../styles/plantationDashboard.css';
 
-const GlobalChartBreakdownPage = () => {
+const GlobalChartBreakdownPage = ({ basePath = '/home/dataViewer' } = {}) => {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -246,7 +246,7 @@ const GlobalChartBreakdownPage = () => {
     return (
       <div className="container-class-breakdown">
         <div className="header-class-breakdown header-class-breakdown--dataviewer">
-          <button className="back-btn-class-breakdown" onClick={() => navigate('/home/dataViewer')}>
+          <button className="back-btn-class-breakdown" onClick={() => navigate(basePath)}>
             <FaArrowLeft /> Back
           </button>
           <h1 className="title-class-breakdown">Chart Breakdown</h1>
@@ -261,7 +261,7 @@ const GlobalChartBreakdownPage = () => {
   return (
     <div className="container-class-breakdown">
       <div className="header-class-breakdown header-class-breakdown--dataviewer">
-        <button className="back-btn-class-breakdown" onClick={() => navigate('/home/dataViewer')}>
+        <button className="back-btn-class-breakdown" onClick={() => navigate(basePath)}>
           <FaArrowLeft /> Back to Infographics
         </button>
         <h1 className="title-class-breakdown">

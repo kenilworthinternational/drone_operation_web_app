@@ -790,6 +790,23 @@ export const jdManagementApi = baseApi.injectEndpoints({
       providesTags: ['Employees'],
     }),
 
+    getDriverFuelCards: builder.query({
+      queryFn: async (arg) => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: '/api/users/fuel-cards',
+            method: 'POST',
+            body: { user_id: arg?.user_id || null },
+          },
+          {},
+          {}
+        );
+        if (result.error) return result;
+        return { data: result.data?.data || [] };
+      },
+      providesTags: ['FinancialCards'],
+    }),
+
     createUser: builder.mutation({
       queryFn: async (data) => {
         // Check if data contains files (FormData)
@@ -969,6 +986,7 @@ export const {
   useGetEmployeeRegistrationByIdQuery,
   useGetLastEmpNoQuery,
   useSearchEmployeeQuery,
+  useGetDriverFuelCardsQuery,
   useCreateUserMutation,
   useGetAllUsersQuery,
   useGetUserByIdQuery,

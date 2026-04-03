@@ -28,6 +28,15 @@ const EstateSprayedAreaReport = () => {
     const processedData = [];
     const [selectedMissionType, setSelectedMissionType] = useState('all');
 
+    const getFilteredRows = () => {
+        return reportData
+            .filter(row => {
+                const missionMatch = selectedMissionType === 'all' || row.missionType === selectedMissionType;
+                return missionMatch && row.fieldExtent > 0;
+            })
+            .sort((a, b) => new Date(a.date) - new Date(b.date));
+    };
+
     useEffect(() => {
         const fetchPlantations = async () => {
             try {
@@ -94,8 +103,8 @@ const EstateSprayedAreaReport = () => {
                         const processedData = [];
 
                         estatesData.forEach(estate => {
-                            estate.plans.forEach(plan => {
-                                plan.fields.forEach(field => {
+                            (estate.plans || []).forEach(plan => {
+                                (plan.fields || []).forEach(field => {
                                     // Sum dji_field_area from all tasks in the field
                                     let djiFieldArea = 0;
                                     if (Array.isArray(field.task) && field.task.length > 0) {
@@ -194,11 +203,8 @@ const EstateSprayedAreaReport = () => {
     const exportToExcel = () => {
         if (reportData.length === 0) return;
 
-        // Filter out rows with fieldExtent <= 0
-        const filteredData = reportData.filter(row => {
-            const missionMatch = selectedMissionType === 'all' || row.missionType === selectedMissionType;
-            return missionMatch && row.fieldExtent > 0;
-        });
+        // Filter out rows with fieldExtent <= 0, sort by date ascending
+        const filteredData = getFilteredRows();
 
         if (filteredData.length === 0) return;
 
@@ -248,10 +254,7 @@ const EstateSprayedAreaReport = () => {
     };
 
     const exportPdf = () => {
-        const filteredData = reportData.filter(row => {
-            const missionMatch = selectedMissionType === 'all' || row.missionType === selectedMissionType;
-            return missionMatch && row.fieldExtent > 0;
-        });
+        const filteredData = getFilteredRows();
 
         if (filteredData.length === 0) return;
 
@@ -379,6 +382,116 @@ const EstateSprayedAreaReport = () => {
         doc.save(`Finance_Report_${pdfEstateNames}_${formatDate(selectedDates[0])}_to_${formatDate(selectedDates[1])}_${selectedMissionType}.pdf`);
     };
 
+    const exportIssuesPdf = () => {
+        const filteredData = getFilteredRows();
+        const issueRows = filteredData.filter(row => (row.landExtent || 0) < (row.fieldExtent || 0));
+        if (issueRows.length === 0) return;
+
+        const doc = new jsPDF();
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const marginX = 15;
+
+        const logo = new Image();
+        logo.src = '../../assets/images/kenilowrthlogoDark.png';
+        doc.addImage(logo, 'PNG', 10, 10, 30, 30);
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(14);
+        doc.text("Kenilworth International Lanka Pvt Ltd", pageWidth / 2, 25, { align: 'center' });
+        doc.setFontSize(10);
+        doc.text("7B , 1/1 D.W Rupasinghe Mawatha, Nugegoda", pageWidth / 2, 30, { align: 'center' });
+
+        const selectedPlantationData = plantations.find(p => p.id === selectedPlantation);
+        const plantation = selectedPlantationData ? selectedPlantationData.plantation : "N/A";
+        const selectedEstateNames = estates
+            .filter(estate => selectedEstates.includes(estate.id))
+            .map(estate => estate.estate)
+            .join(", ");
+        const monthYear = new Date(selectedDates[0]).toLocaleString('default', { month: 'long' }) + " - " + new Date(selectedDates[0]).getFullYear();
+
+        let currentY = 45;
+        doc.text(`Plantation: ${plantation}`, marginX, currentY);
+        currentY += 5;
+        const estateText = `Estate: ${selectedEstateNames}`;
+        const estateWrapped = doc.splitTextToSize(estateText, pageWidth - marginX * 2);
+        doc.text(estateWrapped, marginX, currentY);
+        currentY += estateWrapped.length * 5;
+        doc.text(`Month: ${monthYear}`, marginX, currentY);
+        currentY += 7;
+        doc.text(`Field Wise Financial Report - Issues Only`, pageWidth / 2, currentY, { align: 'center' });
+
+        const tableData = issueRows.map((row, index) => [
+            index + 1,
+            row.date ? new Date(row.date).toLocaleDateString() : "Invalid Date",
+            row.fieldName,
+            row.landExtent.toFixed(2),
+            row.fieldExtent.toFixed(2),
+            row.missionType
+        ]);
+
+        const totalLandExtent = issueRows.reduce((sum, row) => sum + row.landExtent, 0).toFixed(2);
+        const totalFieldExtent = issueRows.reduce((sum, row) => sum + row.fieldExtent, 0).toFixed(2);
+        tableData.push([
+            'Total',
+            '',
+            '',
+            totalLandExtent,
+            totalFieldExtent,
+            ''
+        ]);
+
+        autoTable(doc, {
+            head: [["No", "Date", "Field Name", "Field Extent", "Completed Extent", "Mission Type"]],
+            body: tableData,
+            startY: currentY + 5,
+            margin: { top: 20, bottom: 50 },
+            theme: 'grid',
+            headStyles: {
+                fillColor: [185, 28, 28],
+                textColor: [255, 255, 255],
+                fontStyle: 'bold',
+            },
+            didParseCell: (hookData) => {
+                if (hookData.section === 'body') {
+                    const isLastRow = hookData.row.index === tableData.length - 1;
+                    if (isLastRow) {
+                        hookData.cell.styles.fontStyle = 'bold';
+                    }
+                }
+            }
+        });
+
+        const tableEndY = (doc.lastAutoTable && doc.lastAutoTable.finalY) ? doc.lastAutoTable.finalY : currentY + 10;
+        let footerStartY = tableEndY + 12;
+        if (footerStartY + 40 > pageHeight - 10) {
+            doc.addPage();
+            footerStartY = 20;
+        }
+        doc.setFontSize(9);
+        doc.text(
+            "These rows have Field Extent less than Completed Extent. Please contact Ops room.",
+            pageWidth / 2,
+            footerStartY,
+            { align: 'center' }
+        );
+        doc.setLineWidth(0.5);
+        doc.line(15, footerStartY + 2, pageWidth - 15, footerStartY + 2);
+
+        const sigY = footerStartY + 16;
+        doc.text("Signature:", 16, sigY);
+        doc.text("Name:", 16, sigY + 10);
+        const rightColX = pageWidth - 90;
+        doc.text("Stamp:", rightColX, sigY);
+        doc.text("Date:", rightColX, sigY + 10);
+
+        const pdfEstateNames = estates
+            .filter(e => selectedEstates.includes(e.id))
+            .map(e => e.estate.replace(/\s+/g, '_'))
+            .join('_') || 'All_Estates';
+        doc.save(`Finance_Report_Issues_${pdfEstateNames}_${formatDate(selectedDates[0])}_to_${formatDate(selectedDates[1])}_${selectedMissionType}.pdf`);
+    };
+
     // Helper to format date as YYYY-MM-DD (move above both exportToExcel and exportPdf)
     const formatDate = (date) => {
         if (!date) return '';
@@ -389,118 +502,143 @@ const EstateSprayedAreaReport = () => {
         return `${year}-${month}-${day}`;
     };
 
+    const filteredRows = getFilteredRows();
+    const issueRows = filteredRows.filter(row => (row.landExtent || 0) < (row.fieldExtent || 0));
+    const hasIssues = issueRows.length > 0;
+
     return (
         <div className="finance">
             <div className="top-finance-part">
-                <div className="plantationpicker-finance">
-                    <label htmlFor="finance-plantation-search">Select Plantation:</label>
-                    <input
-                        id="plantation-search"
-                        type="text"
-                        value={searchTerm}
-                        onChange={handlePlantationChange}
-                        placeholder="Type to search plantation..."
-                        onFocus={() => setDropdownOpen(true)}
-                        onBlur={() => setTimeout(() => setDropdownOpen(false), 200)}
-                        className="search-input"
-                        aria-expanded={dropdownOpen}
-                        aria-haspopup="listbox"
-                    />
-                    {searchTerm && (
-                        <button
-                            className="finance-clear-button"
-                            onClick={handleClearSelection}
-                            aria-label="Clear selection"
-                        >
-                            x
-                        </button>
-                    )}
+                <div className="finance-filters-row">
+                    <div className="finance-left-column">
+                        <div className="plantationpicker-finance">
+                            <label htmlFor="finance-plantation-search">Select Plantation:</label>
+                            <div className="finance-input-container">
+                                <input
+                                    id="plantation-search"
+                                    type="text"
+                                    value={searchTerm}
+                                    onChange={handlePlantationChange}
+                                    placeholder="Type to search plantation..."
+                                    onFocus={() => setDropdownOpen(true)}
+                                    onBlur={() => setTimeout(() => setDropdownOpen(false), 200)}
+                                    className="search-input"
+                                    aria-expanded={dropdownOpen}
+                                    aria-haspopup="listbox"
+                                />
+                                {searchTerm && (
+                                    <button
+                                        className="finance-clear-button"
+                                        onClick={handleClearSelection}
+                                        aria-label="Clear selection"
+                                    >
+                                        ×
+                                    </button>
+                                )}
+                            </div>
 
-                </div>
-                <div className="mission-filter-container">
-                    <label htmlFor="mission-type-filter">Mission Type: </label>
-                    <select
-                        id="mission-type-filter"
-                        value={selectedMissionType}
-                        onChange={(e) => setSelectedMissionType(e.target.value)}
-                    >
-                        <option value="all">All</option>
-                        <option value="Spray">Spray</option>
-                        <option value="Spread">Spread</option>
-                    </select>
-                </div>
-                <div className="daterangepicker-finance">
-                    {/* Select Date Text at the Top */}
-                    <p className="select-date-text text-finance" onClick={() => setIsCalendarOpen(!isCalendarOpen)}>
-                        Select Date
-                    </p>
-
-                    {/* Display Date Range */}
-                    <p className="date-range" onClick={() => setIsCalendarOpen(!isCalendarOpen)}>
-                        {selectedDates[0].toLocaleDateString()} - {selectedDates[1]?.toLocaleDateString()}
-                    </p>
-
-                    {/* Calendar Picker */}
-                    {isCalendarOpen && (
-                        <div className="react-date-picker-finance">
-                            <DatePicker
-                                selected={selectedDates[0]}
-                                onChange={handleDateChange}
-                                startDate={selectedDates[0]}
-                                endDate={selectedDates[1]}
-                                selectsRange
-                                inline
-                                disabled={loading}
-                            />
-                        </div>
-                    )}
-                </div>
-
-                {dropdownOpen && (
-                    <div
-                        className="finance-dropdown-list"
-                        role="listbox"
-                        aria-labelledby="plantation-search"
-                    >
-                        {filteredPlantations.length === 0 ? (
-                            <div className="finance-no-results">No matching plantations found</div>
-                        ) : (
-                            filteredPlantations.map((p) => (
+                            {dropdownOpen && (
                                 <div
-                                    key={p.id}
-                                    role="option"
-                                    aria-selected={selectedPlantation === p.id}
-                                    onClick={() => handlePlantationSelect(p.id)}
-                                    onMouseDown={(e) => e.preventDefault()}
-                                    className="dropdown-item"
+                                    className="finance-dropdown-list"
+                                    role="listbox"
+                                    aria-labelledby="plantation-search"
                                 >
-                                    {p.plantation}
+                                    {filteredPlantations.length === 0 ? (
+                                        <div className="finance-no-results">No matching plantations found</div>
+                                    ) : (
+                                        filteredPlantations.map((p) => (
+                                            <div
+                                                key={p.id}
+                                                role="option"
+                                                aria-selected={selectedPlantation === p.id}
+                                                onClick={() => handlePlantationSelect(p.id)}
+                                                onMouseDown={(e) => e.preventDefault()}
+                                                className="dropdown-item"
+                                            >
+                                                {p.plantation}
+                                            </div>
+                                        ))
+                                    )}
                                 </div>
-                            ))
-                        )}
+                            )}
+                        </div>
+                        <div className="mission-filter-container">
+                            <label htmlFor="mission-type-filter">Mission Type:</label>
+                            <select
+                                id="mission-type-filter"
+                                value={selectedMissionType}
+                                onChange={(e) => setSelectedMissionType(e.target.value)}
+                            >
+                                <option value="all">All</option>
+                                <option value="Spray">Spray</option>
+                                <option value="Spread">Spread</option>
+                            </select>
+                        </div>
                     </div>
-                )}
-                <div className="download-buttons">
-                    {reportData.length > 0 && (
-                        <button
-                            onClick={exportToExcel}
-                            className="flex items-center bg-green-500 text-white"
-                        >
-                            <FiDownload className="mr-2" />
-                            Excel
-                        </button>
-                    )}
-                    {reportData.length > 0 && (
-                        <button
-                            onClick={exportPdf}
-                            className="flex items-center bg-red-600 text-white"
-                        >
-                            <FiPrinter className="mr-2" />
-                            PDF
-                        </button>
-                    )}
+                    <div className="finance-right-column">
+                        <div className="daterangepicker-finance">
+                            <p className="select-date-text text-finance" onClick={() => setIsCalendarOpen(!isCalendarOpen)}>
+                                Select Date
+                            </p>
+                            <p className="date-range" onClick={() => setIsCalendarOpen(!isCalendarOpen)}>
+                                {selectedDates[0].toLocaleDateString()} - {selectedDates[1]?.toLocaleDateString()}
+                            </p>
+                            {isCalendarOpen && (
+                                <div className="react-date-picker-finance">
+                                    <DatePicker
+                                        selected={selectedDates[0]}
+                                        onChange={handleDateChange}
+                                        startDate={selectedDates[0]}
+                                        endDate={selectedDates[1]}
+                                        selectsRange
+                                        inline
+                                        disabled={loading}
+                                    />
+                                </div>
+                            )}
+                        </div>
+                        <div className="download-buttons">
+                            {filteredRows.length > 0 && (
+                                <button
+                                    onClick={hasIssues ? undefined : exportToExcel}
+                                    disabled={filteredRows.length === 0 || hasIssues}
+                                    className="flex items-center bg-green-500 text-white"
+                                    title={hasIssues ? 'Cannot download Excel while there are issue rows' : 'Download Excel'}
+                                >
+                                    <FiDownload className="mr-2" />
+                                    Excel
+                                </button>
+                            )}
+                            {filteredRows.length > 0 && (
+                                <button
+                                    onClick={hasIssues ? undefined : exportPdf}
+                                    disabled={filteredRows.length === 0 || hasIssues}
+                                    className="flex items-center bg-red-600 text-white"
+                                    title={hasIssues ? 'Cannot download PDF while there are issue rows' : 'Download PDF'}
+                                >
+                                    <FiPrinter className="mr-2" />
+                                    PDF
+                                </button>
+                            )}
+                            {filteredRows.length > 0 && hasIssues && (
+                                <button
+                                    onClick={exportIssuesPdf}
+                                    className="flex items-center bg-amber-600 text-white"
+                                    title="Download issues-only PDF and contact Ops room"
+                                >
+                                    <FiPrinter className="mr-2" />
+                                    Issues PDF
+                                </button>
+                            )}
+                        </div>
+                    </div>
                 </div>
             </div>
+            {hasIssues && (
+                <div className="finance-issues-warning">
+                    These rows have Field Extent less than Completed Extent. Please download the issues-only PDF and contact Ops room.
+                </div>
+            )}
 
 
             {selectedDates[0] && selectedDates[1] && selectedPlantation && (
@@ -554,7 +692,7 @@ const EstateSprayedAreaReport = () => {
                         {error && <div className="error-message">{error}</div>}
 
                         {!loading && !error && (
-                            reportData.length > 0 ? (
+                            filteredRows.length > 0 ? (
                                 <div className="finance-table-container">
                                     <table className="finance-report-table">
                                         <thead>
@@ -569,13 +707,10 @@ const EstateSprayedAreaReport = () => {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {reportData
-                                                .filter(row => {
-                                                    const missionMatch = selectedMissionType === 'all' || row.missionType === selectedMissionType;
-                                                    return missionMatch && row.fieldExtent > 0;
-                                                })
+                                            {filteredRows
                                                 .map((row, index) => {
                                                     const safeDate = row.date ? new Date(row.date) : null;
+                                                    const isIssue = (row.landExtent || 0) < (row.fieldExtent || 0);
                                                     return (
                                                         <tr key={index}>
                                                             <td>{index + 1}</td>
@@ -586,8 +721,12 @@ const EstateSprayedAreaReport = () => {
                                                             </td>
                                                             <td>{row.fieldName}</td>
                                                             <td>{row.pilotNames}</td>
-                                                            <td>{(row.landExtent || 0).toFixed(2)}</td>
-                                                            <td>{(row.fieldExtent || 0).toFixed(2)}</td>
+                                                            <td className={isIssue ? 'finance-issue-cell' : ''}>
+                                                                {(row.landExtent || 0).toFixed(2)}
+                                                            </td>
+                                                            <td className={isIssue ? 'finance-issue-cell' : ''}>
+                                                                {(row.fieldExtent || 0).toFixed(2)}
+                                                            </td>
                                                             <td>{row.missionType}</td>
                                                         </tr>
                                                     );
@@ -598,22 +737,14 @@ const EstateSprayedAreaReport = () => {
                                                 <td colSpan="4"><strong>Total</strong></td>
                                                 <td>
                                                     <strong>
-                                                        {reportData
-                                                            .filter(row => {
-                                                                const missionMatch = selectedMissionType === 'all' || row.missionType === selectedMissionType;
-                                                                return missionMatch && row.fieldExtent > 0;
-                                                            })
+                                                        {filteredRows
                                                             .reduce((sum, row) => sum + row.landExtent, 0)
                                                             .toFixed(2)}
                                                     </strong>
                                                 </td>
                                                 <td>
                                                     <strong>
-                                                        {reportData
-                                                            .filter(row => {
-                                                                const missionMatch = selectedMissionType === 'all' || row.missionType === selectedMissionType;
-                                                                return missionMatch && row.fieldExtent > 0;
-                                                            })
+                                                        {filteredRows
                                                             .reduce((sum, row) => sum + row.fieldExtent, 0)
                                                             .toFixed(2)}
                                                     </strong>

@@ -43,7 +43,8 @@
 .central-stores-form {
   display: grid;
   gap: 14px;
-  max-width: 900px;
+  max-width: 100%;
+  width: 100%;
   background: #fff;
   border: 1px solid #e5ebf1;
   border-radius: 12px;
@@ -55,12 +56,38 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
+  min-width: 0;
+}
+
+.central-stores-row-two select {
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.central-stores-form-group {
+  min-width: 0;
+}
+
+.central-stores-form-group label {
+  display: block;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #29465f;
+  margin-bottom: 4px;
 }
 
 .central-stores-item-line {
   display: grid;
   grid-template-columns: 2fr 1fr auto;
   gap: 10px;
+  min-width: 0;
+  align-items: end;
+}
+
+.central-stores-item-line select,
+.central-stores-item-line input {
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .central-stores-actions {
@@ -76,11 +103,23 @@
   border-radius: 12px;
   padding: 10px;
   box-shadow: 0 6px 16px rgba(15, 54, 82, 0.06);
+  max-width: 100%;
+  width: 100%;
 }
 
 .central-stores-issue-grid {
   display: grid;
   gap: 14px;
+  max-width: 100%;
+  width: 100%;
+}
+
+.central-stores-issue-actions-cell {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .central-stores-issue-panel {
@@ -101,11 +140,15 @@
   grid-template-columns: 2fr 1fr 1fr 1fr;
   gap: 8px;
   margin-bottom: 10px;
-  align-items: center;
+  align-items: end;
   padding: 10px;
   border-radius: 8px;
   background: #f7faff;
   border: 1px solid #e5ecf5;
+}
+
+.central-stores-issue-item-row .central-stores-form-group {
+  min-width: 0;
 }
 
 .central-stores-page table {
@@ -140,6 +183,8 @@
 .central-stores-page input,
 .central-stores-page textarea {
   width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   border: 1px solid #ccd7e3;
   border-radius: 8px;
   padding: 9px 10px;

@@ -1,0 +1,272 @@
+.vehicle-admin-page {
+  padding: 18px;
+  background: #f4f6f9;
+}
+
+.vehicle-admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px 18px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+.vehicle-admin-header h1 {
+  margin: 0;
+  font-size: 21px;
+  color: #0f172a;
+}
+
+.vehicle-admin-header p {
+  margin: 4px 0 0;
+  color: #475569;
+}
+
+.vehicle-admin-month {
+  padding: 9px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.vehicle-admin-tabs {
+  margin-top: 14px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.vehicle-admin-tabs button {
+  border: 1px solid #d2dbe6;
+  background: #ffffff;
+  padding: 8px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: 600;
+  color: #334155;
+  transition: all 0.18s ease;
+}
+
+.vehicle-admin-tabs button.active {
+  background: #004b71;
+  color: #fff;
+  border-color: #004b71;
+}
+
+.vehicle-admin-grid {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.vehicle-admin-grid.three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.vehicle-admin-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
+}
+
+.vehicle-admin-card h3 {
+  margin: 0 0 10px;
+  color: #0f172a;
+  font-size: 16px;
+}
+
+.metric-list {
+  display: grid;
+  gap: 8px;
+}
+
+.metric-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  color: #475569;
+}
+
+.metric-row strong {
+  color: #0f172a;
+}
+
+.inline-form {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.inline-form input,
+.vehicle-form-grid input,
+.vehicle-form-grid select {
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 9px 10px;
+  background: #fff;
+  color: #0f172a;
+}
+
+.inline-form button,
+.vehicle-form-grid button,
+.actions button {
+  border: none;
+  border-radius: 8px;
+  padding: 9px 12px;
+  background: #0ea5e9;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.actions .danger {
+  background: #dc2626;
+}
+
+.master-list {
+  display: grid;
+  gap: 8px;
+}
+
+.master-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.master-label {
+  color: #334155;
+  font-size: 14px;
+}
+
+.master-edit-input {
+  flex: 1;
+  min-width: 120px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.master-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.vehicle-form-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.vehicle-admin-note {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 13px;
+}
+
+.vehicle-table-wrap {
+  overflow-x: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+
+.vehicle-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 760px;
+  background: #fff;
+}
+
+.vehicle-table th,
+.vehicle-table td {
+  border-bottom: 1px solid #e2e8f0;
+  padding: 10px 10px;
+  text-align: left;
+  font-size: 13px;
+  vertical-align: middle;
+}
+
+.vehicle-table th {
+  background: #f8fafc;
+  color: #334155;
+  font-weight: 700;
+}
+
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.status-chip.active,
+.status-chip.approved {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-chip.inactive,
+.status-chip.declined {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.action-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 7px 10px;
+  color: #fff;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.action-btn.approve {
+  background: #16a34a;
+}
+
+.action-btn.danger {
+  background: #dc2626;
+}
+
+.action-btn.neutral {
+  background: #64748b;
+}
+
+@media (max-width: 1100px) {
+  .vehicle-admin-grid,
+  .vehicle-admin-grid.three {
+    grid-template-columns: 1fr;
+  }
+
+  .vehicle-form-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+

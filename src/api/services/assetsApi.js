@@ -474,6 +474,19 @@ export const assetsApi = baseApi.injectEndpoints({
       providesTags: ['FuelCategories'],
     }),
 
+    saveFuelCategory: builder.mutation({
+      queryFn: async (body) => {
+        const result = await nodeBackendBaseQuery(
+          { url: '/api/jd-management/fuel-categories/save', method: 'POST', body },
+          {},
+          {}
+        );
+        if (result.error) return { error: result.error };
+        return { data: result.data?.data || null };
+      },
+      invalidatesTags: ['FuelCategories'],
+    }),
+
     // Sector Updates
     updateAssetsSectorDrone: builder.mutation({
       query: (data) => ({
@@ -544,6 +557,7 @@ export const {
     useGetVehicleDriversQuery,
     useGetVehicleCategoriesQuery,
     useGetFuelCategoriesQuery,
+    useSaveFuelCategoryMutation,
     useUpdateAssetsSectorDroneMutation,
     useUpdateAssetsSectorVehicleMutation,
     useUpdateAssetsSectorGeneratorMutation,

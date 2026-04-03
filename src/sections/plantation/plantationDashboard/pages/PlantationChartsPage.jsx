@@ -6,7 +6,7 @@ import PlannedVsSprayedChart from '../components/PlannedVsSprayedChart';
 import MonthRangePicker from '../components/MonthRangePicker';
 import '../../../../styles/plantationDashboard.css';
 
-const PlantationChartsPage = () => {
+const PlantationChartsPage = ({ basePath = '/home/plantation-dashboard' } = {}) => {
   const navigate = useNavigate();
   const [selectedAction, setSelectedAction] = useState('Spray');
   const [chartMonthRange, setChartMonthRange] = useState(() => {
@@ -35,7 +35,7 @@ const PlantationChartsPage = () => {
   return (
     <div className="plantation-dashboard-container">
       <div className="plantation-page-header">
-        <button className="plantation-back-btn" onClick={() => navigate('/home/plantation-dashboard')}>
+        <button className="plantation-back-btn" onClick={() => navigate(basePath)}>
           <FaArrowLeft /> Back
         </button>
         <h1 className="plantation-page-title">Charts</h1>
@@ -79,12 +79,14 @@ const PlantationChartsPage = () => {
             months={chartMonths}
             startMonth={`${chartMonthRange.start.getFullYear()}-${String(chartMonthRange.start.getMonth() + 1).padStart(2, '0')}`}
             endMonth={`${chartMonthRange.end.getFullYear()}-${String(chartMonthRange.end.getMonth() + 1).padStart(2, '0')}`}
+            basePath={basePath}
           />
           <PlannedVsSprayedChart 
             missionType={missionType} 
             months={chartMonths}
             startMonth={`${chartMonthRange.start.getFullYear()}-${String(chartMonthRange.start.getMonth() + 1).padStart(2, '0')}`}
             endMonth={`${chartMonthRange.end.getFullYear()}-${String(chartMonthRange.end.getMonth() + 1).padStart(2, '0')}`}
+            basePath={basePath}
           />
         </div>
       </div>

@@ -72,7 +72,7 @@ const parsePurchasePrice = (value) => {
   if (value === undefined || value === null) {
     return null;
   }
-  const cleaned = typeof value === 'string' ? value.trim() : value;
+  const cleaned = typeof value === 'string' ? value.replace(/,/g, '').trim() : value;
   if (cleaned === '') {
     return null;
   }
@@ -81,6 +81,33 @@ const parsePurchasePrice = (value) => {
     return null;
   }
   return Number(parsed.toFixed(2));
+};
+
+const sanitizeDecimalInput = (value) => {
+  const input = String(value ?? '');
+  const withoutCommas = input.replace(/,/g, '');
+  const numeric = withoutCommas.replace(/[^\d.]/g, '');
+  const firstDotIndex = numeric.indexOf('.');
+  if (firstDotIndex === -1) {
+    return numeric;
+  }
+  const integerPart = numeric.slice(0, firstDotIndex);
+  const decimalPart = numeric.slice(firstDotIndex + 1).replace(/\./g, '');
+  return `${integerPart}.${decimalPart}`;
+};
+
+const formatCurrencyInput = (value) => {
+  if (value === undefined || value === null || value === '') {
+    return '';
+  }
+  const sanitized = sanitizeDecimalInput(value);
+  if (!sanitized) {
+    return '';
+  }
+  const [integerPartRaw, decimalPart] = sanitized.split('.');
+  const integerPart = integerPartRaw || '0';
+  const formattedInteger = Number.parseInt(integerPart, 10).toLocaleString('en-US');
+  return decimalPart !== undefined ? `${formattedInteger}.${decimalPart}` : formattedInteger;
 };
 
 const formatCurrency = (value) => {
@@ -467,9 +494,10 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
       driver: asset?.driver != null ? String(asset.driver) : '',
       copy_of_registration_document: asset?.copy_of_registration_document ?? '',
       // Vehicle details
-      vehicle_category: asset?.vehicle_category ?? '',
-      fuel_category: asset?.fuel_category ?? '',
+      vehicle_category: asset?.vehicle_category ?? asset?.vehicle_category_id ?? '',
+      fuel_category: asset?.fuel_category ?? asset?.fuel_category_id ?? '',
       avg_fuel_consumption: asset?.avg_fuel_consumption != null ? String(asset.avg_fuel_consumption) : '',
+      tank_capacity_ltr: asset?.tank_capacity_ltr != null ? String(asset.tank_capacity_ltr) : '',
       vehicle_revenue_license_image: asset?.vehicle_revenue_license_image ?? '',
       smoke_test_image: asset?.smoke_test_image ?? '',
       insurance_image: asset?.insurance_image ?? '',
@@ -481,6 +509,7 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
       // Rented vehicle fields
       no_of_km_for_month: asset?.no_of_km_for_month != null ? String(asset.no_of_km_for_month) : '',
       working_days: asset?.working_days != null ? String(asset.working_days) : '',
+      monthly_rate: asset?.monthly_rate != null ? String(asset.monthly_rate) : '',
       rate_per_km: asset?.rate_per_km != null ? String(asset.rate_per_km) : '',
       starting_date: formatDateForInput(asset?.starting_date),
       end_date: formatDateForInput(asset?.end_date),
@@ -574,10 +603,12 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
 
   const handleFormChange = (event) => {
     const { name, value } = event.target;
+  const currencyFields = new Set(['purchase_price', 'monthly_rate', 'rate_per_km']);
     setFormData((prev) => {
+    const normalizedValue = currencyFields.has(name) ? sanitizeDecimalInput(value) : value;
       const updated = {
         ...prev,
-        [name]: value
+      [name]: normalizedValue
       };
 
       if (name === 'have_insurance' && value !== '1') {
@@ -743,13 +774,12 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
             wing: wingId,
             // Driver information (vehicle_drivers table ID)
             driver: formData.driver || null,
-            driver_license_front_image: formData.driver_license_front_image || null,
-            driver_license_back_image: formData.driver_license_back_image || null,
             copy_of_registration_document: formData.copy_of_registration_document || null,
             // Vehicle details
             vehicle_category: formData.vehicle_category ? parseInt(formData.vehicle_category, 10) : null,
             fuel_category: formData.fuel_category ? parseInt(formData.fuel_category, 10) : null,
             avg_fuel_consumption: formData.avg_fuel_consumption ? parseFloat(formData.avg_fuel_consumption) : null,
+            tank_capacity_ltr: formData.tank_capacity_ltr ? parseFloat(formData.tank_capacity_ltr) : null,
             vehicle_revenue_license_image: formData.vehicle_revenue_license_image || null,
             smoke_test_image: formData.smoke_test_image || null,
             insurance_image: formData.insurance_image || null,
@@ -762,6 +792,7 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
             ...(formData.ownership === 'r' ? {
               no_of_km_for_month: formData.no_of_km_for_month ? parseInt(formData.no_of_km_for_month, 10) : null,
               working_days: formData.working_days ? parseInt(formData.working_days, 10) : null,
+              monthly_rate: formData.monthly_rate ? parseFloat(formData.monthly_rate) : null,
               rate_per_km: formData.rate_per_km ? parseFloat(formData.rate_per_km) : null,
               starting_date: formatDateForApi(formData.starting_date) || null,
               end_date: formatDateForApi(formData.end_date) || null,
@@ -1280,14 +1311,13 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
 
                     <div className="form-row-assets">
                       <div className="form-group-assets">
-                        <label htmlFor="driver">Driver <span className="required-indicator-assets">*</span></label>
+                        <label htmlFor="driver">Driver</label>
                         <select
                           id="driver"
                           name="driver"
                           value={formData.driver}
                           onChange={handleFormChange}
                           disabled={vehicleDriversLoading}
-                          required
                         >
                           <option value="">
                             {vehicleDriversLoading 
@@ -1312,6 +1342,9 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
                             ))
                           )}
                         </select>
+                        <small className="form-field-helper-assets">
+                          Driver license images are reused from User Registration.
+                        </small>
                       </div>
                       <div className="form-group-assets">
                         <label htmlFor="vehicle_category">Vehicle Category</label>
@@ -1351,7 +1384,7 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
                         </select>
                       </div>
                       <div className="form-group-assets">
-                        <label htmlFor="avg_fuel_consumption">Avg Fuel Consumption</label>
+                        <label htmlFor="avg_fuel_consumption">Avg Fuel Consumption (km/L)</label>
                         <input
                           type="number"
                           onWheel={(e) => e.target.blur()}
@@ -1362,6 +1395,23 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
                           placeholder="Enter average fuel consumption"
                           min="0"
                           step="0.01"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-row-assets">
+                      <div className="form-group-assets">
+                        <label htmlFor="tank_capacity_ltr">Tank Capacity (L)</label>
+                        <input
+                          type="number"
+                          onWheel={(e) => e.target.blur()}
+                          id="tank_capacity_ltr"
+                          name="tank_capacity_ltr"
+                          value={formData.tank_capacity_ltr}
+                          onChange={handleFormChange}
+                          placeholder="Enter fuel tank capacity in litres"
+                          min="0"
+                          step="0.1"
                         />
                       </div>
                     </div>
@@ -1431,45 +1481,6 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
                     {/* Documents & Images Section */}
                     <div className="form-section-divider-assets">
                       <h4>Documents & Images</h4>
-                    </div>
-
-                    <div className="form-row-assets">
-                      <div className="form-group-assets">
-                        <label htmlFor="driver_license_front_image">Driver License Front Image</label>
-                        <input
-                          type="file"
-                          id="driver_license_front_image"
-                          name="driver_license_front_image"
-                          accept="image/*"
-                          onChange={(e) => {
-                            const file = e.target.files[0];
-                            if (file) {
-                              handleFormChange({ target: { name: 'driver_license_front_image', value: file.name } });
-                            }
-                          }}
-                        />
-                        {formData.driver_license_front_image && (
-                          <small className="form-field-helper-assets">Current: {formData.driver_license_front_image}</small>
-                        )}
-                      </div>
-                      <div className="form-group-assets">
-                        <label htmlFor="driver_license_back_image">Driver License Back Image</label>
-                        <input
-                          type="file"
-                          id="driver_license_back_image"
-                          name="driver_license_back_image"
-                          accept="image/*"
-                          onChange={(e) => {
-                            const file = e.target.files[0];
-                            if (file) {
-                              handleFormChange({ target: { name: 'driver_license_back_image', value: file.name } });
-                            }
-                          }}
-                        />
-                        {formData.driver_license_back_image && (
-                          <small className="form-field-helper-assets">Current: {formData.driver_license_back_image}</small>
-                        )}
-                      </div>
                     </div>
 
                     <div className="form-row-assets">
@@ -1588,19 +1599,34 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
 
                         <div className="form-row-assets">
                           <div className="form-group-assets">
+                            <label htmlFor="monthly_rate">Monthly Rate (LKR)</label>
+                            <input
+                              type="text"
+                              inputMode="decimal"
+                          onWheel={(e) => e.target.blur()}
+                              id="monthly_rate"
+                              name="monthly_rate"
+                              value={formatCurrencyInput(formData.monthly_rate)}
+                              onChange={handleFormChange}
+                              placeholder="Enter monthly rate"
+                            />
+                          </div>
+                          <div className="form-group-assets">
                             <label htmlFor="rate_per_km">Rate (Per KM) (LKR)</label>
                             <input
-                              type="number"
+                              type="text"
+                              inputMode="decimal"
                           onWheel={(e) => e.target.blur()}
                               id="rate_per_km"
                               name="rate_per_km"
-                              value={formData.rate_per_km}
+                              value={formatCurrencyInput(formData.rate_per_km)}
                               onChange={handleFormChange}
                               placeholder="Enter rate per KM"
-                              min="0"
-                              step="0.01"
                             />
                           </div>
+                        </div>
+
+                        <div className="form-row-assets">
                           <div className="form-group-assets">
                             <label htmlFor="starting_date">Starting Date</label>
                             <input
@@ -1611,9 +1637,6 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
                               onChange={handleFormChange}
                             />
                           </div>
-                        </div>
-
-                        <div className="form-row-assets">
                           <div className="form-group-assets">
                             <label htmlFor="end_date">End Date</label>
                             <input
@@ -1632,14 +1655,13 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
                       <div className="form-group-assets">
                         <label htmlFor="purchase_price">Purchase Price (LKR) <span className="required-indicator-assets">*</span></label>
                         <input
-                          type="number"
+                          type="text"
+                          inputMode="decimal"
                           onWheel={(e) => e.target.blur()}
                           id="purchase_price"
                           name="purchase_price"
-                          value={formData.purchase_price}
+                          value={formatCurrencyInput(formData.purchase_price)}
                           onChange={handleFormChange}
-                          min="0"
-                          step="0.01"
                           required
                         />
                       </div>
@@ -1730,14 +1752,13 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
                       <div className="form-group-assets">
                         <label htmlFor="purchase_price">Purchase Price (LKR) <span className="required-indicator-assets">*</span></label>
                         <input
-                          type="number"
+                          type="text"
+                          inputMode="decimal"
                           onWheel={(e) => e.target.blur()}
                           id="purchase_price"
                           name="purchase_price"
-                          value={formData.purchase_price}
+                          value={formatCurrencyInput(formData.purchase_price)}
                           onChange={handleFormChange}
-                          min="0"
-                          step="0.01"
                           required
                         />
                       </div>

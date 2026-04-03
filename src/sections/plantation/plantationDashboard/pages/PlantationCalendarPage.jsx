@@ -5,7 +5,7 @@ import PlantationCalendar from '../components/PlantationCalendar';
 import SingleMonthPicker from '../components/SingleMonthPicker';
 import '../../../../styles/plantationDashboard.css';
 
-const PlantationCalendarPage = () => {
+const PlantationCalendarPage = ({ basePath = '/home/plantation-dashboard' } = {}) => {
   const navigate = useNavigate();
   const [selectedAction, setSelectedAction] = useState('Spray');
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -15,7 +15,7 @@ const PlantationCalendarPage = () => {
   return (
     <div className="plantation-dashboard-container">
       <div className="plantation-page-header">
-        <button className="plantation-back-btn" onClick={() => navigate('/home/plantation-dashboard')}>
+        <button className="plantation-back-btn" onClick={() => navigate(basePath)}>
           <FaArrowLeft /> Back
         </button>
         <h1 className="plantation-page-title">Calendar</h1>

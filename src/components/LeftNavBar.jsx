@@ -1,24 +1,24 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   FaSignOutAlt,
   FaChevronDown,
   FaChevronRight,
   FaCloudSunRain,
+  FaCalendarAlt,
+  FaArrowLeft,
 } from 'react-icons/fa';
 import navbarCategories from '../config/navbarCategories';
 import '../styles/css-navbar.css';
-import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { useAppDispatch } from '../store/hooks';
 import { baseApi } from '../api/services/allEndpoints';
 import { logout } from '../store/slices/authSlice';
 import { useQueryClient } from '@tanstack/react-query';
 import {
-  getCategoryVisibility,
-  getAllowedPaths,
   getUserData,
   getNavbarColor
 } from '../utils/authUtils';
-import { useGetMyPermissionsQuery } from '../api/services NodeJs/featurePermissionsApi';
+import { useNavbarPermissions } from '../hooks/useNavbarPermissions';
 
 const categories = navbarCategories;
 
@@ -28,22 +28,32 @@ const LeftNavBar = ({ showSidebar = false, onClose = () => { }, onCollapseChange
   // Removed Redux permissions - now using only backend permissions from Access Control Management
   const location = useLocation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const wingTitle = searchParams.get('wing') ? decodeURIComponent(searchParams.get('wing')) : null;
+  /** Keep ?wing= on every in-app nav link so the sidebar stays filtered to one wing. */
+  const withWingSearch = (pathname) => ({ pathname, search: location.search });
+  const categoriesToShow = useMemo(() => {
+    if (!wingTitle) return categories;
+    const normalizedWing =
+      wingTitle === 'Management' ? 'Field Operations Wing' : wingTitle;
+    return categories.filter((c) => c.title === normalizedWing);
+  }, [wingTitle]);
   const [activeLink, setActiveLink] = useState(localStorage.getItem('activeLink') || '/home/create');
   const [pendingCount, setPendingCount] = useState(0);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+  const [logoErrorCount, setLogoErrorCount] = useState(0);
   const [expandedCategories, setExpandedCategories] = useState(() => {
     return JSON.parse(localStorage.getItem('leftnav_expanded') || 'null') || {
-      Corporate: true,
-      'Planning and Monitoring': true,
-      Management: true,
+      'Strategic Planning and Monitoring wing': true,
+      'Field Operations Wing': true,
       OpsRoom: true,
+      'Operation Digitalization & Digital Monitoring & Evaluation Wing': true,
       Finance: true,
       Inventory: true,
       Workshop: true,
-      'Fleet Management': true,
-      'Stock and Assets Management': true,
-      'HR and Admin': true,
-      'ICT - System Admin': true,
+      'Human Resource Management': true,
+      'Administration Wing': true,
+      'ICT Wing': true,
     };
   });
   const [expandedSubItems, setExpandedSubItems] = useState(() => {
@@ -55,10 +65,7 @@ const LeftNavBar = ({ showSidebar = false, onClose = () => { }, onCollapseChange
   const userData = getUserData();
   const userType = userData.member_type_name || '';
 
-  // Fetch permissions from backend API
-  const { data: backendPermissions = {}, isLoading: loadingPermissions } = useGetMyPermissionsQuery(undefined, {
-    skip: !userData?.id,
-  });
+  const { categoryVisibility, allowedPaths } = useNavbarPermissions();
 
   useEffect(() => {
     const fetchPendingCount = async () => {
@@ -80,10 +87,18 @@ const LeftNavBar = ({ showSidebar = false, onClose = () => { }, onCollapseChange
   let navbarColor = '';
   // Ensure HTTPS is used for logo URLs
   const url = 'https://drone-admin.kenilworthinternational.com/storage/image/logo/';
-  const userGroupId = userData.group;
-  if (userGroupId !== 0) {
-    companyLogo = `${url}${userGroupId}.png`;
-  } else {
+  const rawGroupId = userData?.group ?? userData?.group_id ?? userData?.user_group_id ?? null;
+  const normalizedGroupId = Number(rawGroupId);
+  const hasValidGroupId = Number.isFinite(normalizedGroupId) && normalizedGroupId > 0;
+  const paddedGroupId = hasValidGroupId ? String(normalizedGroupId).padStart(3, '0') : '000';
+  companyLogo = `${url}${paddedGroupId}.png`;
+
+  // Fallback flow:
+  // 1st failure -> use 000.png
+  // 2nd failure -> use a tiny embedded transparent image (avoid broken icon)
+  if (logoErrorCount >= 2) {
+    companyLogo = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
+  } else if (logoErrorCount === 1) {
     companyLogo = `${url}000.png`;
   }
 
@@ -125,62 +140,47 @@ const LeftNavBar = ({ showSidebar = false, onClose = () => { }, onCollapseChange
     setShowLogoutDialog(false);
   };
 
-  // Process backend permissions from Access Control Management
-  // Backend returns: { categories: { category: [featureCodes] }, paths: { path: true/false } }
-  // Or old format: { category: [featureCodes] } for backward compatibility
-  const backendCategoryPermissions = useMemo(() => {
-    if (!backendPermissions || Object.keys(backendPermissions).length === 0) {
-      return {};
-    }
-
-    // Handle new format: { categories: {...}, paths: {...} }
-    let categoriesData = {};
-    if (backendPermissions.categories) {
-      categoriesData = backendPermissions.categories;
-    } else {
-      // Handle old format: { category: [featureCodes] } - categories are at root level
-      categoriesData = backendPermissions;
-    }
-
-    // Convert backend format to boolean format for getCategoryVisibility
-    // If category array has items, user has access
-    const categoryPerms = {};
-    Object.keys(categoriesData).forEach(category => {
-      // Skip 'paths' key if it exists at root level
-      if (category === 'paths') return;
-
-      const featureCodes = categoriesData[category];
-      categoryPerms[category] = Array.isArray(featureCodes) && featureCodes.length > 0;
+  useEffect(() => {
+    if (!wingTitle) return;
+    const normalizedWing =
+      wingTitle === 'Management' ? 'Field Operations Wing' : wingTitle;
+    setExpandedCategories((prev) => {
+      const next = { ...prev };
+      categories.forEach((c) => {
+        next[c.title] = c.title === normalizedWing;
+      });
+      return next;
     });
-    return categoryPerms;
-  }, [backendPermissions]);
-
-  // Extract path-level permissions from backend response
-  const backendPathPermissions = useMemo(() => {
-    if (!backendPermissions || Object.keys(backendPermissions).length === 0) {
-      return {};
-    }
-
-    // Handle new format: { categories: {...}, paths: {...} }
-    if (backendPermissions.paths) {
-      return backendPermissions.paths;
-    }
-
-    // Old format doesn't have separate paths, return empty
-    return {};
-  }, [backendPermissions]);
-
-  // Use ONLY backend permissions - no Redux fallback
-  // Only developers get all access automatically
-  const categoryVisibility = getCategoryVisibility(userData, backendCategoryPermissions, categories);
-  const allowedPaths = getAllowedPaths(categoryVisibility, backendPathPermissions, userData);
+  }, [wingTitle]);
+  const devCenterPath = '/home/ict/development/dev-center';
+  const devCenterAliasPaths = [
+    '/home/ict/development/sprints',
+    '/home/ict/development/board',
+    '/home/ict/development/extra-work',
+    '/home/ict/development/metrics',
+    '/home/ict/system-admin/app-versions',
+  ];
 
   return (
     <div
       className={`left-nav ${navbarColor} ${showSidebar ? 'show' : 'hide'}`}
     >
+      <div className="nav-hub-back">
+        <Link
+          to="/home"
+          className="nav-link nav-hub-back-link"
+          title="Back to hub"
+        >
+          <FaArrowLeft className="nav-icon" />
+          <span className="nav-text">Back to hub</span>
+        </Link>
+      </div>
       <div className="logo">
-        <img src={companyLogo} alt="Logo" />
+        <img
+          src={companyLogo}
+          alt="Logo"
+          onError={() => setLogoErrorCount((prev) => prev + 1)}
+        />
         {showSidebar && (
           <button className="close-btn" onClick={onClose} aria-label="Close menu">×</button>
         )}
@@ -189,7 +189,7 @@ const LeftNavBar = ({ showSidebar = false, onClose = () => { }, onCollapseChange
         {/* Top-level menu item - Forecast (accessible to all) */}
         <li className="nav-item">
           <Link
-            to="/home/create"
+            to={withWingSearch('/home/create')}
             className={`nav-link ${activeLink === '/home/create' ? 'active' : ''}`}
             title="Forecast"
           >
@@ -197,7 +197,18 @@ const LeftNavBar = ({ showSidebar = false, onClose = () => { }, onCollapseChange
             <span className="nav-text">Forecast</span>
           </Link>
         </li>
-        {categories.map((category) => {
+        {/* Plan calendar (accessible to all, same as Forecast) */}
+        <li className="nav-item">
+          <Link
+            to={withWingSearch('/home/opsroomPlanCalendar')}
+            className={`nav-link ${activeLink === '/home/opsroomPlanCalendar' ? 'active' : ''}`}
+            title="Calendar"
+          >
+            <FaCalendarAlt className="nav-icon" />
+            <span className="nav-text">Calendar</span>
+          </Link>
+        </li>
+        {categoriesToShow.map((category) => {
           const visibleChildren = category.children.filter((child) => {
             if (child.subItems && child.subItems.length > 0) {
               return child.subItems.some((sub) => allowedPaths.includes(sub.path));
@@ -237,7 +248,7 @@ const LeftNavBar = ({ showSidebar = false, onClose = () => { }, onCollapseChange
               {category.path && category.children.length === 0 ? (
                 // If category has a direct path and no children, make it a link
                 <Link
-                  to={category.path}
+                  to={withWingSearch(category.path)}
                   className={`nav-category-btn ${activeLink === category.path || activeLink.startsWith(category.path + '/') ? 'active' : ''}`}
                   title={category.title}
                 >
@@ -275,17 +286,27 @@ const LeftNavBar = ({ showSidebar = false, onClose = () => { }, onCollapseChange
                         e.stopPropagation();
                         setExpandedSubItems((prev) => ({ ...prev, [item.label]: !isSubExpanded }));
                       };
-                      const isSubActive = visibleSubItems.some(
-                        (sub) =>
-                          activeLink === sub.path ||
-                          activeLink.startsWith(sub.path + '/')
-                      ) || (item.path && (activeLink === item.path || activeLink.startsWith(item.path + '/')));
+                      const subPathMatches = (sub) => {
+                        if (activeLink === sub.path || activeLink.startsWith(`${sub.path}/`)) return true;
+                        if (
+                          sub.path === devCenterPath &&
+                          (devCenterAliasPaths.includes(activeLink) ||
+                            devCenterAliasPaths.some((a) => activeLink.startsWith(`${a}/`)))
+                        ) {
+                          return true;
+                        }
+                        return false;
+                      };
+                      const isSubActive =
+                        visibleSubItems.some(subPathMatches) ||
+                        (item.path &&
+                          (activeLink === item.path || activeLink.startsWith(`${item.path}/`)));
                       return (
                         <li key={`${item.label}`} className={`nav-item nav-subgroup ${isSubActive ? 'active' : ''}`}>
                           <div className="nav-subgroup-header">
                             {item.path ? (
                               <Link
-                                to={item.path}
+                                to={withWingSearch(item.path)}
                                 className="nav-subgroup-link"
                                 title={item.label}
                                 onClick={() => {
@@ -319,13 +340,17 @@ const LeftNavBar = ({ showSidebar = false, onClose = () => { }, onCollapseChange
                           {isSubExpanded && (
                             <ul className="nav-subgroup-list">
                               {visibleSubItems.map((subItem) => {
-                                const isActive =
+                                const isSubPathActive =
                                   activeLink === subItem.path ||
-                                  activeLink.startsWith(subItem.path + '/');
+                                  activeLink.startsWith(`${subItem.path}/`) ||
+                                  (subItem.path === devCenterPath &&
+                                    (devCenterAliasPaths.includes(activeLink) ||
+                                      devCenterAliasPaths.some((a) => activeLink.startsWith(`${a}/`))));
+                                const isActive = isSubPathActive;
                                 return (
                                   <li key={subItem.path} className="nav-item">
                                     <Link
-                                      to={subItem.path}
+                                      to={withWingSearch(subItem.path)}
                                       className={`nav-link ${isActive ? 'active' : ''}`}
                                       title={subItem.label}
                                     >
@@ -344,18 +369,18 @@ const LeftNavBar = ({ showSidebar = false, onClose = () => { }, onCollapseChange
                       '/home/workflowDashboard': ['/home/opsroomPlanCalendar', '/home/requestsQueue', '/home/requestProceed', '/home/dayEndProcess', '/home/todayPlans', '/home/emergencyMoving', '/home/fieldHistory', '/home/reports/ops', '/home/fieldSizeAdjustments', '/home/opsAsign'],
                       '/home/monitoringDashboard': [],
                       '/home/dataViewer': ['/home/dataViewer/chart-breakdown'],
+                      '/home/ict/development/dev-center': devCenterAliasPaths,
                     };
                     const aliases = activeAliases[item.path] || [];
-                    const isActive = (
+                    const isActive =
                       activeLink === item.path ||
                       activeLink.startsWith(item.path + '/') ||
                       aliases.includes(activeLink) ||
-                      aliases.some((a) => activeLink.startsWith(a + '/'))
-                    );
+                      aliases.some((a) => activeLink.startsWith(a + '/'));
                     return (
                       <li key={item.path} className="nav-item">
                         <Link
-                          to={item.path}
+                          to={withWingSearch(item.path)}
                           className={`nav-link ${isActive ? 'active' : ''}`}
                           title={item.label}
                         >

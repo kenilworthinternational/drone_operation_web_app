@@ -194,10 +194,16 @@
 }
 
 .field-details-title-fieldsize-adjust {
-  margin: 0 0 1.25rem;
+  margin: 0 0 0.5rem;
   font-size: 1.0625rem;
   font-weight: 600;
-  color: var(--fieldsize-text);
+}
+
+.field-details-locked-msg-fieldsize-adjust {
+  margin: 0 0 1rem;
+  font-size: 0.875rem;
+  color: #b45309;
+  font-weight: 500;
 }
 
 .field-details-row-fieldsize-adjust {

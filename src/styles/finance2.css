@@ -98,6 +98,17 @@
   border-bottom: 1px solid #e5e7eb;
 }
 
+.finance-report-table td.finance-issue-cell {
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+.finance-issues-warning {
+  margin-top: 8px;
+  color: #b91c1c;
+  font-weight: 500;
+}
+
 .error-message {
   color: #d32f2f;
   background: #fff0f0;

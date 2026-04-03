@@ -16,7 +16,7 @@ import { useGetPlantationsListQuery, useGetEstatesListQuery } from '../../../api
 import { enCA } from 'date-fns/locale';
 import { format, subMonths } from 'date-fns';
 
-const DataViewer = () => {
+const DataViewer = ({ basePath = '/home/dataViewer', variant = 'external' } = {}) => {
   const [dateRange, setDateRange] = useState([
     {
       startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
@@ -199,61 +199,81 @@ const DataViewer = () => {
         <div className="grid-container-dataviewer" data-testid="global-charts-grid">
           <div className="grid-item-dataviewer" data-testid="chart-tea-revenue">
             <div className="chart-card">
-              <GlobalTeaRevenueVsPlannedChart startMonth={globalStartMonth} endMonth={globalEndMonth} months={globalMonthCount} plantationId={selectedPlantation} regionId={selectedRegion} estateId={selectedEstate} />
+              <GlobalTeaRevenueVsPlannedChart
+                startMonth={globalStartMonth}
+                endMonth={globalEndMonth}
+                months={globalMonthCount}
+                plantationId={selectedPlantation}
+                regionId={selectedRegion}
+                estateId={selectedEstate}
+                basePath={basePath}
+              />
             </div>
           </div>
           <div className="grid-item-dataviewer" data-testid="chart-planned-vs-executed">
             <div className="chart-card">
-              <GlobalPlannedVsExecutedChart startMonth={globalStartMonth} endMonth={globalEndMonth} months={globalMonthCount} plantationId={selectedPlantation} regionId={selectedRegion} estateId={selectedEstate} />
+              <GlobalPlannedVsExecutedChart
+                startMonth={globalStartMonth}
+                endMonth={globalEndMonth}
+                months={globalMonthCount}
+                plantationId={selectedPlantation}
+                regionId={selectedRegion}
+                estateId={selectedEstate}
+                basePath={basePath}
+              />
             </div>
           </div>
         </div>
       </div>
 
-      {/* Date Picker Section */}
-      <div className="dataviewer-header">
-        <h2 className="global-charts-title-dataviewer">Operational Reports</h2>
-        <button
-          className="toggle-picker-button"
-          onClick={() => setShowPicker((prev) => !prev)}
-        >
-          {showPicker 
-            ? '✕ Close Calendar' 
-            : `📅 ${formatDateDisplay(dateRange[0].startDate, dateRange[0].endDate)}`
-          }
-        </button>
-      </div>
-      {showPicker && (
-        <div className="date-set-dataview">
-          <DateRangePicker
-            onChange={handleSelect}
-            ranges={dateRange}
-            showSelectionPreview={true}
-            moveRangeOnFirstSelection={false}
-            months={2}
-            direction="horizontal"
-            locale={enCA}
-          />
-        </div>
-      )}
+      {variant !== 'internal' && (
+        <>
+          {/* Date Picker Section */}
+          <div className="dataviewer-header">
+            <h2 className="global-charts-title-dataviewer">Operational Reports</h2>
+            <button
+              className="toggle-picker-button"
+              onClick={() => setShowPicker((prev) => !prev)}
+            >
+              {showPicker
+                ? '✕ Close Calendar'
+                : `📅 ${formatDateDisplay(dateRange[0].startDate, dateRange[0].endDate)}`
+              }
+            </button>
+          </div>
+          {showPicker && (
+            <div className="date-set-dataview">
+              <DateRangePicker
+                onChange={handleSelect}
+                ranges={dateRange}
+                showSelectionPreview={true}
+                moveRangeOnFirstSelection={false}
+                months={2}
+                direction="horizontal"
+                locale={enCA}
+              />
+            </div>
+          )}
 
-      {/* Main Charts Grid - 2 per row */}
-      <div className="grid-container-dataviewer">
-        {parts.map((part) => (
-          <div key={part.id} className="grid-item-dataviewer">
+          {/* Main Charts Grid - 2 per row */}
+          <div className="grid-container-dataviewer">
+            {parts.map((part) => (
+              <div key={part.id} className="grid-item-dataviewer">
+                <div className="chart-card">
+                  {React.cloneElement(part.component, { dateRange: formattedDateRange })}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Number of Flights - Full Width at Bottom */}
+          <div className="flight-numbers-container">
             <div className="chart-card">
-              {React.cloneElement(part.component, { dateRange: formattedDateRange })}
+              <ReportPart6 dateRange={formattedDateRange} />
             </div>
           </div>
-        ))}
-      </div>
-      
-      {/* Number of Flights - Full Width at Bottom */}
-      <div className="flight-numbers-container">
-        <div className="chart-card">
-          <ReportPart6 dateRange={formattedDateRange} />
-        </div>
-      </div>
+        </>
+      )}
     </div>
   );
 };

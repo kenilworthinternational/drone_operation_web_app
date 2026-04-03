@@ -177,6 +177,30 @@ export const featurePermissionsApi = baseApi.injectEndpoints({
       invalidatesTags: ['FeaturePermissions', 'GroupedPermissions', 'MyPermissions'],
     }),
 
+    // Sync navbar paths (deactivate orphan paths removed from config)
+    syncNavbarPaths: builder.mutation({
+      queryFn: async (paths) => {
+        try {
+          const result = await nodeBackendBaseQuery(
+            {
+              url: '/api/feature-permissions/sync-navbar-paths',
+              method: 'POST',
+              body: { paths },
+            },
+            {},
+            {}
+          );
+          if (result.error) {
+            return { error: result.error };
+          }
+          return { data: result.data };
+        } catch (error) {
+          return { error: { status: 'FETCH_ERROR', error: error.message } };
+        }
+      },
+      invalidatesTags: ['FeaturePermissions', 'FeatureDefinitions', 'GroupedPermissions', 'MyPermissions'],
+    }),
+
     // Delete feature permission
     deleteFeaturePermission: builder.mutation({
       queryFn: async (id) => {
@@ -210,6 +234,7 @@ export const {
   useGetJobRolesQuery,
   useUpsertFeaturePermissionMutation,
   useBulkUpdateCategoryPermissionsMutation,
+  useSyncNavbarPathsMutation,
   useDeleteFeaturePermissionMutation,
 } = featurePermissionsApi;
 

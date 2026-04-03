@@ -11,6 +11,27 @@
     scrollbar-color: #004B71 #f1f1f1;
 }
 
+/* Wing hub: fill viewport width/height, let hub flex layout use full area */
+.content-dashboard.content-dashboard--wing-hub {
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    background-color: #ffffff;
+}
+
+.content-dashboard.content-dashboard--wing-hub > * {
+    flex: 0 1 auto;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.content-dashboard.content-dashboard--comb {
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+}
+
 .content-dashboard::-webkit-scrollbar {
     width: 8px;
 }

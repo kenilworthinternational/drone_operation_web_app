@@ -1,665 +1,535 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useMemo } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Select from 'react-select';
-import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import {
-  fetchEstates,
-  fetchDivisions,
-  fetchFieldDetails,
-  setSelectedEstate,
-  selectEstates,
-  selectSelectedEstate,
-  selectDivisionsByEstate,
-} from '../../../store/slices/estatesSlice';
+  FaCheckCircle,
+  FaTimesCircle,
+  FaPlayCircle,
+  FaTint,
+  FaImage,
+  FaMapMarked,
+  FaUserCog,
+  FaFlag,
+  FaCalendarAlt,
+  FaArrowLeft,
+  FaChevronDown,
+  FaChevronUp,
+} from 'react-icons/fa';
 import {
-  setStartDate,
-  setEndDate,
-  setSelectedFlag,
-  setSelectedType,
-  togglePlanExpansion,
-  setSelectedImage,
-  rotateImage,
-  resetUI,
-  selectStartDate,
-  selectEndDate,
-  selectSelectedFlag,
-  selectSelectedType,
-  selectIsPlanExpanded,
-  selectSelectedImage,
-  selectImageRotation,
-} from '../../../store/slices/uiSlice';
+  useGetFieldHistoryEstatesQuery,
+  useGetFieldHistoryFieldsByEstateQuery,
+  useGetFieldHistoryDataQuery,
+} from '../../../api/services NodeJs/fieldHistoryApi';
 import '../../../styles/fieldhistory.css';
-import { baseApi } from '../../../api/services/allEndpoints';
+
+const getFlagText = (flag) => {
+  const flags = { np: 'Revolving Plan', ap: 'Adhoc Plan', rp: 'Reschedule Plan' };
+  return flags[flag] || flag;
+};
+
+const getTypeText = (type) => {
+  const types = { spy: 'Spray', spd: 'Spread' };
+  return types[type] || type;
+};
+
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+const buildMonthOptions = () => {
+  const opts = [{ value: 'all', label: 'All (Overall)' }];
+  const now = new Date();
+  for (let i = 0; i < 24; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    opts.push({ value: ym, label: `${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}` });
+  }
+  return opts;
+};
 
 const FieldHistory = () => {
-  const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  
-  // Redux state
-  const estates = useAppSelector(selectEstates);
-  const selectedEstate = useAppSelector(selectSelectedEstate);
-  const startDate = useAppSelector(selectStartDate);
-  const endDate = useAppSelector(selectEndDate);
-  const selectedFlag = useAppSelector(selectSelectedFlag);
-  const selectedType = useAppSelector(selectSelectedType);
-  const expandedPlans = useAppSelector((state) => state.ui.expandedPlans);
-  const selectedImage = useAppSelector(selectSelectedImage);
-  const rotation = useAppSelector(selectImageRotation);
-  
-  // Local state
+  const routerLocation = useLocation();
+  const [selectedEstate, setSelectedEstate] = useState(null);
   const [selectedField, setSelectedField] = useState(null);
-  const [fieldHistory, setFieldHistory] = useState([]);
-  const [loading, setLoading] = useState(false);
-  
-  // Get divisions for selected estate
-  const divisions = useAppSelector((state) =>
-    selectedEstate ? selectDivisionsByEstate(state, selectedEstate.value) : []
-  );
+  const [selectedMonths, setSelectedMonths] = useState([]); // multi-select: [] or ['all'] or ['2026-03','2026-02']
+  const [expandedPlan, setExpandedPlan] = useState(null);
+  const [selectedImage, setSelectedImage] = useState(null);
 
-  // Set default date range to current month
-  useEffect(() => {
-    const today = new Date();
-    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-    dispatch(setStartDate(firstDay.toLocaleDateString('en-CA')));
-    dispatch(setEndDate(lastDay.toLocaleDateString('en-CA')));
-  }, [dispatch]);
+  const monthOptions = useMemo(() => buildMonthOptions(), []);
 
-  // Fetch estates on component mount
-  useEffect(() => {
-    dispatch(fetchEstates()).then((result) => {
-      if (fetchEstates.fulfilled.match(result)) {
-        const estatesData = result.payload;
-        const defaultEstate = estatesData.find(estate => estate.id === 48);
-        if (defaultEstate) {
-          dispatch(setSelectedEstate({
-            value: defaultEstate.id.toString(),
-            label: defaultEstate.estate
-          }));
-        }
-      }
-    });
-  }, [dispatch]);
+  // Estates
+  const { data: estatesResp } = useGetFieldHistoryEstatesQuery();
+  const estates = estatesResp?.data || [];
 
-  // Fetch divisions when estate is selected
-  useEffect(() => {
-    if (selectedEstate) {
-      dispatch(fetchDivisions(selectedEstate.value));
-    }
-    setSelectedField(null);
-  }, [selectedEstate, dispatch]);
-
-  // Fetch field history when field is selected
-  useEffect(() => {
-    if (selectedField) {
-      setLoading(true);
-      const fetchFieldHistory = async () => {
-        try {
-          const result = await dispatch(
-            baseApi.endpoints.getFieldDetails.initiate(selectedField.value)
-          );
-          const response = result.data || {};
-          if (response.status === 'true' && Array.isArray(response.plans)) {
-            const plans = response.plans.flat();
-            setFieldHistory(plans);
-          } else {
-            setFieldHistory([]);
-          }
-        } catch (error) {
-          console.error('Error fetching field history:', error);
-          setFieldHistory([]);
-        } finally {
-          setLoading(false);
-        }
-      };
-      fetchFieldHistory();
-    } else {
-      setFieldHistory([]);
-    }
-    // Clear all expanded plans when field changes
-    dispatch(resetUI());
-  }, [selectedField, dispatch]);
-
-  // Filter plans by date range, flag, and type
-  const filteredPlans = fieldHistory.filter(plan => {
-    const planDate = new Date(plan.date);
-    const start = startDate ? new Date(startDate) : null;
-    const end = endDate ? new Date(endDate) : null;
-    const dateInRange = (!start || planDate >= start) && (!end || planDate <= end);
-    const flagMatch = !selectedFlag || plan.flag === selectedFlag;
-    const typeMatch = !selectedType || plan.type === selectedType;
-    return dateInRange && flagMatch && typeMatch;
+  // Fields (when estate selected)
+  const { data: fieldsResp } = useGetFieldHistoryFieldsByEstateQuery(selectedEstate?.value, {
+    skip: !selectedEstate?.value,
   });
+  const fields = fieldsResp?.data || [];
 
-  // Format options for react-select
-  const estateOptions = estates.map(estate => ({
-    value: estate.id.toString(),
-    label: estate.estate
-  }));
+  // Resolve months for API: [] or ['all'] = no filter; else array of "YYYY-MM"
+  const monthsForApi = useMemo(() => {
+    if (!selectedMonths?.length) return [];
+    if (selectedMonths.some((m) => m.value === 'all')) return [];
+    return selectedMonths.map((m) => m.value);
+  }, [selectedMonths]);
 
-  const fieldOptions = divisions.flatMap(division =>
-    Array.isArray(division?.fields) ? division.fields.map(field => ({
-      value: field.field_id,
-      label: `${field.field_name} (${division.division_name})`
-    })) : []
+  // Field history data (months: [] = all, or specific YYYY-MM values)
+  const { data: historyResp, isLoading, isError, refetch } = useGetFieldHistoryDataQuery(
+    { fieldId: selectedField?.value, months: monthsForApi },
+    { skip: !selectedField?.value }
   );
 
-  // Helper functions
-  const getFlagText = (flag) => {
-    const flags = { 'np': 'Revolving Plan', 'ap': 'Adhoc Plan', 'rp': 'Reschedule Plan' };
-    return flags[flag] || flag;
+  const historyData = historyResp?.data || {};
+  const history = historyData.history || [];
+  const spreadSpray = historyData.spreadSpray || null;
+
+  const estateOptions = useMemo(
+    () =>
+      estates.map((e) => ({
+        value: Number(e.id),
+        label: e.estate || e.estate_name || `Estate ${e.id}`,
+      })),
+    [estates]
+  );
+
+  const fieldOptions = useMemo(
+    () =>
+      fields.map((f) => ({
+        value: Number(f.id),
+        label: `${f.field || f.field_name || `Field ${f.id}`}${f.division_name ? ` (${f.division_name})` : ''}`,
+      })),
+    [fields]
+  );
+
+  const handleEstateChange = (opt) => {
+    setSelectedEstate(opt);
+    setSelectedField(null);
+    setExpandedPlan(null);
   };
 
-  const getTypeText = (type) => {
-    const types = { 'spy': 'Spray', 'spd': 'Spread' };
-    return types[type] || type;
+  const handleFieldChange = (opt) => {
+    setSelectedField(opt);
+    setExpandedPlan(null);
   };
 
-  const getStatusText = (status) => {
-    const statuses = { 'p': 'Pending', 'x': 'Rejected', 'c': 'Completed', 'r': 'Rejected' };
-    return statuses[status] || status;
-  };
-
-  const getStatusColor = (status) => {
-    const colors = {
-      'p': '#f59e0b',
-      'x': '#ef4444',
-      'c': '#10b981',
-      'r': '#ef4444'
-    };
-    return colors[status] || '#6b7280';
-  };
-
-  // Handlers
-  const handleEstateChange = (selectedOption) => {
-    dispatch(setSelectedEstate(selectedOption));
-  };
-
-  const handleFieldChange = (selectedOption) => {
-    setSelectedField(selectedOption);
+  const handleMonthChange = (opts) => {
+    if (!opts) opts = [];
+    const arr = Array.isArray(opts) ? opts : [opts].filter(Boolean);
+    const hasAll = arr.some((o) => o?.value === 'all');
+    if (hasAll && arr.length > 1) {
+      setSelectedMonths(arr.filter((o) => o?.value !== 'all'));
+    } else if (hasAll) {
+      setSelectedMonths([{ value: 'all', label: 'All (Overall)' }]);
+    } else {
+      setSelectedMonths(arr);
+    }
   };
 
   const togglePlan = (planId) => {
-    // Ensure planId is converted to string for consistency
-    const planIdStr = String(planId);
-    dispatch(togglePlanExpansion(planIdStr));
+    setExpandedPlan((p) => (p === planId ? null : planId));
   };
-
-  const openImage = (imageUrl) => {
-    dispatch(setSelectedImage(imageUrl));
-  };
-
-  const closeImage = () => {
-    dispatch(setSelectedImage(null));
-  };
-
-  const rotateLeft = (e) => {
-    e.stopPropagation();
-    dispatch(rotateImage());
-    dispatch(rotateImage());
-    dispatch(rotateImage());
-  };
-
-  const rotateRight = (e) => {
-    e.stopPropagation();
-    dispatch(rotateImage());
-  };
-
-  const downloadImage = (e) => {
-    e.stopPropagation();
-    const link = document.createElement('a');
-    link.href = selectedImage;
-    link.download = `field_image_${new Date().getTime()}.jpg`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  // Calculate summary stats
-  const sprayPlans = filteredPlans.filter(plan => plan.type === 'spy').length;
-  const spreadPlans = filteredPlans.filter(plan => plan.type === 'spd').length;
-  const totalPlans = filteredPlans.length;
 
   return (
     <div className="field-history-container-fieldhistory">
       {/* Header */}
       <div className="field-history-header-fieldhistory">
-        <button 
-          className="field-history-back-btn-fieldhistory" 
-          onClick={() => navigate('/home/workflowDashboard')}
+        <button
+          className="field-history-back-btn-fieldhistory"
+          onClick={() => navigate({ pathname: '/home/workflowDashboard', search: routerLocation.search })}
           title="Back to Dashboard"
         >
-          <i className="fas fa-arrow-left"></i>
+          <FaArrowLeft />
         </button>
         <div className="field-history-header-content-fieldhistory">
           <h1>Field History</h1>
-          <p>View and track field operation history</p>
+          <p>View clear history for fields: Manager Approval, Pilot Mission, COM Operator, Water & Chemical, DJI Upload, Day End</p>
         </div>
       </div>
 
       {/* Main Content */}
       <div className="field-history-content-fieldhistory">
-        {/* Selection Section */}
-        <div className="field-history-selection-fieldhistory">
+        {/* Selection: Estate, Field, Month - same row */}
+        <div className="field-history-selection-fieldhistory field-history-selection-row-fieldhistory">
           <div className="field-history-select-group-fieldhistory">
             <label className="field-history-label-fieldhistory">
-              <i className="fas fa-building"></i>
-              Estate
+              <FaMapMarked /> Estate
             </label>
             <Select
               value={selectedEstate}
               onChange={handleEstateChange}
               options={estateOptions}
-              isSearchable={true}
+              isSearchable
               placeholder="Select estate..."
               className="field-history-select-fieldhistory"
               classNamePrefix="field-history-select"
-              isDisabled={!estates.length}
+              isDisabled={!estateOptions.length}
             />
           </div>
-
           <div className="field-history-select-group-fieldhistory">
             <label className="field-history-label-fieldhistory">
-              <i className="fas fa-map-marked-alt"></i>
-              Field
+              <FaFlag /> Field
             </label>
             <Select
               value={selectedField}
               onChange={handleFieldChange}
               options={fieldOptions}
-              isSearchable={true}
+              isSearchable
               placeholder="Select field..."
               className="field-history-select-fieldhistory"
               classNamePrefix="field-history-select"
-              isDisabled={!divisions.length}
+              isDisabled={!selectedEstate}
+            />
+          </div>
+          <div className="field-history-select-group-fieldhistory">
+            <label className="field-history-label-fieldhistory">
+              <FaCalendarAlt /> Month
+            </label>
+            <Select
+              value={selectedMonths}
+              onChange={handleMonthChange}
+              options={monthOptions}
+              isMulti
+              isSearchable
+              placeholder="All (Overall) or select months..."
+              className="field-history-select-fieldhistory"
+              classNamePrefix="field-history-select"
+              isClearable
+              closeMenuOnSelect={false}
             />
           </div>
         </div>
 
-        {/* Filters */}
-        {fieldHistory.length > 0 && (
-          <div className="field-history-filters-fieldhistory">
-            <div className="field-history-filter-group-fieldhistory">
-              <label className="field-history-label-fieldhistory">
-                <i className="fas fa-calendar"></i>
-                Start Date
-              </label>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => dispatch(setStartDate(e.target.value))}
-                className="field-history-input-fieldhistory"
-              />
-            </div>
-            <div className="field-history-filter-group-fieldhistory">
-              <label className="field-history-label-fieldhistory">
-                <i className="fas fa-calendar"></i>
-                End Date
-              </label>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => dispatch(setEndDate(e.target.value))}
-                className="field-history-input-fieldhistory"
-              />
-            </div>
-            <div className="field-history-filter-group-fieldhistory">
-              <label className="field-history-label-fieldhistory">
-                <i className="fas fa-tag"></i>
-                Plan Type
-              </label>
-              <select
-                value={selectedFlag}
-                onChange={(e) => dispatch(setSelectedFlag(e.target.value))}
-                className="field-history-input-fieldhistory"
-              >
-                <option value="">All Plans</option>
-                <option value="np">Revolving Plan</option>
-                <option value="ap">Adhoc Plan</option>
-                <option value="rp">Reschedule Plan</option>
-              </select>
-            </div>
-            <div className="field-history-filter-group-fieldhistory">
-              <label className="field-history-label-fieldhistory">
-                <i className="fas fa-seedling"></i>
-                Operation Type
-              </label>
-              <select
-                value={selectedType}
-                onChange={(e) => dispatch(setSelectedType(e.target.value))}
-                className="field-history-input-fieldhistory"
-              >
-                <option value="">All Types</option>
-                <option value="spy">Spray</option>
-                <option value="spd">Spread</option>
-              </select>
-            </div>
+        {/* Loading / Error */}
+        {isLoading && (
+          <div className="field-history-loading-fieldhistory">
+            <div className="field-history-spinner" />
+            <p>Loading field history...</p>
+          </div>
+        )}
+        {isError && (
+          <div className="field-history-error-fieldhistory">
+            <span>Failed to load field history</span>
+            <button className="field-history-retry-btn" onClick={() => refetch()}>
+              Retry
+            </button>
           </div>
         )}
 
-        {/* Summary Cards */}
-        {fieldHistory.length > 0 && (
-          <div className="field-history-summary-fieldhistory">
-            <div className="field-history-summary-card-fieldhistory">
-              <div className="field-history-summary-icon-fieldhistory field-history-summary-icon-total-fieldhistory">
-                <i className="fas fa-list"></i>
+        {/* History List */}
+        {!isLoading && !isError && selectedField && (
+          <div className="field-history-plans-fieldhistory">
+            {history.length === 0 ? (
+              <div className="field-history-empty-fieldhistory">
+                <FaImage />
+                <h3>No Data Found</h3>
+                <p>No history available for this field in the selected date range</p>
               </div>
-              <div className="field-history-summary-content-fieldhistory">
-                <div className="field-history-summary-value-fieldhistory">{totalPlans}</div>
-                <div className="field-history-summary-label-fieldhistory">Total Plans</div>
-              </div>
-            </div>
-            <div className="field-history-summary-card-fieldhistory">
-              <div className="field-history-summary-icon-fieldhistory field-history-summary-icon-spray-fieldhistory">
-                <i className="fas fa-spray-can"></i>
-              </div>
-              <div className="field-history-summary-content-fieldhistory">
-                <div className="field-history-summary-value-fieldhistory">{sprayPlans}</div>
-                <div className="field-history-summary-label-fieldhistory">Spray Plans</div>
-              </div>
-            </div>
-            <div className="field-history-summary-card-fieldhistory">
-              <div className="field-history-summary-icon-fieldhistory field-history-summary-icon-spread-fieldhistory">
-                <i className="fas fa-seedling"></i>
-              </div>
-              <div className="field-history-summary-content-fieldhistory">
-                <div className="field-history-summary-value-fieldhistory">{spreadPlans}</div>
-                <div className="field-history-summary-label-fieldhistory">Spread Plans</div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Plans List */}
-        <div className="field-history-plans-fieldhistory">
-          {loading ? (
-            <div className="field-history-loading-fieldhistory">
-              <i className="fas fa-spinner fa-spin"></i>
-              <p>Loading field history...</p>
-            </div>
-          ) : filteredPlans.length > 0 ? (
-            <div className="field-history-plans-list-fieldhistory">
-              {filteredPlans.map(plan => (
-                <div key={plan.plan_id} className="field-history-plan-fieldhistory">
-                  <div 
-                    className="field-history-plan-header-fieldhistory" 
-                    onClick={() => togglePlan(plan.plan_id)}
-                  >
-                    <div className="field-history-plan-info-fieldhistory">
-                      <div className="field-history-plan-id-fieldhistory">Plan #{plan.plan_id}</div>
-                      <div className="field-history-plan-title-fieldhistory">
-                        {plan.estate_text} - {plan.area} Ha
-                      </div>
-                      <div className="field-history-plan-meta-fieldhistory">
-                        <span className="field-history-plan-date-fieldhistory">
-                          <i className="fas fa-calendar"></i> {plan.date}
-                        </span>
-                        <span className={`field-history-plan-badge-fieldhistory field-history-plan-badge-${plan.flag}-fieldhistory`}>
-                          {getFlagText(plan.flag)}
-                        </span>
-                        <span className={`field-history-plan-badge-fieldhistory field-history-plan-badge-${plan.type}-fieldhistory`}>
-                          {getTypeText(plan.type)}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="field-history-plan-toggle-fieldhistory">
-                      <i className={`fas fa-chevron-${expandedPlans[String(plan.plan_id)] ? 'up' : 'down'}`}></i>
-                    </div>
+            ) : (
+              <>
+                {spreadSpray && (
+                  <div className="field-history-spread-spray-fieldhistory">
+                    <span className="field-history-spread-spray-label-fieldhistory">Spread</span>
+                    <span className={`fh-yn-badge-fieldhistory ${spreadSpray.canSpread ? 'fh-yn-yes-fieldhistory' : 'fh-yn-no-fieldhistory'}`}>
+                      {spreadSpray.canSpread ? 'Yes' : 'No'}
+                    </span>
+                    {!spreadSpray.canSpread && (
+                      <span className="fh-yn-reason-fieldhistory">
+                        Reason: {spreadSpray.spreadReason || 'Not specified'}
+                      </span>
+                    )}
+                    <span className="field-history-spread-spray-sep-fieldhistory">|</span>
+                    <span className="field-history-spread-spray-label-fieldhistory">Spray</span>
+                    <span className={`fh-yn-badge-fieldhistory ${spreadSpray.canSpray ? 'fh-yn-yes-fieldhistory' : 'fh-yn-no-fieldhistory'}`}>
+                      {spreadSpray.canSpray ? 'Yes' : 'No'}
+                    </span>
+                    {!spreadSpray.canSpray && (
+                      <span className="fh-yn-reason-fieldhistory">
+                        Reason: {spreadSpray.sprayReason || 'Not specified'}
+                      </span>
+                    )}
                   </div>
-                  
-                  {expandedPlans[String(plan.plan_id)] && (
-                    <div className="field-history-plan-details-fieldhistory">
-                      {/* Plan Details */}
-                      <div className="field-history-detail-section-fieldhistory">
-                        <h3><i className="fas fa-info-circle"></i> Plan Details</h3>
-                        <div className="field-history-detail-grid-fieldhistory">
-                          <div className="field-history-detail-item-fieldhistory">
-                            <span className="field-history-detail-label-fieldhistory">Type:</span>
-                            <span className="field-history-detail-value-fieldhistory">{getTypeText(plan.type)}</span>
-                          </div>
-                          <div className="field-history-detail-item-fieldhistory">
-                            <span className="field-history-detail-label-fieldhistory">Crop:</span>
-                            <span className="field-history-detail-value-fieldhistory">{plan.crop_text}</span>
-                          </div>
-                          <div className="field-history-detail-item-fieldhistory">
-                            <span className="field-history-detail-label-fieldhistory">Estate:</span>
-                            <span className="field-history-detail-value-fieldhistory">{plan.estate_text}</span>
-                          </div>
-                          <div className="field-history-detail-item-fieldhistory">
-                            <span className="field-history-detail-label-fieldhistory">Area:</span>
-                            <span className="field-history-detail-value-fieldhistory">{plan.area} Ha</span>
-                          </div>
-                          <div className="field-history-detail-item-fieldhistory">
-                            <span className="field-history-detail-label-fieldhistory">Team Assigned:</span>
-                            <span 
-                              className="field-history-status-badge-fieldhistory"
-                              style={{ backgroundColor: plan.plan_team_assigned === 1 ? '#10b981' : '#f59e0b' }}
-                            >
-                              {plan.plan_team_assigned === 1 ? 'Assigned' : 'Not Assigned'}
-                            </span>
-                          </div>
-                          <div className="field-history-detail-item-fieldhistory">
-                            <span className="field-history-detail-label-fieldhistory">Manager Approval:</span>
-                            <span 
-                              className="field-history-status-badge-fieldhistory"
-                              style={{ backgroundColor: plan.plan_manager_approval === 1 ? '#10b981' : '#f59e0b' }}
-                            >
-                              {plan.plan_manager_approval === 1 ? 'Approved' : 'Not Approved'}
-                            </span>
-                          </div>
-                          <div className="field-history-detail-item-fieldhistory">
-                            <span className="field-history-detail-label-fieldhistory">Status:</span>
-                            <span 
-                              className="field-history-status-badge-fieldhistory"
-                              style={{ backgroundColor: getStatusColor(plan.field_status) }}
-                            >
-                              {getStatusText(plan.field_status)}
-                            </span>
-                          </div>
+                )}
+              <div className="field-history-plans-list-fieldhistory">
+                {history.map((record) => (
+                  <div key={`${record.planId}-${record.date}`} className="field-history-plan-fieldhistory">
+                    <div
+                      className="field-history-plan-header-fieldhistory"
+                      onClick={() => togglePlan(record.planId)}
+                    >
+                      <div className="field-history-plan-info-fieldhistory">
+                        <div className="field-history-plan-id-fieldhistory">
+                          Plan #{record.planId}
+                          {record.fieldId != null && ` · Field #${record.fieldId}`}
+                          {record.taskIds?.length > 0 && (
+                            <> · Task #{record.taskIds.length === 1 ? record.taskIds[0] : record.taskIds.join(', #')}</>
+                          )}
+                        </div>
+                        <div className="field-history-plan-title-fieldhistory">
+                          {record.fieldName || record.estateName} - {record.fieldArea} Ha
+                        </div>
+                        <div className="field-history-plan-meta-fieldhistory">
+                          <span className="field-history-plan-date-fieldhistory">
+                            <FaCalendarAlt /> {record.date}
+                          </span>
+                          <span className={`field-history-plan-badge-fieldhistory field-history-plan-badge-${record.flag}-fieldhistory`}>
+                            {getFlagText(record.flag)}
+                          </span>
+                          <span className={`field-history-plan-badge-fieldhistory field-history-plan-badge-${record.type}-fieldhistory`}>
+                            {getTypeText(record.type)}
+                          </span>
                         </div>
                       </div>
-
-                      {/* Rejection Reason */}
-                      {plan.field_status === 'r' && plan.field_status_reason_text && (
-                        <div className="field-history-rejection-fieldhistory">
-                          <h3><i className="fas fa-exclamation-triangle"></i> Rejection Reason</h3>
-                          <p>{plan.field_status_reason_text}</p>
+                      <div className="field-history-plan-right-fieldhistory">
+                        <div className="field-history-plan-assigned-fieldhistory">
+                          {record.assignedPilotName || record.assignedDroneTag ? (
+                            <>
+                              <span>Pilot: {record.assignedPilotName || '–'}</span>
+                              <span className="field-history-plan-assigned-sep-fieldhistory">|</span>
+                              <span>Drone: {record.assignedDroneTag || '–'}</span>
+                            </>
+                          ) : (
+                            <span className="fh-muted">Not assigned</span>
+                          )}
                         </div>
-                      )}
+                        <div className="field-history-plan-toggle-fieldhistory">
+                          {expandedPlan === record.planId ? <FaChevronUp /> : <FaChevronDown />}
+                        </div>
+                      </div>
+                    </div>
 
-                      {/* Tasks */}
-                      {Array.isArray(plan.tasks) && plan.tasks.length > 0 && (
-                        <div className="field-history-tasks-fieldhistory">
-                          <h3><i className="fas fa-tasks"></i> Tasks ({plan.tasks.length})</h3>
-                          <div className="field-history-tasks-list-fieldhistory">
-                            {plan.tasks.map(task => (
-                              <div key={task.task_id} className="field-history-task-fieldhistory">
-                                <div className="field-history-task-header-fieldhistory">
-                                  <div className="field-history-task-id-fieldhistory">Task #{task.task_id}</div>
-                                  <div className="field-history-task-pilot-fieldhistory">
-                                    <i className="fas fa-user"></i> {task.pilot}
+                    {expandedPlan === record.planId && (
+                      <div className="field-history-plan-details-fieldhistory">
+                        {/* Manager Approval */}
+                        <div className="field-history-detail-section-fieldhistory">
+                          <h3>
+                            <FaCheckCircle className="fh-green" /> Manager Approval
+                          </h3>
+                          <div className="field-history-detail-body-fieldhistory">
+                            {record.managerApproval.rejected ? (
+                              <div className="field-history-rejection-fieldhistory">
+                                <span className="fh-badge fh-badge-red">Rejected</span>
+                                {record.managerApproval.rejectReason && <p>{record.managerApproval.rejectReason}</p>}
+                              </div>
+                            ) : record.managerApproval.approved ? (
+                              <>
+                                <span className="fh-badge fh-badge-green">Approved</span>
+                                {record.managerApproval.time && <span className="fh-time">{record.managerApproval.time}</span>}
+                                {record.managerApproval.managerName && <span> by {record.managerApproval.managerName}</span>}
+                              </>
+                            ) : (
+                              <span className="fh-muted">Pending</span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Pilot Start Mission */}
+                        <div className="field-history-detail-section-fieldhistory">
+                          <h3>
+                            <FaPlayCircle className="fh-blue" /> Pilot - Start Mission
+                          </h3>
+                          <div className="field-history-detail-body-fieldhistory">
+                            {record.pilotStartMission ? (
+                              <span>
+                                Pilot: {record.pilotStartMission.pilotName} | Drone: {record.pilotStartMission.droneName}
+                                {record.pilotStartMission.startTime && ` | Start: ${record.pilotStartMission.startTime}`}
+                              </span>
+                            ) : (
+                              <span className="fh-muted">Not started</span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Pilot Complete / Partial / Cancel */}
+                        <div className="field-history-detail-section-fieldhistory">
+                          <h3>
+                            <FaCheckCircle className="fh-green" /> Pilot Complete / Partial / Cancel
+                          </h3>
+                          <div className="field-history-detail-body-fieldhistory">
+                            {record.pilotComplete?.length > 0 && (
+                              <div className="field-history-items">
+                                {record.pilotComplete.map((t) => (
+                                  <div key={t.taskId} className="field-history-item">
+                                    <span className="fh-badge fh-badge-green">{t.isPartial ? 'Partial' : 'Complete'}</span>
+                                    {t.pilotName} | {t.droneName} | Covered: {t.coveredExtent} Ha
+                                    {t.remainingOptionDesc && ` | ${t.remainingOptionDesc}`}
+                                    {t.time && <span className="fh-time"> {t.time}</span>}
                                   </div>
-                                </div>
-                                
-                                <div className="field-history-task-content-fieldhistory">
-                                  <div className="field-history-task-details-fieldhistory">
-                                    <div className="field-history-detail-grid-fieldhistory">
-                                      <div className="field-history-detail-item-fieldhistory">
-                                        <span className="field-history-detail-label-fieldhistory">Battery Count:</span>
-                                        <span className="field-history-detail-value-fieldhistory">{task.battary_count}</span>
-                                      </div>
-                                      <div className="field-history-detail-item-fieldhistory">
-                                        <span className="field-history-detail-label-fieldhistory">Drone:</span>
-                                        <span className="field-history-detail-value-fieldhistory">{task.drone}</span>
-                                      </div>
-                                      <div className="field-history-detail-item-fieldhistory">
-                                        <span className="field-history-detail-label-fieldhistory">Field Area:</span>
-                                        <span className="field-history-detail-value-fieldhistory">{task.fieldArea} ha</span>
-                                      </div>
-                                      <div className="field-history-detail-item-fieldhistory">
-                                        <span className="field-history-detail-label-fieldhistory">Sprayed Area:</span>
-                                        <span className="field-history-detail-value-fieldhistory">{task.sprayedArea} ha</span>
-                                      </div>
-                                      <div className="field-history-detail-item-fieldhistory">
-                                        <span className="field-history-detail-label-fieldhistory">Remaining Area:</span>
-                                        <span className="field-history-detail-value-fieldhistory">{task.remainingFieldArea} ha</span>
-                                      </div>
-                                      <div className="field-history-detail-item-fieldhistory">
-                                        <span className="field-history-detail-label-fieldhistory">Sprayed Liters:</span>
-                                        <span className="field-history-detail-value-fieldhistory">{task.sprayedLiters} L</span>
-                                      </div>
-                                      <div className="field-history-detail-item-fieldhistory">
-                                        <span className="field-history-detail-label-fieldhistory">Remaining Liters:</span>
-                                        <span className="field-history-detail-value-fieldhistory">{task.remainingLiters} L</span>
-                                      </div>
-                                      <div className="field-history-detail-item-fieldhistory">
-                                        <span className="field-history-detail-label-fieldhistory">Status:</span>
-                                        <span 
-                                          className="field-history-status-badge-fieldhistory"
-                                          style={{ backgroundColor: getStatusColor(task.field_status) }}
-                                        >
-                                          {getStatusText(task.field_status)}
-                                        </span>
-                                      </div>
-                                    </div>
+                                ))}
+                              </div>
+                            )}
+                            {record.pilotCancel?.length > 0 && (
+                              <div className="field-history-items">
+                                {record.pilotCancel.map((t) => (
+                                  <div key={t.taskId} className="field-history-item">
+                                    <span className="fh-badge fh-badge-red">Cancel</span>
+                                    {t.pilotName} | {t.cancelReason}
+                                    {t.time && <span className="fh-time"> {t.time}</span>}
                                   </div>
-                                  
-                                  {task.image && (
-                                    <div className="field-history-task-image-fieldhistory">
+                                ))}
+                              </div>
+                            )}
+                            {record.pilotComplete?.length === 0 && record.pilotCancel?.length === 0 && (
+                              <span className="fh-muted">No completion/cancel record</span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* COM Operator Assign */}
+                        <div className="field-history-detail-section-fieldhistory">
+                          <h3>
+                            <FaUserCog className="fh-purple" /> COM Operator Assign
+                          </h3>
+                          <div className="field-history-detail-body-fieldhistory">
+                            {record.comOperatorAssign ? (
+                              <>
+                                {record.comOperatorAssign.operatorName}
+                                {record.comOperatorAssign.operatorPhone && ` | ${record.comOperatorAssign.operatorPhone}`}
+                                {record.comOperatorAssign.time && <span className="fh-time"> {record.comOperatorAssign.time}</span>}
+                              </>
+                            ) : (
+                              <span className="fh-muted">Not assigned</span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Water & Chemical Times */}
+                        <div className="field-history-detail-section-fieldhistory">
+                          <h3>
+                            <FaTint className="fh-teal" /> Pilot - Water & Chemical Times
+                          </h3>
+                          <div className="field-history-detail-body-fieldhistory">
+                            {record.waterChemicalTimes?.length > 0 ? (
+                              <div className="field-history-items">
+                                {record.waterChemicalTimes.map((t) => (
+                                  <div key={t.taskId} className="field-history-item">
+                                    Water: {t.waterTime || '-'} | Chemical: {t.chemicalTime || '-'}
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="fh-muted">No data</span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* DJI Map Upload */}
+                        <div className="field-history-detail-section-fieldhistory">
+                          <h3>
+                            <FaMapMarked className="fh-lightblue" /> DJI Map Upload
+                          </h3>
+                          <div className="field-history-detail-body-fieldhistory">
+                            {record.djiMapUploads?.length > 0 ? (
+                              <div className="field-history-dji-uploads">
+                                {record.djiMapUploads.map((u) => (
+                                  <div key={u.imageId} className="field-history-dji-item">
+                                    {u.autoGeneratedId} | {u.uploadDate}
+                                    {u.imageUrl && (
+                                      <a href={u.imageUrl} target="_blank" rel="noopener noreferrer" className="fh-link">
+                                        View
+                                      </a>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="fh-muted">No uploads for this day</span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Day End Complete */}
+                        <div className="field-history-detail-section-fieldhistory">
+                          <h3>
+                            <FaCheckCircle className="fh-pink" /> Day End Complete
+                          </h3>
+                          <div className="field-history-detail-body-fieldhistory">
+                            {record.dayEndComplete?.completed ? (
+                              <div className="field-history-dayend-fieldhistory">
+                                <span className="fh-badge fh-badge-green">Completed</span>
+                                {record.dayEndComplete.djiFieldArea != null && (
+                                  <span className="fh-dji-area-fieldhistory">DJI field area: {record.dayEndComplete.djiFieldArea}</span>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="fh-muted">Not completed</span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Images - spans full width */}
+                        {record.images?.some((i) => i.djiImageUrl || i.waypointImageUrl || i.pilotImageUrl) && (
+                          <div className="field-history-detail-section-fieldhistory field-history-detail-section-full-fieldhistory">
+                            <h3>
+                              <FaImage /> Images
+                            </h3>
+                            <div className="field-history-images-fieldhistory">
+                              {record.images.map((img) => (
+                                <React.Fragment key={img.taskId}>
+                                  {img.djiImageUrl && (
+                                    <div className="field-history-image-wrap">
+                                      <span className="fh-img-label">DJI (Task #{img.taskId})</span>
                                       <img
-                                        src={task.image}
-                                        alt="Task"
+                                        src={img.djiImageUrl}
+                                        alt="DJI"
                                         className="field-history-image-thumbnail-fieldhistory"
-                                        onClick={() => openImage(task.image)}
-                                        title="Click to view full size"
+                                        onClick={() => setSelectedImage(img.djiImageUrl)}
                                       />
                                     </div>
                                   )}
-                                </div>
-
-                                {/* Subtasks */}
-                                {Array.isArray(task.sub_task) && task.sub_task.length > 0 && (
-                                  <div className="field-history-subtasks-fieldhistory">
-                                    <h4><i className="fas fa-list-ul"></i> Subtasks ({task.sub_task.length})</h4>
-                                    <div className="field-history-subtasks-list-fieldhistory">
-                                      {task.sub_task.map(subtask => (
-                                        <div key={subtask.sub_task_id} className="field-history-subtask-fieldhistory">
-                                          <div className="field-history-subtask-header-fieldhistory">
-                                            <div className="field-history-subtask-id-fieldhistory">Subtask #{subtask.sub_task_id}</div>
-                                            <span 
-                                              className="field-history-status-badge-fieldhistory"
-                                              style={{ 
-                                                backgroundColor: subtask.team_lead_status === 'a' ? '#10b981' : 
-                                                               subtask.team_lead_status === 'p' ? '#f59e0b' : '#ef4444'
-                                              }}
-                                            >
-                                              {subtask.team_lead_status === 'a' ? 'Approved' :
-                                               subtask.team_lead_status === 'p' ? 'Pending' :
-                                               subtask.team_lead_status === 'r' ? 'Rejected' : subtask.team_lead_status}
-                                            </span>
-                                          </div>
-                                          
-                                          <div className="field-history-subtask-content-fieldhistory">
-                                            <div className="field-history-detail-grid-fieldhistory">
-                                              <div className="field-history-detail-item-fieldhistory">
-                                                <span className="field-history-detail-label-fieldhistory">Field:</span>
-                                                <span className="field-history-detail-value-fieldhistory">{subtask.fieldArea} ha</span>
-                                              </div>
-                                              <div className="field-history-detail-item-fieldhistory">
-                                                <span className="field-history-detail-label-fieldhistory">Sprayed:</span>
-                                                <span className="field-history-detail-value-fieldhistory">{subtask.sprayedArea} ha</span>
-                                              </div>
-                                              <div className="field-history-detail-item-fieldhistory">
-                                                <span className="field-history-detail-label-fieldhistory">Remaining:</span>
-                                                <span className="field-history-detail-value-fieldhistory">{subtask.remainingFieldArea} ha</span>
-                                              </div>
-                                              <div className="field-history-detail-item-fieldhistory">
-                                                <span className="field-history-detail-label-fieldhistory">Sprayed Liters:</span>
-                                                <span className="field-history-detail-value-fieldhistory">{subtask.sprayedLiters} L</span>
-                                              </div>
-                                              <div className="field-history-detail-item-fieldhistory">
-                                                <span className="field-history-detail-label-fieldhistory">Remaining Liters:</span>
-                                                <span className="field-history-detail-value-fieldhistory">{subtask.remainingLiters} L</span>
-                                              </div>
-                                            </div>
-                                            
-                                            {subtask.image && (
-                                              <div className="field-history-subtask-image-fieldhistory">
-                                                <img
-                                                  src={subtask.image}
-                                                  alt="Subtask"
-                                                  className="field-history-image-thumbnail-fieldhistory"
-                                                  onClick={() => openImage(subtask.image)}
-                                                  title="Click to view full size"
-                                                />
-                                              </div>
-                                            )}
-                                          </div>
-                                        </div>
-                                      ))}
+                                  {img.waypointImageUrl && (
+                                    <div className="field-history-image-wrap">
+                                      <span className="fh-img-label">Waypoint (Task #{img.taskId})</span>
+                                      <img
+                                        src={img.waypointImageUrl}
+                                        alt="Waypoint"
+                                        className="field-history-image-thumbnail-fieldhistory"
+                                        onClick={() => setSelectedImage(img.waypointImageUrl)}
+                                      />
                                     </div>
-                                  </div>
-                                )}
-                              </div>
-                            ))}
+                                  )}
+                                  {img.pilotImageUrl && (
+                                    <div className="field-history-image-wrap">
+                                      <span className="fh-img-label">Pilot (Task #{img.taskId})</span>
+                                      <img
+                                        src={img.pilotImageUrl}
+                                        alt="Pilot"
+                                        className="field-history-image-thumbnail-fieldhistory"
+                                        onClick={() => setSelectedImage(img.pilotImageUrl)}
+                                      />
+                                    </div>
+                                  )}
+                                </React.Fragment>
+                              ))}
+                            </div>
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="field-history-empty-fieldhistory">
-              <i className="fas fa-inbox"></i>
-              <h3>No Data Found</h3>
-              <p>{selectedField ? 'No history available for this field' : 'Please select a field to view history'}</p>
-            </div>
-          )}
-        </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {!selectedField && (
+          <div className="field-history-empty-fieldhistory">
+            <FaFlag />
+            <h3>Select Estate & Field</h3>
+            <p>Choose an estate and field to view history</p>
+          </div>
+        )}
       </div>
 
       {/* Image Modal */}
       {selectedImage && (
-        <div className="field-history-modal-fieldhistory" onClick={closeImage}>
+        <div className="field-history-modal-fieldhistory" onClick={() => setSelectedImage(null)}>
           <div className="field-history-modal-content-fieldhistory" onClick={(e) => e.stopPropagation()}>
-            <img
-              src={selectedImage}
-              alt="Full view"
-              className="field-history-modal-image-fieldhistory"
-              style={{ transform: `rotate(${rotation}deg)` }}
-            />
-            <div className="field-history-modal-controls-fieldhistory">
-              <button 
-                className="field-history-modal-btn-fieldhistory" 
-                onClick={rotateLeft}
-                title="Rotate Left"
-              >
-                <i className="fas fa-undo"></i>
-              </button>
-              <button 
-                className="field-history-modal-btn-fieldhistory" 
-                onClick={rotateRight}
-                title="Rotate Right"
-              >
-                <i className="fas fa-redo"></i>
-              </button>
-              <button 
-                className="field-history-modal-btn-fieldhistory" 
-                onClick={downloadImage}
-                title="Download"
-              >
-                <i className="fas fa-download"></i>
-              </button>
-              <button 
-                className="field-history-modal-close-fieldhistory" 
-                onClick={closeImage}
-                title="Close"
-              >
-                <i className="fas fa-times"></i>
-              </button>
-            </div>
+            <img src={selectedImage} alt="Full view" className="field-history-modal-image-fieldhistory" />
+            <button className="field-history-modal-close-fieldhistory" onClick={() => setSelectedImage(null)}>
+              <FaTimesCircle />
+            </button>
           </div>
         </div>
       )}

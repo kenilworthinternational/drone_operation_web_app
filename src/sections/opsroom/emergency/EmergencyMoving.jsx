@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   useGetPlansWithFieldsQuery, 
   useSwapFieldToPlanMutation,
@@ -23,6 +23,7 @@ const CustomDateInputEmergency = React.forwardRef(({ value, onClick }, ref) => (
 
 const EmergencyMoving = () => {
   const navigate = useNavigate();
+  const routerLocation = useLocation();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [activeTab, setActiveTab] = useState('swapping');
   const [selectedFieldForSwap, setSelectedFieldForSwap] = useState(null);
@@ -112,7 +113,7 @@ const EmergencyMoving = () => {
         <div className="header-left-section-emergency">
           <button 
             className="back-button-emergency"
-            onClick={() => navigate('/home/workflowDashboard')}
+            onClick={() => navigate({ pathname: '/home/workflowDashboard', search: routerLocation.search })}
             title="Back to Workflow Dashboard"
           >
             <FaArrowLeft />

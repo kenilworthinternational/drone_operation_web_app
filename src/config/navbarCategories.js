@@ -1,5 +1,4 @@
 import {
-  FaHome,
   FaChartBar,
   FaPlusCircle,
   FaUsers,
@@ -16,7 +15,6 @@ import {
   FaMoneyBill,
   FaBoxes,
   FaTools,
-  FaUserShield,
   FaClipboardList,
   FaUserCog,
   FaKey,
@@ -27,34 +25,23 @@ import {
   FaShoppingCart,
   FaTruck,
   FaFileInvoice,
-  FaDesktop,
-  FaMobileAlt,
   FaMap,
   FaClock,
   FaCheck,
+  FaTachometerAlt,
 } from 'react-icons/fa';
 
 const navbarCategories = [
   {
-    title: 'Corporate',
-    icon: FaBuilding,
+    title: 'Strategic Planning and Monitoring wing',
+    icon: FaCalendarCheck,
     children: [
-      { path: '/home/dataViewer', label: 'Infographics', icon: FaChartBar },
-      { path: '/home/dashboard', label: 'Dashboard', icon: FaHome },
-      { path: '/home/calenderView/corporate', label: 'Mission Calendar', icon: FaCalendarAlt },
+      { path: '/home/createBookings', label: 'Booking Creation', icon: FaPlusCircle },
       { path: '/home/reports/corporate', label: 'Reports', icon: FaFileAlt },
     ],
   },
   {
-    title: 'Planning and Monitoring',
-    icon: FaCalendarCheck,
-    children: [
-      { path: '/home/createBookings', label: 'Booking Creation', icon: FaPlusCircle },
-      // { path: '/home/bookingList', label: 'Nonp Booking', icon: FaFileAlt },
-    ],
-  },
-  {
-    title: 'Management',
+    title: 'Field Operations Wing',
     icon: FaUserTie,
     children: [
       { path: '/home/reports/management', label: 'Reports', icon: FaFileAlt },
@@ -65,12 +52,10 @@ const navbarCategories = [
     ],
   },
   {
-    title: 'Central Operation Management',
+    title: 'Operation Digitalization & Digital Monitoring & Evaluation Wing',
     icon: FaProjectDiagram,
     children: [
-      { path: '/home/monitoringDashboard', label: 'Monitoring Dashboard', icon: FaDesktop },
       { path: '/home/workflowDashboard', label: 'Workflow Dashboard', icon: FaProjectDiagram },
-      { path: '/home/calenderView/opsroom', label: 'Mission Calendar', icon: FaCalendarAlt },
     ],
   },
   {
@@ -79,34 +64,55 @@ const navbarCategories = [
     children: [
       { path: '/home/brokers', label: 'Brokers', icon: FaHandshake },
       { path: '/home/financial-cards', label: 'Financial Cards', icon: FaMoneyBillWave },
-      { path: '/home/vehicle-rent', label: 'Vehicle Rent', icon: FaTruck },
+      { path: '/home/transport/finance', label: 'Transport Payments', icon: FaTruck },
       { path: '/home/reports/finance', label: 'Reports', icon: FaFileAlt },
     ],
   },
   {
-    title: 'ICT - System Admin',
-    icon: FaUserCog,
+    title: 'ICT Wing',
+    icon: FaSitemap,
     children: [
-      { path: '/home/ict/system-admin/users', label: 'Users', icon: FaUsers },
-      { path: '/home/ict/system-admin/auth-controls', label: 'Auth Controls', icon: FaKey },
-      { path: '/home/ict/system-admin/app-versions', label: 'App Versions', icon: FaMobileAlt },
-      { path: '/home/ict/system-admin/logs-report', label: 'Logs Report', icon: FaClipboardList },
+      {
+        path: '/home/ict/development/dev-center',
+        label: 'ICT Development',
+        icon: FaProjectDiagram,
+        subItems: [
+          { path: '/home/ict/development/dev-center', label: 'Dev Center', icon: FaTachometerAlt },
+        ],
+      },
+      {
+        path: '/home/ict/system-admin/users',
+        label: 'System Administration',
+        icon: FaUserCog,
+        subItems: [
+          { path: '/home/ict/system-admin/users', label: 'Users', icon: FaUsers },
+          { path: '/home/ict/system-admin/auth-controls', label: 'Auth Controls', icon: FaKey },
+          { path: '/home/ict/system-admin/logs-report', label: 'Logs Report', icon: FaClipboardList },
+          { path: '/home/ict/system-admin/master-data-update', label: 'Master Data Update', icon: FaTools },
+        ],
+      },
     ],
   },
   {
-    title: 'Fleet Management',
-    icon: FaCogs,
+    title: 'Human Resource Management',
+    icon: FaUsers,
     children: [
+      { path: '/home/employeeRegistration', label: 'Employee Registration', icon: FaUserTie },
+      { path: '/home/employees', label: 'Employees', icon: FaUsers },
+      { path: '/home/jdManagement', label: 'JD Management', icon: FaClipboardList },
+      { path: '/home/employeeAssignment', label: 'Employee Assignment', icon: FaUserTie },
+      { path: '/home/attendance/roaster-planning', label: 'Attendance & Roaster', icon: FaClock },
+    ],
+  },
+  {
+    title: 'Administration Wing',
+    icon: FaBuilding,
+    children: [
+      { path: '/home/transport/hr', label: 'Vehicle Fleet', icon: FaTruck },
       { path: '/home/fleet', label: 'Resource Allocation', icon: FaCogs },
       { path: '/home/accident-reports', label: 'Accident Reports', icon: FaFileAlt },
       { path: '/home/maintenance', label: 'Maintenance', icon: FaTools },
       { path: '/home/fleet-update', label: 'Fleet update', icon: FaStore },
-    ],
-  },
-  {
-    title: 'Stock and Assets Management',
-    icon: FaWarehouse,
-    children: [
       { path: '/home/stock-assets/supplier-registration', label: 'Supplier Management', icon: FaHandshake },
       { path: '/home/stock-assets/inventory-items-registration', label: 'Inventory Items Registration', icon: FaBoxes },
       {
@@ -115,9 +121,9 @@ const navbarCategories = [
         icon: FaShoppingCart,
         subItems: [
           { path: '/home/stock-assets/procurement-process/requests', label: 'Procurement Requests', icon: FaFileAlt },
-          { path: '/home/stock-assets/procurement-process/approved-queue', label: 'Approved Procure Queue', icon: FaClipboardList },
+          { path: '/home/stock-assets/procurement-process/approve-requests', label: 'Procurement Approval', icon: FaClipboardList },
           { path: '/home/stock-assets/procurement-process/request-quotations', label: 'Request Quotations', icon: FaFileInvoice },
-          { path: '/home/stock-assets/procurement-process/pending-quotations', label: 'Pending Quotations Queue', icon: FaClock },
+          { path: '/home/stock-assets/procurement-process/submit-quotation', label: 'Submit Supplier Quotation', icon: FaFileInvoice },
           { path: '/home/stock-assets/procurement-process/quotations-evaluation', label: 'Quotations Evaluation', icon: FaChartBar },
           { path: '/home/stock-assets/procurement-process/tech-evaluation', label: 'Tech Evaluation', icon: FaTools },
           { path: '/home/stock-assets/procurement-process/finalize-quotations', label: 'Finalize Quotations', icon: FaCheck },
@@ -138,24 +144,11 @@ const navbarCategories = [
       },
       { path: '/home/stock-assets/asset-transfer', label: 'Asset/Item/Service Transfer', icon: FaTruck },
       { path: '/home/stock-assets/asset-request', label: 'Asset/Item/Service Request', icon: FaFileInvoice },
-    ],
-  },
-  {
-    title: 'HR and Admin',
-    icon: FaUserShield,
-    children: [
-      { path: '/home/employeeRegistration', label: 'Employee Registration', icon: FaUserTie },
-      { path: '/home/employees', label: 'Employees', icon: FaUsers },
-      { path: '/home/jdManagement', label: 'JD Management', icon: FaClipboardList },
-      { path: '/home/employeeAssignment', label: 'Employee Assignment', icon: FaUserTie },
-      { path: '/home/attendance/roaster-planning', label: 'Attendance & Roaster', icon: FaClock },
       {
         path: '/home/finance-approvals',
         label: 'Finance Approvals',
         icon: FaMoneyBillWave,
         subItems: [
-          { path: '/home/financial-cards', label: 'Financial Cards', icon: FaMoneyBillWave },
-          { path: '/home/vehicle-rent-approvals', label: 'Vehicle Rent Approvals', icon: FaTruck },
         ]
       },
     ],

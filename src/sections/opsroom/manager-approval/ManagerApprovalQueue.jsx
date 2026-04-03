@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { Bars } from 'react-loader-spinner';
 import { baseApi } from '../../../api/services/allEndpoints';
@@ -11,6 +11,7 @@ import '../../../styles/managerApprovalQueue.css';
 const ManagerApprovalQueue = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const routerLocation = useLocation();
   const [loading, setLoading] = useState(false);
   const [plans, setPlans] = useState([]);
   const [error, setError] = useState('');
@@ -100,7 +101,7 @@ const ManagerApprovalQueue = () => {
       <div className="manager-approval-queue-header-managerqueue">
         <button 
           className="back-btn-manager-approval-managerqueue" 
-          onClick={() => navigate('/home/workflowDashboard')}
+          onClick={() => navigate({ pathname: '/home/workflowDashboard', search: routerLocation.search })}
         >
           ←
         </button>

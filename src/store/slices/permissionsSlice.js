@@ -6,15 +6,16 @@ const ALL_ROLES = ['ceo', 'md', 'mgr', 'ops', 'dops', 'fd', 'io', 'wt'];
 
 const createDefaultState = () => ({
   categories: {
-    Corporate: ['ceo', 'md', 'dops'],
-    'Planning and Monitoring': ['md', 'mgr'],
-    Management: ['md', 'mgr', 'dops'],
+    'Strategic Planning and Monitoring wing': ['ceo', 'md', 'mgr', 'dops'],
+    'Field Operations Wing': ['md', 'mgr', 'dops'],
     OpsRoom: ['md', 'mgr', 'ops', 'dops'],
+    'Operation Digitalization & Digital Monitoring & Evaluation Wing': ['md', 'mgr', 'ops', 'dops'],
     Finance: ['md', 'mgr', 'fd', 'dops'],
     Inventory: ['md', 'io', 'mgr', 'dops'],
     Workshop: ['md', 'wt', 'mgr', 'dops'],
-    'HR and Admin': ['md', 'mgr', 'dops'],
-    'ICT - System Admin': ['md', 'dops'],
+    'Human Resource Management': ['md', 'mgr', 'dops'],
+    'Administration Wing': ['md', 'mgr', 'dops'],
+    'ICT Wing': ['md', 'dops'],
   },
   roles: ALL_ROLES,
 });
@@ -26,8 +27,69 @@ const normalizeState = (state) => {
   );
   const roles = rawRoles.filter((role) => ALL_ROLES.includes(role));
 
+  let mergedCategories = { ...fallback.categories, ...(state.categories || {}) };
+  if (mergedCategories['ICT - System Admin']) {
+    const legacy = mergedCategories['ICT - System Admin'];
+    const merged = [...(mergedCategories['ICT Wing'] || []), ...legacy];
+    mergedCategories['ICT Wing'] = Array.from(new Set(merged));
+    delete mergedCategories['ICT - System Admin'];
+  }
+
+  if (mergedCategories['System Administration']) {
+    const legacy = mergedCategories['System Administration'];
+    const cur = mergedCategories['ICT Wing'] || [];
+    mergedCategories['ICT Wing'] = Array.from(new Set([...cur, ...legacy]));
+    delete mergedCategories['System Administration'];
+  }
+  if (mergedCategories['ICT - Development']) {
+    const legacy = mergedCategories['ICT - Development'];
+    const cur = mergedCategories['ICT Wing'] || [];
+    mergedCategories['ICT Wing'] = Array.from(new Set([...cur, ...legacy]));
+    delete mergedCategories['ICT - Development'];
+  }
+
+  // Legacy ACL: Corporate + Planning and Monitoring merged into one strategic wing
+  if (mergedCategories['Corporate'] || mergedCategories['Planning and Monitoring']) {
+    const legacyCorporate = mergedCategories['Corporate'] || [];
+    const legacyPlanning = mergedCategories['Planning and Monitoring'] || [];
+    const mergedLegacy = [...legacyCorporate, ...legacyPlanning];
+    const cur = mergedCategories['Strategic Planning and Monitoring wing'] || [];
+    mergedCategories['Strategic Planning and Monitoring wing'] = Array.from(
+      new Set([...cur, ...mergedLegacy])
+    );
+    delete mergedCategories['Corporate'];
+    delete mergedCategories['Planning and Monitoring'];
+  }
+
+  // Legacy ACL: Management renamed to Field Operations Wing
+  if (mergedCategories.Management) {
+    const legacy = mergedCategories.Management || [];
+    const cur = mergedCategories['Field Operations Wing'] || [];
+    mergedCategories['Field Operations Wing'] = Array.from(new Set([...cur, ...legacy]));
+    delete mergedCategories.Management;
+  }
+
+  // Legacy ACL: Central Operation Management renamed to Operation Digitalization & Digital Monitoring & Evaluation Wing
+  if (mergedCategories['Central Operation Management']) {
+    const legacy = mergedCategories['Central Operation Management'] || [];
+    const cur = mergedCategories['Operation Digitalization & Digital Monitoring & Evaluation Wing'] || [];
+    mergedCategories['Operation Digitalization & Digital Monitoring & Evaluation Wing'] = Array.from(
+      new Set([...cur, ...legacy])
+    );
+    delete mergedCategories['Central Operation Management'];
+  }
+
+  if (mergedCategories['HR and Admin']) {
+    const legacy = mergedCategories['HR and Admin'];
+    const hr = mergedCategories['Human Resource Management'] || [];
+    const adm = mergedCategories['Administration Wing'] || [];
+    mergedCategories['Human Resource Management'] = Array.from(new Set([...hr, ...legacy]));
+    mergedCategories['Administration Wing'] = Array.from(new Set([...adm, ...legacy]));
+    delete mergedCategories['HR and Admin'];
+  }
+
   const categories = Object.fromEntries(
-    Object.entries({ ...fallback.categories, ...(state.categories || {}) }).map(([category, values]) => {
+    Object.entries(mergedCategories).map(([category, values]) => {
       const normalized = Array.from(
         new Set(
           (values || [])

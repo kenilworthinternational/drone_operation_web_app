@@ -79,6 +79,8 @@ export const baseApi = createApi({
     'PlantationCalendarPlans', 'PlantationUpcomingPlans', 'PlantationCharts', 'PlantationMissionReports',
     // Field Size Adjustments
     'FieldSizeAdjustments',
+    // Field History
+    'FieldHistoryEstates', 'FieldHistoryFields', 'FieldHistoryData',
     // App Versions
     'AppVersions',
     // Task Cancel Status

@@ -650,3 +650,95 @@
   color: #6c757d;
   font-size: 14px;
 }
+
+.pilot-assignment-header-actions-pilotsassign {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pilot-assignment-transport-btn-pilotsassign {
+  border: none;
+  border-radius: 6px;
+  background: #004b71;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+
+.pilot-assignment-transport-btn-pilotsassign:disabled {
+  background: #cbd5e1;
+  color: #64748b;
+  cursor: not-allowed;
+}
+
+.pilot-assignment-transport-modal-pilotsassign {
+  width: min(980px, 92vw);
+  max-height: 90vh;
+  overflow: auto;
+  background: #ffffff;
+  border-radius: 10px;
+}
+
+.pilot-assignment-transport-body-pilotsassign {
+  padding: 14px 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pilot-assignment-transport-grid-pilotsassign {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.pilot-assignment-transport-field-pilotsassign {
+  display: grid;
+  gap: 6px;
+}
+
+.pilot-assignment-transport-field-pilotsassign label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #334155;
+}
+
+.pilot-assignment-transport-estates-pilotsassign,
+.pilot-assignment-transport-result-pilotsassign {
+  border: 1px solid #dbe3eb;
+  border-radius: 8px;
+  background: #f8fbff;
+  padding: 10px 12px;
+}
+
+.pilot-assignment-transport-subtitle-pilotsassign {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 6px;
+}
+
+.pilot-assignment-transport-estate-list-pilotsassign {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+}
+
+.pilot-assignment-transport-actions-pilotsassign {
+  display: flex;
+  gap: 10px;
+}
+
+.pilot-assignment-transport-hint-pilotsassign {
+  border: 1px solid #c7e4d4;
+  border-radius: 8px;
+  background: #e8f7ef;
+  color: #14532d;
+  padding: 8px 10px;
+  font-size: 13px;
+  font-weight: 600;
+}

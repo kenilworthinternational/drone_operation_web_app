@@ -6,7 +6,7 @@ import {
 import { useGetGlobalPlannedVsTeaRevenueChartQuery } from '../../../api/services NodeJs/plantationDashboardApi';
 import { Bars } from 'react-loader-spinner';
 
-const GlobalTeaRevenueVsPlannedChart = ({ startMonth, endMonth, months, plantationId, regionId, estateId }) => {
+const GlobalTeaRevenueVsPlannedChart = ({ startMonth, endMonth, months, plantationId, regionId, estateId, basePath = '/home/dataViewer' }) => {
   const navigate = useNavigate();
 
   const { data, isLoading, error } = useGetGlobalPlannedVsTeaRevenueChartQuery({
@@ -78,7 +78,7 @@ const GlobalTeaRevenueVsPlannedChart = ({ startMonth, endMonth, months, plantati
             if (data && data.activePayload && data.activePayload.length > 0) {
               const clickedData = data.activePayload[0].payload;
               const clickedMetric = data.activePayload[0].dataKey;
-              navigate('/home/dataViewer/chart-breakdown', {
+              navigate(`${basePath}/chart-breakdown`, {
                 state: {
                   chartType: 'planned-vs-tea-revenue',
                   missionType: 'spy',

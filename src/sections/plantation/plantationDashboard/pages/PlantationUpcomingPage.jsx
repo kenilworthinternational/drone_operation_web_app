@@ -4,7 +4,7 @@ import { FaArrowLeft } from 'react-icons/fa';
 import UpcomingPlans from '../components/UpcomingPlans';
 import '../../../../styles/plantationDashboard.css';
 
-const PlantationUpcomingPage = () => {
+const PlantationUpcomingPage = ({ basePath = '/home/plantation-dashboard' } = {}) => {
   const navigate = useNavigate();
   const [selectedAction, setSelectedAction] = useState('Spray');
 
@@ -13,7 +13,7 @@ const PlantationUpcomingPage = () => {
   return (
     <div className="plantation-dashboard-container">
       <div className="plantation-page-header">
-        <button className="plantation-back-btn" onClick={() => navigate('/home/plantation-dashboard')}>
+        <button className="plantation-back-btn" onClick={() => navigate(basePath)}>
           <FaArrowLeft /> Back
         </button>
         <h1 className="plantation-page-title">Upcoming Plans</h1>

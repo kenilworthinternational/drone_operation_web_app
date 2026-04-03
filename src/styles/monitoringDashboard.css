@@ -487,6 +487,18 @@
   font-size: 12px;
 }
 
+.monitoring-waypoint-view {
+  margin-left: 6px;
+  font-size: 12px;
+  color: #2196f3;
+  text-decoration: underline;
+  font-weight: 500;
+}
+
+.monitoring-waypoint-view:hover {
+  color: #1976d2;
+}
+
 /* Special: Division/Field details box */
 .monitoring-division-details {
   display: flex;

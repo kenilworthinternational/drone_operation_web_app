@@ -683,6 +683,22 @@ export const mappingHierarchyApi = baseApi.injectEndpoints({
       invalidatesTags: ['Estates'],
     }),
 
+    setMappingEstateFinalized: builder.mutation({
+      queryFn: async ({ id, finalized }) => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: '/api/mapping-hierarchy/estates/set-finalized',
+            method: 'POST',
+            body: { id, finalized: finalized ? 1 : 0 },
+          },
+          {},
+          {}
+        );
+        return result;
+      },
+      invalidatesTags: ['Estates'],
+    }),
+
     toggleMappingDivisionActivation: builder.mutation({
       queryFn: async (id) => {
         const result = await nodeBackendBaseQuery(
@@ -749,6 +765,7 @@ export const {
   useUpdateMappingEstateMutation,
   useDeleteMappingEstateMutation,
   useToggleMappingEstateActivationMutation,
+  useSetMappingEstateFinalizedMutation,
   // Divisions
   useGetMappingDivisionsQuery,
   useGetMappingDivisionsByEstateQuery,

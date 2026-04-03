@@ -20,13 +20,30 @@ import * as XLSX from 'xlsx';
 import {
   useGetEstatePlanBreakdownQuery,
 } from '../../../../api/services NodeJs/plantationDashboardApi';
+import BreakdownDailyPlannedVsExecutedChart from '../components/BreakdownDailyPlannedVsExecutedChart';
 import { useGetAllEstatesQuery } from '../../../../api/services/estatesApi';
 import { Bars } from 'react-loader-spinner';
 import '../../../../styles/plantationDashboard.css';
+import { appendShellParams } from '../../../../utils/shellSearchParams';
 
-const ChartBreakdownPage = () => {
+const ChartBreakdownPage = ({ basePath = '/home/plantation-dashboard' } = {}) => {
+  const isInternalDashboard =
+    basePath === '/home/dashboard' || basePath.startsWith('/home/dashboard/');
+  const containerClassName = `container-class-breakdown${isInternalDashboard ? ' container-class-breakdown--internal' : ''}`;
   const navigate = useNavigate();
   const location = useLocation();
+
+  /** Return to dashboard: drop month/chart; keep ?comb=1 and ?wing= so COMB shell / wing filter stay. */
+  const backToDashboard = useCallback(() => {
+    const next = new URLSearchParams();
+    appendShellParams(next, location.search);
+    const qs = next.toString();
+    if (qs) {
+      navigate({ pathname: basePath, search: `?${qs}` });
+    } else {
+      navigate(basePath);
+    }
+  }, [basePath, location.search, navigate]);
 
   // Parse URL parameters
   const queryParams = new URLSearchParams(location.search);
@@ -92,6 +109,19 @@ const ChartBreakdownPage = () => {
 
   const [isExporting, setIsExporting] = useState(false);
 
+  const isFullyCancelledField = useCallback(
+    (field) => Boolean(field?.is_cancelled) && String(field?.reason_flag || '') !== 'h',
+    []
+  );
+
+  const getPlanCancelledExtent = useCallback((plan) => {
+    const fields = Array.isArray(plan?.fields) ? plan.fields : [];
+    return fields.reduce((fieldSum, field) => {
+      if (!isFullyCancelledField(field)) return fieldSum;
+      return fieldSum + parseFloat(field.planned_area || 0);
+    }, 0);
+  }, [isFullyCancelledField]);
+
   // Effective month for API: from date filter when set, otherwise from URL/state
   const effectiveMonth = dateFrom ? dateFrom.substring(0, 7) : month;
   const effectiveMonthName = effectiveMonth ? new Date(effectiveMonth + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : (monthName || month);
@@ -110,6 +140,7 @@ const ChartBreakdownPage = () => {
   const {
     data: estatePlanData,
     isLoading: estatePlanLoading,
+    isFetching: estatePlanFetching,
   } = useGetEstatePlanBreakdownQuery(
     { yearMonth: effectiveMonth, missionType: missionType || 'spy', chartType: chartType || 'planned-vs-tea-revenue' },
     { skip: !effectiveMonth }
@@ -216,7 +247,7 @@ const ChartBreakdownPage = () => {
     const canceledExtent = plans.reduce((sum, plan) => {
       const fields = Array.isArray(plan.fields) ? plan.fields : [];
       return sum + fields.reduce((fieldSum, field) => {
-        if (!field.is_cancelled) return fieldSum;
+        if (!isFullyCancelledField(field)) return fieldSum;
         return fieldSum + parseFloat(field.planned_area || 0);
       }, 0);
     }, 0);
@@ -227,11 +258,13 @@ const ChartBreakdownPage = () => {
       sprayedExtent,
       canceledExtent,
       planningRate: 0,
-      completionRate: actualSprayedFieldsExtent > 0 ? (sprayedExtent / actualSprayedFieldsExtent) * 100 : 0,
+      completionRate: (actualSprayedFieldsExtent - canceledExtent) > 0
+        ? (sprayedExtent / (actualSprayedFieldsExtent - canceledExtent)) * 100
+        : 0,
       sprayPlanCount: missionType === 'spy' ? plans.length : 0,
       spreadPlanCount: missionType === 'spd' ? plans.length : 0,
     };
-  }, [selectedChartData, plans, missionType]);
+  }, [selectedChartData, plans, missionType, isFullyCancelledField]);
 
   // Sort fields within a plan: completed (sprayed > 0) first, then 0-value last
   const getSortedFields = useCallback((fields) => {
@@ -293,8 +326,9 @@ const ChartBreakdownPage = () => {
       const executedVal = parseFloat(summaryData?.actualSprayedFieldsExtent || 0);
       const coveredVal = parseFloat(summaryData?.sprayedExtent || 0);
       const canceledVal = parseFloat(summaryData?.canceledExtent || 0);
-      const completionRate = executedVal > 0
-        ? ((coveredVal / executedVal) * 100).toFixed(1)
+      const completionBase = Math.max(executedVal - canceledVal, 0);
+      const completionRate = completionBase > 0
+        ? ((coveredVal / completionBase) * 100).toFixed(1)
         : '0.0';
       const planningRate = teaRevenueVal > 0
         ? ((plannedVal / teaRevenueVal) * 100).toFixed(1)
@@ -382,11 +416,11 @@ const ChartBreakdownPage = () => {
   // No chart data passed via navigation or URL params
   if (!selectedChartData && !effectiveMonth) {
     return (
-      <div className="container-class-breakdown">
+      <div className={containerClassName}>
         <div className="header-class-breakdown">
           <button
             className="back-btn-class-breakdown"
-            onClick={() => navigate('/home/plantation-dashboard')}
+            onClick={backToDashboard}
           >
             <FaArrowLeft /> Back
           </button>
@@ -400,12 +434,12 @@ const ChartBreakdownPage = () => {
   }
 
   return (
-    <div className="container-class-breakdown">
+    <div className={containerClassName}>
       {/* Header */}
       <div className="header-class-breakdown">
         <button
           className="back-btn-class-breakdown"
-          onClick={() => navigate('/home/plantation-dashboard')}
+          onClick={backToDashboard}
         >
           <FaArrowLeft /> Back
         </button>
@@ -467,6 +501,17 @@ const ChartBreakdownPage = () => {
             </div>
           </div>
         </div>
+
+        {isInternalDashboard && !isTeaRevenueChart && (
+          <BreakdownDailyPlannedVsExecutedChart
+            plans={plans}
+            missionType={missionType || 'spy'}
+            dateFrom={dateFrom}
+            dateTo={dateTo}
+            isLoading={estatePlanLoading}
+            isFetching={estatePlanFetching}
+          />
+        )}
 
         {/* Summary Metrics */}
         <div className="card-class-breakdown">
@@ -574,17 +619,17 @@ const ChartBreakdownPage = () => {
                       Completion Rate
                     </div>
                     <div className="metric-value-class-breakdown metric-secondary-class-breakdown">
-                      {summaryData.actualSprayedFieldsExtent > 0
+                      {(summaryData.actualSprayedFieldsExtent - (summaryData.canceledExtent || 0)) > 0
                         ? (
                             (summaryData.sprayedExtent /
-                              summaryData.actualSprayedFieldsExtent) *
+                              (summaryData.actualSprayedFieldsExtent - (summaryData.canceledExtent || 0))) *
                             100
                           ).toFixed(1)
                         : '0.0'}
                       %
                     </div>
                     <div className="metric-hint-class-breakdown">
-                      Covered Area / Executed Extent
+                      Covered Area / (Executed Extent - Canceled Extent)
                     </div>
                   </div>
                 )}
@@ -661,12 +706,37 @@ const ChartBreakdownPage = () => {
             ) : plans.length > 0 ? (
               <div className="cbd-accordion">
                 {plans.map((plan) => {
+                  const cancelledExtent = getPlanCancelledExtent(plan);
+                  const nonCancelledTotal = Math.max(
+                    parseFloat(plan.total_planned || 0) - cancelledExtent,
+                    0
+                  );
+                  const pilotName =
+                    plan.pilot_name ||
+                    plan.pilotName ||
+                    plan.assigned_pilot_name ||
+                    plan.assignedPilotName ||
+                    plan.pilot ||
+                    'N/A';
+                  const droneId =
+                    plan.drone_id ||
+                    plan.drone_tag ||
+                    plan.droneTag ||
+                    plan.droneId ||
+                    plan.assigned_drone_id ||
+                    plan.assignedDroneId ||
+                    plan.drone_no ||
+                    plan.droneNo ||
+                    'N/A';
+                  const completionBase = Math.max(
+                    parseFloat(plan.actual_sprayed_fields_extent || 0) - cancelledExtent,
+                    0
+                  );
                   const isPlanExpanded = !!expandedPlans[plan.plan_id];
-                  const completionRate =
-                    plan.actual_sprayed_fields_extent > 0
+                  const completionRate = completionBase > 0
                       ? (
                           (plan.total_sprayed /
-                            plan.actual_sprayed_fields_extent) *
+                            completionBase) *
                           100
                         ).toFixed(1)
                       : '0.0';
@@ -705,14 +775,35 @@ const ChartBreakdownPage = () => {
                               <FaHashtag className="cbd-plan-meta-icon" />
                               Plan {plan.plan_id}
                             </span>
+                            {isInternalDashboard && (
+                              <>
+                                <span className="cbd-plan-id">
+                                  Pilot: {pilotName}
+                                </span>
+                                <span className="cbd-plan-id">
+                                  Drone ID: {droneId}
+                                </span>
+                              </>
+                            )}
                           </span>
                         </div>
                         {!isTeaRevenueChart && (
                           <div className="cbd-plan-summary">
-                            <span className="cbd-plan-summary-item cbd-planned">
+                            <span
+                              className="cbd-plan-summary-item cbd-planned"
+                              title="Total Planned Extent"
+                            >
                               {plan.total_planned.toFixed(2)} Ha
                             </span>
-                            <span className="cbd-plan-summary-item cbd-sprayed">
+                            <span
+                              className="cbd-plan-summary-item cbd-info"
+                              title="Executed Extent (Total Planned - Canceled)"
+                            >{nonCancelledTotal.toFixed(2)} Ha
+                            </span>
+                            <span
+                              className="cbd-plan-summary-item cbd-sprayed"
+                              title="Completed Extent (Covered Area)"
+                            >
                               {plan.total_sprayed.toFixed(2)} Ha
                             </span>
                             <span
@@ -723,6 +814,7 @@ const ChartBreakdownPage = () => {
                                   ? 'cbd-rate--mid'
                                   : 'cbd-rate--low'
                               }`}
+                              title="Percentage (Completed Extent / Executed Extent)"
                             >
                               {completionRate}%
                             </span>

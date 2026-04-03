@@ -1,6 +1,8 @@
 import React from 'react';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import HomePage from './pages/HomePage';
+import WingHubHome from './pages/WingHubHome';
+import CombHubPage from './pages/CombHubPage';
 import UpdateServices from './features/misc/UpdateServices';
 import CreateBookings from './sections/management/bookings/CreateBookings';
 import Dashboard from './features/dashboard/Dashboard';
@@ -27,6 +29,11 @@ import FinancialCards from './sections/finance/financialCards/FinancialCards';
 import FinanceApprovals from './sections/finance/financeApprovals/FinanceApprovals';
 import VehicleRent from './sections/finance/vehicleRent/VehicleRent';
 import VehicleRentApprovals from './sections/hr&admin/vehicleRentApprovals/VehicleRentApprovals';
+import DriverAdvanceApprovals from './sections/hr&admin/driverAdvanceApprovals/DriverAdvanceApprovals';
+import DriverAdvanceFinance from './sections/finance/driverAdvance/DriverAdvanceFinance';
+import DriverLeaveDatesHr from './sections/hr&admin/driverLeaveDates/DriverLeaveDatesHr';
+import TransportHrDashboard from './sections/transport/TransportHrDashboard';
+import TransportFinanceDashboard from './sections/transport/TransportFinanceDashboard';
 import CEODataViewer from './features/dashboard/CEODataViewer';
 import OpsAssign from './sections/opsroom/operators/OpsAssign';
 import ReportReview from './sections/corporate/charts/TaskReviewManagement';
@@ -59,12 +66,18 @@ import Users from './sections/ict/users/Users';
 import AuthControls from './sections/ict/authentication/AuthControls';
 import AppVersionManagement from './sections/ict/appVersions/AppVersionManagement';
 import LogsReportPage from './sections/ict/logsReport/LogsReportPage';
+import SprintPlanning from './sections/ict/development/SprintPlanning';
+import DevelopmentBoard from './sections/ict/development/DevelopmentBoard';
+import ExtraWorkQueue from './sections/ict/development/ExtraWorkQueue';
+import MetricsDashboard from './sections/ict/development/MetricsDashboard';
+import IctDevCenter from './sections/ict/development/DevCenter';
 import SupplierRegistration from './sections/stock-assets/SupplierRegistration';
 import InventoryItemsRegistration from './sections/stock-assets/InventoryItemsRegistration';
 import ProcurementProcess from './sections/stock-assets/ProcurementProcess';
 import CentralStores from './sections/stock-assets/CentralStores';
 import AssetTransfer from './sections/stock-assets/AssetTransfer';
 import AssetRequest from './sections/stock-assets/AssetRequest';
+import VehicleAppAdmin from './sections/hr&admin/vehicleAppAdmin/VehicleAppAdmin';
 import PlantationDashboard from './sections/plantation/plantationDashboard/PlantationDashboard';
 import PlantationChartsPage from './sections/plantation/plantationDashboard/pages/PlantationChartsPage';
 import PlantationCalendarPage from './sections/plantation/plantationDashboard/pages/PlantationCalendarPage';
@@ -105,7 +118,15 @@ function App() {
             index
             element={
               <ProtectedRoute>
-                <Navigate to="/home/create" replace />
+                <WingHubHome />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="comb"
+            element={
+              <ProtectedRoute>
+                <CombHubPage />
               </ProtectedRoute>
             }
           />
@@ -430,6 +451,46 @@ function App() {
             }
           />
           <Route
+            path="driver-advance-approvals"
+            element={
+              <ProtectedRoute>
+                <DriverAdvanceApprovals />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="driver-leave-dates"
+            element={
+              <ProtectedRoute>
+                <DriverLeaveDatesHr />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="driver-advance-finance"
+            element={
+              <ProtectedRoute>
+                <DriverAdvanceFinance />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="transport/hr"
+            element={
+              <ProtectedRoute>
+                <TransportHrDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="transport/finance"
+            element={
+              <ProtectedRoute>
+                <TransportFinanceDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="monitoringDashboard"
             element={
               <ProtectedRoute>
@@ -646,6 +707,78 @@ function App() {
             }
           />
           <Route
+            path="ict/system-admin/master-data-update"
+            element={
+              <ProtectedRoute>
+                <VehicleAppAdmin mode="masters" />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="ict/development"
+            element={
+              <ProtectedRoute>
+                <Navigate to="/home/ict/development/dev-center" replace />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="ict/development/dev-center"
+            element={
+              <ProtectedRoute>
+                <IctDevCenter />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="ict/development/workflow-dashboard"
+            element={
+              <ProtectedRoute>
+                <Navigate to="/home/ict/development/dev-center" replace />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="ict/development/sprints"
+            element={
+              <ProtectedRoute>
+                <SprintPlanning />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="ict/development/board"
+            element={
+              <ProtectedRoute>
+                <DevelopmentBoard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="ict/development/extra-work"
+            element={
+              <ProtectedRoute>
+                <ExtraWorkQueue />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="ict/development/metrics"
+            element={
+              <ProtectedRoute>
+                <MetricsDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="hr-admin/vehicle-app-admin"
+            element={
+              <ProtectedRoute>
+                <VehicleAppAdmin mode="operations" />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="stock-assets/supplier-registration"
             element={
               <ProtectedRoute>
@@ -690,6 +823,47 @@ function App() {
             element={
               <ProtectedRoute>
                 <AssetRequest />
+              </ProtectedRoute>
+            }
+          />
+          {/* Internal Plantation Dashboard */}
+          <Route
+            path="dashboard/charts"
+            element={
+              <ProtectedRoute>
+                <PlantationChartsPage basePath="/home/dashboard" />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="dashboard/calendar"
+            element={
+              <ProtectedRoute>
+                <PlantationCalendarPage basePath="/home/dashboard" />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="dashboard/upcoming"
+            element={
+              <ProtectedRoute>
+                <PlantationUpcomingPage basePath="/home/dashboard" />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="dashboard/reports"
+            element={
+              <ProtectedRoute>
+                <PlantationReportsPage basePath="/home/dashboard" />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="dashboard/chart-breakdown"
+            element={
+              <ProtectedRoute>
+                <ChartBreakdownPage basePath="/home/dashboard" />
               </ProtectedRoute>
             }
           />

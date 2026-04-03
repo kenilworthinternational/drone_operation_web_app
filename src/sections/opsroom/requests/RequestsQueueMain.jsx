@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Bars } from 'react-loader-spinner';
 import { baseApi } from '../../../api/services/allEndpoints';
 import { useAppDispatch } from '../../../store/hooks';
@@ -8,6 +8,7 @@ import '../../../styles/requestsQueue.css';
 const RequestsQueueMain = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const routerLocation = useLocation();
   const [adhocLoading, setAdhocLoading] = useState(false);
   const [adhocData, setAdhocData] = useState(null);
   const [adhocError, setAdhocError] = useState('');
@@ -99,7 +100,7 @@ const RequestsQueueMain = () => {
           onClick={() => {
             if (isNavigating) return;
             setIsNavigating(true);
-            navigate('/home/workflowDashboard');
+            navigate({ pathname: '/home/workflowDashboard', search: routerLocation.search });
           }} 
           disabled={isNavigating}
           aria-label="Back"

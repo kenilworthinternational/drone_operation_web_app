@@ -47,11 +47,22 @@
     }
 }
 
+/* Back to wing hub (above logo) */
+.nav-hub-back {
+    width: 100%;
+    flex-shrink: 0;
+    padding: 4px 0 2px;
+}
+
+.nav-hub-back-link.nav-link {
+    margin-top: 0;
+}
+
 /* Logo Styling */
 .logo {
     width: 100%;
     display: flex;
-    justify-content: flex-start;
+    justify-content: center;
     align-items: center;
     padding: 10px;
     position: relative;
@@ -60,9 +71,7 @@
 }
 
 .logo::before {
-    content: '';
-    flex: 1 1 auto;
-    min-width: 0;
+    content: none;
 }
 
 .logo > img {

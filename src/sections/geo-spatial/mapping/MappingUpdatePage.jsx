@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   FaMapMarkedAlt, FaPlus, FaEdit, FaSave, FaTimes, FaToggleOn, FaToggleOff,
@@ -28,6 +28,7 @@ import {
   useToggleMappingPlantationActivationMutation,
   useToggleMappingRegionActivationMutation,
   useToggleMappingEstateActivationMutation,
+  useSetMappingEstateFinalizedMutation,
   useToggleMappingDivisionActivationMutation,
   useToggleMappingFieldActivationMutation,
   useLazyGetMappingAllFieldsReportQuery,
@@ -87,6 +88,9 @@ const MappingUpdatePage = () => {
 
   const [newItem, setNewItem] = useState({});
   const [activeCreateLevel, setActiveCreateLevel] = useState(null);
+  const [estateContextMenu, setEstateContextMenu] = useState(null);
+  const [estateMenuPosition, setEstateMenuPosition] = useState({ left: 0, top: 0 });
+  const estateMenuRef = useRef(null);
 
   const [expandedLevels, setExpandedLevels] = useState({ group: true });
 
@@ -114,6 +118,7 @@ const MappingUpdatePage = () => {
   const [createField] = useCreateMappingFieldMutation();
   const [updateField] = useUpdateMappingFieldMutation();
   const [toggleFieldActivation] = useToggleMappingFieldActivationMutation();
+  const [setEstateFinalized] = useSetMappingEstateFinalizedMutation();
   const [toggleGroupActivation] = useToggleMappingGroupActivationMutation();
   const [togglePlantationActivation] = useToggleMappingPlantationActivationMutation();
   const [toggleRegionActivation] = useToggleMappingRegionActivationMutation();
@@ -407,7 +412,42 @@ const MappingUpdatePage = () => {
     setActiveCreateLevel(null);
     setNewItem({});
     setEditingField(null);
+    setEstateContextMenu(null);
   };
+
+  const handleSetEstateFinalized = async (estateId, finalized) => {
+    try {
+      const result = await setEstateFinalized({ id: estateId, finalized }).unwrap();
+      if (result?.status) {
+        toast.success(result.message || (finalized ? 'Estate set as finalized' : 'Estate set as not finalized'));
+      } else {
+        toast.error(result?.message || 'Failed to update finalized status');
+      }
+    } catch (error) {
+      toast.error(error?.data?.message || error?.message || 'Failed to update finalized status');
+    }
+    setEstateContextMenu(null);
+  };
+
+  useLayoutEffect(() => {
+    if (!estateContextMenu || !estateMenuRef.current) return;
+    const rect = estateMenuRef.current.getBoundingClientRect();
+    const padding = 8;
+    let left = estateContextMenu.x;
+    let top = estateContextMenu.y;
+    if (left + rect.width + padding > window.innerWidth) left = window.innerWidth - rect.width - padding;
+    if (top + rect.height + padding > window.innerHeight) top = window.innerHeight - rect.height - padding;
+    if (left < padding) left = padding;
+    if (top < padding) top = padding;
+    setEstateMenuPosition({ left, top });
+  }, [estateContextMenu]);
+
+  useEffect(() => {
+    if (!estateContextMenu) return;
+    const close = () => setEstateContextMenu(null);
+    window.addEventListener('click', close);
+    return () => window.removeEventListener('click', close);
+  }, [estateContextMenu]);
 
   const handleDownloadExcel = () => {
     if (!filteredFields.length) return;
@@ -496,9 +536,12 @@ const MappingUpdatePage = () => {
 
     return (
       <div key={key} className={`level-map-update ${isCompleted ? 'level-completed-map-update' : ''}`}>
-        <button
+        <div
+          role="button"
+          tabIndex={0}
           className={`level-header-map-update ${expanded ? 'level-header-expanded-map-update' : ''}`}
           onClick={() => toggleLevel(key)}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleLevel(key); } }}
         >
           <div className="level-header-left-map-update">
             <span className={`step-num-map-update ${isCompleted ? 'step-num-done-map-update' : ''}`}>
@@ -512,6 +555,7 @@ const MappingUpdatePage = () => {
               <span className="level-selected-name-map-update">{selectedNames[key]}</span>
             )}
             <button
+              type="button"
               onClick={(e) => { e.stopPropagation(); setActiveCreateLevel(key); setNewItem({}); }}
               className="btn-icon-add-map-update"
               title={`Add ${label}`}
@@ -520,7 +564,7 @@ const MappingUpdatePage = () => {
             </button>
             {expanded ? <FaChevronDown className="level-chevron-map-update" /> : <FaChevronRight className="level-chevron-map-update" />}
           </div>
-        </button>
+        </div>
 
         {expanded && (
           <div className="level-body-map-update">
@@ -533,8 +577,9 @@ const MappingUpdatePage = () => {
                 {data.map(item => (
                   <div
                     key={item.id}
-                    className={`item-map-update ${selectedId === item.id ? 'item-selected-map-update' : ''} ${!item.activated ? 'item-disabled-map-update' : ''}`}
+                    className={`item-map-update ${selectedId === item.id ? 'item-selected-map-update' : ''} ${!item.activated ? 'item-disabled-map-update' : ''} ${key === 'estate' ? (item.finalized === 1 ? 'item-estate-finalized-map-update' : 'item-estate-not-finalized-map-update') : ''}`}
                     onClick={() => selectHandlers[key](item.id)}
+                    onContextMenu={key === 'estate' ? (e) => { e.preventDefault(); const x = e.clientX; const y = e.clientY; setEstateMenuPosition({ left: x, top: y }); setEstateContextMenu({ x, y, estateId: item.id, isFinalized: item.finalized === 1 }); } : undefined}
                   >
                     <div className="item-content-map-update">
                       <span className="item-name-map-update">{item[nameField]}</span>
@@ -561,6 +606,33 @@ const MappingUpdatePage = () => {
 
   return (
     <div className="page-map-update">
+      {/* Estate context menu: right-click to set Finalized / Not Finalized */}
+      {estateContextMenu && (
+        <>
+          <div
+            className="estate-context-menu-backdrop-map-update"
+            onClick={() => setEstateContextMenu(null)}
+            aria-hidden
+          />
+          <div
+            ref={estateMenuRef}
+            className="estate-context-menu-map-update"
+            style={{ left: estateMenuPosition.left, top: estateMenuPosition.top }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="estate-context-menu-title-map-update">Finalized status</div>
+            {estateContextMenu.isFinalized ? (
+              <button type="button" className="estate-context-menu-item-map-update" onClick={() => handleSetEstateFinalized(estateContextMenu.estateId, 0)}>
+                Set as Not Finalized
+              </button>
+            ) : (
+              <button type="button" className="estate-context-menu-item-map-update" onClick={() => handleSetEstateFinalized(estateContextMenu.estateId, 1)}>
+                Set as Finalized
+              </button>
+            )}
+          </div>
+        </>
+      )}
       {/* Header */}
       <div className="header-map-update">
         <div className="header-top-map-update">

@@ -699,11 +699,14 @@ const NewServices = () => {
           <div className="form-controls-row">
             {/* Estate Search Dropdown */}
             <div className="estate-search-container-controls">
-              <label>Search Estate:</label>
+              <label htmlFor="estate-search-input">Search Estate:</label>
               <div className="estate-search-wrapper">
                 <input
+                  id="estate-search-input"
+                  className="estate-search-input"
                   type="text"
                   placeholder="Type to search estates..."
+                  autoComplete="off"
                   value={state.searchTerm || ''}
                   onChange={(e) => {
                     const searchValue = e.target.value;

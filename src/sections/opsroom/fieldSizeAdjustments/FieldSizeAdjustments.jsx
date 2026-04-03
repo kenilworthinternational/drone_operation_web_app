@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { FaArrowLeft, FaTimes } from 'react-icons/fa';
 import {
   useLazySearchFieldsQuery,
@@ -15,6 +15,7 @@ const DEBOUNCE_MS = 300;
 
 const FieldSizeAdjustments = () => {
   const navigate = useNavigate();
+  const routerLocation = useLocation();
   const [searchInput, setSearchInput] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -157,7 +158,7 @@ const FieldSizeAdjustments = () => {
         <button
           type="button"
           className="back-btn-fieldsize-adjust"
-          onClick={() => navigate('/home/workflowDashboard')}
+          onClick={() => navigate({ pathname: '/home/workflowDashboard', search: routerLocation.search })}
           title="Back to Workflow Dashboard"
         >
           <FaArrowLeft />
@@ -233,6 +234,9 @@ const FieldSizeAdjustments = () => {
         <>
           <div className="field-details-card-fieldsize-adjust">
             <h3 className="field-details-title-fieldsize-adjust">Field details</h3>
+            {fieldDetails.estate_finalized === 1 && (
+              <p className="field-details-locked-msg-fieldsize-adjust">Field area cannot be changed: estate is finalized.</p>
+            )}
             <div className="field-details-row-fieldsize-adjust">
               <div className="field-detail-item-fieldsize-adjust">
                 <label className="field-detail-label-fieldsize-adjust">Field name</label>
@@ -251,12 +255,16 @@ const FieldSizeAdjustments = () => {
                   className="area-input-fieldsize-adjust"
                   value={fieldAreaEdit}
                   onChange={(e) => setFieldAreaEdit(e.target.value)}
+                  disabled={fieldDetails.estate_finalized === 1}
+                  readOnly={fieldDetails.estate_finalized === 1}
+                  title={fieldDetails.estate_finalized === 1 ? 'Field area is locked because estate is finalized' : ''}
                 />
                 <button
                   type="button"
                   className="save-area-btn-fieldsize-adjust"
                   onClick={handleSaveFieldArea}
-                  disabled={updatingField}
+                  disabled={updatingField || fieldDetails.estate_finalized === 1}
+                  title={fieldDetails.estate_finalized === 1 ? 'Cannot save: estate is finalized' : ''}
                 >
                   {updatingField ? 'Saving...' : 'Save area'}
                 </button>

@@ -245,6 +245,69 @@ export const pilotAssignmentApi = baseApi.injectEndpoints({
       },
       invalidatesTags: ['DroneUnlockingQueue'],
     }),
+
+    getPilotTransportOptions: builder.query({
+      queryFn: async ({ assignment_id, yearMonth, plan_ids = [] }) => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: '/api/pilot-assignment/transport/options',
+            method: 'POST',
+            body: { assignment_id, yearMonth, plan_ids },
+          },
+          {},
+          {}
+        );
+        return result;
+      },
+      providesTags: ['PilotTransportOptions'],
+    }),
+
+    estimatePilotTransportDistance: builder.mutation({
+      queryFn: async (payload) => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: '/api/pilot-assignment/transport/estimate',
+            method: 'POST',
+            body: payload,
+          },
+          {},
+          {}
+        );
+        return result;
+      },
+    }),
+
+    assignPilotTransportDetails: builder.mutation({
+      queryFn: async (payload) => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: '/api/pilot-assignment/transport/assign',
+            method: 'POST',
+            body: payload,
+          },
+          {},
+          {}
+        );
+        return result;
+      },
+      invalidatesTags: ['PilotAssignmentPlans', 'PilotAssignmentMissions', 'PilotTransportOptions'],
+    }),
+
+    getHrTransportEstimates: builder.query({
+      queryFn: async ({ assignment_date }) => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: '/api/pilot-assignment/transport/hr-estimates',
+            method: 'POST',
+            body: { assignment_date },
+          },
+          {},
+          {}
+        );
+        return result;
+      },
+      providesTags: ['PilotTransportEstimates'],
+    }),
   }),
 });
 
@@ -262,5 +325,9 @@ export const {
   useGetDroneUnlockingQueueQuery,
   useUpdatePlanDroneUnlockMutation,
   useUpdateMissionDroneUnlockMutation,
+  useGetPilotTransportOptionsQuery,
+  useEstimatePilotTransportDistanceMutation,
+  useAssignPilotTransportDetailsMutation,
+  useGetHrTransportEstimatesQuery,
 } = pilotAssignmentApi;
 

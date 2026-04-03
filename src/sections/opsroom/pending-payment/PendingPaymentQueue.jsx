@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Bars } from 'react-loader-spinner';
 import { useGetMissionsPendingPaymentQuery } from '../../../api/services NodeJs/pilotAssignmentApi';
 import { FaPhone } from 'react-icons/fa';
@@ -7,6 +7,7 @@ import '../../../styles/pendingPaymentQueue.css';
 
 const PendingPaymentQueue = () => {
   const navigate = useNavigate();
+  const routerLocation = useLocation();
   const { data: missionsData, isLoading: loading, error: queryError } = useGetMissionsPendingPaymentQuery();
   const [error, setError] = useState('');
 
@@ -41,7 +42,7 @@ const PendingPaymentQueue = () => {
       <div className="pending-payment-queue-header-paymentqueue">
         <button 
           className="back-btn-pending-payment-paymentqueue" 
-          onClick={() => navigate('/home/workflowDashboard')}
+          onClick={() => navigate({ pathname: '/home/workflowDashboard', search: routerLocation.search })}
         >
           ←
         </button>

@@ -13,11 +13,38 @@ import { useGetWingsQuery, useGetBatteryTypesQuery, useGetVehicleDriversQuery, u
 
 const parsePurchasePrice = (value) => {
   if (value === undefined || value === null) return null;
-  const cleaned = typeof value === 'string' ? value.trim() : value;
+  const cleaned = typeof value === 'string' ? value.replace(/,/g, '').trim() : value;
   if (cleaned === '') return null;
   const parsed = Number.parseFloat(cleaned);
   if (Number.isNaN(parsed)) return null;
   return Number(parsed.toFixed(2));
+};
+
+const sanitizeDecimalInput = (value) => {
+  const input = String(value ?? '');
+  const withoutCommas = input.replace(/,/g, '');
+  const numeric = withoutCommas.replace(/[^\d.]/g, '');
+  const firstDotIndex = numeric.indexOf('.');
+  if (firstDotIndex === -1) {
+    return numeric;
+  }
+  const integerPart = numeric.slice(0, firstDotIndex);
+  const decimalPart = numeric.slice(firstDotIndex + 1).replace(/\./g, '');
+  return `${integerPart}.${decimalPart}`;
+};
+
+const formatCurrencyInput = (value) => {
+  if (value === undefined || value === null || value === '') {
+    return '';
+  }
+  const sanitized = sanitizeDecimalInput(value);
+  if (!sanitized) {
+    return '';
+  }
+  const [integerPartRaw, decimalPart] = sanitized.split('.');
+  const integerPart = integerPartRaw || '0';
+  const formattedInteger = Number.parseInt(integerPart, 10).toLocaleString('en-US');
+  return decimalPart !== undefined ? `${formattedInteger}.${decimalPart}` : formattedInteger;
 };
 
 const parseWingId = (value) => {
@@ -77,13 +104,12 @@ const vehicleInitialState = {
   wing_id: '',
   // Driver information (vehicle_drivers table ID)
   driver: '',
-  driver_license_front_image: '',
-  driver_license_back_image: '',
   copy_of_registration_document: '',
   // Vehicle details
   vehicle_category: '',
   fuel_category: '',
   avg_fuel_consumption: '',
+  tank_capacity_ltr: '',
   vehicle_revenue_license_image: '',
   smoke_test_image: '',
   insurance_image: '',
@@ -95,12 +121,18 @@ const vehicleInitialState = {
   // Rented vehicle fields
   no_of_km_for_month: '',
   working_days: '',
+  monthly_rate: '',
   rate_per_km: '',
   starting_date: '',
   end_date: '',
 };
 
-const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
+const AssetsRegistration = ({
+  singleMode = false,
+  selectedType = null,
+  compactHeader = false,
+  onVehicleRegisteredSuccess,
+}) => {
   const dispatch = useAppDispatch();
   
   // Get activeTab from Redux (set by AssetsRegistry) or default to 'drones'
@@ -112,8 +144,6 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
   const [messageType, setMessageType] = useState('');
   
   // Refs for file inputs to clear them after successful submission
-  const driverLicenseFrontRef = useRef(null);
-  const driverLicenseBackRef = useRef(null);
   const registrationDocRef = useRef(null);
   const revenueLicenseRef = useRef(null);
   const smokeTestRef = useRef(null);
@@ -281,6 +311,7 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
 
   const handleInputChange = (e, formType) => {
     const { name, value } = e.target;
+  const currencyFields = new Set(['purchase_price', 'monthly_rate', 'rate_per_km']);
     const setters = {
       drones: setDroneFormData,
       vehicles: setVehicleFormData,
@@ -291,9 +322,10 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
     const setter = setters[formType];
     if (!setter) return;
     setter(prev => {
+      const normalizedValue = currencyFields.has(name) ? sanitizeDecimalInput(value) : value;
       const updated = {
         ...prev,
-        [name]: value
+        [name]: normalizedValue
       };
 
       if (['drones', 'generators', 'batteries', 'remoteControls'].includes(formType) && name === 'have_insurance' && value !== '1') {
@@ -356,8 +388,6 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
       }
       case 'vehicles': {
         const fields = ['ownership', 'chassis_no', 'engine_no', 'vehicle_no', 'make', 'model', 'purchase_price', 'insurance_expire_date', 'revenue_license_expire_date', 'initial_mileage', 'operational_status', 'activated', 'wing_id'];
-        // Driver (user ID) is required for both own and rented vehicles
-        fields.push('driver');
         return fields;
       }
       case 'generators':
@@ -390,8 +420,6 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
       case 'vehicles':
         setVehicleFormData({ ...vehicleInitialState });
         // Clear file inputs
-        if (driverLicenseFrontRef.current) driverLicenseFrontRef.current.value = '';
-        if (driverLicenseBackRef.current) driverLicenseBackRef.current.value = '';
         if (registrationDocRef.current) registrationDocRef.current.value = '';
         if (revenueLicenseRef.current) revenueLicenseRef.current.value = '';
         if (smokeTestRef.current) smokeTestRef.current.value = '';
@@ -552,6 +580,9 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
         if (formData.avg_fuel_consumption) {
           formDataToSend.append('avg_fuel_consumption', parseFloat(formData.avg_fuel_consumption));
         }
+        if (formData.tank_capacity_ltr) {
+          formDataToSend.append('tank_capacity_ltr', parseFloat(formData.tank_capacity_ltr));
+        }
         
         // Service fields
         if (formData.last_serviced_meter) {
@@ -574,6 +605,9 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
           }
           if (formData.working_days) {
             formDataToSend.append('working_days', parseInt(formData.working_days, 10));
+          }
+          if (formData.monthly_rate) {
+            formDataToSend.append('monthly_rate', parseFloat(formData.monthly_rate));
           }
           if (formData.rate_per_km) {
             formDataToSend.append('rate_per_km', parseFloat(formData.rate_per_km));
@@ -603,6 +637,10 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
         const result = await dispatch(
           baseApi.endpoints.createVehicle.initiate(formDataToSend)
         );
+        if (result.error) {
+          const errData = result.error?.data;
+          throw new Error(errData?.message || result.error?.error || 'Failed to register vehicle. Please try again.');
+        }
         const response = result.data;
         const isSuccess = response?.status === true || response?.status === 'true';
 
@@ -613,6 +651,7 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
         setMessage('Vehicle registered successfully!');
         setMessageType('success');
         resetForm(tab);
+        onVehicleRegisteredSuccess?.();
       } else if (tab === 'generators') {
         const payload = {
           tag: formData.tag.trim(),
@@ -746,15 +785,14 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
         <div className="form-group-assets-reg">
           <label htmlFor="drone_purchase_price">Purchase Price (LKR) <span className="required-assets-reg">*</span></label>
           <input
-            type="number"
+            type="text"
+            inputMode="decimal"
             id="drone_purchase_price"
             name="purchase_price"
-            value={droneFormData.purchase_price}
+            value={formatCurrencyInput(droneFormData.purchase_price)}
             onChange={(e) => handleInputChange(e, 'drones')}
             onWheel={handleNumberInputWheel}
             placeholder="Enter purchase price"
-            min="0"
-            step="0.01"
             required
           />
         </div>
@@ -950,15 +988,14 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
         <div className="form-group-assets-reg">
           <label htmlFor="vehicle_purchase_price">Purchase Price (LKR) <span className="required-assets-reg">*</span></label>
           <input
-            type="number"
+            type="text"
+            inputMode="decimal"
             onWheel={handleNumberInputWheel}
             id="vehicle_purchase_price"
             name="purchase_price"
-            value={vehicleFormData.purchase_price}
+            value={formatCurrencyInput(vehicleFormData.purchase_price)}
             onChange={(e) => handleInputChange(e, 'vehicles')}
             placeholder="Enter purchase price"
-            min="0"
-            step="0.01"
             required
           />
         </div>
@@ -1097,14 +1134,13 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
 
       <div className="form-row-assets-reg">
         <div className="form-group-assets-reg">
-          <label htmlFor="driver">Driver <span className="required-assets-reg">*</span></label>
+          <label htmlFor="driver">Driver</label>
           <select
             id="driver"
             name="driver"
             value={vehicleFormData.driver}
             onChange={(e) => handleInputChange(e, 'vehicles')}
             disabled={vehicleDriversLoading}
-            required
           >
             <option value="">
               {vehicleDriversLoading 
@@ -1129,6 +1165,9 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
               ))
             )}
           </select>
+          <small className="form-field-helper-assets-reg">
+            Driver license images are reused from User Registration driver profile.
+          </small>
         </div>
         <div className="form-group-assets-reg">
           <label htmlFor="vehicle_category">Vehicle Category</label>
@@ -1168,7 +1207,7 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
           </select>
         </div>
         <div className="form-group-assets-reg">
-          <label htmlFor="avg_fuel_consumption">Avg Fuel Consumption</label>
+          <label htmlFor="avg_fuel_consumption">Avg Fuel Consumption (km/L)</label>
           <input
             type="number"
             onWheel={handleNumberInputWheel}
@@ -1179,6 +1218,23 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
             placeholder="Enter average fuel consumption"
             min="0"
             step="0.01"
+          />
+        </div>
+      </div>
+
+      <div className="form-row-assets-reg">
+        <div className="form-group-assets-reg">
+          <label htmlFor="tank_capacity_ltr">Tank Capacity (L)</label>
+          <input
+            type="number"
+            onWheel={handleNumberInputWheel}
+            id="tank_capacity_ltr"
+            name="tank_capacity_ltr"
+            value={vehicleFormData.tank_capacity_ltr}
+            onChange={(e) => handleInputChange(e, 'vehicles')}
+            placeholder="Enter fuel tank capacity in litres"
+            min="0"
+            step="0.1"
           />
         </div>
       </div>
@@ -1248,41 +1304,6 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
       {/* Document Uploads Section */}
       <div className="form-section-divider-assets-reg">
         <h4>Documents & Images</h4>
-      </div>
-
-      <div className="form-row-assets-reg">
-        <div className="form-group-assets-reg">
-          <label htmlFor="driver_license_front_image">Driver License Front Image</label>
-          <input
-            ref={driverLicenseFrontRef}
-            type="file"
-            id="driver_license_front_image"
-            name="driver_license_front_image"
-            accept="image/*"
-            onChange={(e) => {
-              const file = e.target.files[0];
-              if (file) {
-                setVehicleFormData(prev => ({ ...prev, driver_license_front_image: file.name }));
-              }
-            }}
-          />
-        </div>
-        <div className="form-group-assets-reg">
-          <label htmlFor="driver_license_back_image">Driver License Back Image</label>
-          <input
-            ref={driverLicenseBackRef}
-            type="file"
-            id="driver_license_back_image"
-            name="driver_license_back_image"
-            accept="image/*"
-            onChange={(e) => {
-              const file = e.target.files[0];
-              if (file) {
-                setVehicleFormData(prev => ({ ...prev, driver_license_back_image: file.name }));
-              }
-            }}
-          />
-        </div>
       </div>
 
       <div className="form-row-assets-reg">
@@ -1393,19 +1414,34 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
 
           <div className="form-row-assets-reg">
             <div className="form-group-assets-reg">
+              <label htmlFor="monthly_rate">Monthly Rate (LKR)</label>
+              <input
+                type="text"
+                inputMode="decimal"
+            onWheel={handleNumberInputWheel}
+                id="monthly_rate"
+                name="monthly_rate"
+                value={formatCurrencyInput(vehicleFormData.monthly_rate)}
+                onChange={(e) => handleInputChange(e, 'vehicles')}
+                placeholder="Enter monthly rate"
+              />
+            </div>
+            <div className="form-group-assets-reg">
               <label htmlFor="rate_per_km">Rate (Per KM) (LKR)</label>
               <input
-                type="number"
+                type="text"
+                inputMode="decimal"
             onWheel={handleNumberInputWheel}
                 id="rate_per_km"
                 name="rate_per_km"
-                value={vehicleFormData.rate_per_km}
+                value={formatCurrencyInput(vehicleFormData.rate_per_km)}
                 onChange={(e) => handleInputChange(e, 'vehicles')}
                 placeholder="Enter rate per KM"
-                min="0"
-                step="0.01"
               />
             </div>
+          </div>
+
+          <div className="form-row-assets-reg">
             <div className="form-group-assets-reg">
               <label htmlFor="starting_date">Starting Date</label>
               <input
@@ -1416,9 +1452,6 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
                 onChange={(e) => handleInputChange(e, 'vehicles')}
               />
             </div>
-          </div>
-
-          <div className="form-row-assets-reg">
             <div className="form-group-assets-reg">
               <label htmlFor="end_date">End Date</label>
               <input
@@ -1477,15 +1510,14 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
         <div className="form-group-assets-reg">
           <label htmlFor="generator_purchase_price">Purchase Price (LKR) <span className="required-assets-reg">*</span></label>
           <input
-            type="number"
+            type="text"
+            inputMode="decimal"
             onWheel={handleNumberInputWheel}
             id="generator_purchase_price"
             name="purchase_price"
-            value={generatorFormData.purchase_price}
+            value={formatCurrencyInput(generatorFormData.purchase_price)}
             onChange={(e) => handleInputChange(e, 'generators')}
             placeholder="Enter purchase price"
-            min="0"
-            step="0.01"
             required
           />
         </div>
@@ -1679,15 +1711,14 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
         <div className="form-group-assets-reg">
           <label htmlFor="battery_purchase_price">Purchase Price (LKR) <span className="required-assets-reg">*</span></label>
           <input
-            type="number"
+            type="text"
+            inputMode="decimal"
             onWheel={handleNumberInputWheel}
             id="battery_purchase_price"
             name="purchase_price"
-            value={batteryFormData.purchase_price}
+            value={formatCurrencyInput(batteryFormData.purchase_price)}
             onChange={(e) => handleInputChange(e, 'batteries')}
             placeholder="Enter purchase price"
-            min="0"
-            step="0.01"
             required
           />
         </div>
@@ -1909,15 +1940,14 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
         <div className="form-group-assets-reg">
           <label htmlFor="remote_purchase_price">Purchase Price (LKR) <span className="required-assets-reg">*</span></label>
           <input
-            type="number"
+            type="text"
+            inputMode="decimal"
             onWheel={handleNumberInputWheel}
             id="remote_purchase_price"
             name="purchase_price"
-            value={remoteControlFormData.purchase_price}
+            value={formatCurrencyInput(remoteControlFormData.purchase_price)}
             onChange={(e) => handleInputChange(e, 'remoteControls')}
             placeholder="Enter purchase price"
-            min="0"
-            step="0.01"
             required
           />
         </div>
@@ -2080,10 +2110,12 @@ const AssetsRegistration = ({ singleMode = false, selectedType = null }) => {
 
   return (
     <div className="assets-registration-container-assets-reg">
-      <div className="assets-registration-header-assets-reg">
-        <FaClipboardList className="header-icon-assets-reg" />
-        <h2>Assets Registration</h2>
-      </div>
+      {!compactHeader && (
+        <div className="assets-registration-header-assets-reg">
+          <FaClipboardList className="header-icon-assets-reg" />
+          <h2>Assets Registration</h2>
+        </div>
+      )}
 
       {/* Tab Navigation - Small tabs with max 5 per row (hidden in single mode) */}
       {!singleMode && (

@@ -37,7 +37,8 @@ const WorkflowDashboard = () => {
   const [showNotificationsModal, setShowNotificationsModal] = useState(false);
   const navigate = useNavigate();
   const routerLocation = useLocation();
-  
+  const go = (pathname) => navigate({ pathname, search: routerLocation.search });
+
   // Get user data and permissions
   const userData = getUserData();
   const permissions = useAppSelector((state) => state.permissions?.categories);
@@ -45,16 +46,15 @@ const WorkflowDashboard = () => {
   // Define categories for visibility check (same as LeftNavBar)
   const categories = [
     { title: 'OpsRoom' },
-    { title: 'Management' },
-    { title: 'Corporate' },
-    { title: 'Planning and Monitoring' },
+    { title: 'Field Operations Wing' },
+    { title: 'Strategic Planning and Monitoring wing' },
+    { title: 'Operation Digitalization & Digital Monitoring & Evaluation Wing' },
     { title: 'Finance' },
-    { title: 'ICT - System Admin' },
+    { title: 'ICT Wing' },
     { title: 'Inventory' },
     { title: 'Workshop' },
-    { title: 'Fleet Management' },
-    { title: 'Stock and Assets Management' },
-    { title: 'HR and Admin' },
+    { title: 'Human Resource Management' },
+    { title: 'Administration Wing' },
   ];
   
   const categoryVisibility = getCategoryVisibility(userData, permissions, categories);
@@ -812,49 +812,49 @@ const WorkflowDashboard = () => {
                 <span className="queue-box-card-title-workflowDashboard">Queue</span>
               </div>
               <div className="queue-box-card-items-workflowDashboard">
-                <div className="queue-box-card-item-workflowDashboard" onClick={() => navigate('/home/requestsQueue')} style={{ cursor: 'pointer' }}>
+                <div className="queue-box-card-item-workflowDashboard" onClick={() => go('/home/requestsQueue')} style={{ cursor: 'pointer' }}>
                   <span className="queue-box-card-item-title-workflowDashboard">Add-hoc Plans</span>
                   <span className="queue-box-card-item-count-workflowDashboard">Plans {adhocCount} »</span>
                 </div>
                 
-                <div className="queue-box-card-item-workflowDashboard" onClick={() => navigate('/home/requestsQueue')} style={{ cursor: 'pointer' }}>
+                <div className="queue-box-card-item-workflowDashboard" onClick={() => go('/home/requestsQueue')} style={{ cursor: 'pointer' }}>
                   <span className="queue-box-card-item-title-workflowDashboard">Reschedule Request Plans</span>
                   <span className="queue-box-card-item-count-workflowDashboard">Plans {rescheduleCount} »</span>
                 </div>
               </div>
             </div>
             
-            <div className="action-card-workflowDashboard" onClick={() => navigate('/home/managerApprovalQueue')} style={{ cursor: 'pointer' }}>
+            <div className="action-card-workflowDashboard" onClick={() => go('/home/managerApprovalQueue')} style={{ cursor: 'pointer' }}>
               <span className="action-title-workflowDashboard">Plantation Manager Approval Queue</span>
               <span className="action-plans-workflowDashboard">Plans {managerApprovalCount} »</span>
             </div>
             
-            <div className="action-card-workflowDashboard" onClick={() => navigate('/home/pilotAssignment')} style={{ cursor: 'pointer' }}>
+            <div className="action-card-workflowDashboard" onClick={() => go('/home/pilotAssignment')} style={{ cursor: 'pointer' }}>
               <span className="action-title-workflowDashboard">Resource Assignment Queue</span>
               <span className="action-plans-workflowDashboard">Items {resourceAssignmentCount} »</span>
             </div>
             
-            <div className="action-card-workflowDashboard" onClick={() => navigate('/home/pendingPaymentQueue')} style={{ cursor: 'pointer' }}>
+            <div className="action-card-workflowDashboard" onClick={() => go('/home/pendingPaymentQueue')} style={{ cursor: 'pointer' }}>
               <span className="action-title-workflowDashboard">Pending Payment Queue</span>
               <span className="action-plans-workflowDashboard">Missions {pendingPaymentCount} »</span>
             </div>
             
-            <div className="action-card-workflowDashboard" onClick={() => navigate('/home/droneUnlockingQueue')} style={{ cursor: 'pointer' }}>
+            <div className="action-card-workflowDashboard" onClick={() => go('/home/droneUnlockingQueue')} style={{ cursor: 'pointer' }}>
               <span className="action-title-workflowDashboard">Pending Drone Unlocking Queue</span>
               <span className="action-plans-workflowDashboard">Items {droneUnlockingCount} »</span>
             </div>
             
-            <div className="action-card-workflowDashboard" onClick={() => navigate('/home/opsAsign')} style={{ cursor: 'pointer' }}>
+            <div className="action-card-workflowDashboard" onClick={() => go('/home/opsAsign')} style={{ cursor: 'pointer' }}>
               <span className="action-title-workflowDashboard">Ops Assignment</span>
               <span className="action-plans-workflowDashboard">Items {opsAssignCount} »</span>
             </div>
             
-            <div className="action-card-workflowDashboard" onClick={() => navigate('/home/dayEndProcess')} style={{ cursor: 'pointer' }}>
+            <div className="action-card-workflowDashboard" onClick={() => go('/home/dayEndProcess')} style={{ cursor: 'pointer' }}>
               <span className="action-title-workflowDashboard">Plans Pending for Day End Process</span>
               <span className="action-plans-workflowDashboard">Plans {dayEndProcessCount} »</span>
             </div>
             
-            <div className="action-card-workflowDashboard" onClick={() => navigate('/home/djiMapUpload')} style={{ cursor: 'pointer' }}>
+            <div className="action-card-workflowDashboard" onClick={() => go('/home/djiMapUpload')} style={{ cursor: 'pointer' }}>
               <span className="action-title-workflowDashboard">DJI Map Upload</span>
               <span className="action-plans-workflowDashboard">Maps {djiImagesCount} »</span>
             </div>
@@ -925,27 +925,27 @@ const WorkflowDashboard = () => {
           </div>
 
           <div className="calendar-buttons-container-workflowDashboard">
-            <button className="calendar-btn-workflowDashboard" onClick={() => navigate('/home/opsroomPlanCalendar')}>
+            <button className="calendar-btn-workflowDashboard" onClick={() => go('/home/opsroomPlanCalendar')}>
               <span className="calendar-btn-icon-workflowDashboard">📅</span>
               View Plan Calendar
             </button>
-            <button className="calendar-btn-workflowDashboard today-plans-btn-workflowDashboard" onClick={() => navigate('/home/todayPlans')}>
+            <button className="calendar-btn-workflowDashboard today-plans-btn-workflowDashboard" onClick={() => go('/home/todayPlans')}>
               <span className="calendar-btn-icon-workflowDashboard">📋</span>
               View Today Plans
             </button>
-            <button className="calendar-btn-workflowDashboard emergency-moving-btn-workflowDashboard" onClick={() => navigate('/home/emergencyMoving')}>
+            <button className="calendar-btn-workflowDashboard emergency-moving-btn-workflowDashboard" onClick={() => go('/home/emergencyMoving')}>
               <span className="calendar-btn-icon-workflowDashboard">🔄</span>
               Emergency Moving
             </button>
-            <button className="calendar-btn-workflowDashboard" onClick={() => navigate('/home/fieldHistory')}>
+            <button className="calendar-btn-workflowDashboard" onClick={() => go('/home/fieldHistory')}>
               <span className="calendar-btn-icon-workflowDashboard">📜</span>
               Field History
             </button>
-            <button className="calendar-btn-workflowDashboard" onClick={() => navigate('/home/reports/ops')}>
+            <button className="calendar-btn-workflowDashboard" onClick={() => go('/home/reports/ops')}>
               <span className="calendar-btn-icon-workflowDashboard">📊</span>
               Reports
             </button>
-            <button className="calendar-btn-workflowDashboard" onClick={() => navigate('/home/fieldSizeAdjustments')}>
+            <button className="calendar-btn-workflowDashboard" onClick={() => go('/home/fieldSizeAdjustments')}>
               <span className="calendar-btn-icon-workflowDashboard">📐</span>
               Field Size Adjustments
             </button>
