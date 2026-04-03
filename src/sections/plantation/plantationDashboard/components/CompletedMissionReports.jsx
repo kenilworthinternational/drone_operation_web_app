@@ -3,20 +3,19 @@ import { format } from 'date-fns';
 import { useGetCompletedMissionReportsQuery } from '../../../../api/services NodeJs/plantationDashboardApi';
 import { Bars } from 'react-loader-spinner';
 
-const CompletedMissionReports = ({ startDate, endDate, missionType }) => {
+const CompletedMissionReports = ({ startDate, endDate, missionType, completedPlansOnly = true }) => {
   const { data, isLoading, isFetching, error } = useGetCompletedMissionReportsQuery({
     startDate,
     endDate,
-    missionType
+    missionType,
+    completedPlansOnly,
   });
 
   const allReports = data?.data || [];
-  
-  // Filter out reports where Completed Area (Ha) = 0
-  const reports = allReports.filter(report => {
-    const completedArea = parseFloat(report.completed_area || 0);
-    return completedArea > 0;
-  });
+
+  const reports = completedPlansOnly
+    ? allReports.filter((report) => parseFloat(report.completed_area || 0) > 0)
+    : allReports;
 
   // Map mission type codes to display names
   const getMissionTypeDisplayName = (missionTypeCode) => {

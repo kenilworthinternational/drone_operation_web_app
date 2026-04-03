@@ -43,6 +43,8 @@ const PlantationDashboard = ({
   const shouldShowTopHeader = showTopHeader ?? basePath !== '/home/dashboard';
   const isInternalDashboard =
     basePath === '/home/dashboard' || basePath.startsWith('/home/dashboard/');
+  /** Internal `/home/dashboard` omits `completed=1` filters; plantation dashboard keeps them. */
+  const completedPlansOnly = !isInternalDashboard;
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useAppDispatch();
@@ -136,7 +138,7 @@ const PlantationDashboard = ({
 
   // Fetch summary for current month
   const { data: summaryResponse, isLoading: summaryLoading } = useGetDashboardSummaryQuery(
-    { yearMonth: getCurrentYearMonth(), missionType },
+    { yearMonth: getCurrentYearMonth(), missionType, completedPlansOnly },
     { refetchOnMountOrArgChange: true }
   );
   const summary = summaryResponse?.data || {};
@@ -148,13 +150,14 @@ const PlantationDashboard = ({
   const monthEnd = `${currentYM}-${String(monthEndDate.getDate()).padStart(2, '0')}`;
 
   const { data: reportsData, isLoading: reportsLoading } = useGetCompletedMissionReportsQuery(
-    { startDate: monthStart, endDate: monthEnd, missionType },
+    { startDate: monthStart, endDate: monthEnd, missionType, completedPlansOnly },
     { skip: activePopup !== 'executed' }
   );
   const reports = useMemo(() => {
     const all = reportsData?.data || [];
+    if (!completedPlansOnly) return all;
     return all.filter(r => parseFloat(r.completed_area || 0) > 0);
-  }, [reportsData]);
+  }, [reportsData, completedPlansOnly]);
 
   const handleLogout = () => {
     dispatch(baseApi.util.resetApiState());
@@ -461,6 +464,7 @@ const PlantationDashboard = ({
             startMonth={`${chartMonthRange.start.getFullYear()}-${String(chartMonthRange.start.getMonth() + 1).padStart(2, '0')}`}
             endMonth={`${chartMonthRange.end.getFullYear()}-${String(chartMonthRange.end.getMonth() + 1).padStart(2, '0')}`}
             basePath={basePath}
+            completedPlansOnly={completedPlansOnly}
           />
           <PlannedVsSprayedChart
             missionType={missionType}
@@ -468,6 +472,7 @@ const PlantationDashboard = ({
             startMonth={`${chartMonthRange.start.getFullYear()}-${String(chartMonthRange.start.getMonth() + 1).padStart(2, '0')}`}
             endMonth={`${chartMonthRange.end.getFullYear()}-${String(chartMonthRange.end.getMonth() + 1).padStart(2, '0')}`}
             basePath={basePath}
+            completedPlansOnly={completedPlansOnly}
           />
         </div>
       </div>

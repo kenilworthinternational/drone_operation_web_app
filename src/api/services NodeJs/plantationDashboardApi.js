@@ -56,12 +56,12 @@ export const plantationDashboardApi = baseApi.injectEndpoints({
 
     // Get Tea Revenue vs Sprayed chart data
     getTeaRevenueVsSprayedChart: builder.query({
-      queryFn: async ({ missionType, months, startMonth, endMonth }) => {
+      queryFn: async ({ missionType, months, startMonth, endMonth, completedPlansOnly = true }) => {
         const result = await nodeBackendBaseQuery(
           {
             url: '/api/plantation-dashboard/chart/tea-revenue-vs-sprayed',
             method: 'POST',
-            body: { missionType, months, startMonth, endMonth },
+            body: { missionType, months, startMonth, endMonth, completedPlansOnly },
           },
           {},
           {}
@@ -73,12 +73,12 @@ export const plantationDashboardApi = baseApi.injectEndpoints({
 
     // Get completed mission reports
     getCompletedMissionReports: builder.query({
-      queryFn: async ({ startDate, endDate, missionType }) => {
+      queryFn: async ({ startDate, endDate, missionType, completedPlansOnly = true }) => {
         const result = await nodeBackendBaseQuery(
           {
             url: '/api/plantation-dashboard/completed-mission-reports',
             method: 'POST',
-            body: { startDate, endDate, missionType },
+            body: { startDate, endDate, missionType, completedPlansOnly },
           },
           {},
           {}
@@ -90,12 +90,28 @@ export const plantationDashboardApi = baseApi.injectEndpoints({
 
     // Get chart breakdown for drill-down
     getChartBreakdown: builder.query({
-      queryFn: async ({ chartType, missionType, yearMonth, breakdownLevel, filterPlantationId, filterRegionId }) => {
+      queryFn: async ({
+        chartType,
+        missionType,
+        yearMonth,
+        breakdownLevel,
+        filterPlantationId,
+        filterRegionId,
+        completedPlansOnly = true,
+      }) => {
         const result = await nodeBackendBaseQuery(
           {
             url: '/api/plantation-dashboard/chart/breakdown',
             method: 'POST',
-            body: { chartType, missionType, yearMonth, breakdownLevel, filterPlantationId, filterRegionId },
+            body: {
+              chartType,
+              missionType,
+              yearMonth,
+              breakdownLevel,
+              filterPlantationId,
+              filterRegionId,
+              completedPlansOnly,
+            },
           },
           {},
           {}
@@ -107,12 +123,12 @@ export const plantationDashboardApi = baseApi.injectEndpoints({
 
     // Get spray/spread fields breakdown for an estate (drill-down from estate card)
     getEstateFieldsBreakdown: builder.query({
-      queryFn: async ({ estateId, yearMonth, missionType }) => {
+      queryFn: async ({ estateId, yearMonth, missionType, completedPlansOnly = true }) => {
         const result = await nodeBackendBaseQuery(
           {
             url: '/api/plantation-dashboard/chart/breakdown/estate-fields',
             method: 'POST',
-            body: { estateId, yearMonth, missionType },
+            body: { estateId, yearMonth, missionType, completedPlansOnly },
           },
           {},
           {}
@@ -124,12 +140,12 @@ export const plantationDashboardApi = baseApi.injectEndpoints({
 
     // Get estate-plan accordion breakdown (estate → plan → fields with map)
     getEstatePlanBreakdown: builder.query({
-      queryFn: async ({ yearMonth, missionType, chartType }) => {
+      queryFn: async ({ yearMonth, missionType, chartType, completedPlansOnly = true }) => {
         const result = await nodeBackendBaseQuery(
           {
             url: '/api/plantation-dashboard/chart/breakdown/estate-plans',
             method: 'POST',
-            body: { yearMonth, missionType, chartType },
+            body: { yearMonth, missionType, chartType, completedPlansOnly },
           },
           {},
           {}
@@ -141,12 +157,12 @@ export const plantationDashboardApi = baseApi.injectEndpoints({
 
     // Get dashboard summary (6 metric cards for main page)
     getDashboardSummary: builder.query({
-      queryFn: async ({ yearMonth, missionType }) => {
+      queryFn: async ({ yearMonth, missionType, completedPlansOnly = true }) => {
         const result = await nodeBackendBaseQuery(
           {
             url: '/api/plantation-dashboard/dashboard-summary',
             method: 'POST',
-            body: { yearMonth, missionType },
+            body: { yearMonth, missionType, completedPlansOnly },
           },
           {},
           {}
@@ -207,12 +223,12 @@ export const plantationDashboardApi = baseApi.injectEndpoints({
 
     // Get one-month export (summary + field-wise) for Excel on Chart Details
     getMonthExport: builder.query({
-      queryFn: async ({ yearMonth, missionType, chartType }) => {
+      queryFn: async ({ yearMonth, missionType, chartType, completedPlansOnly = true }) => {
         const result = await nodeBackendBaseQuery(
           {
             url: '/api/plantation-dashboard/chart/export-month',
             method: 'POST',
-            body: { yearMonth, missionType, chartType },
+            body: { yearMonth, missionType, chartType, completedPlansOnly },
           },
           {},
           {}

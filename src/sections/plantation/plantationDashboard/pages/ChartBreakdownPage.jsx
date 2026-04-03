@@ -29,6 +29,7 @@ import { appendShellParams } from '../../../../utils/shellSearchParams';
 const ChartBreakdownPage = ({ basePath = '/home/plantation-dashboard' } = {}) => {
   const isInternalDashboard =
     basePath === '/home/dashboard' || basePath.startsWith('/home/dashboard/');
+  const completedPlansOnly = !isInternalDashboard;
   const containerClassName = `container-class-breakdown${isInternalDashboard ? ' container-class-breakdown--internal' : ''}`;
   const navigate = useNavigate();
   const location = useLocation();
@@ -142,7 +143,12 @@ const ChartBreakdownPage = ({ basePath = '/home/plantation-dashboard' } = {}) =>
     isLoading: estatePlanLoading,
     isFetching: estatePlanFetching,
   } = useGetEstatePlanBreakdownQuery(
-    { yearMonth: effectiveMonth, missionType: missionType || 'spy', chartType: chartType || 'planned-vs-tea-revenue' },
+    {
+      yearMonth: effectiveMonth,
+      missionType: missionType || 'spy',
+      chartType: chartType || 'planned-vs-tea-revenue',
+      completedPlansOnly,
+    },
     { skip: !effectiveMonth }
   );
   const { data: estatesMasterData } = useGetAllEstatesQuery();

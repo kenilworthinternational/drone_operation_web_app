@@ -22,7 +22,14 @@ import { plantationDashboardApi } from '../../../../api/services NodeJs/plantati
 import { useAppDispatch } from '../../../../store/hooks';
 import { appendShellParams } from '../../../../utils/shellSearchParams';
 
-const PlannedVsTeaRevenueChart = ({ missionType, months = 6, startMonth, endMonth, basePath = '/home/plantation-dashboard' }) => {
+const PlannedVsTeaRevenueChart = ({
+  missionType,
+  months = 6,
+  startMonth,
+  endMonth,
+  basePath = '/home/plantation-dashboard',
+  completedPlansOnly = true,
+}) => {
   const navigate = useNavigate();
   const routerLocation = useLocation();
   const { data, isLoading, isFetching, error } = useGetPlannedVsTeaRevenueChartQuery({
@@ -121,7 +128,8 @@ const PlannedVsTeaRevenueChart = ({ missionType, months = 6, startMonth, endMont
                 chartType: 'planned-vs-tea-revenue',
                 missionType,
                 yearMonth: monthData.month,
-                breakdownLevel: level
+                breakdownLevel: level,
+                completedPlansOnly,
               })
             ).unwrap();
             

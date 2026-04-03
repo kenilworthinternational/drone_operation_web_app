@@ -6,6 +6,8 @@ import SingleMonthPicker from '../components/SingleMonthPicker';
 import '../../../../styles/plantationDashboard.css';
 
 const PlantationReportsPage = ({ basePath = '/home/plantation-dashboard' } = {}) => {
+  const completedPlansOnly =
+    basePath === '/home/plantation-dashboard' || basePath.startsWith('/home/plantation-dashboard/');
   const navigate = useNavigate();
   const [reportsMonth, setReportsMonth] = useState(new Date());
 
@@ -39,9 +41,10 @@ const PlantationReportsPage = ({ basePath = '/home/plantation-dashboard' } = {})
           </div>
         </div>
 
-        <CompletedMissionReports 
+        <CompletedMissionReports
           startDate={reportsDateRange.start}
           endDate={reportsDateRange.end}
+          completedPlansOnly={completedPlansOnly}
         />
       </div>
     </div>

@@ -30,6 +30,7 @@ const PlannedVsSprayedChart = ({
   startMonth,
   endMonth,
   basePath = '/home/plantation-dashboard',
+  completedPlansOnly = true,
 }) => {
   const navigate = useNavigate();
   const routerLocation = useLocation();
@@ -37,7 +38,8 @@ const PlannedVsSprayedChart = ({
     missionType,
     months,
     startMonth,
-    endMonth
+    endMonth,
+    completedPlansOnly,
   });
 
   // Pilot reference lines only on internal `#/home/dashboard` (and sub-routes), never on `#/home/plantation-dashboard`.
@@ -174,7 +176,8 @@ const PlannedVsSprayedChart = ({
                 chartType: 'tea-revenue-vs-sprayed',
                 missionType,
                 yearMonth: monthData.month,
-                breakdownLevel: level
+                breakdownLevel: level,
+                completedPlansOnly,
               })
             ).unwrap();
             
