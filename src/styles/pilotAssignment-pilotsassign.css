@@ -742,3 +742,97 @@
   font-size: 13px;
   font-weight: 600;
 }
+
+.pilot-assignment-transport-modal-pilotsassign .pilot-assignment-teams-modal-header-pilotsassign {
+  gap: 8px;
+}
+
+.pilot-assignment-transport-modal-pilotsassign .pilot-assignment-teams-modal-title-pilotsassign {
+  flex: 1;
+  text-align: center;
+  font-size: 18px;
+}
+
+.pilot-assignment-transport-back-pilotsassign {
+  background: none;
+  border: none;
+  color: #003057;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 6px 8px;
+  min-width: 72px;
+  font-size: 14px;
+}
+
+.pilot-assignment-transport-back-spacer-pilotsassign {
+  min-width: 72px;
+}
+
+.pilot-assignment-transport-list-intro-pilotsassign {
+  font-size: 13px;
+  color: #475569;
+  margin: 0 0 14px;
+  line-height: 1.45;
+}
+
+.pilot-assignment-transport-list-section-pilotsassign {
+  margin-bottom: 18px;
+}
+
+.pilot-assignment-transport-list-card-pilotsassign {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fafafa;
+}
+
+.pilot-assignment-transport-list-card-main-pilotsassign {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  color: #334155;
+  line-height: 1.4;
+}
+
+.pilot-assignment-transport-list-meta-pilotsassign {
+  font-weight: 500;
+  color: #64748b;
+}
+
+.pilot-assignment-transport-list-estates-pilotsassign {
+  margin-top: 6px;
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.pilot-assignment-transport-list-current-pilotsassign {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #475569;
+}
+
+.pilot-assignment-transport-list-arrange-btn-pilotsassign {
+  flex-shrink: 0;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: none;
+  background: #003057;
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.pilot-assignment-transport-list-arrange-btn-pilotsassign:hover {
+  background: #004b71;
+}
+
+.pilot-assignment-transport-page-wrap-pilotsassign {
+  min-height: 60vh;
+  padding-bottom: 24px;
+}

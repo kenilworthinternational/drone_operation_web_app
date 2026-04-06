@@ -45,6 +45,7 @@ import RequestsQueueMain from './sections/opsroom/requests/RequestsQueueMain';
 import RequestProceed from './sections/opsroom/requests/RequestProceed';
 import PlansWithWeather from './sections/opsroom/plans/PlansWithWeather';
 import PilotAssignment from './sections/opsroom/pilot-assigment/PilotAssignment';
+import TransportArrangePage from './sections/opsroom/pilot-assigment/TransportArrangePage';
 import TodayPlans from './sections/opsroom/today-plans/TodayPlans';
 import EmergencyMoving from './sections/opsroom/emergency/EmergencyMoving';
 import FieldSizeAdjustments from './sections/opsroom/fieldSizeAdjustments/FieldSizeAdjustments';
@@ -527,6 +528,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <PilotAssignment />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="pilotAssignment/transport-arrange"
+            element={
+              <ProtectedRoute>
+                <TransportArrangePage />
               </ProtectedRoute>
             }
           />

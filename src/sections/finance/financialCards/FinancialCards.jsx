@@ -17,6 +17,46 @@ import {
 } from '../../../api/services NodeJs/financialCardsApi';
 import '../../../styles/financialCards.css';
 
+/** Strip commas and keep digits + at most one decimal point (for limitation / balance fields). */
+function sanitizeAmountInput(raw) {
+  let s = String(raw ?? '').replace(/,/g, '').replace(/[^\d.]/g, '');
+  const dot = s.indexOf('.');
+  if (dot !== -1) {
+    s = s.slice(0, dot + 1) + s.slice(dot + 1).replace(/\./g, '');
+  }
+  return s;
+}
+
+/** Show values like 500,000 or 1,234.56 while typing. */
+function formatThousandsDisplay(sanitized) {
+  if (sanitized === '' || sanitized === undefined || sanitized === null) return '';
+  if (sanitized === '.') return '0.';
+  const hasDot = sanitized.includes('.');
+  const [intRaw = '', decPart = ''] = sanitized.split('.');
+  const intDigits = intRaw.replace(/\D/g, '');
+  const commaInt = intDigits.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  if (hasDot) {
+    const d = decPart.replace(/\D/g, '').slice(0, 2);
+    const lead = commaInt === '' ? '0' : commaInt;
+    return d.length > 0 ? `${lead}.${d}` : `${lead}.`;
+  }
+  return commaInt;
+}
+
+function parseAmountField(value) {
+  const s = sanitizeAmountInput(value);
+  if (s === '' || s === '.') return 0;
+  const n = parseFloat(s);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function numberToAmountString(v) {
+  if (v === null || v === undefined || v === '') return '';
+  const n = Number(v);
+  if (!Number.isFinite(n)) return '';
+  return String(n);
+}
+
 const FinancialCards = () => {
   const [showCardModal, setShowCardModal] = useState(false);
   const [showTransactionModal, setShowTransactionModal] = useState(false);
@@ -43,8 +83,8 @@ const FinancialCards = () => {
     exp_date: '',
     category: '',
     user: '',
-    limitation: 0,
-    amount: 0,
+    limitation: '',
+    amount: '',
     bank_id: '',
   });
 
@@ -99,10 +139,7 @@ const FinancialCards = () => {
         return /^[0-9a-f]+$/i.test(cleaned) && cleaned.length > 20 && !value.includes(':');
       };
       
-      // If card number is in old encrypted format, clear it (user needs to re-enter)
-      const cardNo = (card.no && !isOldEncryptedFormat(card.no) && card.no !== '**** **** **** ****' && card.no !== 'N/A') 
-        ? card.no 
-        : '';
+      // Edit: PAN is shown read-only (masked from API). Never put it in cardFormData.no — that field is add-only.
       const cardCvc = (card.cvc && !isOldEncryptedFormat(card.cvc) && card.cvc !== '***' && card.cvc !== 'N/A') 
         ? card.cvc 
         : '';
@@ -110,19 +147,19 @@ const FinancialCards = () => {
       // Show alert if old encrypted format detected
       if (isOldEncryptedFormat(card.no) || isOldEncryptedFormat(card.cvc)) {
         setTimeout(() => {
-          alert('This card has old encrypted data. Please re-enter the card number and CVC to update it with the new encryption format.');
+          alert('This card has old encrypted data. Please re-enter the CVC to update it with the new encryption format.');
         }, 100);
       }
       
       setCardFormData({
-        no: cardNo,
+        no: '',
         cvc: cardCvc,
         card_holder: card.card_holder || '',
         exp_date: formattedExpDate,
         category: card.category ? String(card.category) : '',
         user: card.user ? String(card.user) : '',
-        limitation: card.limitation || 0,
-        amount: card.amount || 0,
+        limitation: numberToAmountString(card.limitation),
+        amount: numberToAmountString(card.amount),
         bank_id: card.bank_id ? String(card.bank_id) : '',
       });
     } else {
@@ -134,8 +171,8 @@ const FinancialCards = () => {
         exp_date: '',
         category: '',
         user: '',
-        limitation: 0,
-        amount: 0,
+        limitation: '',
+        amount: '',
         bank_id: '',
       });
     }
@@ -152,47 +189,66 @@ const FinancialCards = () => {
         exp_date: '',
         category: '',
         user: '',
-        limitation: 0,
-        amount: 0,
+        limitation: '',
+        amount: '',
         bank_id: '',
       });
   };
 
   const handleSubmitCard = async (e) => {
     e.preventDefault();
-    
-    // Validate card number (if provided)
-    if (cardFormData.no) {
-      const cardNo = cardFormData.no.replace(/\s/g, ''); // Remove spaces
-      if (!/^\d{13,19}$/.test(cardNo)) {
+
+    const digitsOnlyNo = (cardFormData.no || '').replace(/\s/g, '');
+    const looksMaskedPan = digitsOnlyNo.includes('*') || digitsOnlyNo.includes('•');
+
+    if (!editingCard) {
+      if (!digitsOnlyNo || !/^\d{13,19}$/.test(digitsOnlyNo)) {
         alert('Card number must be between 13 and 19 digits');
         return;
       }
     }
-    
-    // Validate CVC (if provided)
+    // Edit: PAN is not collected in the form — never send card number on update.
+
+    // Validate CVC only when user entered digits (not *** from API)
     if (cardFormData.cvc) {
       const cvc = cardFormData.cvc.trim();
+      if (!/^\d+$/.test(cvc)) {
+        alert('CVC must be 3 or 4 digits');
+        return;
+      }
       if (!/^\d{3,4}$/.test(cvc)) {
         alert('CVC must be 3 or 4 digits');
         return;
       }
     }
-    
+
     try {
-      // Clean card number (remove spaces) before sending
-      const cleanedCardNo = cardFormData.no ? cardFormData.no.replace(/\s/g, '') : null;
-      
+      const cleanedCardNo =
+        !editingCard && digitsOnlyNo && !looksMaskedPan ? digitsOnlyNo : null;
+      const trimmedCvc = cardFormData.cvc ? cardFormData.cvc.trim() : '';
+
       const cardData = {
         ...cardFormData,
-        no: cleanedCardNo,
-        cvc: cardFormData.cvc ? cardFormData.cvc.trim() : null,
         category: cardFormData.category ? parseInt(cardFormData.category) : null,
         user: cardFormData.user || null,
-        limitation: parseFloat(cardFormData.limitation) || 0,
-        amount: parseFloat(cardFormData.amount) || 0,
+        limitation: parseAmountField(cardFormData.limitation),
+        amount: parseAmountField(cardFormData.amount),
         bank_id: cardFormData.bank_id ? parseInt(cardFormData.bank_id) : null,
       };
+
+      // Partial update: only send PAN/CVC when replacing with a full valid value.
+      // Sending null used to clear the encrypted column — avoid that when only editing e.g. limitation.
+      if (editingCard) {
+        delete cardData.no;
+        if (trimmedCvc && /^\d{3,4}$/.test(trimmedCvc)) {
+          cardData.cvc = trimmedCvc;
+        } else {
+          delete cardData.cvc;
+        }
+      } else {
+        cardData.no = cleanedCardNo;
+        cardData.cvc = trimmedCvc || null;
+      }
 
       if (editingCard) {
         await updateCard({ id: editingCard.id, ...cardData }).unwrap();
@@ -728,34 +784,64 @@ const FinancialCards = () => {
             <form onSubmit={handleSubmitCard} className="modal-form-financial-cards" autoComplete="off" noValidate>
               <div className="form-group-financial-cards">
                 <label>Card Number</label>
-                <input
-                  type="tel"
-                  inputMode="numeric"
-                  value={cardFormData.no}
-                  onChange={(e) => {
-                    // Allow only digits and spaces, format with spaces every 4 digits
-                    let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
-                    // Add space every 4 digits
-                    value = value.match(/.{1,4}/g)?.join(' ') || value;
-                    setCardFormData({ ...cardFormData, no: value });
-                  }}
-                  placeholder="1234 5678 9012 3456"
-                  maxLength={19} // 16 digits + 3 spaces
-                  autoComplete="off"
-                  autoCapitalize="off"
-                  autoCorrect="off"
-                  spellCheck="false"
-                  data-lpignore="true"
-                  data-1p-ignore="true"
-                  data-form-type="other"
-                  name="card-no-input"
-                  id="card-no-input"
-                />
-                {cardFormData.no && cardFormData.no.replace(/\s/g, '').length > 0 && 
-                 cardFormData.no.replace(/\s/g, '').length < 13 && (
-                  <small style={{ color: '#dc3545', fontSize: '0.85rem', display: 'block', marginTop: '4px' }}>
-                    Card number must be 13-19 digits
-                  </small>
+                {editingCard ? (
+                  <>
+                    <input
+                      type="text"
+                      readOnly
+                      className="card-number-readonly-financial-cards"
+                      value={editingCard.no_masked || editingCard.no || 'N/A'}
+                      aria-label="Card number (masked, cannot be edited)"
+                      autoComplete="off"
+                    />
+                    <small
+                      style={{
+                        color: '#6c757d',
+                        fontSize: '0.85rem',
+                        display: 'block',
+                        marginTop: '6px',
+                      }}
+                    >
+                      Card number cannot be changed. Enter a new CVC below if needed.
+                    </small>
+                  </>
+                ) : (
+                  <>
+                    <input
+                      type="tel"
+                      inputMode="numeric"
+                      value={cardFormData.no}
+                      onChange={(e) => {
+                        let value = e.target.value.replace(/\D/g, '');
+                        value = value.match(/.{1,4}/g)?.join(' ') || value;
+                        setCardFormData({ ...cardFormData, no: value });
+                      }}
+                      placeholder="1234 5678 9012 3456"
+                      maxLength={23}
+                      autoComplete="off"
+                      autoCapitalize="off"
+                      autoCorrect="off"
+                      spellCheck="false"
+                      data-lpignore="true"
+                      data-1p-ignore="true"
+                      data-form-type="other"
+                      name="card-no-input"
+                      id="card-no-input"
+                    />
+                    {cardFormData.no && cardFormData.no.replace(/\s/g, '').length > 0 &&
+                      cardFormData.no.replace(/\s/g, '').length < 13 && (
+                        <small
+                          style={{
+                            color: '#dc3545',
+                            fontSize: '0.85rem',
+                            display: 'block',
+                            marginTop: '4px',
+                          }}
+                        >
+                          Card number must be 13-19 digits
+                        </small>
+                      )}
+                  </>
                 )}
               </div>
               <div className="form-group-financial-cards">
@@ -850,21 +936,31 @@ const FinancialCards = () => {
               <div className="form-group-financial-cards">
                 <label>Limitation</label>
                 <input
-                  type="number"
-                  step="0.01"
-                  value={cardFormData.limitation}
-                  onChange={(e) => setCardFormData({ ...cardFormData, limitation: e.target.value })}
-                  placeholder="Enter limitation amount"
+                  type="text"
+                  inputMode="decimal"
+                  value={formatThousandsDisplay(sanitizeAmountInput(cardFormData.limitation))}
+                  onChange={(e) =>
+                    setCardFormData({
+                      ...cardFormData,
+                      limitation: sanitizeAmountInput(e.target.value),
+                    })
+                  }
+                  placeholder="500,000"
                 />
               </div>
               <div className="form-group-financial-cards">
                 <label>Amount (Initial Balance)</label>
                 <input
-                  type="number"
-                  step="0.01"
-                  value={cardFormData.amount}
-                  onChange={(e) => setCardFormData({ ...cardFormData, amount: e.target.value })}
-                  placeholder="Enter initial amount"
+                  type="text"
+                  inputMode="decimal"
+                  value={formatThousandsDisplay(sanitizeAmountInput(cardFormData.amount))}
+                  onChange={(e) =>
+                    setCardFormData({
+                      ...cardFormData,
+                      amount: sanitizeAmountInput(e.target.value),
+                    })
+                  }
+                  placeholder="100,000"
                 />
               </div>
               <div className="modal-actions-financial-cards">

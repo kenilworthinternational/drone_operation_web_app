@@ -246,6 +246,22 @@ export const pilotAssignmentApi = baseApi.injectEndpoints({
       invalidatesTags: ['DroneUnlockingQueue'],
     }),
 
+    getTransportArrangementList: builder.query({
+      queryFn: async () => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: '/api/pilot-assignment/transport/arrangement-list',
+            method: 'POST',
+            body: {},
+          },
+          {},
+          {}
+        );
+        return result;
+      },
+      providesTags: ['TransportArrangementList'],
+    }),
+
     getPilotTransportOptions: builder.query({
       queryFn: async ({ assignment_id, yearMonth, plan_ids = [] }) => {
         const result = await nodeBackendBaseQuery(
@@ -290,7 +306,7 @@ export const pilotAssignmentApi = baseApi.injectEndpoints({
         );
         return result;
       },
-      invalidatesTags: ['PilotAssignmentPlans', 'PilotAssignmentMissions', 'PilotTransportOptions'],
+      invalidatesTags: ['PilotAssignmentPlans', 'PilotAssignmentMissions', 'PilotTransportOptions', 'TransportArrangementList'],
     }),
 
     getHrTransportEstimates: builder.query({
@@ -325,6 +341,7 @@ export const {
   useGetDroneUnlockingQueueQuery,
   useUpdatePlanDroneUnlockMutation,
   useUpdateMissionDroneUnlockMutation,
+  useGetTransportArrangementListQuery,
   useGetPilotTransportOptionsQuery,
   useEstimatePilotTransportDistanceMutation,
   useAssignPilotTransportDetailsMutation,

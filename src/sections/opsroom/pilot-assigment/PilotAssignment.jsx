@@ -8,9 +8,6 @@ import {
   useGetPilotAssignmentDroneQuery,
   useCreatePilotAssignmentMutation,
   useGetAllTeamsQuery,
-  useGetPilotTransportOptionsQuery,
-  useEstimatePilotTransportDistanceMutation,
-  useAssignPilotTransportDetailsMutation,
 } from '../../../api/services NodeJs/allEndpoints';
 import '../../../styles/pilotAssignment-pilotsassign.css';
 
@@ -31,15 +28,6 @@ const PilotAssignment = () => {
   const [selectedMissions, setSelectedMissions] = useState([]);
   const [droneInfo, setDroneInfo] = useState(null);
   const [showTeamsModal, setShowTeamsModal] = useState(false);
-  const [showTransportModal, setShowTransportModal] = useState(false);
-  const [transportForm, setTransportForm] = useState({
-    driver_id: '',
-    vehicle_id: '',
-    driver_arrival_time: '',
-    end_lat: '',
-    end_lng: '',
-  });
-  const [transportEstimate, setTransportEstimate] = useState(null);
 
   // Get user data for assigned_by
   const userData = JSON.parse(localStorage.getItem('userData') || '{}');
@@ -54,22 +42,10 @@ const PilotAssignment = () => {
   );
   const [createAssignment, { isLoading: creatingAssignment }] = useCreatePilotAssignmentMutation();
   const { data: teamsData, isLoading: loadingTeams } = useGetAllTeamsQuery(selectedDate, { skip: !selectedDate || !showTeamsModal });
-  const { data: transportOptionsData, isLoading: loadingTransportOptions } = useGetPilotTransportOptionsQuery(
-    { assignment_id: assignmentId || null, yearMonth: selectedDate ? selectedDate.slice(0, 7) : undefined, plan_ids: selectedPlans },
-    { skip: !showTransportModal || ((!assignmentId || !String(assignmentId).trim()) && !selectedPlans.length) }
-  );
-  const [estimateTransportDistance, { isLoading: estimatingTransport }] = useEstimatePilotTransportDistanceMutation();
-  const [assignTransportDetails, { isLoading: savingTransport }] = useAssignPilotTransportDetailsMutation();
 
   const plans = plansData?.data || [];
   const missions = missionsData?.data || [];
   const pilots = pilotsData?.data || [];
-  const transportOptions = transportOptionsData?.data || null;
-  const transportDrivers = transportOptions?.drivers || [];
-  const transportVehicles = transportOptions?.vehicles || [];
-  const transportEstates = transportOptions?.estates || [];
-  const hasTransportEstates = transportEstates.length > 0;
-  const canOpenArrangeTransport = plans.length > 0 && selectedPlans.length > 0;
 
   // Refetch all data when component mounts or when navigating to this route
   useEffect(() => {
@@ -358,74 +334,6 @@ const PilotAssignment = () => {
     }
   };
 
-  const recommendedDriverId = useMemo(() => {
-    if (!transportOptions?.recommended_driver_id) return '';
-    return String(transportOptions.recommended_driver_id);
-  }, [transportOptions]);
-
-  const onOpenTransportModal = () => {
-    if (!assignmentId) {
-      alert('Select date and pilot first to generate assignment id.');
-      return;
-    }
-    setTransportEstimate(null);
-    setShowTransportModal(true);
-  };
-
-  const updateTransportField = (field, value) => {
-    setTransportForm((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const onEstimateTransport = async () => {
-    if (!assignmentId) {
-      alert('Assignment id is required.');
-      return;
-    }
-    if (!transportForm.driver_id) {
-      alert('Select a driver first.');
-      return;
-    }
-    try {
-      const result = await estimateTransportDistance({
-        assignment_id: assignmentId,
-        driver_id: Number(transportForm.driver_id),
-        end_lat: transportForm.end_lat ? Number(transportForm.end_lat) : null,
-        end_lng: transportForm.end_lng ? Number(transportForm.end_lng) : null,
-      }).unwrap();
-      setTransportEstimate(result?.data || null);
-    } catch (error) {
-      const message = error?.data?.message || error?.message || 'Failed to estimate transport distance.';
-      alert(message);
-    }
-  };
-
-  const onSaveTransport = async () => {
-    if (!assignmentId) {
-      alert('Assignment id is required.');
-      return;
-    }
-    if (!transportForm.driver_id || !transportForm.vehicle_id || !transportForm.driver_arrival_time) {
-      alert('Driver, vehicle and arrival time are required.');
-      return;
-    }
-    if (!hasTransportEstates) {
-      alert('Cannot save driver/vehicle because Assignment Estates is empty.');
-      return;
-    }
-    try {
-      await assignTransportDetails({
-        assignment_id: assignmentId,
-        driver_id: Number(transportForm.driver_id),
-        vehicle_id: Number(transportForm.vehicle_id),
-        driver_arrival_time: transportForm.driver_arrival_time,
-      }).unwrap();
-      alert('Transport details saved successfully.');
-    } catch (error) {
-      const message = error?.data?.message || error?.message || 'Failed to save transport details.';
-      alert(message);
-    }
-  };
-
   return (
     <div className="pilot-assignment-container-pilotsassign">
       {/* Header Section */}
@@ -443,10 +351,12 @@ const PilotAssignment = () => {
         
         <div className="pilot-assignment-header-actions-pilotsassign">
           <button
+            type="button"
             className="pilot-assignment-transport-btn-pilotsassign"
-            onClick={onOpenTransportModal}
-            disabled={!canOpenArrangeTransport}
-            title={!canOpenArrangeTransport ? 'Select at least one plan to arrange transport' : ''}
+            onClick={() =>
+              navigate({ pathname: '/home/pilotAssignment/transport-arrange', search: location.search })
+            }
+            title="Open today and tomorrow assignments (new page); Arrange opens a popup"
           >
             Arrange Transport
           </button>
@@ -664,153 +574,6 @@ const PilotAssignment = () => {
           )}
         </div>
       </div>
-
-      {/* Arrange Transport Modal */}
-      {showTransportModal && (
-        <div className="pilot-assignment-teams-modal-overlay-pilotsassign" onClick={() => setShowTransportModal(false)}>
-          <div className="pilot-assignment-transport-modal-pilotsassign" onClick={(e) => e.stopPropagation()}>
-            <div className="pilot-assignment-teams-modal-header-pilotsassign">
-              <h2 className="pilot-assignment-teams-modal-title-pilotsassign">Arrange Transport</h2>
-              <button
-                className="pilot-assignment-teams-modal-close-pilotsassign"
-                onClick={() => setShowTransportModal(false)}
-              >
-                ×
-              </button>
-            </div>
-
-            <div className="pilot-assignment-transport-body-pilotsassign">
-              {!assignmentId ? (
-                <div className="pilot-assignment-teams-empty-pilotsassign">Select date and pilot first.</div>
-              ) : loadingTransportOptions ? (
-                <div className="pilot-assignment-teams-loading-pilotsassign">
-                  <Bars height="32" width="32" color="#003057" ariaLabel="bars-loading" visible />
-                  <span>Loading transport options...</span>
-                </div>
-              ) : (
-                <>
-                  <div className="pilot-assignment-transport-grid-pilotsassign">
-                    <div className="pilot-assignment-transport-field-pilotsassign">
-                      <label>Driver (Monthly KM)</label>
-                      <select
-                        className="pilot-assignment-pilot-select-pilotsassign"
-                        value={transportForm.driver_id}
-                        onChange={(e) => updateTransportField('driver_id', e.target.value)}
-                      >
-                        <option value="">-- Select Driver --</option>
-                        {transportDrivers.map((driver) => (
-                          <option key={driver.id} value={driver.id}>
-                            {driver.driver_name} ({Number(driver.month_km || 0).toFixed(1)} km)
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="pilot-assignment-transport-field-pilotsassign">
-                      <label>Vehicle</label>
-                      <select
-                        className="pilot-assignment-pilot-select-pilotsassign"
-                        value={transportForm.vehicle_id}
-                        onChange={(e) => updateTransportField('vehicle_id', e.target.value)}
-                      >
-                        <option value="">-- Select Vehicle --</option>
-                        {transportVehicles.map((vehicle) => (
-                          <option key={vehicle.id} value={vehicle.id}>{vehicle.vehicle_no}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="pilot-assignment-transport-field-pilotsassign">
-                      <label>Driver Arrival Time</label>
-                      <input
-                        type="time"
-                        className="pilot-assignment-date-input-pilotsassign"
-                        value={transportForm.driver_arrival_time}
-                        onChange={(e) => updateTransportField('driver_arrival_time', e.target.value)}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="pilot-assignment-transport-grid-pilotsassign">
-                    <div className="pilot-assignment-transport-field-pilotsassign">
-                      <label>Trip End Latitude (Optional)</label>
-                      <input
-                        type="number"
-                        step="any"
-                        className="pilot-assignment-date-input-pilotsassign"
-                        value={transportForm.end_lat}
-                        onChange={(e) => updateTransportField('end_lat', e.target.value)}
-                      />
-                    </div>
-                    <div className="pilot-assignment-transport-field-pilotsassign">
-                      <label>Trip End Longitude (Optional)</label>
-                      <input
-                        type="number"
-                        step="any"
-                        className="pilot-assignment-date-input-pilotsassign"
-                        value={transportForm.end_lng}
-                        onChange={(e) => updateTransportField('end_lng', e.target.value)}
-                      />
-                    </div>
-                  </div>
-
-                  {recommendedDriverId ? (
-                    <div className="pilot-assignment-transport-hint-pilotsassign">
-                      Recommended fairness driver: {
-                        transportDrivers.find((driver) => String(driver.id) === recommendedDriverId)?.driver_name || '-'
-                      } (lowest monthly KM)
-                    </div>
-                  ) : null}
-
-                  <div className="pilot-assignment-transport-estates-pilotsassign">
-                    <div className="pilot-assignment-transport-subtitle-pilotsassign">Assignment Estates</div>
-                    {(transportEstates || []).length ? (
-                      <ul className="pilot-assignment-transport-estate-list-pilotsassign">
-                        {transportEstates.map((estate) => (
-                          <li key={estate.id}>{estate.estate_name || estate.name}</li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <span>No estates found for this assignment.</span>
-                    )}
-                  </div>
-
-                  <div className="pilot-assignment-transport-actions-pilotsassign">
-                    <button
-                      className="pilot-assignment-teams-btn-pilotsassign"
-                      onClick={onEstimateTransport}
-                      disabled={estimatingTransport || !transportForm.driver_id}
-                    >
-                      {estimatingTransport ? 'Estimating...' : 'Estimate Distance'}
-                    </button>
-                    <button
-                      className="pilot-assignment-deploy-btn-pilotsassign"
-                      onClick={onSaveTransport}
-                      disabled={savingTransport || !hasTransportEstates}
-                    >
-                      {savingTransport ? 'Saving...' : 'Save Driver & Vehicle'}
-                    </button>
-                  </div>
-
-                  {transportEstimate ? (
-                    <div className="pilot-assignment-transport-result-pilotsassign">
-                      <div><strong>Total Estimated KM:</strong> {Number(transportEstimate.total_estimated_km || 0).toFixed(3)}</div>
-                      <div className="pilot-assignment-transport-subtitle-pilotsassign">Leg Breakdown</div>
-                      <ul className="pilot-assignment-transport-estate-list-pilotsassign">
-                        {(transportEstimate.leg_breakdown || []).map((leg) => (
-                          <li key={leg.leg_no}>
-                            {leg.from} -> {leg.to}: {Number(leg.distance_km || 0).toFixed(3)} km
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ) : null}
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Teams Modal */}
       {showTeamsModal && (
