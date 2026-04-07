@@ -24,21 +24,36 @@ export const djiImagesApi = baseApi.injectEndpoints({
     uploadDjiImage: builder.mutation({
       queryFn: async (formData, api, extraOptions, baseQuery) => {
         const token = getToken();
-        const response = await fetch(`${getNodeBackendUrl()}/api/dji-images/upload`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-          body: formData,
-        });
-        
-        const data = await response.json();
-        
-        if (!response.ok) {
-          return { error: data.error || 'Upload failed' };
+        try {
+          const response = await fetch(`${getNodeBackendUrl()}/api/dji-images/upload`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+            body: formData,
+          });
+
+          const raw = await response.text();
+          let data;
+          try {
+            data = raw ? JSON.parse(raw) : {};
+          } catch {
+            data = { error: raw || 'Upload failed' };
+          }
+
+          if (!response.ok) {
+            return { error: { status: response.status, data } };
+          }
+
+          return { data };
+        } catch (e) {
+          return {
+            error: {
+              status: 'FETCH_ERROR',
+              data: { error: e?.message || 'Network error while uploading image' },
+            },
+          };
         }
-        
-        return { data };
       },
       invalidatesTags: ['DjiImages'],
     }),
@@ -66,11 +81,22 @@ export const djiImagesApi = baseApi.injectEndpoints({
         });
         const queryString = params.toString();
         const url = `/api/dji-images${queryString ? `?${queryString}` : ''}`;
-        return nodeBackendBaseQuery(
+        const primary = await nodeBackendBaseQuery(
           { url, method: 'GET' },
           api,
           extraOptions
         );
+        // Frontend fallback for intermittent proxy errors on some clients:
+        // if filtered by date and generic list endpoint fails, try unlinked-by-date endpoint.
+        const status = primary?.error?.status;
+        const canFallback = Boolean(filters?.date) && (status === 502 || status === 'FETCH_ERROR');
+        if (!primary?.error || !canFallback) return primary;
+        const fallback = await nodeBackendBaseQuery(
+          { url: `/api/dji-images/unlinked/${filters.date}`, method: 'GET' },
+          api,
+          extraOptions
+        );
+        return fallback?.error ? primary : fallback;
       },
       providesTags: ['DjiImages'],
     }),

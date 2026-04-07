@@ -72,6 +72,16 @@ const DjiMapUpload = () => {
   // Image upload state
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
+
+  const guessImageMimeByName = (filename = '') => {
+    const ext = String(filename).toLowerCase().split('.').pop();
+    if (ext === 'jpg' || ext === 'jpeg') return 'image/jpeg';
+    if (ext === 'jfif') return 'image/jpeg';
+    if (ext === 'png') return 'image/png';
+    if (ext === 'gif') return 'image/gif';
+    if (ext === 'webp') return 'image/webp';
+    return '';
+  };
   
   // Get all DJI images
   const { data: imagesData, isLoading: loadingImages, refetch: refetchImages } = useGetAllDjiImagesQuery({
@@ -131,7 +141,10 @@ const DjiMapUpload = () => {
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      if (!file.type.startsWith('image/')) {
+      const guessedMime = guessImageMimeByName(file.name);
+      const mime = file.type || guessedMime;
+      const extOk = /\.(jpe?g|jfif|png|gif|webp)$/i.test(file.name || '');
+      if (!(String(mime).startsWith('image/') && extOk)) {
         toast.error('Please select an image file');
         return;
       }
@@ -139,12 +152,25 @@ const DjiMapUpload = () => {
         toast.error('File size must be less than 50MB');
         return;
       }
-      setSelectedFile(file);
+      // Some clients/browsers provide empty or octet-stream MIME for valid images.
+      // Normalize the File MIME from extension to avoid backend image-filter rejections.
+      let normalizedFile = file;
+      if (!file.type || file.type === 'application/octet-stream' || file.type === 'binary/octet-stream') {
+        try {
+          normalizedFile = new File([file], file.name, {
+            type: guessedMime || 'image/jpeg',
+            lastModified: file.lastModified,
+          });
+        } catch {
+          normalizedFile = file;
+        }
+      }
+      setSelectedFile(normalizedFile);
       const reader = new FileReader();
       reader.onloadend = () => {
         setPreviewUrl(reader.result);
       };
-      reader.readAsDataURL(file);
+      reader.readAsDataURL(normalizedFile);
     }
   };
   
@@ -212,7 +238,13 @@ const DjiMapUpload = () => {
         }
       }
     } catch (error) {
-      toast.error(error?.data?.error || 'Failed to upload image');
+      const status = error?.status;
+      const msg = error?.data?.error || error?.error || 'Failed to upload image';
+      if (status === 502 || status === 'FETCH_ERROR') {
+        toast.error('Network/proxy error while contacting upload API. Please retry or switch network/VPN.');
+      } else {
+        toast.error(msg);
+      }
     }
   };
   
