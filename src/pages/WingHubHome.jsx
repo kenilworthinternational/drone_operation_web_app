@@ -46,20 +46,24 @@ const WingHubHome = () => {
     setShowLogoutDialog(false);
   };
 
+  const isDeveloper = isInternalDeveloper(userData);
   const visibleWings = useMemo(() => {
-    return categories.filter((category) => {
-      const visibleChildren = getVisibleNavChildren(category, allowedPaths);
+    // Show all wing tiles on /home. Only hide developer-only entries for non-developers.
+    return categories.filter((category) => !(category.developerOnly === true && !isDeveloper));
+  }, [categories, isDeveloper]);
 
-      const isDeveloper = isInternalDeveloper(userData);
-      if (category.developerOnly === true && !isDeveloper) {
-        return false;
-      }
-
-      const hasCategoryVisibility = categoryVisibility[category.title] === true;
-      const hasAnyPathPermission = visibleChildren.length > 0;
-      return hasCategoryVisibility || hasAnyPathPermission;
+  const orderedWings = useMemo(() => {
+    return [...visibleWings].sort((a, b) => {
+      const aVisibleChildren = getVisibleNavChildren(a, allowedPaths);
+      const bVisibleChildren = getVisibleNavChildren(b, allowedPaths);
+      const aHasCategoryVisibility = categoryVisibility[a.title] === true;
+      const bHasCategoryVisibility = categoryVisibility[b.title] === true;
+      const aLocked = !isDeveloper && !aHasCategoryVisibility && aVisibleChildren.length === 0;
+      const bLocked = !isDeveloper && !bHasCategoryVisibility && bVisibleChildren.length === 0;
+      if (aLocked === bLocked) return 0;
+      return aLocked ? 1 : -1;
     });
-  }, [categories, categoryVisibility, allowedPaths, userData]);
+  }, [visibleWings, allowedPaths, categoryVisibility, isDeveloper]);
 
   const handleWingClick = (title) => {
     const q = encodeURIComponent(title);
@@ -124,62 +128,65 @@ const WingHubHome = () => {
         ) : visibleWings.length === 0 ? (
           <p className="wing-hub-empty">No wings available for your account.</p>
         ) : (
-          <div className="wing-hub-grid">
-            {visibleWings.map((cat) => {
-              const WingIcon = cat.icon;
-              const meta = WING_HUB_META[cat.title] || {
-                abbr: cat.title.slice(0, 4).toUpperCase(),
-                label: cat.title,
-                color: '#334155',
-              };
-              const visibleNavChildren = getVisibleNavChildren(cat, allowedPaths);
-              const isNavLocked = !isInternalDeveloper(userData) && visibleNavChildren.length === 0;
-              const cardClassName = [
-                'wing-hub-card',
-                !isNavLocked ? 'cursor-target' : '',
-                isNavLocked ? 'wing-hub-card--no-nav-access' : '',
-              ]
-                .filter(Boolean)
-                .join(' ');
-              return (
-                <div key={cat.title} className="wing-hub-card-wrap">
-                  {isNavLocked ? (
-                    <div
-                      className={cardClassName}
-                      style={{ background: meta.color }}
-                      role="group"
-                      aria-label={`${meta.label}: no navigation access`}
-                      title="No navigation items assigned for this wing"
-                    >
-                      <span className="wing-hub-card-icon" aria-hidden>
-                        {WingIcon ? <WingIcon /> : null}
-                      </span>
-                      <span className="wing-hub-card-text">
-                        <span className="wing-hub-card-label">{meta.label}</span>
-                        <span className="wing-hub-card-abbr">({meta.abbr})</span>
-                      </span>
-                      <span className="wing-hub-card-no-access-bar">No navigation access</span>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      className={cardClassName}
-                      style={{ background: meta.color }}
-                      onClick={() => handleWingClick(cat.title)}
-                    >
-                      <span className="wing-hub-card-icon" aria-hidden>
-                        {WingIcon ? <WingIcon /> : null}
-                      </span>
-                      <span className="wing-hub-card-text">
-                        <span className="wing-hub-card-label">{meta.label}</span>
-                        <span className="wing-hub-card-abbr">({meta.abbr})</span>
-                      </span>
-                    </button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+          <>
+            <div className="wing-hub-grid">
+              {orderedWings.map((cat) => {
+                const WingIcon = cat.icon;
+                const meta = WING_HUB_META[cat.title] || {
+                  abbr: cat.title.slice(0, 4).toUpperCase(),
+                  label: cat.title,
+                  color: '#334155',
+                };
+                const visibleNavChildren = getVisibleNavChildren(cat, allowedPaths);
+                const hasCategoryVisibility = categoryVisibility[cat.title] === true;
+                const isNavLocked = !isDeveloper && !hasCategoryVisibility && visibleNavChildren.length === 0;
+                const cardClassName = [
+                  'wing-hub-card',
+                  !isNavLocked ? 'cursor-target' : '',
+                  isNavLocked ? 'wing-hub-card--no-nav-access' : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ');
+                return (
+                  <div key={cat.title} className="wing-hub-card-wrap">
+                    {isNavLocked ? (
+                      <div
+                        className={cardClassName}
+                        style={{ background: meta.color }}
+                        role="group"
+                        aria-label={`${meta.label}: no navigation access`}
+                        title="No navigation items assigned for this wing"
+                      >
+                        <span className="wing-hub-card-icon" aria-hidden>
+                          {WingIcon ? <WingIcon /> : null}
+                        </span>
+                        <span className="wing-hub-card-text">
+                          <span className="wing-hub-card-label">{meta.label}</span>
+                          <span className="wing-hub-card-abbr">({meta.abbr})</span>
+                        </span>
+                        <span className="wing-hub-card-no-access-bar">No navigation access</span>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        className={cardClassName}
+                        style={{ background: meta.color }}
+                        onClick={() => handleWingClick(cat.title)}
+                      >
+                        <span className="wing-hub-card-icon" aria-hidden>
+                          {WingIcon ? <WingIcon /> : null}
+                        </span>
+                        <span className="wing-hub-card-text">
+                          <span className="wing-hub-card-label">{meta.label}</span>
+                          <span className="wing-hub-card-abbr">({meta.abbr})</span>
+                        </span>
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </>
         )}
       </div>
     </div>
