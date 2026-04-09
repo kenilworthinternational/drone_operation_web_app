@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Outlet, useLocation, useSearchParams } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import TopNavBar from '../components/TopNavBar';
 import LeftNavBar from '../components/LeftNavBar';
 import CombChrome from '../components/CombChrome';
@@ -8,6 +8,7 @@ import {
   OD_WING_OPERATION_DIGITALIZATION_TITLE,
   isOdWingWorkflowShellPath,
 } from '../config/odWingShell';
+import { resolveWingNavTheme } from '../config/wingHubDisplay';
 import { getUserData } from '../utils/authUtils';
 import '../styles/home.css';
 
@@ -15,9 +16,9 @@ const COMB_TAB_BASES = ['/home/monitoringDashboard', '/home/dataViewer', '/home/
 
 const HomePage = () => {
   const location = useLocation();
-  const [searchParams] = useSearchParams();
   const [showSidebar, setShowSidebar] = useState(false);
   const userData = getUserData();
+  const wingTheme = resolveWingNavTheme(new URLSearchParams(location.search).get('wing'));
   const isExternalUser = userData?.member_type === 'e';
   const isWingHubLanding = location.pathname === '/home';
 
@@ -27,17 +28,19 @@ const HomePage = () => {
     location.pathname.startsWith('/home/dashboard/chart-breakdown/');
 
   const isCombShell = useMemo(() => {
-    if (searchParams.get('comb') !== '1') return false;
+    const q = new URLSearchParams(location.search);
+    if (q.get('comb') !== '1') return false;
     const { pathname } = location;
     return COMB_TAB_BASES.some((base) => pathname === base || pathname.startsWith(`${base}/`));
-  }, [location.pathname, searchParams]);
+  }, [location]);
 
   const showCombChrome = isCombShell;
 
   const isOdWingShell = useMemo(() => {
-    if (searchParams.get('wing') !== OD_WING_OPERATION_DIGITALIZATION_TITLE) return false;
+    const q = new URLSearchParams(location.search);
+    if (q.get('wing') !== OD_WING_OPERATION_DIGITALIZATION_TITLE) return false;
     return isOdWingWorkflowShellPath(location.pathname);
-  }, [location.pathname, searchParams]);
+  }, [location]);
 
   const showOdWingChrome = isOdWingShell;
 
@@ -57,7 +60,10 @@ const HomePage = () => {
   }, []);
 
   return (
-    <div>
+    <div
+      className={wingTheme ? 'home-layout-root home-layout-root--wing-theme' : 'home-layout-root'}
+      style={wingTheme ? { '--wing-nav-primary': wingTheme.color } : undefined}
+    >
       {!isExternalUser && <TopNavBar onMenuClick={() => setShowSidebar(true)} />}
       {!isExternalUser && !fullWidthNoLeftNav && (
         <LeftNavBar 

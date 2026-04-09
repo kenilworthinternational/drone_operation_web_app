@@ -44,3 +44,22 @@ export const WING_HUB_META = {
     color: '#5a2622',
   },
 };
+
+/**
+ * Resolve ?wing= query value to hub meta (for theming nav to match the wing card color).
+ * @param {string|null|undefined} wingParam - Raw search param (still encoded)
+ * @returns {{ title: string, abbr: string, label: string, color: string } | null}
+ */
+export function resolveWingNavTheme(wingParam) {
+  if (wingParam == null || wingParam === '') return null;
+  let title;
+  try {
+    title = decodeURIComponent(wingParam);
+  } catch {
+    return null;
+  }
+  const normalized = title === 'Management' ? 'Field Operations Wing' : title;
+  const meta = WING_HUB_META[normalized];
+  if (!meta?.color) return null;
+  return { title: normalized, ...meta };
+}

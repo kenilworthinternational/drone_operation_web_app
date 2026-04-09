@@ -1,4 +1,4 @@
-import { getUserData } from './authUtils';
+import { getUserData, isInternalDeveloper } from './authUtils';
 
 /**
  * Feature Permission Utilities
@@ -37,7 +37,7 @@ export async function getUserFeaturePermissions(userData) {
 
 /**
  * Check if user has access to a specific feature
- * @param {string} featureCode - Feature code (e.g., 'FEAT_WORKFLOW_NOTIFICATIONS')
+ * @param {string} featureCode - Feature code (e.g., 'FEAT_WORKFLOW_QUICK_EMERGENCY_MOVING')
  * @param {Object} userData - User data object from localStorage
  * @param {Object} featurePermissions - Optional cached permissions object
  * @returns {Promise<boolean>} True if user has access
@@ -48,8 +48,8 @@ export async function hasFeatureAccess(featureCode, userData = null, featurePerm
     userData = getUserData();
   }
 
-  // Developers always have access
-  if (userData?.member_type === 'i' && userData?.user_level === 'i') {
+  // Developers (internal + job_role dev): same rule as navbar — all feature flags allowed
+  if (isInternalDeveloper(userData)) {
     return true;
   }
 
@@ -105,7 +105,17 @@ export async function checkMultipleFeatures(featureCodes, userData = null) {
  * Feature codes constants
  */
 export const FEATURE_CODES = {
-  WORKFLOW_NOTIFICATIONS: 'FEAT_WORKFLOW_NOTIFICATIONS',
+  /** Kept for DB / Auth Controls compatibility; workflow dashboard no longer reads this flag (date/revenue UI removed). */
   WORKFLOW_DASHBOARD_CONTROLS: 'FEAT_WORKFLOW_DASHBOARD_CONTROLS',
+  /** Quick access: Emergency Moving (workflow dashboard shortcut) */
+  WORKFLOW_QUICK_EMERGENCY_MOVING: 'FEAT_WORKFLOW_QUICK_EMERGENCY_MOVING',
+  /** Quick access: Field size adjustments (workflow dashboard shortcut) */
+  WORKFLOW_QUICK_FIELD_SIZE_ADJUSTMENTS: 'FEAT_WORKFLOW_QUICK_FIELD_SIZE_ADJUSTMENTS',
+  /** Day end process: show Dir-Ops approval checkbox (still only editable by DOPS role when enabled) */
+  DAY_END_DIR_OPS_APPROVAL: 'FEAT_DAY_END_DIR_OPS_APPROVAL',
+  /** Pilot assignment: resource assignment queue (plans/missions, deploy, teams modal) */
+  PILOT_ASSIGNMENT_RESOURCE_QUEUE: 'FEAT_PILOT_ASSIGNMENT_RESOURCE_QUEUE',
+  /** Pilot assignment: Arrange transport page and header button */
+  PILOT_ASSIGNMENT_ARRANGE_TRANSPORT: 'FEAT_PILOT_ASSIGNMENT_ARRANGE_TRANSPORT',
 };
 

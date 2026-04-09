@@ -1,4 +1,19 @@
 /* Pilot Assignment Container */
+.pilot-assignment-access-denied-pilotsassign {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  padding: 24px 28px;
+  margin-bottom: 20px;
+  color: #333;
+  line-height: 1.5;
+  max-width: 640px;
+}
+
+.pilot-assignment-access-denied-pilotsassign p {
+  margin: 0;
+}
+
 .pilot-assignment-container-pilotsassign {
   padding: 20px;
   background-color: #f5f5f5;

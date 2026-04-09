@@ -9,6 +9,9 @@ import {
   useCreatePilotAssignmentMutation,
   useGetAllTeamsQuery,
 } from '../../../api/services NodeJs/allEndpoints';
+import { useGetMyPermissionsQuery } from '../../../api/services NodeJs/featurePermissionsApi';
+import { FEATURE_CODES } from '../../../utils/featurePermissions';
+import { isInternalDeveloper } from '../../../utils/authUtils';
 import '../../../styles/pilotAssignment-pilotsassign.css';
 
 const PilotAssignment = () => {
@@ -31,17 +34,50 @@ const PilotAssignment = () => {
 
   // Get user data for assigned_by
   const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+  const userId = userData?.id || null;
+  const isDeveloper = isInternalDeveloper(userData);
+  const { data: featurePermissionsData = {} } = useGetMyPermissionsQuery(undefined, {
+    skip: !userId,
+  });
+
+  const checkFeatureAccess = (featureCode) => {
+    if (isDeveloper) return true;
+    if (!featurePermissionsData || typeof featurePermissionsData !== 'object') return false;
+    if (featurePermissionsData.features && featurePermissionsData.features[featureCode] === true) {
+      return true;
+    }
+    const categories = featurePermissionsData.categories || featurePermissionsData;
+    for (const category in categories) {
+      if (category === 'paths' || category === 'features') continue;
+      const categoryData = categories[category];
+      if (Array.isArray(categoryData) && categoryData.includes(featureCode)) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  const hasResourceQueueFeature = checkFeatureAccess(FEATURE_CODES.PILOT_ASSIGNMENT_RESOURCE_QUEUE);
+  const hasArrangeTransportFeature = checkFeatureAccess(FEATURE_CODES.PILOT_ASSIGNMENT_ARRANGE_TRANSPORT);
 
   // Fetch data
-  const { data: plansData, isLoading: loadingPlans, refetch: refetchPlans } = useGetPilotAssignmentPlansQuery(selectedDate, { skip: !selectedDate });
-  const { data: missionsData, isLoading: loadingMissions, refetch: refetchMissions } = useGetPilotAssignmentMissionsQuery(selectedDate, { skip: !selectedDate });
-  const { data: pilotsData, isLoading: loadingPilots, refetch: refetchPilots } = useGetPilotAssignmentPilotsQuery();
+  const { data: plansData, isLoading: loadingPlans, refetch: refetchPlans } = useGetPilotAssignmentPlansQuery(selectedDate, {
+    skip: !selectedDate || !hasResourceQueueFeature,
+  });
+  const { data: missionsData, isLoading: loadingMissions, refetch: refetchMissions } = useGetPilotAssignmentMissionsQuery(selectedDate, {
+    skip: !selectedDate || !hasResourceQueueFeature,
+  });
+  const { data: pilotsData, isLoading: loadingPilots, refetch: refetchPilots } = useGetPilotAssignmentPilotsQuery(undefined, {
+    skip: !hasResourceQueueFeature,
+  });
   const { data: droneData, isLoading: loadingDrone, refetch: refetchDrone } = useGetPilotAssignmentDroneQuery(
     { team_id: selectedTeamId, date: selectedDate },
-    { skip: !selectedTeamId || !selectedDate }
+    { skip: !selectedTeamId || !selectedDate || !hasResourceQueueFeature }
   );
   const [createAssignment, { isLoading: creatingAssignment }] = useCreatePilotAssignmentMutation();
-  const { data: teamsData, isLoading: loadingTeams } = useGetAllTeamsQuery(selectedDate, { skip: !selectedDate || !showTeamsModal });
+  const { data: teamsData, isLoading: loadingTeams } = useGetAllTeamsQuery(selectedDate, {
+    skip: !selectedDate || !showTeamsModal || !hasResourceQueueFeature,
+  });
 
   const plans = plansData?.data || [];
   const missions = missionsData?.data || [];
@@ -49,6 +85,7 @@ const PilotAssignment = () => {
 
   // Refetch all data when component mounts or when navigating to this route
   useEffect(() => {
+    if (!hasResourceQueueFeature) return;
     // Refetch all queries to ensure fresh data when navigating to this page
     if (selectedDate) {
       refetchPlans();
@@ -59,7 +96,7 @@ const PilotAssignment = () => {
       refetchDrone();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.pathname]); // Refetch when route pathname changes (including on mount)
+  }, [location.pathname, hasResourceQueueFeature]); // Refetch when route pathname changes (including on mount)
 
   // Update drone info when drone data changes
   useEffect(() => {
@@ -350,26 +387,40 @@ const PilotAssignment = () => {
         <h1 className="pilot-assignment-title-pilotsassign">Resource Assignment Queue</h1>
         
         <div className="pilot-assignment-header-actions-pilotsassign">
-          <button
-            type="button"
-            className="pilot-assignment-transport-btn-pilotsassign"
-            onClick={() =>
-              navigate({ pathname: '/home/pilotAssignment/transport-arrange', search: location.search })
-            }
-            title="Open today and tomorrow assignments (new page); Arrange opens a popup"
-          >
-            Arrange Transport
-          </button>
-          <button 
-            className="pilot-assignment-teams-btn-pilotsassign"
-            onClick={() => setShowTeamsModal(true)}
-          >
-            Teams
-          </button>
+          {hasArrangeTransportFeature && (
+            <button
+              type="button"
+              className="pilot-assignment-transport-btn-pilotsassign"
+              onClick={() =>
+                navigate({ pathname: '/home/pilotAssignment/transport-arrange', search: location.search })
+              }
+              title="Open today and tomorrow assignments (new page); Arrange opens a popup"
+            >
+              Arrange Transport
+            </button>
+          )}
+          {hasResourceQueueFeature && (
+            <button
+              className="pilot-assignment-teams-btn-pilotsassign"
+              onClick={() => setShowTeamsModal(true)}
+            >
+              Teams
+            </button>
+          )}
         </div>
       </div>
 
+      {!hasResourceQueueFeature ? (
+        <div className="pilot-assignment-access-denied-pilotsassign">
+          <p>
+            Resource assignment is not enabled for your role. An administrator can turn it on under{' '}
+            <strong>ICT → Auth Controls → Features</strong> (OpsRoom).
+          </p>
+        </div>
+      ) : null}
+
       {/* Top Control Bar */}
+      {hasResourceQueueFeature ? (
       <div className="pilot-assignment-controls-bar-pilotsassign">
         <div className="pilot-assignment-control-group-pilotsassign">
           <label className="pilot-assignment-control-label-pilotsassign">Select Date :</label>
@@ -422,9 +473,10 @@ const PilotAssignment = () => {
           {creatingAssignment ? 'Deploying...' : 'Deploy'}
         </button>
       </div>
+      ) : null}
 
       {/* Drone Info Display */}
-      {droneInfo && (
+      {hasResourceQueueFeature && droneInfo && (
         <div className="pilot-assignment-drone-info-pilotsassign">
           {/* New format: permanent_drone and temp_drone */}
           {droneInfo.permanent_drone && (
@@ -459,6 +511,7 @@ const PilotAssignment = () => {
       )}
 
       {/* Main Content - Plans and Missions Section */}
+      {hasResourceQueueFeature ? (
       <div className="pilot-assignment-content-pilotsassign">
         {/* Plans Section */}
         <div className="pilot-assignment-section-pilotsassign">
@@ -574,9 +627,10 @@ const PilotAssignment = () => {
           )}
         </div>
       </div>
+      ) : null}
 
       {/* Teams Modal */}
-      {showTeamsModal && (
+      {hasResourceQueueFeature && showTeamsModal && (
         <div className="pilot-assignment-teams-modal-overlay-pilotsassign" onClick={() => setShowTeamsModal(false)}>
           <div className="pilot-assignment-teams-modal-pilotsassign" onClick={(e) => e.stopPropagation()}>
             <div className="pilot-assignment-teams-modal-header-pilotsassign">

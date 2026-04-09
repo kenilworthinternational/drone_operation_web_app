@@ -7,6 +7,9 @@ import {
   useEstimatePilotTransportDistanceMutation,
   useAssignPilotTransportDetailsMutation,
 } from '../../../api/services NodeJs/allEndpoints';
+import { useGetMyPermissionsQuery } from '../../../api/services NodeJs/featurePermissionsApi';
+import { FEATURE_CODES } from '../../../utils/featurePermissions';
+import { isInternalDeveloper } from '../../../utils/authUtils';
 import '../../../styles/pilotAssignment-pilotsassign.css';
 
 /**
@@ -15,6 +18,32 @@ import '../../../styles/pilotAssignment-pilotsassign.css';
 const TransportArrangePage = () => {
   const navigate = useNavigate();
   const location = useLocation();
+
+  const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+  const userId = userData?.id || null;
+  const isDeveloper = isInternalDeveloper(userData);
+  const { data: featurePermissionsData = {} } = useGetMyPermissionsQuery(undefined, {
+    skip: !userId,
+  });
+
+  const checkFeatureAccess = (featureCode) => {
+    if (isDeveloper) return true;
+    if (!featurePermissionsData || typeof featurePermissionsData !== 'object') return false;
+    if (featurePermissionsData.features && featurePermissionsData.features[featureCode] === true) {
+      return true;
+    }
+    const categories = featurePermissionsData.categories || featurePermissionsData;
+    for (const category in categories) {
+      if (category === 'paths' || category === 'features') continue;
+      const categoryData = categories[category];
+      if (Array.isArray(categoryData) && categoryData.includes(featureCode)) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  const hasArrangeTransportFeature = checkFeatureAccess(FEATURE_CODES.PILOT_ASSIGNMENT_ARRANGE_TRANSPORT);
 
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [transportDetailAssignmentId, setTransportDetailAssignmentId] = useState('');
@@ -29,14 +58,14 @@ const TransportArrangePage = () => {
   const transportRecommendedAppliedRef = useRef(false);
 
   const { data: transportArrangementListData, isLoading: loadingTransportArrangementList } =
-    useGetTransportArrangementListQuery(undefined);
+    useGetTransportArrangementListQuery(undefined, { skip: !hasArrangeTransportFeature });
   const { data: transportOptionsData, isLoading: loadingTransportOptions } = useGetPilotTransportOptionsQuery(
     {
       assignment_id: transportDetailAssignmentId || null,
       yearMonth: transportDetailYearMonth || undefined,
       plan_ids: [],
     },
-    { skip: !showDetailModal || !transportDetailAssignmentId }
+    { skip: !showDetailModal || !transportDetailAssignmentId || !hasArrangeTransportFeature }
   );
   const [estimateTransportDistance, { isLoading: estimatingTransport }] = useEstimatePilotTransportDistanceMutation();
   const [assignTransportDetails, { isLoading: savingTransport }] = useAssignPilotTransportDetailsMutation();
@@ -209,17 +238,29 @@ const TransportArrangePage = () => {
         <div className="pilot-assignment-header-actions-pilotsassign" />
       </div>
 
+      {!hasArrangeTransportFeature ? (
+        <div className="pilot-assignment-access-denied-pilotsassign">
+          <p>
+            Arrange transport is not enabled for your role. An administrator can turn it on under{' '}
+            <strong>ICT → Auth Controls → Features</strong> (OpsRoom).
+          </p>
+        </div>
+      ) : null}
+
+      {hasArrangeTransportFeature ? (
       <p className="pilot-assignment-transport-list-intro-pilotsassign" style={{ marginBottom: '16px' }}>
         Today and tomorrow pilot assignments. Choose <strong>Arrange</strong> or <strong>View</strong> to open driver and vehicle
         in a popup.
       </p>
+      ) : null}
 
-      {loadingTransportArrangementList ? (
+      {hasArrangeTransportFeature && loadingTransportArrangementList ? (
         <div className="pilot-assignment-teams-loading-pilotsassign">
           <Bars height="32" width="32" color="#003057" ariaLabel="bars-loading" visible />
           <span>Loading assignments...</span>
         </div>
-      ) : (
+      ) : null}
+      {hasArrangeTransportFeature && !loadingTransportArrangementList ? (
         <>
           <div className="pilot-assignment-transport-list-section-pilotsassign">
             <div className="pilot-assignment-transport-subtitle-pilotsassign">Today</div>
@@ -287,9 +328,9 @@ const TransportArrangePage = () => {
             )}
           </div>
         </>
-      )}
+      ) : null}
 
-      {showDetailModal && (
+      {hasArrangeTransportFeature && showDetailModal && (
         <div className="pilot-assignment-teams-modal-overlay-pilotsassign" onClick={closeDetailModal}>
           <div className="pilot-assignment-transport-modal-pilotsassign" onClick={(e) => e.stopPropagation()}>
             <div className="pilot-assignment-teams-modal-header-pilotsassign">

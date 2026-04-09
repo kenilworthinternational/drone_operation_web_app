@@ -137,4 +137,28 @@
     padding: 0 4px !important;
   }
 }
-  
+
+/* Wing hub: after clicking a wing card, ?wing=… sets --wing-nav-primary on .home-layout-root */
+.home-layout-root--wing-theme .left-nav {
+  background: var(--wing-nav-primary) !important;
+  scrollbar-color: rgba(255, 255, 255, 0.35) transparent;
+}
+
+.home-layout-root--wing-theme .left-nav.blue,
+.home-layout-root--wing-theme .left-nav.green,
+.home-layout-root--wing-theme .left-nav.darkblue {
+  background: var(--wing-nav-primary) !important;
+}
+
+.home-layout-root--wing-theme .top-nav,
+.home-layout-root--wing-theme .top-nav.blue,
+.home-layout-root--wing-theme .top-nav.green,
+.home-layout-root--wing-theme .top-nav.darkblue {
+  background: var(--wing-nav-primary) !important;
+}
+
+/* OD workflow shell + COMB chrome: same bar as wing card (no left nav on some routes) */
+.home-layout-root--wing-theme .comb-chrome {
+  background: var(--wing-nav-primary) !important;
+  color: #fff;
+}

@@ -1,9 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { baseApi } from '../../../api/services/allEndpoints';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
-import { FaSync, FaBell, FaTimes, FaCheck, FaCheckCircle, FaCircle, FaEnvelope, FaEnvelopeOpen } from 'react-icons/fa';
+import {
+  FaSync,
+  FaBell,
+  FaTimes,
+  FaEnvelope,
+  FaEnvelopeOpen,
+  FaInbox,
+  FaUserCheck,
+  FaTruck,
+  FaCreditCard,
+  FaUnlock,
+  FaTasks,
+  FaCalendarDay,
+  FaMapMarkedAlt,
+  FaChevronRight,
+  FaCalendarAlt,
+  FaClipboardList,
+  FaHistory,
+  FaChartBar,
+  FaRulerCombined,
+  FaBolt,
+} from 'react-icons/fa';
 import {
   useGetMissionsPendingPaymentQuery,
   useGetDroneUnlockingQueueQuery,
@@ -30,9 +51,6 @@ import '../../../styles/workflowDashboard-com.css';
 
 const WorkflowDashboard = () => {
   const dispatch = useAppDispatch();
-  const queryClient = useQueryClient();
-  const [dateRange, setDateRange] = useState('2025.03.03 - 2025.03.07');
-  const [selectedAction, setSelectedAction] = useState('Spray');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showNotificationsModal, setShowNotificationsModal] = useState(false);
   const navigate = useNavigate();
@@ -93,12 +111,18 @@ const WorkflowDashboard = () => {
     return false;
   };
 
-  const hasNotificationsFeature = checkFeatureAccess(FEATURE_CODES.WORKFLOW_NOTIFICATIONS);
-  const hasDashboardControlsFeature = checkFeatureAccess(FEATURE_CODES.WORKFLOW_DASHBOARD_CONTROLS);
-  
-  // Fetch notifications for users with notifications feature access
+  const hasPilotAssignmentResourceFeature = checkFeatureAccess(FEATURE_CODES.PILOT_ASSIGNMENT_RESOURCE_QUEUE);
+
+  const [quickAccessDeniedMessage, setQuickAccessDeniedMessage] = useState('');
+
+  useEffect(() => {
+    if (!quickAccessDeniedMessage) return undefined;
+    const t = setTimeout(() => setQuickAccessDeniedMessage(''), 4500);
+    return () => clearTimeout(t);
+  }, [quickAccessDeniedMessage]);
+
+  // Fetch notifications for all users (no feature gate)
   const { data: unreadCountData, refetch: refetchUnreadCount } = useGetUnreadCountQuery(undefined, {
-    skip: !hasNotificationsFeature,
     refetchInterval: 30000, // Refetch every 30 seconds
   });
   
@@ -108,18 +132,18 @@ const WorkflowDashboard = () => {
   // We'll sort and filter on the frontend to show unread first, then latest 3
   const { data: allNotificationsData, refetch: refetchAllNotifications } = useGetNotificationsQuery(
     {}, // No filters - get all notifications (read and unread)
-    { skip: !hasNotificationsFeature }
+    {}
   );
   
   // For the modal, fetch all notifications separately
   const { data: modalNotificationsData, refetch: refetchModalNotifications } = useGetNotificationsQuery(
     {}, // No filters - get all notifications (read and unread)
-    { skip: !showNotificationsModal || !hasNotificationsFeature }
+    { skip: !showNotificationsModal }
   );
   
   // Refetch notifications when user changes (userId changes) or when unreadCount changes
   useEffect(() => {
-    if (hasNotificationsFeature && userId) {
+    if (userId) {
       refetchUnreadCount();
       refetchAllNotifications();
       if (showNotificationsModal) {
@@ -127,7 +151,7 @@ const WorkflowDashboard = () => {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId, unreadCount, hasNotificationsFeature]); // Refetch when user ID or unread count changes
+  }, [userId, unreadCount]); // Refetch when user ID or unread count changes
   
   const [markAsRead] = useMarkNotificationAsDisplayedMutation();
   const [logNotificationAction] = useLogNotificationActionMutation();
@@ -157,8 +181,13 @@ const WorkflowDashboard = () => {
     return datetimeB.localeCompare(datetimeA);
   });
   
-  // Take top 3 notifications (unread first, then latest)
-  const recentNotifications = sortedAllNotifications.slice(0, 3);
+  const todayYmd = new Date().toISOString().split('T')[0];
+  const todayNotifications = sortedAllNotifications.filter((n) => {
+    if (!n.date) return false;
+    let d = String(n.date);
+    if (d.includes('T')) d = d.split('T')[0];
+    return d === todayYmd;
+  });
   
   // For modal: sort all notifications with unread first, then by time (latest first)
   const modalNotificationsRaw = modalNotificationsData?.data || [];
@@ -242,7 +271,7 @@ const WorkflowDashboard = () => {
   };
 
   // Use React Query to fetch counts with intelligent caching and deduplication
-  const { data: counts, isLoading, refetch: refetchCounts } = useQuery({
+  const { data: counts, refetch: refetchCounts } = useQuery({
     queryKey: ['workflowDashboard', 'counts'],
     queryFn: async () => {
       const tomorrowDate = getTomorrowDate();
@@ -340,7 +369,10 @@ const WorkflowDashboard = () => {
 
   // Get resource assignment count for tomorrow
   const tomorrowDate = getTomorrowDate();
-  const { data: resourceAssignmentData, refetch: refetchResourceAssignment } = useGetResourceAssignmentCountQuery(tomorrowDate);
+  const { data: resourceAssignmentData, refetch: refetchResourceAssignment } = useGetResourceAssignmentCountQuery(
+    tomorrowDate,
+    { skip: !userId || !hasPilotAssignmentResourceFeature }
+  );
   const resourceAssignmentCount = resourceAssignmentData?.data?.total || 0;
 
   // Refresh all counts handler
@@ -354,7 +386,7 @@ const WorkflowDashboard = () => {
         refetchDroneUnlocking(),
         refetchDayEndProcess(),
         refetchDjiImages(),
-        refetchResourceAssignment(),
+        ...(hasPilotAssignmentResourceFeature ? [refetchResourceAssignment()] : []),
       ]);
     } catch (error) {
       console.error('Error refreshing counts:', error);
@@ -374,7 +406,7 @@ const WorkflowDashboard = () => {
           refetchDroneUnlocking(),
           refetchDayEndProcess(),
           refetchDjiImages(),
-          refetchResourceAssignment(),
+          ...(hasPilotAssignmentResourceFeature ? [refetchResourceAssignment()] : []),
         ]);
       } catch (error) {
         console.error('Error auto-refreshing counts:', error);
@@ -386,7 +418,7 @@ const WorkflowDashboard = () => {
       refreshAllData();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [routerLocation.pathname]); // Refresh when route changes to this page
+  }, [routerLocation.pathname, hasPilotAssignmentResourceFeature]); // Refresh when route changes to this page
 
   // Extract counts with fallback to 0
   const adhocCount = counts?.adhoc || 0;
@@ -394,112 +426,96 @@ const WorkflowDashboard = () => {
   const managerApprovalCount = counts?.managerApproval || 0;
   const opsAssignCount = counts?.opsAssignPending || 0;
 
+  const todayDisplay = new Date(`${todayYmd}T12:00:00`).toLocaleDateString(undefined, {
+    weekday: 'long',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+
+  const actionMetricCards = [
+    {
+      title: 'Plantation manager approval',
+      subtitle: 'Tomorrow — pending manager sign-off',
+      count: managerApprovalCount,
+      unit: 'plans',
+      path: '/home/managerApprovalQueue',
+      icon: FaUserCheck,
+    },
+    {
+      title: 'Resource assignment',
+      subtitle: 'Tomorrow — items to assign',
+      count: resourceAssignmentCount,
+      unit: 'items',
+      path: '/home/pilotAssignment',
+      icon: FaTruck,
+      featureCode: FEATURE_CODES.PILOT_ASSIGNMENT_RESOURCE_QUEUE,
+    },
+    {
+      title: 'Pending payment',
+      subtitle: 'Missions awaiting payment',
+      count: pendingPaymentCount,
+      unit: 'missions',
+      path: '/home/pendingPaymentQueue',
+      icon: FaCreditCard,
+    },
+    {
+      title: 'Drone unlocking',
+      subtitle: 'Plans & missions in queue',
+      count: droneUnlockingCount,
+      unit: 'items',
+      path: '/home/droneUnlockingQueue',
+      icon: FaUnlock,
+    },
+    {
+      title: 'Ops assignment',
+      subtitle: 'Today — active plans without operator',
+      count: opsAssignCount,
+      unit: 'items',
+      path: '/home/opsAsign',
+      icon: FaTasks,
+    },
+    {
+      title: 'Day end process',
+      subtitle: 'Plans pending day end',
+      count: dayEndProcessCount,
+      unit: 'plans',
+      path: '/home/dayEndProcess',
+      icon: FaCalendarDay,
+    },
+    {
+      title: 'DJI map upload',
+      subtitle: 'Maps uploaded today',
+      count: djiImagesCount,
+      unit: 'maps',
+      path: '/home/djiMapUpload',
+      icon: FaMapMarkedAlt,
+    },
+  ];
+
+  const quickAccessItems = [
+    { label: 'Plan calendar', description: 'Schedule & browse plans', path: '/home/opsroomPlanCalendar', icon: FaCalendarAlt, featureCode: null },
+    { label: "Today's plans", description: "Today's operational view", path: '/home/todayPlans', icon: FaClipboardList, featureCode: null },
+    {
+      label: 'Emergency moving',
+      description: 'Reassign or move plans',
+      path: '/home/emergencyMoving',
+      icon: FaBolt,
+      featureCode: FEATURE_CODES.WORKFLOW_QUICK_EMERGENCY_MOVING,
+    },
+    { label: 'Field history', description: 'Past field activity', path: '/home/fieldHistory', icon: FaHistory, featureCode: null },
+    { label: 'Reports', description: 'Ops reporting', path: '/home/reports/ops', icon: FaChartBar, featureCode: null },
+    {
+      label: 'Field size adjustments',
+      description: 'Area corrections',
+      path: '/home/fieldSizeAdjustments',
+      icon: FaRulerCombined,
+      featureCode: FEATURE_CODES.WORKFLOW_QUICK_FIELD_SIZE_ADJUSTMENTS,
+    },
+  ];
+
   return (
     <div className="workflow-dashboard-workflowDashboard">
-      {/* Header Section */}
-      <div className="dashboard-header-workflowDashboard">
-        <div className="header-content-workflowDashboard">
-          <div className="header-controls-workflowDashboard">
-            {/* Show notifications for users with notifications feature access */}
-            {hasNotificationsFeature && (
-              <div className="notifications-section-workflowDashboard">
-                <div className="notifications-header-workflowDashboard">
-                  <div className="notifications-title-workflowDashboard">
-                    <FaBell className="notifications-icon-workflowDashboard" />
-                    <span>Notifications</span>
-                    {unreadCount > 0 && (
-                      <span className="unread-badge-workflowDashboard">{unreadCount}</span>
-                    )}
-                  </div>
-                  <button
-                    className="show-all-btn-workflowDashboard"
-                    onClick={handleShowAll}
-                  >
-                    View All
-                  </button>
-                </div>
-                
-                {recentNotifications.length > 0 ? (
-                  <div className="notifications-content-workflowDashboard">
-                    <div className="notifications-list-workflowDashboard">
-                      {recentNotifications.map((notification) => {
-                        const isRead = notification.displayed === 1;
-                        return (
-                          <div key={notification.id} className="notification-item-workflowDashboard">
-                            <div className="notification-text-workflowDashboard">
-                              <p className="notification-description-workflowDashboard">{notification.description}</p>
-                              <span className="notification-date-workflowDashboard">
-                                {formatNotificationDateTime(notification.date, notification.time)}
-                              </span>
-                            </div>
-                            {isRead ? (
-                              <div className="notification-read-indicator-workflowDashboard" title="Already read">
-                                <FaEnvelopeOpen className="read-icon-workflowDashboard" />
-                              </div>
-                            ) : (
-                              <button
-                                className="notification-read-btn-workflowDashboard"
-                                onClick={() => handleMarkAsRead(notification.id)}
-                                title="Mark as read"
-                              >
-                                <FaEnvelope className="unread-icon-workflowDashboard" />
-                              </button>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="no-notifications-workflowDashboard">
-                    <p>No unread notifications</p>
-                  </div>
-                )}
-              </div>
-            )}
-            
-            {/* Show dashboard controls (date range selector and revenue box) for users with dashboard controls feature access */}
-            {hasDashboardControlsFeature && (
-              <>
-                <div className="date-range-selector-workflowDashboard">
-                  <label className="date-label-workflowDashboard">Select Date / Date Range:</label>
-                  <input 
-                    type="text" 
-                    className="date-input-workflowDashboard"
-                    value={dateRange}
-                    onChange={(e) => setDateRange(e.target.value)}
-                    placeholder="2025.03.03 - 2025.03.07"
-                  />
-                  <span className="calendar-icon-workflowDashboard">📅</span>
-                </div>
-
-                <div className="revenue-box-workflowDashboard">
-                  <div className="revenue-total-workflowDashboard">
-                    <div className="revenue-header-workflowDashboard">Total Revenue:</div>
-                    <div className="revenue-details-workflowDashboard">
-                      <span>Hectares: 1100</span>
-                      <span>LKR 150,000</span>
-                    </div>
-                  </div>
-                  <div className="revenue-breakdown-workflowDashboard">
-                    <div className="breakdown-item-workflowDashboard">
-                      <span className="breakdown-label-workflowDashboard">Plantation:</span>
-                      <span>Hectares: 550</span>
-                      <span>LKR 75,000</span>
-                    </div>
-                    <div className="breakdown-item-workflowDashboard">
-                      <span className="breakdown-label-workflowDashboard">Non-Plantation:</span>
-                      <span>Hectares: 550</span>
-                      <span>LKR 75,000</span>
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-
       {/* Notifications Modal */}
       {showNotificationsModal && (
         <div className="notifications-modal-overlay-workflowDashboard" onClick={() => setShowNotificationsModal(false)}>
@@ -552,404 +568,193 @@ const WorkflowDashboard = () => {
         </div>
       )}
 
-      {/* Main Content */}
-      <div className="dashboard-content-workflowDashboard">
-        {/* Left Section - Resource Availability */}
-        <div className="resource-section-workflowDashboard">
-          <div className="resource-card-workflowDashboard">
-            <div className="resource-card-header-workflowDashboard">
-              <span className="resource-title-workflowDashboard">Drone Details: 30</span>
-            </div>
-            <div className="resource-card-body-workflowDashboard">
-              <div className="resource-categories-grid-workflowDashboard">
-                <div className="resource-category-workflowDashboard">
-                  <div className="resource-category-title-workflowDashboard">Working Drones</div>
-                  <div className="resource-sub-items-workflowDashboard">
-                    <div className="resource-sub-item-workflowDashboard">
-                      <span className="sub-item-label-workflowDashboard">Plantation</span>
-                      <span className="sub-item-value-workflowDashboard">10</span>
-                    </div>
-                    <div className="resource-sub-item-workflowDashboard">
-                      <span className="sub-item-label-workflowDashboard">Non Plantation</span>
-                      <span className="sub-item-value-workflowDashboard">8</span>
-                    </div>
-                  </div>
+      <div className="wf-dashboard-shell-workflowDashboard">
+        <aside className="wf-notifications-aside-workflowDashboard" aria-label="Today's notifications">
+            <div className="wf-notifications-aside-card-workflowDashboard">
+              <div className="wf-notifications-aside-head-workflowDashboard">
+                <div>
+                  <h2 className="wf-aside-title-workflowDashboard">
+                    <FaBell className="wf-aside-bell-workflowDashboard" aria-hidden />
+                    {"Today's notifications"}
+                  </h2>
+                  <p className="wf-aside-date-workflowDashboard">{todayDisplay}</p>
                 </div>
-                <div className="resource-category-workflowDashboard">
-                  <div className="resource-category-title-workflowDashboard">Not Working Drones</div>
-                  <div className="resource-sub-items-workflowDashboard">
-                    <div className="resource-sub-item-workflowDashboard">
-                      <span className="sub-item-label-workflowDashboard">Plantation</span>
-                      <span className="sub-item-value-workflowDashboard">8</span>
-                    </div>
-                    <div className="resource-sub-item-workflowDashboard">
-                      <span className="sub-item-label-workflowDashboard">Non Plantation</span>
-                      <span className="sub-item-value-workflowDashboard">4</span>
-                    </div>
-                  </div>
+                <button type="button" className="wf-aside-viewall-workflowDashboard" onClick={handleShowAll}>
+                  View all
+                </button>
+              </div>
+              {unreadCount > 0 ? (
+                <div className="wf-unread-strip-workflowDashboard">
+                  <span className="wf-unread-dot-workflowDashboard" aria-hidden />
+                  {unreadCount} unread across all dates
                 </div>
+              ) : null}
+              <div className="wf-notifications-scroll-workflowDashboard">
+                {todayNotifications.length > 0 ? (
+                  todayNotifications.map((notification) => {
+                    const isRead = notification.displayed === 1;
+                    return (
+                      <div key={notification.id} className="wf-notify-row-workflowDashboard">
+                        <div className="wf-notify-row-main-workflowDashboard">
+                          <p className="wf-notify-text-workflowDashboard">{notification.description}</p>
+                          <span className="wf-notify-meta-workflowDashboard">
+                            {formatNotificationDateTime(notification.date, notification.time)}
+                          </span>
+                        </div>
+                        {isRead ? (
+                          <div className="wf-notify-status-workflowDashboard" title="Read">
+                            <FaEnvelopeOpen className="wf-notify-icon-read-workflowDashboard" />
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            className="wf-notify-mark-read-workflowDashboard"
+                            onClick={() => handleMarkAsRead(notification.id)}
+                            title="Mark as read"
+                          >
+                            <FaEnvelope className="wf-notify-icon-unread-workflowDashboard" />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="wf-notifications-empty-workflowDashboard">
+                    <p>No notifications dated today.</p>
+                    <p className="wf-notifications-empty-hint-workflowDashboard">Use “View all” for the full inbox.</p>
+                  </div>
+                )}
               </div>
             </div>
-          </div>
+        </aside>
 
-          {/* Pilot Details Card */}
-          <div className="resource-card-workflowDashboard">
-            <div className="resource-card-header-workflowDashboard">
-              <span className="resource-title-workflowDashboard">Pilot Details: 60</span>
-            </div>
-            <div className="resource-card-body-workflowDashboard">
-              <div className="resource-categories-grid-workflowDashboard">
-                <div className="resource-category-workflowDashboard">
-                  <div className="resource-category-title-workflowDashboard">Working Pilots</div>
-                  <div className="resource-sub-items-workflowDashboard">
-                    <div className="resource-sub-item-workflowDashboard">
-                      <span className="sub-item-label-workflowDashboard">Plantation</span>
-                      <span className="sub-item-value-workflowDashboard">10</span>
-                    </div>
-                    <div className="resource-sub-item-workflowDashboard">
-                      <span className="sub-item-label-workflowDashboard">Non Plantation</span>
-                      <span className="sub-item-value-workflowDashboard">15</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="resource-category-workflowDashboard">
-                  <div className="resource-category-title-workflowDashboard">Not Working Pilots</div>
-                  <div className="resource-sub-items-workflowDashboard">
-                    <div className="resource-sub-item-workflowDashboard">
-                      <span className="sub-item-label-workflowDashboard">Plantation</span>
-                      <span className="sub-item-value-workflowDashboard">3</span>
-                    </div>
-                    <div className="resource-sub-item-workflowDashboard">
-                      <span className="sub-item-label-workflowDashboard">Non Plantation</span>
-                      <span className="sub-item-value-workflowDashboard">2</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="resource-category-workflowDashboard">
-                  <div className="resource-category-title-workflowDashboard">Training Pilots</div>
-                  <div className="resource-sub-items-workflowDashboard">
-                    <div className="resource-sub-item-workflowDashboard">
-                      <span className="sub-item-label-workflowDashboard">Plantation</span>
-                      <span className="sub-item-value-workflowDashboard">3</span>
-                    </div>
-                    <div className="resource-sub-item-workflowDashboard">
-                      <span className="sub-item-label-workflowDashboard">Non Plantation</span>
-                      <span className="sub-item-value-workflowDashboard">2</span>
-                    </div>
-                  </div>
-                </div>
+        <div className="wf-main-column-workflowDashboard">
+          <section className="wf-panel-workflowDashboard wf-panel--action-workflowDashboard">
+            <div className="wf-panel-head-workflowDashboard">
+              <div>
+                <h2 className="wf-panel-title-workflowDashboard">Action needed</h2>
+                <p className="wf-panel-subtitle-workflowDashboard">Operational queues — select a card to open the screen</p>
               </div>
+              <button
+                type="button"
+                className="wf-refresh-btn-workflowDashboard"
+                onClick={handleRefreshAll}
+                disabled={isRefreshing}
+                title="Refresh all counts"
+              >
+                <FaSync className={isRefreshing ? 'wf-refresh-spin-workflowDashboard' : ''} />
+                <span>Refresh</span>
+              </button>
             </div>
-          </div>
 
-          {/* Generator Details Card */}
-          <div className="resource-card-workflowDashboard">
-            <div className="resource-card-header-workflowDashboard">
-              <span className="resource-title-workflowDashboard">Generator Details: 30</span>
-            </div>
-            <div className="resource-card-body-workflowDashboard">
-              <div className="resource-categories-grid-workflowDashboard">
-                <div className="resource-category-workflowDashboard">
-                  <div className="resource-category-title-workflowDashboard">Genny's at Work</div>
-                  <div className="resource-sub-items-workflowDashboard">
-                    <div className="resource-sub-item-workflowDashboard">
-                      <span className="sub-item-label-workflowDashboard">Plantation</span>
-                      <span className="sub-item-value-workflowDashboard">15</span>
-                    </div>
-                    <div className="resource-sub-item-workflowDashboard">
-                      <span className="sub-item-label-workflowDashboard">Non Plantation</span>
-                      <span className="sub-item-value-workflowDashboard">10</span>
-                    </div>
+            <div className="wf-action-cards-grid-workflowDashboard">
+              <div className="wf-nested-queue-card-workflowDashboard">
+                <div className="wf-nested-queue-head-workflowDashboard">
+                  <FaInbox className="wf-nested-queue-icon-workflowDashboard" aria-hidden />
+                  <div>
+                    <span className="wf-nested-queue-title-workflowDashboard">Plan requests</span>
+                    <span className="wf-nested-queue-sub-workflowDashboard">Requests queue</span>
                   </div>
                 </div>
-                <div className="resource-category-workflowDashboard">
-                  <div className="resource-category-title-workflowDashboard">Genny's Not Working</div>
-                  <div className="resource-sub-items-workflowDashboard">
-                    <div className="resource-sub-item-workflowDashboard">
-                      <span className="sub-item-label-workflowDashboard">Plantation</span>
-                      <span className="sub-item-value-workflowDashboard">3</span>
-                    </div>
-                    <div className="resource-sub-item-workflowDashboard">
-                      <span className="sub-item-label-workflowDashboard">Non Plantation</span>
-                      <span className="sub-item-value-workflowDashboard">2</span>
-                    </div>
-                  </div>
-                </div>
+                <button
+                  type="button"
+                  className="wf-nested-queue-row-workflowDashboard"
+                  onClick={() => go('/home/requestsQueue')}
+                  aria-label={`Ad-hoc plans, ${adhocCount} pending`}
+                >
+                  <span className="wf-nested-queue-label-workflowDashboard">Ad-hoc plans</span>
+                  <span className="wf-nested-queue-meta-workflowDashboard">
+                    <span className="wf-count-pill-workflowDashboard">{adhocCount}</span>
+                    <FaChevronRight className="wf-chevron-workflowDashboard" aria-hidden />
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  className="wf-nested-queue-row-workflowDashboard"
+                  onClick={() => go('/home/requestsQueue')}
+                  aria-label={`Reschedule requests, ${rescheduleCount} pending`}
+                >
+                  <span className="wf-nested-queue-label-workflowDashboard">Reschedule requests</span>
+                  <span className="wf-nested-queue-meta-workflowDashboard">
+                    <span className="wf-count-pill-workflowDashboard">{rescheduleCount}</span>
+                    <FaChevronRight className="wf-chevron-workflowDashboard" aria-hidden />
+                  </span>
+                </button>
               </div>
-            </div>
-          </div>
 
-          {/* R/C Details Card */}
-          <div className="resource-card-workflowDashboard">
-            <div className="resource-card-header-workflowDashboard">
-              <span className="resource-title-workflowDashboard">R/C Details: 30</span>
+              {actionMetricCards
+                .filter((c) => !c.featureCode || checkFeatureAccess(c.featureCode))
+                .map(({ title, subtitle, count, unit, path, icon: Icon }) => (
+                <button
+                  key={path}
+                  type="button"
+                  className="wf-metric-card-workflowDashboard"
+                  onClick={() => go(path)}
+                  aria-label={`${title}, ${count} ${unit}`}
+                >
+                  <span className="wf-metric-icon-wrap-workflowDashboard" aria-hidden>
+                    <Icon className="wf-metric-icon-workflowDashboard" />
+                  </span>
+                  <span className="wf-metric-body-workflowDashboard">
+                    <span className="wf-metric-title-workflowDashboard">{title}</span>
+                    <span className="wf-metric-sub-workflowDashboard">{subtitle}</span>
+                  </span>
+                  <span className="wf-metric-right-workflowDashboard">
+                    <span className="wf-count-pill-workflowDashboard wf-count-pill--emphasis-workflowDashboard">{count}</span>
+                    <FaChevronRight className="wf-chevron-workflowDashboard" aria-hidden />
+                  </span>
+                </button>
+              ))}
             </div>
-            <div className="resource-card-body-workflowDashboard">
-              <div className="resource-categories-grid-workflowDashboard">
-                <div className="resource-category-workflowDashboard">
-                  <div className="resource-category-title-workflowDashboard">R/C at Work</div>
-                  <div className="resource-sub-items-workflowDashboard">
-                    <div className="resource-sub-item-workflowDashboard">
-                      <span className="sub-item-label-workflowDashboard">Plantation</span>
-                      <span className="sub-item-value-workflowDashboard">15</span>
-                    </div>
-                    <div className="resource-sub-item-workflowDashboard">
-                      <span className="sub-item-label-workflowDashboard">Non Plantation</span>
-                      <span className="sub-item-value-workflowDashboard">10</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="resource-category-workflowDashboard">
-                  <div className="resource-category-title-workflowDashboard">R/C Not Working</div>
-                  <div className="resource-sub-items-workflowDashboard">
-                    <div className="resource-sub-item-workflowDashboard">
-                      <span className="sub-item-label-workflowDashboard">Plantation</span>
-                      <span className="sub-item-value-workflowDashboard">3</span>
-                    </div>
-                    <div className="resource-sub-item-workflowDashboard">
-                      <span className="sub-item-label-workflowDashboard">Non Plantation</span>
-                      <span className="sub-item-value-workflowDashboard">2</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          </section>
 
-          {/* Battery Details Card */}
-          <div className="resource-card-workflowDashboard">
-            <div className="resource-card-header-workflowDashboard">
-              <span className="resource-title-workflowDashboard">Battery Details: 30</span>
+          <section className="wf-panel-workflowDashboard wf-panel--quick-workflowDashboard">
+            <h3 className="wf-quick-section-title-workflowDashboard">Quick access</h3>
+            <p className="wf-quick-section-sub-workflowDashboard">Shortcuts to common workflow tools</p>
+            {quickAccessDeniedMessage ? (
+              <p className="wf-quick-denied-banner-workflowDashboard" role="status">
+                {quickAccessDeniedMessage}
+              </p>
+            ) : null}
+            <div className="wf-quick-grid-workflowDashboard">
+              {quickAccessItems.map(({ label, description, path, icon: Icon, featureCode }) => {
+                const gated = featureCode != null;
+                const allowed = !gated || checkFeatureAccess(featureCode);
+                return (
+                  <button
+                    key={path}
+                    type="button"
+                    className={[
+                      'wf-quick-card-workflowDashboard',
+                      gated && !allowed ? 'wf-quick-card--access-denied-workflowDashboard' : '',
+                    ]
+                      .filter(Boolean)
+                      .join(' ')}
+                    onClick={() => {
+                      if (!allowed) {
+                        setQuickAccessDeniedMessage(
+                          'Access denied. Ask an administrator to enable this shortcut under ICT → Auth Controls → Features (Workflow Dashboard).'
+                        );
+                        return;
+                      }
+                      go(path);
+                    }}
+                    aria-label={allowed ? label : `${label} — access denied`}
+                    title={!allowed ? 'Access denied — enable feature in Auth Controls' : undefined}
+                  >
+                    <span className="wf-quick-icon-wrap-workflowDashboard" aria-hidden>
+                      <Icon className="wf-quick-icon-workflowDashboard" />
+                    </span>
+                    <span className="wf-quick-text-workflowDashboard">
+                      <span className="wf-quick-label-workflowDashboard">{label}</span>
+                      <span className="wf-quick-desc-workflowDashboard">{description}</span>
+                    </span>
+                    <FaChevronRight className="wf-quick-chevron-workflowDashboard" aria-hidden />
+                  </button>
+                );
+              })}
             </div>
-            <div className="resource-card-body-workflowDashboard">
-              <div className="resource-categories-grid-workflowDashboard">
-                <div className="resource-category-workflowDashboard">
-                  <div className="resource-category-title-workflowDashboard">Battery at Work</div>
-                  <div className="resource-sub-items-workflowDashboard">
-                    <div className="resource-sub-item-workflowDashboard">
-                      <span className="sub-item-label-workflowDashboard">Plantation</span>
-                      <span className="sub-item-value-workflowDashboard">15</span>
-                    </div>
-                    <div className="resource-sub-item-workflowDashboard">
-                      <span className="sub-item-label-workflowDashboard">Non Plantation</span>
-                      <span className="sub-item-value-workflowDashboard">10</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="resource-category-workflowDashboard">
-                  <div className="resource-category-title-workflowDashboard">Battery Not Working</div>
-                  <div className="resource-sub-items-workflowDashboard">
-                    <div className="resource-sub-item-workflowDashboard">
-                      <span className="sub-item-label-workflowDashboard">Plantation</span>
-                      <span className="sub-item-value-workflowDashboard">3</span>
-                    </div>
-                    <div className="resource-sub-item-workflowDashboard">
-                      <span className="sub-item-label-workflowDashboard">Non Plantation</span>
-                      <span className="sub-item-value-workflowDashboard">2</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Vehicle Details Card */}
-          <div className="resource-card-workflowDashboard">
-            <div className="resource-card-header-workflowDashboard">
-              <span className="resource-title-workflowDashboard">Vehicle Details: 10</span>
-            </div>
-            <div className="resource-card-body-workflowDashboard">
-              <div className="resource-categories-grid-workflowDashboard">
-                <div className="resource-category-workflowDashboard">
-                  <div className="resource-category-title-workflowDashboard">Vehicle's at Work</div>
-                  <div className="resource-sub-items-workflowDashboard">
-                    <div className="resource-sub-item-workflowDashboard">
-                      <span className="sub-item-label-workflowDashboard">Plantation</span>
-                      <span className="sub-item-value-workflowDashboard">6</span>
-                    </div>
-                    <div className="resource-sub-item-workflowDashboard">
-                      <span className="sub-item-label-workflowDashboard">Non Plantation</span>
-                      <span className="sub-item-value-workflowDashboard">3</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="resource-category-workflowDashboard">
-                  <div className="resource-category-title-workflowDashboard">Maintenance</div>
-                  <div className="resource-sub-items-workflowDashboard">
-                    <div className="resource-sub-item-workflowDashboard">
-                      <span className="sub-item-label-workflowDashboard">Plantation</span>
-                      <span className="sub-item-value-workflowDashboard">1</span>
-                    </div>
-                    <div className="resource-sub-item-workflowDashboard">
-                      <span className="sub-item-label-workflowDashboard">Non Plantation</span>
-                      <span className="sub-item-value-workflowDashboard">0</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Middle Section - Action Needed */}
-        <div className="action-section-workflowDashboard">
-          <div className="action-section-header-workflowDashboard">
-            <h2 className="section-title-action-workflowDashboard">Action Needed</h2>
-            <button 
-              className="refresh-button-action-workflowDashboard"
-              onClick={handleRefreshAll}
-              disabled={isRefreshing}
-              title="Refresh all counts"
-            >
-              <FaSync className={isRefreshing ? 'refresh-icon-spinning-workflowDashboard' : 'refresh-icon-workflowDashboard'} />
-            </button>
-          </div>
-          
-          <div className="action-queue-workflowDashboard">
-            {/* Queue Box - Single Red Box with 3 Items */}
-            <div className="queue-box-card-workflowDashboard">
-              <div className="queue-box-card-header-workflowDashboard">
-                <span className="queue-box-card-title-workflowDashboard">Queue</span>
-              </div>
-              <div className="queue-box-card-items-workflowDashboard">
-                <div className="queue-box-card-item-workflowDashboard" onClick={() => go('/home/requestsQueue')} style={{ cursor: 'pointer' }}>
-                  <span className="queue-box-card-item-title-workflowDashboard">Add-hoc Plans</span>
-                  <span className="queue-box-card-item-count-workflowDashboard">Plans {adhocCount} »</span>
-                </div>
-                
-                <div className="queue-box-card-item-workflowDashboard" onClick={() => go('/home/requestsQueue')} style={{ cursor: 'pointer' }}>
-                  <span className="queue-box-card-item-title-workflowDashboard">Reschedule Request Plans</span>
-                  <span className="queue-box-card-item-count-workflowDashboard">Plans {rescheduleCount} »</span>
-                </div>
-              </div>
-            </div>
-            
-            <div className="action-card-workflowDashboard" onClick={() => go('/home/managerApprovalQueue')} style={{ cursor: 'pointer' }}>
-              <span className="action-title-workflowDashboard">Plantation Manager Approval Queue</span>
-              <span className="action-plans-workflowDashboard">Plans {managerApprovalCount} »</span>
-            </div>
-            
-            <div className="action-card-workflowDashboard" onClick={() => go('/home/pilotAssignment')} style={{ cursor: 'pointer' }}>
-              <span className="action-title-workflowDashboard">Resource Assignment Queue</span>
-              <span className="action-plans-workflowDashboard">Items {resourceAssignmentCount} »</span>
-            </div>
-            
-            <div className="action-card-workflowDashboard" onClick={() => go('/home/pendingPaymentQueue')} style={{ cursor: 'pointer' }}>
-              <span className="action-title-workflowDashboard">Pending Payment Queue</span>
-              <span className="action-plans-workflowDashboard">Missions {pendingPaymentCount} »</span>
-            </div>
-            
-            <div className="action-card-workflowDashboard" onClick={() => go('/home/droneUnlockingQueue')} style={{ cursor: 'pointer' }}>
-              <span className="action-title-workflowDashboard">Pending Drone Unlocking Queue</span>
-              <span className="action-plans-workflowDashboard">Items {droneUnlockingCount} »</span>
-            </div>
-            
-            <div className="action-card-workflowDashboard" onClick={() => go('/home/opsAsign')} style={{ cursor: 'pointer' }}>
-              <span className="action-title-workflowDashboard">Ops Assignment</span>
-              <span className="action-plans-workflowDashboard">Items {opsAssignCount} »</span>
-            </div>
-            
-            <div className="action-card-workflowDashboard" onClick={() => go('/home/dayEndProcess')} style={{ cursor: 'pointer' }}>
-              <span className="action-title-workflowDashboard">Plans Pending for Day End Process</span>
-              <span className="action-plans-workflowDashboard">Plans {dayEndProcessCount} »</span>
-            </div>
-            
-            <div className="action-card-workflowDashboard" onClick={() => go('/home/djiMapUpload')} style={{ cursor: 'pointer' }}>
-              <span className="action-title-workflowDashboard">DJI Map Upload</span>
-              <span className="action-plans-workflowDashboard">Maps {djiImagesCount} »</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Right Section - Future Business In-Hand */}
-        <div className="future-business-section-workflowDashboard">
-          <div className="future-actions-row-workflowDashboard">
-            <span className="future-date-display-workflowDashboard">{dateRange}</span>
-            <button 
-              className={`action-btn-workflowDashboard ${selectedAction === 'Spray' ? 'active-workflowDashboard' : ''}`}
-              onClick={() => setSelectedAction('Spray')}
-            >
-              Spray
-            </button>
-            <button 
-              className={`action-btn-workflowDashboard ${selectedAction === 'Spread' ? 'active-workflowDashboard' : ''}`}
-              onClick={() => setSelectedAction('Spread')}
-            >
-              Spread
-            </button>
-          </div>
-
-          <div className="business-table-container-workflowDashboard">
-            <table className="business-table-workflowDashboard">
-              <thead>
-                <tr>
-                  <th className="table-header-workflowDashboard">Sector</th>
-                  <th className="table-header-workflowDashboard">Plantation (LKR)</th>
-                  <th className="table-header-workflowDashboard">Non-Plantation (LKR)</th>
-                  <th className="table-header-workflowDashboard">Hectares</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td className="table-cell-workflowDashboard">Sector11</td>
-                  <td className="table-cell-workflowDashboard"></td>
-                  <td className="table-cell-workflowDashboard"></td>
-                  <td className="table-cell-workflowDashboard"></td>
-                </tr>
-                <tr>
-                  <td className="table-cell-workflowDashboard">Sector12</td>
-                  <td className="table-cell-workflowDashboard"></td>
-                  <td className="table-cell-workflowDashboard"></td>
-                  <td className="table-cell-workflowDashboard"></td>
-                </tr>
-                <tr>
-                  <td className="table-cell-workflowDashboard">Sector13</td>
-                  <td className="table-cell-workflowDashboard"></td>
-                  <td className="table-cell-workflowDashboard"></td>
-                  <td className="table-cell-workflowDashboard"></td>
-                </tr>
-                <tr>
-                  <td className="table-cell-workflowDashboard">Sector14</td>
-                  <td className="table-cell-workflowDashboard"></td>
-                  <td className="table-cell-workflowDashboard"></td>
-                  <td className="table-cell-workflowDashboard"></td>
-                </tr>
-                <tr className="total-row-workflowDashboard">
-                  <td className="table-cell-workflowDashboard">Total</td>
-                  <td className="table-cell-workflowDashboard"></td>
-                  <td className="table-cell-workflowDashboard"></td>
-                  <td className="table-cell-workflowDashboard"></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <div className="calendar-buttons-container-workflowDashboard">
-            <button className="calendar-btn-workflowDashboard" onClick={() => go('/home/opsroomPlanCalendar')}>
-              <span className="calendar-btn-icon-workflowDashboard">📅</span>
-              View Plan Calendar
-            </button>
-            <button className="calendar-btn-workflowDashboard today-plans-btn-workflowDashboard" onClick={() => go('/home/todayPlans')}>
-              <span className="calendar-btn-icon-workflowDashboard">📋</span>
-              View Today Plans
-            </button>
-            <button className="calendar-btn-workflowDashboard emergency-moving-btn-workflowDashboard" onClick={() => go('/home/emergencyMoving')}>
-              <span className="calendar-btn-icon-workflowDashboard">🔄</span>
-              Emergency Moving
-            </button>
-            <button className="calendar-btn-workflowDashboard" onClick={() => go('/home/fieldHistory')}>
-              <span className="calendar-btn-icon-workflowDashboard">📜</span>
-              Field History
-            </button>
-            <button className="calendar-btn-workflowDashboard" onClick={() => go('/home/reports/ops')}>
-              <span className="calendar-btn-icon-workflowDashboard">📊</span>
-              Reports
-            </button>
-            <button className="calendar-btn-workflowDashboard" onClick={() => go('/home/fieldSizeAdjustments')}>
-              <span className="calendar-btn-icon-workflowDashboard">📐</span>
-              Field Size Adjustments
-            </button>
-          </div>
+          </section>
         </div>
       </div>
     </div>

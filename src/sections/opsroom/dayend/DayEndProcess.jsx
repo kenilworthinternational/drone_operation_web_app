@@ -12,6 +12,9 @@ import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useGetUnlinkedDjiImagesQuery, useGetAllDjiImagesQuery, useLinkDjiImageToTaskMutation } from '../../../api/services NodeJs/djiImagesApi';
 import { dayEndProcessApi, useUpdateOpsTaskStatusMutation, useGetPlansWithCompletionStatsQuery, useGetCancelReasonsQuery, useCancelTaskMutation, useGetTasksCancelStatusQuery, useResetPilotCancelMutation } from '../../../api/services NodeJs/dayEndProcessApi';
+import { useGetMyPermissionsQuery } from '../../../api/services NodeJs/featurePermissionsApi';
+import { FEATURE_CODES } from '../../../utils/featurePermissions';
+import { isInternalDeveloper } from '../../../utils/authUtils';
 
 const CustomDateInput = React.forwardRef(({ value, onClick }, ref) => (
   <div className="custom-date-input" ref={ref} onClick={onClick}>
@@ -51,6 +54,31 @@ const DayEndProcess = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [taskLoading, setTaskLoading] = useState(null); // Track which task is loading
   const userData = JSON.parse(localStorage.getItem('userData')) || {};
+  const userId = userData?.id || null;
+  const isDeveloper = isInternalDeveloper(userData);
+  const { data: featurePermissionsData = {} } = useGetMyPermissionsQuery(undefined, {
+    skip: !userId,
+  });
+
+  const checkFeatureAccess = (featureCode) => {
+    if (isDeveloper) return true;
+    if (!featurePermissionsData || typeof featurePermissionsData !== 'object') return false;
+    if (featurePermissionsData.features && featurePermissionsData.features[featureCode] === true) {
+      return true;
+    }
+    const categories = featurePermissionsData.categories || featurePermissionsData;
+    for (const category in categories) {
+      if (category === 'paths' || category === 'features') continue;
+      const categoryData = categories[category];
+      if (Array.isArray(categoryData) && categoryData.includes(featureCode)) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  const showDirOpsApprovalFeature = checkFeatureAccess(FEATURE_CODES.DAY_END_DIR_OPS_APPROVAL);
+
   const [selectedMissionId, setSelectedMissionId] = useState(null);
   const [djiData, setDjiData] = useState({
     dji_image_id: null, // Changed from dji_image file to dji_image_id
@@ -920,47 +948,49 @@ const DayEndProcess = () => {
                           </span>
                         </div>
                       )}
-                      <div className="completion-checkbox" onClick={(e) => e.stopPropagation()}>
-                        <label className="dir-opstext">
-                          Dir-Ops Approval
-                          <input
-                            type="checkbox"
-                            checked={mission.completed === 1}
-                            disabled={userData.job_role !== 'dops' || mission.activated === 0 || mission.team_assigned === 0}
-                            onChange={async (e) => {
-                              if (userData.job_role !== 'dops') {
-                                toast.error("You don't have permission to modify approvals");
-                                return;
-                              }
-                              const newStatus = e.target.checked ? 1 : 0;
-                              try {
-                                const updatedMissions = missions.map((m) =>
-                                  m.id === mission.id ? { ...m, completed: newStatus } : m
-                                );
-                                setMissions(updatedMissions);
-                                const approvalResult = await dispatch(
-                                  baseApi.endpoints.updateOpsApproval.initiate({
-                                    plan: mission.id,
-                                    status: newStatus,
-                                  })
-                                );
-                                const response = approvalResult.data || {};
-                                if (response.status === 'true' || response.success === true) {
-                                  toast.success('Status updated successfully');
-                                  await handleDateChange(selectedDate);
-                                } else {
-                                  setMissions(missions);
-                                  toast.error(response.message || 'Update failed');
+                      {showDirOpsApprovalFeature && (
+                        <div className="completion-checkbox" onClick={(e) => e.stopPropagation()}>
+                          <label className="dir-opstext">
+                            Dir-Ops Approval
+                            <input
+                              type="checkbox"
+                              checked={mission.completed === 1}
+                              disabled={userData.job_role !== 'dops' || mission.activated === 0 || mission.team_assigned === 0}
+                              onChange={async (e) => {
+                                if (userData.job_role !== 'dops') {
+                                  toast.error("You don't have permission to modify approvals");
+                                  return;
                                 }
-                              } catch (error) {
-                                console.error('Update error:', error);
-                                setMissions(missions);
-                                toast.error('Failed to update status');
-                              }
-                            }}
-                          />
-                        </label>
-                      </div>
+                                const newStatus = e.target.checked ? 1 : 0;
+                                try {
+                                  const updatedMissions = missions.map((m) =>
+                                    m.id === mission.id ? { ...m, completed: newStatus } : m
+                                  );
+                                  setMissions(updatedMissions);
+                                  const approvalResult = await dispatch(
+                                    baseApi.endpoints.updateOpsApproval.initiate({
+                                      plan: mission.id,
+                                      status: newStatus,
+                                    })
+                                  );
+                                  const response = approvalResult.data || {};
+                                  if (response.status === 'true' || response.success === true) {
+                                    toast.success('Status updated successfully');
+                                    await handleDateChange(selectedDate);
+                                  } else {
+                                    setMissions(missions);
+                                    toast.error(response.message || 'Update failed');
+                                  }
+                                } catch (error) {
+                                  console.error('Update error:', error);
+                                  setMissions(missions);
+                                  toast.error('Failed to update status');
+                                }
+                              }}
+                            />
+                          </label>
+                        </div>
+                      )}
                       {mission.activated === 0 && (
                         <div className="deactivate_alert">Deactivated Plan</div>
                       )}
