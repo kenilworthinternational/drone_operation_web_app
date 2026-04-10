@@ -23,6 +23,7 @@ const OD_WORKFLOW_PATH_PREFIXES = [
   '/home/reports/ops',
   '/home/fieldSizeAdjustments',
   '/home/requestProceed',
+  '/home/plantationPlanRequestQueue',
 ];
 
 export function isOdWingWorkflowShellPath(pathname) {

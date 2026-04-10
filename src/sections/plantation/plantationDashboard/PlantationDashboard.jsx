@@ -425,7 +425,7 @@ const PlantationDashboard = ({
                 className="pd-calendar-btn"
                 onClick={() => navigate(`${basePath}/calendar`)}
               >
-                <FaCalendarAlt /> View Calendar
+                <FaCalendarAlt /> Plan Requests
               </button>
             )}
           </div>

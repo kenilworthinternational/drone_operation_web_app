@@ -38,6 +38,7 @@ import {
   useMarkNotificationAsDisplayedMutation,
   useLogNotificationActionMutation,
 } from '../../../api/services NodeJs/notificationsApi';
+import { useGetPlantationPlanRequestsPendingCountQuery } from '../../../api/services NodeJs/plantationDashboardApi';
 import {
   getCategoryVisibility,
   getUserData,
@@ -375,6 +376,13 @@ const WorkflowDashboard = () => {
   );
   const resourceAssignmentCount = resourceAssignmentData?.data?.total || 0;
 
+  const { data: plantationPlanRequestPayload, refetch: refetchPlantationPlanRequestCount } =
+    useGetPlantationPlanRequestsPendingCountQuery(undefined, {
+      pollingInterval: 120000,
+      skip: !userId,
+    });
+  const plantationPlanRequestCount = Number(plantationPlanRequestPayload?.data?.count ?? 0);
+
   // Refresh all counts handler
   const handleRefreshAll = async () => {
     setIsRefreshing(true);
@@ -386,6 +394,7 @@ const WorkflowDashboard = () => {
         refetchDroneUnlocking(),
         refetchDayEndProcess(),
         refetchDjiImages(),
+        refetchPlantationPlanRequestCount(),
         ...(hasPilotAssignmentResourceFeature ? [refetchResourceAssignment()] : []),
       ]);
     } catch (error) {
@@ -406,6 +415,7 @@ const WorkflowDashboard = () => {
           refetchDroneUnlocking(),
           refetchDayEndProcess(),
           refetchDjiImages(),
+          refetchPlantationPlanRequestCount(),
           ...(hasPilotAssignmentResourceFeature ? [refetchResourceAssignment()] : []),
         ]);
       } catch (error) {
@@ -677,6 +687,18 @@ const WorkflowDashboard = () => {
                   <span className="wf-nested-queue-label-workflowDashboard">Reschedule requests</span>
                   <span className="wf-nested-queue-meta-workflowDashboard">
                     <span className="wf-count-pill-workflowDashboard">{rescheduleCount}</span>
+                    <FaChevronRight className="wf-chevron-workflowDashboard" aria-hidden />
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  className="wf-nested-queue-row-workflowDashboard"
+                  onClick={() => go('/home/plantationPlanRequestQueue')}
+                  aria-label={`Plantation calendar plan requests, ${plantationPlanRequestCount} pending`}
+                >
+                  <span className="wf-nested-queue-label-workflowDashboard">Plantation calendar requests</span>
+                  <span className="wf-nested-queue-meta-workflowDashboard">
+                    <span className="wf-count-pill-workflowDashboard">{plantationPlanRequestCount}</span>
                     <FaChevronRight className="wf-chevron-workflowDashboard" aria-hidden />
                   </span>
                 </button>

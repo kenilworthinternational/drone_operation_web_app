@@ -1,11 +1,101 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAppDispatch } from '../../../../store/hooks';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, getDay } from 'date-fns';
-import { useGetCalendarPlansQuery } from '../../../../api/services NodeJs/plantationDashboardApi';
-import { baseApi } from '../../../../api/services/allEndpoints';
+import {
+  useGetCalendarPlansQuery,
+  useCreatePlantationPlanRequestMutation,
+  useGetPlantationPlanRequestMonthStatsQuery,
+} from '../../../../api/services NodeJs/plantationDashboardApi';
+import { baseApi, useGetMissionTypesQuery, useGetCropTypesQuery } from '../../../../api/services/allEndpoints';
+import { getUserData, hasHierarchyForPlantationPlanRequest } from '../../../../utils/authUtils';
 import { Bars } from 'react-loader-spinner';
+import { toast } from 'react-toastify';
 
-const PlantationCalendar = ({ currentMonth, setCurrentMonth, missionType }) => {
+function objectListByNumericKeys(obj) {
+  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return [];
+  return Object.keys(obj)
+    .filter((k) => !isNaN(Number(k)))
+    .map((k) => obj[k]);
+}
+
+/**
+ * PHP dropdowns vary: top-level numeric keys, `data` array, or named keys like `mission_type` / `crop_type`.
+ */
+function normalizeDropdownList(raw) {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw;
+  if (raw && Array.isArray(raw.data)) return raw.data;
+
+  const namedKeys = [
+    'mission_type',
+    'mission_types',
+    'missionTypes',
+    'crop_type',
+    'crop_types',
+    'crops',
+    'crop',
+    'rows',
+    'result',
+  ];
+  for (const key of namedKeys) {
+    if (raw[key] == null) continue;
+    if (Array.isArray(raw[key])) return raw[key];
+    if (typeof raw[key] === 'object') {
+      const fromNum = objectListByNumericKeys(raw[key]);
+      if (fromNum.length) return fromNum;
+    }
+  }
+
+  if (typeof raw === 'object' && (raw.status === 'true' || raw.status === true)) {
+    return Object.keys(raw)
+      .filter((k) => !isNaN(Number(k)) && k !== 'status' && k !== 'count')
+      .map((k) => raw[k]);
+  }
+  if (typeof raw === 'object') {
+    return Object.keys(raw)
+      .filter((k) => !isNaN(Number(k)))
+      .map((k) => raw[k]);
+  }
+  return [];
+}
+
+function firstPositiveIntString(obj, preferredKeys) {
+  if (!obj || typeof obj !== 'object') return '';
+  for (const k of preferredKeys) {
+    if (!(k in obj)) continue;
+    const v = obj[k];
+    if (v == null || v === '') continue;
+    const n = parseInt(String(v), 10);
+    if (Number.isFinite(n) && n >= 0) return String(n);
+  }
+  return '';
+}
+
+/** Prefer explicit id fields; missing `id` makes <option> use visible text as value and breaks parseInt. */
+function cropTypeOptionValue(c) {
+  return firstPositiveIntString(c, ['id', 'crop_type_id', 'crop_id', 'cropTypeId']);
+}
+
+/**
+ * Prefer numeric DB id. PHP `/mission_type` rows often only have `mission_type_code` (spy/spd) — use that as value;
+ * backend resolves code → `mission_type.id`.
+ */
+function missionTypeOptionValue(m) {
+  const n = firstPositiveIntString(m, [
+    'id',
+    'mission_type_id',
+    'mission_id',
+    'missionTypeId',
+    'type_id',
+    'mission_type',
+  ]);
+  if (n !== '') return n;
+  const code = m?.mission_type_code;
+  if (code != null && String(code).trim() !== '') return String(code).trim();
+  return '';
+}
+
+const PlantationCalendar = ({ currentMonth, setCurrentMonth, missionType, enablePlanRequestUi = false }) => {
   const dispatch = useAppDispatch();
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [planDetails, setPlanDetails] = useState(null);
@@ -18,6 +108,76 @@ const PlantationCalendar = ({ currentMonth, setCurrentMonth, missionType }) => {
   const [estateError, setEstateError] = useState('');
   const [pilotError, setPilotError] = useState('');
   const [showPilotModal, setShowPilotModal] = useState(false);
+
+  const [requestModalDate, setRequestModalDate] = useState(null);
+  const [requestPlanCount, setRequestPlanCount] = useState(1);
+  const [requestMissionTypeId, setRequestMissionTypeId] = useState('');
+  const [requestCropTypeId, setRequestCropTypeId] = useState('');
+
+  const userData = getUserData();
+  const { data: missionTypesRaw } = useGetMissionTypesQuery(undefined, { skip: !enablePlanRequestUi });
+  const { data: cropTypesRaw } = useGetCropTypesQuery(undefined, { skip: !enablePlanRequestUi });
+  const missionTypeOptions = useMemo(() => {
+    const list = normalizeDropdownList(missionTypesRaw);
+    return list.filter((m) => missionTypeOptionValue(m) !== '');
+  }, [missionTypesRaw]);
+  const cropTypeOptions = useMemo(() => {
+    const list = normalizeDropdownList(cropTypesRaw);
+    return list.filter((c) => cropTypeOptionValue(c) !== '');
+  }, [cropTypesRaw]);
+
+  const [createPlanRequest, { isLoading: isSubmittingRequest }] = useCreatePlantationPlanRequestMutation();
+
+  const openRequestModal = useCallback(
+    (day) => {
+      if (!enablePlanRequestUi) return;
+      if (!hasHierarchyForPlantationPlanRequest(userData)) {
+        toast.error(
+          'Plan requests need Group, Plantation, Region, and Estate on your profile. Estate is required.'
+        );
+        return;
+      }
+      setRequestModalDate(day);
+      setRequestPlanCount(1);
+      setRequestMissionTypeId('');
+      setRequestCropTypeId('');
+    },
+    [enablePlanRequestUi, userData]
+  );
+
+  const closeRequestModal = useCallback(() => {
+    setRequestModalDate(null);
+  }, []);
+
+  const submitPlanRequest = async () => {
+    if (!requestModalDate) return;
+    const pickedDate = format(requestModalDate, 'yyyy-MM-dd');
+    const mtRaw = String(requestMissionTypeId || '').trim();
+    const ct = parseInt(requestCropTypeId, 10);
+    if (!mtRaw || !Number.isFinite(ct)) {
+      toast.error('Please select mission type and crop type.');
+      return;
+    }
+    const pc = parseInt(requestPlanCount, 10);
+    if (!Number.isFinite(pc) || pc < 1 || pc > 100) {
+      toast.error('Plan count must be between 1 and 100.');
+      return;
+    }
+    const missionTypePayload = /^\d+$/.test(mtRaw) ? parseInt(mtRaw, 10) : mtRaw;
+    try {
+      await createPlanRequest({
+        pickedDate,
+        planCount: pc,
+        missionTypeId: missionTypePayload,
+        cropTypeId: ct,
+      }).unwrap();
+      toast.success('Request submitted. Ops will review it in Workflow Dashboard.');
+      closeRequestModal();
+    } catch (e) {
+      const msg = e?.data?.message || e?.message || 'Request failed.';
+      toast.error(msg);
+    }
+  };
   
   const yearMonth = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}`;
   
@@ -25,6 +185,12 @@ const PlantationCalendar = ({ currentMonth, setCurrentMonth, missionType }) => {
     yearMonth,
     missionType
   });
+
+  const { data: monthStatsRes, isFetching: monthStatsLoading } = useGetPlantationPlanRequestMonthStatsQuery(
+    { yearMonth },
+    { skip: !enablePlanRequestUi }
+  );
+  const monthStats = monthStatsRes?.data;
 
   const plans = data?.data || [];
 
@@ -174,6 +340,39 @@ const PlantationCalendar = ({ currentMonth, setCurrentMonth, missionType }) => {
         </button>
       </div>
 
+      {enablePlanRequestUi && (
+        <div className="plantation-calendar-month-stats" aria-live="polite">
+          {monthStatsLoading ? (
+            <span className="plantation-calendar-month-stats-muted">Loading plan request stats…</span>
+          ) : (
+            <>
+              <span className="plantation-calendar-month-stat">
+                Requested: <strong>{monthStats?.totalRequests ?? 0}</strong>{' '}
+                request{monthStats?.totalRequests === 1 ? '' : 's'}
+              </span>
+              <span className="plantation-calendar-month-stat-sep" aria-hidden="true">
+                ·
+              </span>
+              <span className="plantation-calendar-month-stat">
+                Approved: <strong>{monthStats?.acceptedCount ?? 0}</strong>
+              </span>
+              <span className="plantation-calendar-month-stat-sep" aria-hidden="true">
+                ·
+              </span>
+              <span className="plantation-calendar-month-stat">
+                Requested plans: <strong>{monthStats?.totalPlanUnits ?? 0}</strong>
+              </span>
+              <span className="plantation-calendar-month-stat-sep" aria-hidden="true">
+                ·
+              </span>
+              <span className="plantation-calendar-month-stat">
+                Approved plans: <strong>{monthStats?.acceptedPlanUnits ?? 0}</strong>
+              </span>
+            </>
+          )}
+        </div>
+      )}
+
       {isLoading && (
         <div className="plantation-calendar-loading">
           <Bars height="40" width="40" color="#2d8659" />
@@ -212,14 +411,32 @@ const PlantationCalendar = ({ currentMonth, setCurrentMonth, missionType }) => {
                 key={dateKey} 
                 className={`plantation-calendar-day ${isToday ? 'today' : ''}`}
               >
-                <div className="plantation-calendar-day-header">
-                  <span className="plantation-calendar-day-number">
-                    {format(day, 'd')}
-                  </span>
-                  {dayPlans.length > 0 && (
-                    <span className="plantation-calendar-plan-count">
-                      ({dayPlans.length} {dayPlans.length === 1 ? 'plan' : 'plans'})
+                <div
+                  className={`plantation-calendar-day-header${enablePlanRequestUi ? ' plantation-calendar-day-header--with-add' : ''}`}
+                >
+                  <div className="plantation-calendar-day-header-main">
+                    <span className="plantation-calendar-day-number">
+                      {format(day, 'd')}
                     </span>
+                    {dayPlans.length > 0 && (
+                      <span className="plantation-calendar-plan-count">
+                        ({dayPlans.length} {dayPlans.length === 1 ? 'plan' : 'plans'})
+                      </span>
+                    )}
+                  </div>
+                  {enablePlanRequestUi && (
+                    <button
+                      type="button"
+                      className="plantation-calendar-add-btn"
+                      title="Request new plans (pending Ops approval)"
+                      aria-label="Request new plans"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openRequestModal(day);
+                      }}
+                    >
+                      +
+                    </button>
                   )}
                 </div>
                 {dayPlans.length > 0 && (
@@ -242,6 +459,97 @@ const PlantationCalendar = ({ currentMonth, setCurrentMonth, missionType }) => {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {requestModalDate && (
+        <div
+          className="plantation-calendar-request-modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="plantation-req-modal-title"
+          onClick={closeRequestModal}
+        >
+          <div className="plantation-calendar-request-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="plantation-calendar-request-modal-header">
+              <span id="plantation-req-modal-title">Request plans</span>
+              <button type="button" className="plantation-plan-modal-close" onClick={closeRequestModal} aria-label="Close">
+                ×
+              </button>
+            </div>
+            <div className="plantation-calendar-request-modal-body">
+              <p style={{ margin: 0, fontSize: 14, color: '#4b5563' }}>
+                Date: <strong>{format(requestModalDate, 'yyyy-MM-dd')}</strong>
+              </p>
+              <p style={{ margin: 0, fontSize: 13, color: '#6b7280' }}>
+                Plans already on this day:{' '}
+                <strong>
+                  {(plansByDate[format(requestModalDate, 'yyyy-MM-dd')] || []).length}
+                </strong>{' '}
+                (existing bookings only — requests are not shown until approved)
+              </p>
+              <div>
+                <label htmlFor="pd-req-count">How many plans</label>
+                <input
+                  id="pd-req-count"
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={requestPlanCount}
+                  onChange={(e) => setRequestPlanCount(e.target.value)}
+                />
+              </div>
+              <div>
+                <label htmlFor="pd-req-crop">Crop type</label>
+                <select
+                  id="pd-req-crop"
+                  value={requestCropTypeId}
+                  onChange={(e) => setRequestCropTypeId(e.target.value)}
+                >
+                  <option value="">Select crop</option>
+                  {cropTypeOptions.map((c, idx) => (
+                    <option
+                      key={cropTypeOptionValue(c) || `crop-${idx}`}
+                      value={cropTypeOptionValue(c)}
+                    >
+                      {c.crop || c.name || `Crop ${cropTypeOptionValue(c) || idx}`}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="pd-req-mission">Mission type</label>
+                <select
+                  id="pd-req-mission"
+                  value={requestMissionTypeId}
+                  onChange={(e) => setRequestMissionTypeId(e.target.value)}
+                >
+                  <option value="">Select mission</option>
+                  {missionTypeOptions.map((m, idx) => (
+                    <option
+                      key={missionTypeOptionValue(m) || `mission-${idx}`}
+                      value={missionTypeOptionValue(m)}
+                    >
+                      {m.mission_type_name || m.mission_type || `Mission ${missionTypeOptionValue(m) || idx}`}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="plantation-calendar-request-modal-actions">
+                <button type="button" className="plantation-calendar-request-cancel" onClick={closeRequestModal}>
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="plantation-calendar-request-submit"
+                  disabled={isSubmittingRequest}
+                  onClick={submitPlanRequest}
+                >
+                  {isSubmittingRequest ? 'Submitting…' : 'Submit request'}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

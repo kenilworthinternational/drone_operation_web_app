@@ -225,6 +225,21 @@ export const getUserData = () => {
 };
 
 /**
+ * Plantation calendar plan requests require Group, Plantation, Region, and Estate.
+ * Users with only part of the hierarchy (e.g. no estate) cannot submit requests.
+ * @param {Object} userData - Typically from getUserData()
+ * @returns {boolean}
+ */
+export const hasHierarchyForPlantationPlanRequest = (userData) => {
+  if (!userData || typeof userData !== 'object') return false;
+  const set = (key) => {
+    const v = userData[key];
+    return v != null && String(v).trim() !== '';
+  };
+  return set('group') && set('plantation') && set('region') && set('estate');
+};
+
+/**
  * Get navbar color based on user type
  * @param {Object} userData - User data object from localStorage
  * @returns {string} Navbar color string

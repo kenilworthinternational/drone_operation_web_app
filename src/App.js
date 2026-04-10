@@ -61,6 +61,7 @@ import Maintenance from './sections/fleet/maintenance/Maintenance';
 import FleetUpdate from './sections/fleet/fleet-update/FleetUpdate';
 import DjiMapUpload from './sections/opsroom/dji/DjiMapUpload';
 import ManagerApprovalQueue from './sections/opsroom/manager-approval/ManagerApprovalQueue';
+import PlantationPlanRequestQueue from './sections/opsroom/plantation-plan-requests/PlantationPlanRequestQueue';
 import PendingPaymentQueue from './sections/opsroom/pending-payment/PendingPaymentQueue';
 import DroneUnlockingQueue from './sections/opsroom/drone-unlocking/DroneUnlockingQueue';
 import Users from './sections/ict/users/Users';
@@ -552,6 +553,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <ManagerApprovalQueue />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="plantationPlanRequestQueue"
+            element={
+              <ProtectedRoute>
+                <PlantationPlanRequestQueue />
               </ProtectedRoute>
             }
           />

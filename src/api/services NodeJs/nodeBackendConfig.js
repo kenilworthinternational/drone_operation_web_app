@@ -78,6 +78,17 @@ export const getToken = () => {
  */
 export const nodeBackendBaseQuery = fetchBaseQuery({
   baseUrl: getNodeBackendUrl(),
+  /**
+   * Avoid browser HTTP cache returning 304 with an empty body — RTK then has no JSON `data`
+   * and list endpoints (e.g. plantation-plan-requests) appear empty while pending-count still works.
+   * Do not add Cache-Control / Pragma *request* headers: dev API CORS Allow-Headers may omit them
+   * and the preflight will fail. `cache: 'no-store'` avoids 304 without extra headers.
+   */
+  fetchFn: (input, init) =>
+    fetch(input, {
+      ...init,
+      cache: 'no-store',
+    }),
   prepareHeaders: (headers) => {
     const token = getToken();
     if (token) {

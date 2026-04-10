@@ -1,6 +1,47 @@
 import { baseApi } from '../baseApi';
 import { nodeBackendBaseQuery } from './nodeBackendConfig';
 
+/**
+ * Coerce API payload to a row array. Handles string JSON, raw arrays, numeric-key objects, nested data.
+ * RTK cache stores this array directly so the queue never mis-reads { status, data } nesting.
+ */
+function parseJsonIfString(maybe) {
+  if (typeof maybe === 'string') {
+    try {
+      return JSON.parse(maybe);
+    } catch {
+      return null;
+    }
+  }
+  return maybe;
+}
+
+function extractPlantationPlanRequestsRows(body) {
+  const parsed = parseJsonIfString(body);
+  if (Array.isArray(parsed)) return parsed;
+  if (!parsed || typeof parsed !== 'object') return [];
+
+  if (Array.isArray(parsed.data)) return parsed.data;
+
+  if (parsed.data && typeof parsed.data === 'object') {
+    if (Array.isArray(parsed.data.rows)) return parsed.data.rows;
+    if (Array.isArray(parsed.data.data)) return parsed.data.data;
+    const innerKeys = Object.keys(parsed.data).filter((k) => !isNaN(Number(k)));
+    if (innerKeys.length > 0) {
+      return innerKeys.sort((a, b) => Number(a) - Number(b)).map((k) => parsed.data[k]);
+    }
+  }
+
+  const topKeys = Object.keys(parsed).filter(
+    (k) => !isNaN(Number(k)) && k !== 'status' && k !== 'count' && k !== 'data'
+  );
+  if (topKeys.length > 0) {
+    return topKeys.sort((a, b) => Number(a) - Number(b)).map((k) => parsed[k]);
+  }
+
+  return [];
+}
+
 export const plantationDashboardApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     // Get calendar plans for a specific month
@@ -279,11 +320,110 @@ export const plantationDashboardApi = baseApi.injectEndpoints({
       },
       keepUnusedDataFor: 300,
     }),
+
+    createPlantationPlanRequest: builder.mutation({
+      queryFn: async (body) => {
+        const result = await nodeBackendBaseQuery(
+          { url: '/api/plantation-plan-requests', method: 'POST', body },
+          {},
+          {}
+        );
+        return result;
+      },
+      invalidatesTags: ['PlantationPlanRequests'],
+    }),
+
+    getPlantationPlanRequestsPendingCount: builder.query({
+      queryFn: async () => {
+        const result = await nodeBackendBaseQuery(
+          { url: '/api/plantation-plan-requests/pending-count', method: 'GET' },
+          {},
+          {}
+        );
+        return result;
+      },
+      providesTags: ['PlantationPlanRequests'],
+    }),
+
+    getPlantationPlanRequestMonthStats: builder.query({
+      queryFn: async ({ yearMonth }) => {
+        const q = new URLSearchParams({ yearMonth: String(yearMonth) });
+        const result = await nodeBackendBaseQuery(
+          { url: `/api/plantation-plan-requests/month-stats?${q.toString()}`, method: 'GET' },
+          {},
+          {}
+        );
+        return result;
+      },
+      providesTags: ['PlantationPlanRequests'],
+    }),
+
+    getPlantationPlanRequestsEstateMonth: builder.query({
+      queryFn: async ({ yearMonth }) => {
+        const q = new URLSearchParams({ yearMonth: String(yearMonth) });
+        const result = await nodeBackendBaseQuery(
+          { url: `/api/plantation-plan-requests/estate-month?${q.toString()}`, method: 'GET' },
+          {},
+          {}
+        );
+        return result;
+      },
+      providesTags: ['PlantationPlanRequests'],
+    }),
+
+    getPlantationPlanRequestsList: builder.query({
+      queryFn: async ({ status = 'pending', limit } = {}) => {
+        const q = new URLSearchParams({ status: String(status) });
+        if (limit != null && limit !== '') q.set('limit', String(limit));
+        const result = await nodeBackendBaseQuery(
+          { url: `/api/plantation-plan-requests?${q.toString()}`, method: 'GET' },
+          {},
+          {}
+        );
+        if (result.error) return result;
+        const rows = extractPlantationPlanRequestsRows(result.data);
+        return { data: rows };
+      },
+      providesTags: ['PlantationPlanRequests'],
+    }),
+
+    declinePlantationPlanRequest: builder.mutation({
+      queryFn: async ({ id, declineReason }) => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: `/api/plantation-plan-requests/${id}/decline`,
+            method: 'POST',
+            body: { declineReason: declineReason || '' },
+          },
+          {},
+          {}
+        );
+        return result;
+      },
+      invalidatesTags: ['PlantationPlanRequests'],
+    }),
+
+    markPlantationPlanRequestApproved: builder.mutation({
+      queryFn: async ({ id, planCount } = {}) => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: `/api/plantation-plan-requests/${id}/mark-approved`,
+            method: 'POST',
+            body: { planCount },
+          },
+          {},
+          {}
+        );
+        return result;
+      },
+      invalidatesTags: ['PlantationPlanRequests', 'Plans', 'Calendar'],
+    }),
   }),
 });
 
 export const {
   useGetCalendarPlansQuery,
+  useLazyGetCalendarPlansQuery,
   useGetUpcomingPlansQuery,
   useGetPlannedVsTeaRevenueChartQuery,
   useGetTeaRevenueVsSprayedChartQuery,
@@ -299,4 +439,11 @@ export const {
   useGetGlobalEstatePlanBreakdownQuery,
   useGetPlantationsListQuery,
   useGetEstatesListQuery,
+  useCreatePlantationPlanRequestMutation,
+  useGetPlantationPlanRequestsPendingCountQuery,
+  useGetPlantationPlanRequestMonthStatsQuery,
+  useGetPlantationPlanRequestsEstateMonthQuery,
+  useGetPlantationPlanRequestsListQuery,
+  useDeclinePlantationPlanRequestMutation,
+  useMarkPlantationPlanRequestApprovedMutation,
 } = plantationDashboardApi;
