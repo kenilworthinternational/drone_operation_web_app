@@ -6,6 +6,20 @@ import { baseApi } from '../../../api/services/allEndpoints';
 import { useAppDispatch } from '../../../store/hooks';
 import '../../../styles/planCalendar.css';
 
+const PLAN_TYPE_META = [
+  { key: 'np', label: 'Revolving' },
+  { key: 'ap', label: 'AddHoc' },
+  { key: 'rp', label: 'Rescheduled' },
+];
+
+const PLAN_STATUS_META = [
+  { key: 'not_activated', label: 'Not Activated', color: '#BEBEBE' },
+  { key: 'active', label: 'Active', color: '#60a5fa' },
+  { key: 'manager_approved', label: 'Manager Approved', color: '#f97316' },
+  { key: 'team_assigned', label: 'Team Assigned', color: '#eab308' },
+  { key: 'completed', label: 'Completed', color: '#22c55e' },
+];
+
 const PlanCalendar = () => {
   const dispatch = useAppDispatch();
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -22,6 +36,13 @@ const PlanCalendar = () => {
   const [pilotInfo, setPilotInfo] = useState(null);
   const [pilotLoading, setPilotLoading] = useState(false);
   const [pilotError, setPilotError] = useState('');
+  const [selectedTypes, setSelectedTypes] = useState(new Set(PLAN_TYPE_META.map((item) => item.key)));
+  const [selectedStatuses, setSelectedStatuses] = useState(new Set(PLAN_STATUS_META.map((item) => item.key)));
+  const [showHierarchyFilter, setShowHierarchyFilter] = useState(false);
+  const [selectedGroup, setSelectedGroup] = useState('');
+  const [selectedPlantation, setSelectedPlantation] = useState('');
+  const [selectedRegion, setSelectedRegion] = useState('');
+  const [selectedEstate, setSelectedEstate] = useState('');
   const navigate = useNavigate();
 
   const monthRange = useMemo(() => {
@@ -93,6 +114,193 @@ const PlanCalendar = () => {
     return eachDayOfInterval({ start: startOfMonth(currentMonth), end: endOfMonth(currentMonth) });
   }, [currentMonth]);
 
+  const allPlansForMonth = useMemo(() => Object.values(plansByDate).flat(), [plansByDate]);
+
+  const getPlanStatusKey = (plan) => {
+    const activated = Number(plan.activated) === 1;
+    const managerApproved = Number(plan.manager_approval) === 1;
+    const teamAssigned = Number(plan.team_assigned) === 1;
+    const completed = Number(plan.completed) === 1;
+
+    if (!activated) return 'not_activated';
+    if (activated && managerApproved && teamAssigned && completed) return 'completed';
+    if (activated && managerApproved && teamAssigned) return 'team_assigned';
+    if (activated && managerApproved) return 'manager_approved';
+    return 'active';
+  };
+
+  const getPlanStatusColor = (plan) => {
+    const key = getPlanStatusKey(plan);
+    return PLAN_STATUS_META.find((s) => s.key === key)?.color || '#60a5fa';
+  };
+
+  const hierarchyData = useMemo(() => {
+    const groupsMap = new Map();
+    const plantationsMap = new Map();
+    const regionsMap = new Map();
+    const estatesMap = new Map();
+
+    allPlansForMonth.forEach((plan) => {
+      const groupId = String(plan.group_id ?? plan.groupId ?? plan.group ?? '');
+      const groupName = String(plan.group ?? plan.group_name ?? groupId);
+      const plantationId = String(plan.plantation_id ?? plan.plantationId ?? plan.plantation ?? '');
+      const plantationName = String(plan.plantation ?? plan.plantation_name ?? plantationId);
+      const regionId = String(plan.region_id ?? plan.regionId ?? plan.region ?? '');
+      const regionName = String(plan.region ?? plan.region_name ?? regionId);
+      const estateId = String(plan.estate_id ?? plan.estateId ?? plan.estate ?? '');
+      const estateName = String(plan.estate ?? plan.estate_name ?? estateId);
+
+      if (!groupId || !plantationId || !regionId || !estateId) return;
+
+      if (!groupsMap.has(groupId)) {
+        groupsMap.set(groupId, { id: groupId, name: groupName });
+      }
+      if (!plantationsMap.has(plantationId)) {
+        plantationsMap.set(plantationId, { id: plantationId, name: plantationName, groupId });
+      }
+      if (!regionsMap.has(regionId)) {
+        regionsMap.set(regionId, { id: regionId, name: regionName, plantationId, groupId });
+      }
+      if (!estatesMap.has(estateId)) {
+        estatesMap.set(estateId, { id: estateId, name: estateName, regionId, plantationId, groupId });
+      }
+    });
+
+    const sortByName = (a, b) => a.name.localeCompare(b.name);
+
+    return {
+      groups: Array.from(groupsMap.values()).sort(sortByName),
+      plantations: Array.from(plantationsMap.values()).sort(sortByName),
+      regions: Array.from(regionsMap.values()).sort(sortByName),
+      estates: Array.from(estatesMap.values()).sort(sortByName),
+    };
+  }, [allPlansForMonth]);
+
+  const plantationOptions = useMemo(() => {
+    if (!selectedGroup) return hierarchyData.plantations;
+    return hierarchyData.plantations.filter((item) => item.groupId === selectedGroup);
+  }, [hierarchyData.plantations, selectedGroup]);
+
+  const regionOptions = useMemo(() => {
+    if (selectedPlantation) {
+      return hierarchyData.regions.filter((item) => item.plantationId === selectedPlantation);
+    }
+    if (selectedGroup) {
+      return hierarchyData.regions.filter((item) => item.groupId === selectedGroup);
+    }
+    return hierarchyData.regions;
+  }, [hierarchyData.regions, selectedGroup, selectedPlantation]);
+
+  const estateOptions = useMemo(() => {
+    if (selectedRegion) {
+      return hierarchyData.estates.filter((item) => item.regionId === selectedRegion);
+    }
+    if (selectedPlantation) {
+      return hierarchyData.estates.filter((item) => item.plantationId === selectedPlantation);
+    }
+    if (selectedGroup) {
+      return hierarchyData.estates.filter((item) => item.groupId === selectedGroup);
+    }
+    return hierarchyData.estates;
+  }, [hierarchyData.estates, selectedGroup, selectedPlantation, selectedRegion]);
+
+  const filteredPlansByDate = useMemo(() => {
+    const grouped = {};
+    Object.entries(plansByDate).forEach(([date, plans]) => {
+      const matched = plans.filter((plan) => {
+        const typeMatch = selectedTypes.has(plan.flag);
+        const statusMatch = selectedStatuses.has(getPlanStatusKey(plan));
+        const groupId = String(plan.group_id ?? plan.groupId ?? plan.group ?? '');
+        const plantationId = String(plan.plantation_id ?? plan.plantationId ?? plan.plantation ?? '');
+        const regionId = String(plan.region_id ?? plan.regionId ?? plan.region ?? '');
+        const estateId = String(plan.estate_id ?? plan.estateId ?? plan.estate ?? '');
+
+        const hierarchyMatch =
+          (!selectedGroup || groupId === selectedGroup) &&
+          (!selectedPlantation || plantationId === selectedPlantation) &&
+          (!selectedRegion || regionId === selectedRegion) &&
+          (!selectedEstate || estateId === selectedEstate);
+
+        return typeMatch && statusMatch && hierarchyMatch;
+      });
+      if (matched.length > 0) {
+        grouped[date] = matched;
+      }
+    });
+    return grouped;
+  }, [plansByDate, selectedTypes, selectedStatuses, selectedGroup, selectedPlantation, selectedRegion, selectedEstate]);
+
+  const toggleType = (key) => {
+    setSelectedTypes((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  };
+
+  const toggleStatus = (key) => {
+    setSelectedStatuses((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  };
+
+  const handleGroupChange = (value) => {
+    setSelectedGroup(value);
+    setSelectedPlantation('');
+    setSelectedRegion('');
+    setSelectedEstate('');
+  };
+
+  const handlePlantationChange = (value) => {
+    setSelectedPlantation(value);
+    setSelectedRegion('');
+    setSelectedEstate('');
+    if (!value) return;
+    const selected = hierarchyData.plantations.find((item) => item.id === value);
+    if (selected) {
+      setSelectedGroup(selected.groupId);
+    }
+  };
+
+  const handleRegionChange = (value) => {
+    setSelectedRegion(value);
+    setSelectedEstate('');
+    if (!value) return;
+    const selected = hierarchyData.regions.find((item) => item.id === value);
+    if (selected) {
+      setSelectedPlantation(selected.plantationId);
+      setSelectedGroup(selected.groupId);
+    }
+  };
+
+  const handleEstateChange = (value) => {
+    setSelectedEstate(value);
+    if (!value) return;
+    const selected = hierarchyData.estates.find((item) => item.id === value);
+    if (selected) {
+      setSelectedRegion(selected.regionId);
+      setSelectedPlantation(selected.plantationId);
+      setSelectedGroup(selected.groupId);
+    }
+  };
+
+  const clearHierarchyFilters = () => {
+    setSelectedGroup('');
+    setSelectedPlantation('');
+    setSelectedRegion('');
+    setSelectedEstate('');
+  };
+
   const goPrevMonth = () => setCurrentMonth((d) => addMonths(d, -1));
   const goNextMonth = () => setCurrentMonth((d) => addMonths(d, 1));
 
@@ -151,22 +359,97 @@ const PlanCalendar = () => {
 
       {error && <div className="error-booking-calendar">{error}</div>}
 
-      <div className="legend-booking-calendar">
-        <div className="legend-group-booking-calendar">
+      <div className="top-filters-booking-calendar">
+        <div className="top-filter-group-booking-calendar">
           <span className="legend-label-booking-calendar">Type:</span>
-          <span className="legend-chip-booking-calendar legend-chip-revolving">Revolving</span>
-          <span className="legend-chip-booking-calendar legend-chip-adhoc">AddHoc</span>
-          <span className="legend-chip-booking-calendar legend-chip-rescheduled">Rescheduled</span>
+          {PLAN_TYPE_META.map((item) => (
+            <button
+              key={item.key}
+              type="button"
+              className={`legend-chip-booking-calendar ${item.key === 'np' ? 'legend-chip-revolving' : item.key === 'ap' ? 'legend-chip-adhoc' : 'legend-chip-rescheduled'} ${selectedTypes.has(item.key) ? 'legend-chip-selected-booking-calendar' : 'legend-chip-unselected-booking-calendar'}`}
+              onClick={() => toggleType(item.key)}
+            >
+              {item.label}
+            </button>
+          ))}
         </div>
-        <div className="legend-group-booking-calendar">
+        <div className="top-filter-group-booking-calendar">
           <span className="legend-label-booking-calendar">Status:</span>
-          <span className="legend-dot-item"><span className="legend-dot" style={{background:'#BEBEBE'}} />Not Activated</span>
-          <span className="legend-dot-item"><span className="legend-dot" style={{background:'#60a5fa'}} />Active</span>
-          <span className="legend-dot-item"><span className="legend-dot" style={{background:'#f97316'}} />Manager Approved</span>
-          <span className="legend-dot-item"><span className="legend-dot" style={{background:'#eab308'}} />Team Assigned</span>
-          <span className="legend-dot-item"><span className="legend-dot" style={{background:'#22c55e'}} />Completed</span>
+          {PLAN_STATUS_META.map((item) => (
+            <button
+              key={item.key}
+              type="button"
+              className={`legend-dot-item top-filter-status-booking-calendar ${selectedStatuses.has(item.key) ? 'legend-dot-selected-booking-calendar' : 'legend-dot-unselected-booking-calendar'}`}
+              onClick={() => toggleStatus(item.key)}
+            >
+              <span className="legend-dot" style={{ background: item.color }} />
+              {item.label}
+            </button>
+          ))}
         </div>
+        <div className="hierarchy-filter-wrap-booking-calendar">
+        <button
+          type="button"
+          className={`hierarchy-filter-btn-booking-calendar ${showHierarchyFilter ? 'hierarchy-filter-btn-open-booking-calendar' : ''}`}
+          onClick={() => setShowHierarchyFilter((v) => !v)}
+          aria-expanded={showHierarchyFilter}
+          aria-label="Open hierarchy filters"
+        >
+          <span className="hierarchy-filter-icon-booking-calendar">⚲</span>
+          <span>Filter Options</span>
+        </button>
+        {(selectedGroup || selectedPlantation || selectedRegion || selectedEstate) && (
+          <button type="button" className="hierarchy-clear-btn-booking-calendar" onClick={clearHierarchyFilters}>
+            Clear
+          </button>
+        )}
       </div>
+      </div>
+
+      
+
+      {showHierarchyFilter && (
+        <div className="hierarchy-filter-popup-booking-calendar">
+          <div className="hierarchy-filter-grid-booking-calendar">
+            <label className="hierarchy-filter-field-booking-calendar">
+              <span>Group</span>
+              <select value={selectedGroup} onChange={(e) => handleGroupChange(e.target.value)}>
+                <option value="">All Groups</option>
+                {hierarchyData.groups.map((item) => (
+                  <option key={item.id} value={item.id}>{item.name}</option>
+                ))}
+              </select>
+            </label>
+            <label className="hierarchy-filter-field-booking-calendar">
+              <span>Plantation</span>
+              <select value={selectedPlantation} onChange={(e) => handlePlantationChange(e.target.value)}>
+                <option value="">All Plantations</option>
+                {plantationOptions.map((item) => (
+                  <option key={item.id} value={item.id}>{item.name}</option>
+                ))}
+              </select>
+            </label>
+            <label className="hierarchy-filter-field-booking-calendar">
+              <span>Region</span>
+              <select value={selectedRegion} onChange={(e) => handleRegionChange(e.target.value)}>
+                <option value="">All Regions</option>
+                {regionOptions.map((item) => (
+                  <option key={item.id} value={item.id}>{item.name}</option>
+                ))}
+              </select>
+            </label>
+            <label className="hierarchy-filter-field-booking-calendar">
+              <span>Estate</span>
+              <select value={selectedEstate} onChange={(e) => handleEstateChange(e.target.value)}>
+                <option value="">All Estates</option>
+                {estateOptions.map((item) => (
+                  <option key={item.id} value={item.id}>{item.name}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+        </div>
+      )}
 
       <div className="grid-booking-calendar">
         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
@@ -180,7 +463,7 @@ const PlanCalendar = () => {
         {daysInMonth.map((day) => {
           const key = format(day, 'yyyy-MM-dd');
           const flagOrder = { np: 0, ap: 1, rp: 2 };
-          const items = (plansByDate[key] || []).slice().sort((a, b) => {
+          const items = (filteredPlansByDate[key] || []).slice().sort((a, b) => {
             const aActive = Number(a.activated) === 1 ? 0 : 1;
             const bActive = Number(b.activated) === 1 ? 0 : 1;
             if (aActive !== bActive) return aActive - bActive;
@@ -200,23 +483,7 @@ const PlanCalendar = () => {
                     p.flag === 'rp' ? 'item-type-rescheduled' :
                     'item-type-revolving';
 
-                  let statusColor;
-                  const activated = Number(p.activated) === 1;
-                  const managerApproved = Number(p.manager_approval) === 1;
-                  const teamAssigned = Number(p.team_assigned) === 1;
-                  const completed = Number(p.completed) === 1;
-
-                  if (!activated) {
-                    statusColor = '#BEBEBE';
-                  } else if (activated && managerApproved && teamAssigned && completed) {
-                    statusColor = '#22c55e';
-                  } else if (activated && managerApproved && teamAssigned) {
-                    statusColor = '#eab308';
-                  } else if (activated && managerApproved) {
-                    statusColor = '#f97316';
-                  } else {
-                    statusColor = '#60a5fa';
-                  }
+                  const statusColor = getPlanStatusColor(p);
 
                   return (
                     <div
