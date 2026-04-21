@@ -5,6 +5,7 @@ import {
   useGetUserJobRolesQuery, 
   useGetUserLevelsQuery,
   useSearchEmployeeQuery,
+  useGetAllEmployeeRegistrationsQuery,
   useCreateUserMutation,
   useGetAllUsersQuery,
   useUpdateUserMutation,
@@ -59,6 +60,22 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
   const [createUser, { isLoading: isCreating }] = useCreateUserMutation();
   const [updateUser, { isLoading: isUpdating }] = useUpdateUserMutation();
   const { data: allUsersData, isLoading: loadingUsers, refetch: refetchUsers } = useGetAllUsersQuery();
+  const {
+    data: employeeRegistrationsData,
+    isLoading: loadingEmployeeOptions,
+    error: employeeOptionsError,
+  } = useGetAllEmployeeRegistrationsQuery();
+  const employeeOptions = useMemo(() => {
+    if (!employeeRegistrationsData) return [];
+    if (Array.isArray(employeeRegistrationsData)) return employeeRegistrationsData;
+    if (Array.isArray(employeeRegistrationsData?.data)) return employeeRegistrationsData.data;
+    if (Array.isArray(employeeRegistrationsData?.data?.data)) return employeeRegistrationsData.data.data;
+    if (Array.isArray(employeeRegistrationsData?.employees)) return employeeRegistrationsData.employees;
+    if (Array.isArray(employeeRegistrationsData?.data?.employees)) return employeeRegistrationsData.data.employees;
+    if (Array.isArray(employeeRegistrationsData?.employeeRegistrations)) return employeeRegistrationsData.employeeRegistrations;
+    if (Array.isArray(employeeRegistrationsData?.data?.employeeRegistrations)) return employeeRegistrationsData.data.employeeRegistrations;
+    return [];
+  }, [employeeRegistrationsData]);
 
   // State
   const [userType, setUserType] = useState(''); // 'i' for internal, 'e' for external
@@ -116,6 +133,7 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
     member_type: '',
     job_role: '',
     user_level: 'g',
+    employeeId: '',
     activated: '1',
     image: null,
     group: '',
@@ -178,6 +196,20 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
   }, [employeeSearchResult, isSearchingEmployee, userJobRoles, userLevels]);
 
   const allUsers = useMemo(() => allUsersData?.data || [], [allUsersData]);
+  const availableEmployeeOptionsForEdit = useMemo(() => {
+    const usedEmployeeIds = new Set(
+      allUsers
+        .filter((u) => {
+          if (!u?.employeeId) return false;
+          // Keep current edit user's own employee link selectable.
+          return String(u.id) !== String(selectedUserId || '');
+        })
+        .map((u) => String(u.employeeId))
+    );
+
+    return employeeOptions.filter((employee) => !usedEmployeeIds.has(String(employee.id)));
+  }, [allUsers, employeeOptions, selectedUserId]);
+
   const filteredUsers = useMemo(() => {
     const q = userSearchTerm.trim().toLowerCase();
     return allUsers.filter((u) => {
@@ -213,6 +245,17 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
     });
     return map;
   }, [userJobRoles]);
+
+  const formatEmployeeOptionLabel = useMemo(
+    () => (employee) => {
+      if (!employee) return '';
+      const displayName = employee.employeeName || employee.preferredName || employee.name || 'Unnamed';
+      const empNo = employee.empNo ? ` (${employee.empNo})` : '';
+      return `${displayName}${empNo} - ID ${employee.id}`;
+    },
+    []
+  );
+
 
   const plantationLabelMap = useMemo(() => {
     const map = {};
@@ -313,6 +356,7 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
       member_type: user?.member_type || '',
       job_role: user?.job_role || '',
       user_level: user?.user_level || 'g',
+      employeeId: user?.employeeId != null ? String(user.employeeId) : '',
       activated: String(user?.activated ?? '1'),
       image: null,
       group: user?.group ? String(user.group) : '',
@@ -384,11 +428,33 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
     });
   };
 
+  const handleClearEmployeeLink = async () => {
+    setEditFormData((prev) => ({ ...prev, employeeId: '' }));
+
+    if (!selectedUserId) return;
+
+    try {
+      await updateUser({ id: selectedUserId, employeeId: null }).unwrap();
+      setEditMessage({ type: 'success', text: 'Employee link cleared successfully.' });
+      refetchUsers();
+    } catch (error) {
+      setEditMessage({
+        type: 'error',
+        text: error?.data?.message || error?.message || 'Failed to clear employee link.',
+      });
+    }
+  };
+
   const buildUpdatePayload = () => {
     const { confirmPassword, image, ...base } = editFormData;
+    const normalizedEmployeeId =
+      base.employeeId === '' || base.employeeId == null
+        ? null
+        : Number(base.employeeId);
     const payload = {
       id: selectedUserId,
       ...base,
+      employeeId: Number.isFinite(normalizedEmployeeId) ? normalizedEmployeeId : null,
     };
 
     if (!payload.password) delete payload.password;
@@ -738,7 +804,7 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
   const normalizedTypeFilter = String(userTypeFilter || '').trim().toLowerCase();
   const showExternalColumns = normalizedTypeFilter === 'e' || normalizedTypeFilter === 'external';
   const showInternalColumns = normalizedTypeFilter === 'i' || normalizedTypeFilter === 'internal';
-  const usersTableColSpan = 9 + (showExternalColumns ? 2 : 0) + (showInternalColumns ? 1 : 0);
+  const usersTableColSpan = 10 + (showExternalColumns ? 2 : 0) + (showInternalColumns ? 1 : 0);
 
   return (
     <div
@@ -1284,6 +1350,7 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
             <thead>
               <tr>
                 <th>ID</th>
+                <th>Employee ID</th>
                 <th>Profile</th>
                 <th>Name</th>
                 <th>NIC</th>
@@ -1310,6 +1377,7 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
                 filteredUsers.map((user) => (
                   <tr key={user.id} className={selectedUserId === user.id ? 'selected-row' : ''}>
                     <td>{user.id}</td>
+                    <td>{user.employeeId ?? '-'}</td>
                     <td>
                       {user?.image ? (
                         <img src={user.image} alt={user.name || 'User'} className="user-avatar-thumb" />
@@ -1445,6 +1513,40 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
                     {showEditConfirmPassword ? '🙈' : '👁'}
                   </button>
                 </div>
+              </div>
+            </div>
+            <div className="form-row">
+              <div className="form-group employee-link-field-user-reg-ict">
+                <label>Employee (link)</label>
+                <div className="employee-link-input-row-user-reg-ict">
+                  <select
+                    name="employeeId"
+                    value={editFormData.employeeId}
+                    onChange={handleEditInputChange}
+                  >
+                    <option value="">-- Not linked to employee --</option>
+                    {availableEmployeeOptionsForEdit.map((employee) => (
+                      <option key={employee.id} value={String(employee.id)}>
+                        {formatEmployeeOptionLabel(employee)}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    className="btn-search employee-clear-btn-user-reg-ict"
+                    onClick={handleClearEmployeeLink}
+                  >
+                    Clear Link
+                  </button>
+                </div>
+                {loadingEmployeeOptions ? (
+                  <div className="employee-suggestion-info-user-reg-ict">Loading employees...</div>
+                ) : null}
+                {employeeOptionsError ? (
+                  <div className="employee-suggestion-error-user-reg-ict">
+                    Failed to load employee list.
+                  </div>
+                ) : null}
               </div>
             </div>
             <div className="form-row">

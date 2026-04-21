@@ -520,6 +520,68 @@
   justify-content: center;
 }
 
+.employee-link-field-user-reg-ict {
+  position: relative;
+}
+
+.employee-link-input-row-user-reg-ict {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.employee-link-input-row-user-reg-ict input {
+  flex: 1;
+}
+
+.employee-clear-btn-user-reg-ict {
+  white-space: nowrap;
+}
+
+.employee-suggestion-panel-user-reg-ict {
+  position: relative;
+  margin-top: 6px;
+  max-height: 220px;
+  overflow-y: auto;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  background: #fff;
+  z-index: 9999;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.employee-suggestion-meta-user-reg-ict {
+  padding: 6px 10px;
+  color: #6b7280;
+  font-size: 12px;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.employee-suggestion-info-user-reg-ict {
+  padding: 8px 10px;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.employee-suggestion-error-user-reg-ict {
+  padding: 8px 10px;
+  color: #b91c1c;
+  font-size: 13px;
+}
+
+.employee-suggestion-item-user-reg-ict {
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  border: none;
+  background: #fff;
+  cursor: pointer;
+}
+
+.employee-suggestion-item-user-reg-ict:hover {
+  background: #f8fafc;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .user-registration-container-user-maintain,
@@ -546,6 +608,11 @@
   .btn-submit-user-maintain,
   .btn-submit {
     width: 100%;
+  }
+
+  .employee-link-input-row-user-reg-ict {
+    flex-direction: column;
+    align-items: stretch;
   }
 }
 

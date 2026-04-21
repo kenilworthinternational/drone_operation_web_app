@@ -49,7 +49,7 @@ export const jdManagementApi = baseApi.injectEndpoints({
         try {
           const result = await nodeBackendBaseQuery(
             {
-              url: '/api/wings',
+              url: '/api/jd-management/wings',
               method: 'POST',
               body: {},
             },
@@ -72,6 +72,22 @@ export const jdManagementApi = baseApi.injectEndpoints({
         }
       },
       providesTags: ['Wings'],
+    }),
+
+    saveWing: builder.mutation({
+      queryFn: async (data) => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: '/api/jd-management/wings/save',
+            method: 'POST',
+            body: data,
+          },
+          {},
+          {}
+        );
+        return result;
+      },
+      invalidatesTags: ['Wings'],
     }),
 
     // =====================================================
@@ -954,6 +970,7 @@ export const {
   useGetUserLevelsQuery,
   useGetUserMemberTypesQuery,
   useGetWingsQuery,
+  useSaveWingMutation,
   useGetDrivingLicenseTypesQuery,
   useGetWorkLocationsQuery,
   useGetDSCSQuery,

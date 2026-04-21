@@ -15,7 +15,13 @@ import {
 import {
   useGetFuelCategoriesQuery,
   useSaveFuelCategoryMutation,
+  useGetWingsQuery as useGetLegacyWingsQuery,
 } from '../../../api/services/assetsApi';
+import {
+  useGetWingsQuery,
+  useSaveWingMutation,
+  useGetAllEmployeeRegistrationsQuery,
+} from '../../../api/services NodeJs/jdManagementApi';
 import '../../../styles/vehicleAppAdmin.css';
 
 const TAB_CONFIG = {
@@ -37,12 +43,43 @@ const VehicleAppAdmin = ({ mode = 'full' }) => {
   const { data: maintenanceDescriptions = [] } = useGetVehicleAppMaintenanceDescriptionsQuery();
   const { data: maintenanceRequests = [] } = useGetVehicleAppMaintenanceRequestsQuery(yearMonth);
   const { data: fuelCategories = [], refetch: refetchFuelCategories } = useGetFuelCategoriesQuery();
+  const { data: wingsData } = useGetWingsQuery();
+  const { data: legacyWingsData } = useGetLegacyWingsQuery();
+  const { data: employeesData } = useGetAllEmployeeRegistrationsQuery();
+  const wings = useMemo(() => {
+    const fromJd = Array.isArray(wingsData)
+      ? wingsData
+      : Array.isArray(wingsData?.data)
+        ? wingsData.data
+        : Array.isArray(wingsData?.wings)
+          ? wingsData.wings
+          : [];
+    if (fromJd.length > 0) return fromJd;
+
+    const fromLegacy = Array.isArray(legacyWingsData)
+      ? legacyWingsData
+      : Array.isArray(legacyWingsData?.wings)
+        ? legacyWingsData.wings
+        : Array.isArray(legacyWingsData?.data)
+          ? legacyWingsData.data
+          : [];
+    if (fromLegacy.length > 0) return fromLegacy;
+
+    return [];
+  }, [wingsData, legacyWingsData]);
+  const employees = useMemo(() => {
+    if (!employeesData) return [];
+    if (Array.isArray(employeesData)) return employeesData;
+    if (Array.isArray(employeesData?.data)) return employeesData.data;
+    return [];
+  }, [employeesData]);
 
   const [saveVehicleCategory] = useSaveVehicleAppVehicleCategoryMutation();
   const [saveMaintenanceCategory] = useSaveVehicleAppMaintenanceCategoryMutation();
   const [saveMaintenanceDescription] = useSaveVehicleAppMaintenanceDescriptionMutation();
   const [decideMaintenance] = useDecideVehicleAppMaintenanceRequestMutation();
   const [saveFuelCategory] = useSaveFuelCategoryMutation();
+  const [saveWing] = useSaveWingMutation();
 
   const [newVehicleCategory, setNewVehicleCategory] = useState('');
   const [newMaintenanceCategory, setNewMaintenanceCategory] = useState('');
@@ -59,6 +96,16 @@ const VehicleAppAdmin = ({ mode = 'full' }) => {
   const [editingFuelId, setEditingFuelId] = useState(null);
   const [editingFuelName, setEditingFuelName] = useState('');
   const [editingFuelPrice, setEditingFuelPrice] = useState('');
+  const [newWingName, setNewWingName] = useState('');
+  const [newWingCode, setNewWingCode] = useState('');
+  const [newWingHod, setNewWingHod] = useState('');
+  const [editingWingId, setEditingWingId] = useState(null);
+  const [editingWingName, setEditingWingName] = useState('');
+  const [editingWingCode, setEditingWingCode] = useState('');
+  const [editingWingHod, setEditingWingHod] = useState('');
+  const [editModal, setEditModal] = useState(null);
+  const [modalDraft, setModalDraft] = useState({});
+  const [quickMessage, setQuickMessage] = useState({ type: '', text: '' });
 
   const pendingMaintenance = useMemo(
     () => (maintenanceRequests || []).filter((r) => r.approval === 'p'),
@@ -68,10 +115,57 @@ const VehicleAppAdmin = ({ mode = 'full' }) => {
   const handleQuickSave = async (action) => {
     try {
       await action();
-      alert('Saved successfully');
+      setQuickMessage({ type: 'success', text: 'Saved successfully.' });
     } catch (error) {
-      alert(error?.data?.message || error?.message || 'Save failed');
+      setQuickMessage({
+        type: 'error',
+        text: error?.data?.message || error?.message || 'Save failed',
+      });
     }
+  };
+
+  const openEditModal = (type, item) => {
+    setEditModal({ type, item });
+    if (type === 'vehicleCategory') setModalDraft({ category: item.category || '' });
+    if (type === 'maintenanceCategory') setModalDraft({ category: item.category || '' });
+    if (type === 'maintenanceDescription') setModalDraft({ description: item.description || '' });
+    if (type === 'fuel') setModalDraft({ category: item.category || '', unit_price: item.unit_price != null ? String(item.unit_price) : '' });
+    if (type === 'wing') setModalDraft({ wing: item.wing || '', wingsCode: item.wingsCode || '', hod: item.hod ? String(item.hod) : '' });
+  };
+
+  const closeEditModal = () => {
+    setEditModal(null);
+    setModalDraft({});
+  };
+
+  const saveEditModal = async () => {
+    if (!editModal?.item?.id) return;
+    await handleQuickSave(async () => {
+      if (editModal.type === 'vehicleCategory') {
+        await saveVehicleCategory({ id: editModal.item.id, category: modalDraft.category, activated: editModal.item.activated ?? 1 }).unwrap();
+      } else if (editModal.type === 'maintenanceCategory') {
+        await saveMaintenanceCategory({ id: editModal.item.id, category: modalDraft.category, activated: editModal.item.activated ?? 1 }).unwrap();
+      } else if (editModal.type === 'maintenanceDescription') {
+        await saveMaintenanceDescription({ id: editModal.item.id, description: modalDraft.description, activated: editModal.item.activated ?? 1 }).unwrap();
+      } else if (editModal.type === 'fuel') {
+        await saveFuelCategory({
+          id: editModal.item.id,
+          category: modalDraft.category,
+          unit_price: modalDraft.unit_price || null,
+          activated: editModal.item.activated ?? 1,
+        }).unwrap();
+        refetchFuelCategories();
+      } else if (editModal.type === 'wing') {
+        await saveWing({
+          id: editModal.item.id,
+          wing: modalDraft.wing,
+          wingsCode: modalDraft.wingsCode,
+          hod: modalDraft.hod || null,
+          activated: editModal.item.activated ?? 1,
+        }).unwrap();
+      }
+      closeEditModal();
+    });
   };
 
   return (
@@ -86,6 +180,31 @@ const VehicleAppAdmin = ({ mode = 'full' }) => {
           </p>
         </div>
       </div>
+      {quickMessage.text ? (
+        <div
+          style={{
+            marginBottom: '12px',
+            padding: '10px 12px',
+            borderRadius: '8px',
+            background: quickMessage.type === 'success' ? '#e6f7ee' : '#fdecec',
+            color: quickMessage.type === 'success' ? '#116149' : '#8a1f1f',
+            border: `1px solid ${quickMessage.type === 'success' ? '#b9e4cf' : '#f6c2c2'}`,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: '12px',
+          }}
+        >
+          <span>{quickMessage.text}</span>
+          <button
+            type="button"
+            className="action-btn neutral"
+            onClick={() => setQuickMessage({ type: '', text: '' })}
+          >
+            Dismiss
+          </button>
+        </div>
+      ) : null}
 
       {tabs.length > 1 && (
         <div className="vehicle-admin-tabs">
@@ -146,55 +265,14 @@ const VehicleAppAdmin = ({ mode = 'full' }) => {
             <div className="master-list">
               {vehicleCategories.map((c) => (
                 <div key={c.id} className="master-row">
-                  {editingVehicleCategoryId === c.id ? (
-                    <>
-                      <input
-                        value={editingVehicleCategoryValue}
-                        onChange={(e) => setEditingVehicleCategoryValue(e.target.value)}
-                        className="master-edit-input"
-                      />
-                      <div className="master-actions">
-                        <button
-                          className="action-btn approve"
-                          onClick={() => handleQuickSave(async () => {
-                            await saveVehicleCategory({
-                              id: c.id,
-                              category: editingVehicleCategoryValue,
-                              activated: c.activated ?? 1,
-                            }).unwrap();
-                            setEditingVehicleCategoryId(null);
-                            setEditingVehicleCategoryValue('');
-                          })}
-                        >
-                          Save
-                        </button>
-                        <button
-                          className="action-btn neutral"
-                          onClick={() => {
-                            setEditingVehicleCategoryId(null);
-                            setEditingVehicleCategoryValue('');
-                          }}
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <span className="master-label">{c.category}</span>
-                      <div className="master-actions">
-                        <button
-                          className="action-btn neutral"
-                          onClick={() => {
-                            setEditingVehicleCategoryId(c.id);
-                            setEditingVehicleCategoryValue(c.category || '');
-                          }}
-                        >
-                          Edit
-                        </button>
-                      </div>
-                    </>
-                  )}
+                  <>
+                    <span className="master-label">{c.category}</span>
+                    <div className="master-actions">
+                      <button className="action-btn neutral" onClick={() => openEditModal('vehicleCategory', c)}>
+                        Edit
+                      </button>
+                    </div>
+                  </>
                 </div>
               ))}
             </div>
@@ -211,59 +289,90 @@ const VehicleAppAdmin = ({ mode = 'full' }) => {
             <div className="master-list">
               {maintenanceCategories.map((c) => (
                 <div key={c.id} className="master-row">
-                  {editingMaintenanceCategoryId === c.id ? (
-                    <>
-                      <input
-                        value={editingMaintenanceCategoryValue}
-                        onChange={(e) => setEditingMaintenanceCategoryValue(e.target.value)}
-                        className="master-edit-input"
-                      />
-                      <div className="master-actions">
-                        <button
-                          className="action-btn approve"
-                          onClick={() => handleQuickSave(async () => {
-                            await saveMaintenanceCategory({
-                              id: c.id,
-                              category: editingMaintenanceCategoryValue,
-                              activated: c.activated ?? 1,
-                            }).unwrap();
-                            setEditingMaintenanceCategoryId(null);
-                            setEditingMaintenanceCategoryValue('');
-                          })}
-                        >
-                          Save
-                        </button>
-                        <button
-                          className="action-btn neutral"
-                          onClick={() => {
-                            setEditingMaintenanceCategoryId(null);
-                            setEditingMaintenanceCategoryValue('');
-                          }}
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <span className="master-label">{c.category}</span>
-                      <div className="master-actions">
-                        <button
-                          className="action-btn neutral"
-                          onClick={() => {
-                            setEditingMaintenanceCategoryId(c.id);
-                            setEditingMaintenanceCategoryValue(c.category || '');
-                          }}
-                        >
-                          Edit
-                        </button>
-                      </div>
-                    </>
-                  )}
+                  <>
+                    <span className="master-label">{c.category}</span>
+                    <div className="master-actions">
+                      <button className="action-btn neutral" onClick={() => openEditModal('maintenanceCategory', c)}>
+                        Edit
+                      </button>
+                    </div>
+                  </>
                 </div>
               ))}
             </div>
           </div>
+          <div className="vehicle-admin-card">
+            <h3>Wings</h3>
+            <div className="inline-form" style={{ flexWrap: 'wrap', gap: '6px' }}>
+              <input
+                value={newWingName}
+                onChange={(e) => setNewWingName(e.target.value)}
+                placeholder="Wing name"
+                style={{ flex: '1 1 140px' }}
+              />
+              <input
+                value={newWingCode}
+                onChange={(e) => setNewWingCode(e.target.value)}
+                placeholder="Wing code"
+                style={{ flex: '1 1 120px' }}
+              />
+              <select
+                value={newWingHod}
+                onChange={(e) => setNewWingHod(e.target.value)}
+                style={{ flex: '1 1 180px' }}
+              >
+                <option value="">HOD (Employee ID)</option>
+                {employees.map((emp) => (
+                  <option key={emp.id} value={emp.id}>
+                    {emp.id} - {emp.employeeName || emp.preferredName || emp.empNo || 'Employee'}
+                  </option>
+                ))}
+              </select>
+              <button
+                onClick={() => handleQuickSave(async () => {
+                  await saveWing({
+                    wing: newWingName,
+                    wingsCode: newWingCode,
+                    hod: newWingHod || null,
+                    activated: 1,
+                  }).unwrap();
+                  setNewWingName('');
+                  setNewWingCode('');
+                  setNewWingHod('');
+                })}
+              >
+                Add
+              </button>
+            </div>
+            <div className="master-list">
+              {wings.map((w) => (
+                <div key={w.id} className="master-row">
+                  {(() => {
+                    const hodEmployee = employees.find((emp) => String(emp.id) === String(w.hod || ''));
+                    const hodLabel = hodEmployee
+                      ? `${hodEmployee.employeeName || hodEmployee.preferredName || hodEmployee.empNo || 'Employee'} (${hodEmployee.id})`
+                      : (w.hod || '-');
+                    return (
+                  <>
+                    <div style={{ flex: 1 }}>
+                      <span className="master-label">{w.wing}</span>
+                      <span style={{ marginLeft: 8, fontSize: '0.82em', color: '#555' }}>
+                        [{w.wingsCode || '-'}] HOD: {hodLabel}
+                      </span>
+                    </div>
+                    <div className="master-actions">
+                      <button className="action-btn neutral" onClick={() => openEditModal('wing', w)}>
+                        Edit
+                      </button>
+                    </div>
+                  </>
+                    );
+                  })()}
+                </div>
+              ))}
+            </div>
+          </div>
+
           <div className="vehicle-admin-card">
             <h3>Fuel Types</h3>
             <div className="inline-form" style={{ flexWrap: 'wrap', gap: '6px' }}>
@@ -292,75 +401,21 @@ const VehicleAppAdmin = ({ mode = 'full' }) => {
             <div className="master-list">
               {fuelCategories.map((c) => (
                 <div key={c.id} className="master-row">
-                  {editingFuelId === c.id ? (
-                    <>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
-                        <input
-                          value={editingFuelName}
-                          onChange={(e) => setEditingFuelName(e.target.value)}
-                          className="master-edit-input"
-                          placeholder="Fuel type name"
-                        />
-                        <input
-                          type="number"
-                          value={editingFuelPrice}
-                          onChange={(e) => setEditingFuelPrice(e.target.value)}
-                          className="master-edit-input"
-                          placeholder="Unit price (LKR/L)"
-                          min="0"
-                          step="0.01"
-                        />
-                      </div>
-                      <div className="master-actions">
-                        <button
-                          className="action-btn approve"
-                          onClick={() => handleQuickSave(async () => {
-                            await saveFuelCategory({
-                              id: c.id,
-                              category: editingFuelName,
-                              unit_price: editingFuelPrice || null,
-                              activated: c.activated ?? 1,
-                            }).unwrap();
-                            setEditingFuelId(null);
-                            setEditingFuelName('');
-                            setEditingFuelPrice('');
-                            refetchFuelCategories();
-                          })}
-                        >
-                          Save
-                        </button>
-                        <button
-                          className="action-btn neutral"
-                          onClick={() => { setEditingFuelId(null); setEditingFuelName(''); setEditingFuelPrice(''); }}
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div style={{ flex: 1 }}>
-                        <span className="master-label">{c.category}</span>
-                        {c.unit_price != null && (
-                          <span style={{ marginLeft: 8, fontSize: '0.82em', color: '#555' }}>
-                            LKR {Number(c.unit_price).toFixed(2)}/L
-                          </span>
-                        )}
-                      </div>
-                      <div className="master-actions">
-                        <button
-                          className="action-btn neutral"
-                          onClick={() => {
-                            setEditingFuelId(c.id);
-                            setEditingFuelName(c.category || '');
-                            setEditingFuelPrice(c.unit_price != null ? String(c.unit_price) : '');
-                          }}
-                        >
-                          Edit
-                        </button>
-                      </div>
-                    </>
-                  )}
+                  <>
+                    <div style={{ flex: 1 }}>
+                      <span className="master-label">{c.category}</span>
+                      <span style={{ marginLeft: 8, fontSize: '0.82em', color: '#555' }}>
+                        {c.unit_price != null && c.unit_price !== ''
+                          ? `Current: LKR ${Number(c.unit_price).toFixed(2)}/L`
+                          : 'Current: Not set'}
+                      </span>
+                    </div>
+                    <div className="master-actions">
+                      <button className="action-btn neutral" onClick={() => openEditModal('fuel', c)}>
+                        Edit
+                      </button>
+                    </div>
+                  </>
                 </div>
               ))}
             </div>
@@ -378,55 +433,14 @@ const VehicleAppAdmin = ({ mode = 'full' }) => {
             <div className="master-list">
               {maintenanceDescriptions.map((c) => (
                 <div key={c.id} className="master-row">
-                  {editingMaintenanceDescriptionId === c.id ? (
-                    <>
-                      <input
-                        value={editingMaintenanceDescriptionValue}
-                        onChange={(e) => setEditingMaintenanceDescriptionValue(e.target.value)}
-                        className="master-edit-input"
-                      />
-                      <div className="master-actions">
-                        <button
-                          className="action-btn approve"
-                          onClick={() => handleQuickSave(async () => {
-                            await saveMaintenanceDescription({
-                              id: c.id,
-                              description: editingMaintenanceDescriptionValue,
-                              activated: c.activated ?? 1,
-                            }).unwrap();
-                            setEditingMaintenanceDescriptionId(null);
-                            setEditingMaintenanceDescriptionValue('');
-                          })}
-                        >
-                          Save
-                        </button>
-                        <button
-                          className="action-btn neutral"
-                          onClick={() => {
-                            setEditingMaintenanceDescriptionId(null);
-                            setEditingMaintenanceDescriptionValue('');
-                          }}
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <span className="master-label">{c.description}</span>
-                      <div className="master-actions">
-                        <button
-                          className="action-btn neutral"
-                          onClick={() => {
-                            setEditingMaintenanceDescriptionId(c.id);
-                            setEditingMaintenanceDescriptionValue(c.description || '');
-                          }}
-                        >
-                          Edit
-                        </button>
-                      </div>
-                    </>
-                  )}
+                  <>
+                    <span className="master-label">{c.description}</span>
+                    <div className="master-actions">
+                      <button className="action-btn neutral" onClick={() => openEditModal('maintenanceDescription', c)}>
+                        Edit
+                      </button>
+                    </div>
+                  </>
                 </div>
               ))}
             </div>
@@ -503,6 +517,89 @@ const VehicleAppAdmin = ({ mode = 'full' }) => {
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {editModal && (
+        <div className="update-popup-overlay">
+          <div className="update-popup-card">
+            <h3>Edit {editModal.type}</h3>
+            {editModal.type === 'vehicleCategory' && (
+              <input
+                className="master-edit-input"
+                value={modalDraft.category || ''}
+                onChange={(e) => setModalDraft((p) => ({ ...p, category: e.target.value }))}
+                placeholder="Category"
+              />
+            )}
+            {editModal.type === 'maintenanceCategory' && (
+              <input
+                className="master-edit-input"
+                value={modalDraft.category || ''}
+                onChange={(e) => setModalDraft((p) => ({ ...p, category: e.target.value }))}
+                placeholder="Category"
+              />
+            )}
+            {editModal.type === 'maintenanceDescription' && (
+              <input
+                className="master-edit-input"
+                value={modalDraft.description || ''}
+                onChange={(e) => setModalDraft((p) => ({ ...p, description: e.target.value }))}
+                placeholder="Description"
+              />
+            )}
+            {editModal.type === 'fuel' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <input
+                  className="master-edit-input"
+                  value={modalDraft.category || ''}
+                  onChange={(e) => setModalDraft((p) => ({ ...p, category: e.target.value }))}
+                  placeholder="Fuel type name"
+                />
+                <input
+                  type="number"
+                  className="master-edit-input"
+                  value={modalDraft.unit_price || ''}
+                  onChange={(e) => setModalDraft((p) => ({ ...p, unit_price: e.target.value }))}
+                  placeholder="Unit price (LKR/L)"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+            )}
+            {editModal.type === 'wing' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <input
+                  className="master-edit-input"
+                  value={modalDraft.wing || ''}
+                  onChange={(e) => setModalDraft((p) => ({ ...p, wing: e.target.value }))}
+                  placeholder="Wing name"
+                />
+                <input
+                  className="master-edit-input"
+                  value={modalDraft.wingsCode || ''}
+                  onChange={(e) => setModalDraft((p) => ({ ...p, wingsCode: e.target.value }))}
+                  placeholder="Wing code"
+                />
+                <select
+                  className="master-edit-input"
+                  value={modalDraft.hod || ''}
+                  onChange={(e) => setModalDraft((p) => ({ ...p, hod: e.target.value }))}
+                >
+                  <option value="">HOD (Employee ID)</option>
+                  {employees.map((emp) => (
+                    <option key={emp.id} value={emp.id}>
+                      {emp.id} - {emp.employeeName || emp.preferredName || emp.empNo || 'Employee'}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            <div className="update-popup-actions">
+              <button className="btn-search" onClick={closeEditModal}>Cancel</button>
+              <button className="btn-submit" onClick={saveEditModal}>Save</button>
+            </div>
           </div>
         </div>
       )}
