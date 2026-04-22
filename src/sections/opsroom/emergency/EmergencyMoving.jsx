@@ -22,6 +22,7 @@ const CustomDateInputEmergency = React.forwardRef(({ value, onClick }, ref) => (
 ));
 
 const EmergencyMoving = () => {
+  const LOCK_PILOT_CHANGE = true; // TEMP: keep pilot change visible but locked
   const navigate = useNavigate();
   const routerLocation = useLocation();
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -290,6 +291,11 @@ const EmergencyMoving = () => {
                           <select
                             value={assignment.pilot_id || ''}
                             onChange={async (e) => {
+                              if (LOCK_PILOT_CHANGE) {
+                                e.target.value = assignment.pilot_id || '';
+                                return;
+                              }
+
                               const newPilotId = e.target.value;
                               const currentDroneId = assignment.drone_id;
                               
@@ -335,7 +341,8 @@ const EmergencyMoving = () => {
                               }
                             }}
                             className="select-input-emergency"
-                            disabled={updatingAssignments.has(assignment.id)}
+                            disabled={LOCK_PILOT_CHANGE || updatingAssignments.has(assignment.id)}
+                            title={LOCK_PILOT_CHANGE ? 'Pilot change temporarily locked' : 'Select pilot'}
                           >
                             <option value="">-- Select Pilot --</option>
                             {pilots.map((pilot) => (

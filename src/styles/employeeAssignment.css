@@ -44,36 +44,45 @@
 }
 
 .ea-panel-header-ea {
-  padding: 20px 24px;
+  padding: 14px 16px;
   background: linear-gradient(135deg, #004B71 0%, #0170a8 100%);
   border-bottom: 2px solid #e0e0e0;
 }
 
 .ea-panel-title-ea {
   color: white;
-  font-size: 18px;
+  font-size: 14px;
   font-weight: 700;
-  margin: 0 0 15px 0;
+  margin: 0 0 8px 0;
   letter-spacing: 0.5px;
+  text-align: center;
 }
 
 .ea-toggle-container-ea {
-  display: flex;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
   background: rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  padding: 4px;
+  border-radius: 5px;
+  padding: 2px;
 }
 
 .ea-toggle-btn-ea {
-  flex: 1;
-  padding: 8px 16px;
+  width: 100%;
+  min-height: 30px;
+  padding: 4px 6px;
   border: none;
-  border-radius: 6px;
+  border-radius: 4px;
   background: transparent;
   color: rgba(255, 255, 255, 0.7);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1;
+  white-space: nowrap;
   cursor: pointer;
   transition: all 0.3s ease;
 }
@@ -175,6 +184,9 @@
   max-width: 800px;
   margin: 0 auto;
   width: 100%;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .ea-form-title-ea {
@@ -214,6 +226,7 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
+  flex: 1;
 }
 
 /* Employee Info Display */
@@ -354,6 +367,19 @@
   border-left: 3px solid #004B71;
 }
 
+.ea-history-item-button-ea {
+  width: 100%;
+  text-align: left;
+  border-top: none;
+  border-right: none;
+  border-bottom: none;
+  cursor: pointer;
+}
+
+.ea-history-item-button-ea:hover {
+  background: #eef6fb;
+}
+
 .ea-task-number-ea {
   color: #004B71;
   font-weight: 700;
@@ -373,6 +399,12 @@
 .ea-custom-date-input-ea {
   position: relative;
   width: 100%;
+}
+
+.ea-form-group-ea .react-datepicker-wrapper,
+.ea-form-group-ea .react-datepicker__input-container {
+  width: 100%;
+  display: block;
 }
 
 .ea-date-picker-input-ea {
@@ -414,6 +446,14 @@
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
 }
 
+.ea-action-buttons-inline-ea {
+  padding: 16px 0 0 0;
+  border-top: none;
+  justify-content: flex-start;
+  box-shadow: none;
+  margin-top: auto;
+}
+
 .ea-btn-assign-ea,
 .ea-btn-print-ea {
   padding: 14px 40px;
@@ -451,6 +491,63 @@
 .ea-btn-assign-ea:active,
 .ea-btn-print-ea:active {
   transform: translateY(0);
+}
+
+.ea-letter-modal-overlay-ea {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1200;
+  padding: 20px;
+}
+
+.ea-letter-modal-content-ea {
+  width: 100%;
+  max-width: 720px;
+  background: #fff;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+}
+
+.ea-letter-modal-header-ea {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 18px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.ea-letter-modal-header-ea h3 {
+  margin: 0;
+  color: #004B71;
+}
+
+.ea-letter-close-btn-ea {
+  border: none;
+  background: transparent;
+  font-size: 26px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.ea-letter-modal-body-ea {
+  padding: 18px;
+  max-height: 60vh;
+  overflow: auto;
+}
+
+.ea-letter-modal-body-ea p {
+  margin: 8px 0;
+}
+
+.ea-letter-modal-actions-ea {
+  padding: 12px 18px 18px 18px;
+  display: flex;
+  justify-content: flex-end;
 }
 
 /* Responsive Design */

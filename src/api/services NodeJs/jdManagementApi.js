@@ -788,6 +788,57 @@ export const jdManagementApi = baseApi.injectEndpoints({
     }),
 
     // =====================================================
+    // EMPLOYEE ASSIGNMENT
+    // =====================================================
+    getEmployeeAssignmentQueues: builder.query({
+      queryFn: async () => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: '/api/employee-assignment/queues',
+            method: 'POST',
+            body: {},
+          },
+          {},
+          {}
+        );
+        return result;
+      },
+      providesTags: ['EmployeeAssignment'],
+    }),
+
+    getEmployeeAssignmentHistory: builder.query({
+      queryFn: async ({ employeeId, limit, offset }) => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: '/api/employee-assignment/history',
+            method: 'POST',
+            body: { employeeId, limit, offset },
+          },
+          {},
+          {}
+        );
+        return result;
+      },
+      providesTags: ['EmployeeAssignment'],
+    }),
+
+    applyEmployeeAssignment: builder.mutation({
+      queryFn: async (data) => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: '/api/employee-assignment/apply',
+            method: 'POST',
+            body: data,
+          },
+          {},
+          {}
+        );
+        return result;
+      },
+      invalidatesTags: ['EmployeeAssignment', 'EmployeeRegistrations', 'Users'],
+    }),
+
+    // =====================================================
     // USER MANAGEMENT
     // =====================================================
     searchEmployee: builder.query({
@@ -1002,6 +1053,9 @@ export const {
   useGetAllEmployeeRegistrationsQuery,
   useGetEmployeeRegistrationByIdQuery,
   useGetLastEmpNoQuery,
+  useGetEmployeeAssignmentQueuesQuery,
+  useGetEmployeeAssignmentHistoryQuery,
+  useApplyEmployeeAssignmentMutation,
   useSearchEmployeeQuery,
   useGetDriverFuelCardsQuery,
   useCreateUserMutation,

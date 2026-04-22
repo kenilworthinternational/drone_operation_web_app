@@ -94,6 +94,15 @@ const Employees = () => {
   // Fetch all employees
   const { data: employeesData, isLoading, error, refetch: refetchEmployees } = useGetAllEmployeeRegistrationsQuery();
   const employees = employeesData?.data || [];
+  const reportingOfficerOptions = useMemo(() => {
+    return employees.map((emp) => ({
+      value: emp.id,
+      label: `${emp.id} - ${emp.employeeName || emp.preferredName || emp.empNo || 'Employee'}`
+    }));
+  }, [employees]);
+  const reportingOfficerSelectOptions = useMemo(() => {
+    return reportingOfficerOptions.filter((opt) => String(opt.value) !== String(selectedEmployeeId));
+  }, [reportingOfficerOptions, selectedEmployeeId]);
 
       // Fetch selected employee details
   const { data: employeeDetailsData, refetch: refetchEmployeeDetails } = useGetEmployeeRegistrationByIdQuery(
@@ -163,6 +172,7 @@ const Employees = () => {
       const workLocationId = employeeDetails.workLocation
         ? workLocations.find(l => l.locationCode === employeeDetails.workLocation)?.id || ''
         : '';
+      const reportingOfficerId = employeeDetails.reportofficer ? String(employeeDetails.reportofficer) : '';
       
       // Find province ID (if stored as name, find by name; if stored as ID, use as is)
       const provinceId = employeeDetails.province
@@ -213,9 +223,15 @@ const Employees = () => {
         policeStation: employeeDetails.policeStation || '',
         employeeType: employeeDetails.employeeType || 'i',
         employeeJobRole: employeeJobRoleId,
+        joinedDate: employeeDetails.joinedDate ? employeeDetails.joinedDate.split('T')[0] : '',
         appointmentDate: employeeDetails.appointmentDate ? employeeDetails.appointmentDate.split('T')[0] : '',
         department: departmentId,
+        reportingOfficer: reportingOfficerId,
         jobRoleLayer: jobRoleLayerId,
+        bulkLeaveAvailable:
+          employeeDetails.bulkLeaveAvailable !== undefined && employeeDetails.bulkLeaveAvailable !== null
+            ? String(employeeDetails.bulkLeaveAvailable)
+            : '0',
         workStatus: employeeDetails.workStatus || '',
         permanentDate: employeeDetails.permanentDate ? employeeDetails.permanentDate.split('T')[0] : '',
         workLocation: workLocationId,
@@ -843,7 +859,13 @@ const Employees = () => {
                       {renderField('Job Role', 'employeeJobRole', employeeDetails.employeeJobRoleName, 'select', userJobRoles.filter(r => r.status === 1).map(r => ({ value: r.id, label: r.designation })))}
                       {renderField('User Level', 'jobRoleLayer', employeeDetails.jobRoleLayerName, 'select', userLevels.map(l => ({ value: l.id, label: l.userLevel })))}
                       {renderField('Department', 'department', employeeDetails.departmentName, 'select', wings.map(w => ({ value: w.id, label: w.wing })))}
-                      {renderField('Appointment Date', 'appointmentDate', formatDate(employeeDetails.appointmentDate), 'date')}
+                      {renderField('Reporting Officer', 'reportingOfficer', employeeDetails.reportofficer, 'select', reportingOfficerSelectOptions)}
+                      {renderField('Joined Date', 'joinedDate', formatDate(employeeDetails.joinedDate), 'date')}
+                      {renderField('Appointment Date (Current Start)', 'appointmentDate', formatDate(employeeDetails.appointmentDate), 'date')}
+                      {renderField('Bulk Leave Available', 'bulkLeaveAvailable', employeeDetails.bulkLeaveAvailable, 'select', [
+                        { value: '0', label: 'No' },
+                        { value: '1', label: 'Yes' },
+                      ])}
                       {renderField('Permanent Date', 'permanentDate', formatDate(employeeDetails.permanentDate), 'date')}
                       {renderField('Work Status', 'workStatus', employeeDetails.workStatus, 'select', [
                         { value: '', label: '-- Select --' },
@@ -873,8 +895,22 @@ const Employees = () => {
                         <span>{employeeDetails.departmentName || 'N/A'}</span>
                       </div>
                       <div className="detail-item-emp-view">
+                        <label>Reporting Officer:</label>
+                        <span>
+                          {reportingOfficerOptions.find((opt) => String(opt.value) === String(employeeDetails.reportofficer))?.label || 'N/A'}
+                        </span>
+                      </div>
+                      <div className="detail-item-emp-view">
+                        <label>Joined Date:</label>
+                        <span>{formatDate(employeeDetails.joinedDate)}</span>
+                      </div>
+                      <div className="detail-item-emp-view">
                         <label>Appointment Date:</label>
                         <span>{formatDate(employeeDetails.appointmentDate)}</span>
+                      </div>
+                      <div className="detail-item-emp-view">
+                        <label>Bulk Leave Available:</label>
+                        <span>{String(employeeDetails.bulkLeaveAvailable) === '1' ? 'Yes' : 'No'}</span>
                       </div>
                       <div className="detail-item-emp-view">
                         <label>Permanent Date:</label>

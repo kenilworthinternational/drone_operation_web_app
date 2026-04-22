@@ -74,7 +74,7 @@ export const baseApi = createApi({
     // Emergency Moving
     'EmergencyMoving',
     // HR & JD Management
-    'UserLevels', 'UserMemberTypes', 'UserJobRoles', 'UserJobDescriptions', 'Departments',
+    'UserLevels', 'UserMemberTypes', 'UserJobRoles', 'UserJobDescriptions', 'Departments', 'EmployeeAssignment',
     // Plantation Dashboard
     'PlantationCalendarPlans', 'PlantationUpcomingPlans', 'PlantationCharts', 'PlantationMissionReports', 'PlantationPlanRequests',
     // Field Size Adjustments

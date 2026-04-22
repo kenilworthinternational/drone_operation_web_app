@@ -1,7 +1,17 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { FaCalendarAlt } from 'react-icons/fa';
+import {
+  useApplyEmployeeAssignmentMutation,
+  useGetAllEmployeeRegistrationsQuery,
+  useGetEmployeeAssignmentHistoryQuery,
+  useGetEmployeeAssignmentQueuesQuery,
+  useGetUserJobDescriptionsQuery,
+  useGetUserJobRolesQuery,
+  useGetWingsQuery,
+  useGetWorkLocationsQuery
+} from '../../api/services NodeJs/jdManagementApi';
 import '../../styles/employeeAssignment.css';
 
 const CustomDateInput = React.forwardRef(({ value, onClick }, ref) => (
@@ -12,109 +22,92 @@ const CustomDateInput = React.forwardRef(({ value, onClick }, ref) => (
 ));
 
 const EmployeeAssignment = () => {
-  const [showAssigned, setShowAssigned] = useState(false);
+  const [queueFilter, setQueueFilter] = useState('all');
   const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [message, setMessage] = useState({ type: '', text: '' });
+  const [selectedHistoryItem, setSelectedHistoryItem] = useState(null);
+  const [showLetterModal, setShowLetterModal] = useState(false);
   const [assignmentData, setAssignmentData] = useState({
-    employeeName: '',
-    employeeDesignation: '',
-    currentServingDivision: '',
-    reportingOfficer: '',
-    assignedDivision: '',
-    workLocation: '',
-    jobDescription: '',
-    assignmentDate: new Date(),
+    eventType: 'assignment',
+    toJobRoleId: '',
+    toDepartmentId: '',
+    toWorkLocationId: '',
+    toReportingOfficerId: '',
+    effectiveDate: new Date(),
+    reason: '',
+    referenceNo: '',
   });
 
-  // Mock data - will be replaced with API calls later
-  const nonAssignedEmployees = [
-    { id: 1, name: 'Employee 01', designation: 'EXC. Drone Pilot', hasDivision: false },
-    { id: 2, name: 'Employee 02', designation: 'Ass. Manager - ICT', hasDivision: true, currentDivision: 'Operations' },
-    { id: 3, name: 'Employee 03', designation: 'EXC. Finance', hasDivision: false },
-    { id: 4, name: 'Employee 04', designation: 'Senior Pilot', hasDivision: true, currentDivision: 'Management' },
-  ];
+  const { data: queueResponse, isLoading: loadingQueues, refetch: refetchQueues } = useGetEmployeeAssignmentQueuesQuery();
+  const { data: employeeListData } = useGetAllEmployeeRegistrationsQuery();
+  const { data: wingsData } = useGetWingsQuery();
+  const { data: workLocationsData } = useGetWorkLocationsQuery();
+  const { data: userJobRolesData } = useGetUserJobRolesQuery();
+  const { data: userJobDescriptionsData } = useGetUserJobDescriptionsQuery();
+  const { data: historyResponse, isLoading: loadingHistory, refetch: refetchHistory } = useGetEmployeeAssignmentHistoryQuery(
+    { employeeId: selectedEmployee?.id },
+    { skip: !selectedEmployee?.id }
+  );
+  const [applyEmployeeAssignment, { isLoading: isApplying }] = useApplyEmployeeAssignmentMutation();
 
-  const assignedEmployees = [
-    { id: 5, name: 'Employee 05', designation: 'Manager', assignedDivision: 'Finance' },
-    { id: 6, name: 'Employee 06', designation: 'Pilot', assignedDivision: 'Operations' },
-  ];
+  const queues = queueResponse?.data || {};
+  const assignedEmployees = queues.assignedEmployees || [];
+  const nonAssignedEmployees = queues.nonAssignedEmployees || [];
+  const employeesToShow = useMemo(() => {
+    if (queueFilter === 'assigned') return assignedEmployees;
+    if (queueFilter === 'all') return [...assignedEmployees, ...nonAssignedEmployees];
+    return nonAssignedEmployees;
+  }, [queueFilter, assignedEmployees, nonAssignedEmployees]);
 
-  // Mock designations with job descriptions
-  const designations = [
-    {
-      name: 'EXC. Drone Pilot',
-      description: [
-        'Operate drones for agricultural spraying',
-        'Perform pre-flight and post-flight inspections',
-        'Maintain flight logs and documentation',
-        'Ensure compliance with safety regulations',
-      ]
-    },
-    {
-      name: 'Ass. Manager - ICT',
-      description: [
-        'Manage ICT infrastructure and systems',
-        'Coordinate with vendors and service providers',
-        'Ensure system security and data protection',
-        'Provide technical support to staff',
-      ]
-    },
-    {
-      name: 'EXC. Finance',
-      description: [
-        'Manage financial records and reports',
-        'Process invoices and payments',
-        'Coordinate with accounting department',
-        'Prepare budget forecasts',
-      ]
-    },
-    {
-      name: 'Senior Pilot',
-      description: [
-        'Lead drone operations team',
-        'Train junior pilots',
-        'Coordinate flight schedules',
-        'Manage equipment maintenance',
-      ]
-    },
-    {
-      name: 'Manager',
-      description: [
-        'Oversee department operations',
-        'Manage team performance',
-        'Coordinate with other departments',
-        'Report to senior management',
-      ]
-    },
-    {
-      name: 'Pilot',
-      description: [
-        'Operate drones for field missions',
-        'Follow safety protocols',
-        'Maintain equipment',
-        'Complete mission reports',
-      ]
-    },
-  ];
-
-  const divisions = ['Operations', 'Management', 'Finance', 'ICT', 'HR', 'Corporate'];
-  const reportingOfficers = ['John Doe', 'Jane Smith', 'Robert Johnson', 'Sarah Williams'];
-  const workLocations = ['Head Office', 'Field Office 1', 'Field Office 2', 'Regional Office'];
-
-  const employeesToShow = showAssigned ? assignedEmployees : nonAssignedEmployees;
+  const allEmployees = employeeListData?.data || [];
+  const wings = useMemo(() => {
+    if (!wingsData) return [];
+    if (Array.isArray(wingsData)) return wingsData;
+    if (wingsData.data && Array.isArray(wingsData.data)) return wingsData.data;
+    if (wingsData.wings && Array.isArray(wingsData.wings)) return wingsData.wings;
+    return [];
+  }, [wingsData]);
+  const workLocations = useMemo(() => {
+    if (!workLocationsData) return [];
+    if (Array.isArray(workLocationsData)) return workLocationsData;
+    if (workLocationsData.data && Array.isArray(workLocationsData.data)) return workLocationsData.data;
+    return [];
+  }, [workLocationsData]);
+  const userJobRoles = userJobRolesData?.data || [];
+  const userJobDescriptions = userJobDescriptionsData?.data || [];
+  const historyItems = historyResponse?.data || [];
 
   const handleEmployeeSelect = (employee) => {
-    setSelectedEmployee(employee);
-    const designation = designations.find(d => d.name === employee.designation);
+    const fullEmployee = allEmployees.find((emp) => String(emp.id) === String(employee.id)) || {};
+    const mergedEmployee = { ...employee, ...fullEmployee };
+    setSelectedEmployee(mergedEmployee);
+
+    const selectedRole = userJobRoles.find(
+      (role) =>
+        role.jdCode === mergedEmployee.employeeJobRole ||
+        role.designation === mergedEmployee.employeeJobRoleName ||
+        role.designation === mergedEmployee.designation
+    );
+    const wingId =
+      wings.find((wing) => wing.wingsCode === mergedEmployee.department)?.id ||
+      wings.find((wing) => wing.wing === mergedEmployee.departmentName)?.id ||
+      '';
+    const locationId =
+      workLocations.find((location) => location.locationCode === mergedEmployee.workLocation)?.id ||
+      workLocations.find((location) => location.locationName === mergedEmployee.workLocationName)?.id ||
+      '';
+
     setAssignmentData({
-      employeeName: employee.name,
-      employeeDesignation: employee.designation,
-      currentServingDivision: employee.hasDivision ? employee.currentDivision : '',
-      reportingOfficer: '',
-      assignedDivision: '',
-      workLocation: '',
-      jobDescription: designation ? designation.description.join('\n') : '',
-      assignmentDate: new Date(),
+      eventType: 'assignment',
+      toJobRoleId: selectedRole?.id || '',
+      toDepartmentId: wingId,
+      toWorkLocationId: locationId,
+      toReportingOfficerId: mergedEmployee.reportofficer || '',
+      effectiveDate: new Date(),
+      reason: '',
+      referenceNo: '',
     });
+    setMessage({ type: '', text: '' });
   };
 
   const handleInputChange = (e) => {
@@ -123,46 +116,136 @@ const EmployeeAssignment = () => {
       ...prev,
       [name]: value
     }));
-
-    // Auto-populate job description when designation changes
-    if (name === 'employeeDesignation') {
-      const designation = designations.find(d => d.name === value);
-      if (designation) {
-        setAssignmentData(prev => ({
-          ...prev,
-          employeeDesignation: value,
-          jobDescription: designation.description.join('\n')
-        }));
-      }
-    }
   };
 
   const handleDateChange = (date) => {
     setAssignmentData(prev => ({
       ...prev,
-      assignmentDate: date
+      effectiveDate: date
     }));
   };
 
-  const handleAssign = () => {
-    if (!assignmentData.employeeName || !assignmentData.assignedDivision) {
-      alert('Please fill in all required fields');
+  const handleAssign = async () => {
+    if (!selectedEmployee?.id) {
+      setMessage({ type: 'error', text: 'Please select an employee first.' });
       return;
     }
-    console.log('Assignment data:', assignmentData);
-    alert('Assignment functionality will be implemented with API');
+
+    try {
+      const payload = {
+        employeeId: selectedEmployee.id,
+        eventType: assignmentData.eventType,
+        effectiveDate: assignmentData.effectiveDate?.toISOString?.().split('T')[0] || '',
+        toDepartmentId: assignmentData.toDepartmentId || null,
+        toWorkLocationId: assignmentData.toWorkLocationId || null,
+        toJobRoleId: assignmentData.toJobRoleId || null,
+        toReportingOfficerId: assignmentData.toReportingOfficerId || null,
+        reason: assignmentData.reason || null,
+        referenceNo: assignmentData.referenceNo || null
+      };
+
+      const result = await applyEmployeeAssignment(payload).unwrap();
+      setMessage({ type: 'success', text: result?.message || 'Assignment updated successfully.' });
+      await refetchQueues();
+      await refetchHistory();
+    } catch (error) {
+      setMessage({ type: 'error', text: error?.data?.message || 'Failed to update assignment.' });
+    }
   };
 
   const handlePrint = () => {
-    if (!assignmentData.employeeName) {
-      alert('Please select an employee first');
+    if (!selectedEmployee?.id) {
+      setMessage({ type: 'error', text: 'Please select an employee first.' });
       return;
     }
-    console.log('Print assignment letter for:', assignmentData);
-    alert('Print functionality will be implemented with API');
+    window.print();
   };
 
-  const selectedDesignation = designations.find(d => d.name === assignmentData.employeeDesignation);
+  const formatHistoryDate = (dateValue) => {
+    if (!dateValue) return 'N/A';
+    try {
+      const date = new Date(dateValue);
+      if (Number.isNaN(date.getTime())) return String(dateValue);
+      return date.toLocaleString('en-GB', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch {
+      return String(dateValue);
+    }
+  };
+
+  const openAssignmentLetter = (historyItem) => {
+    setSelectedHistoryItem(historyItem);
+    setShowLetterModal(true);
+  };
+
+  const closeAssignmentLetter = () => {
+    setShowLetterModal(false);
+    setSelectedHistoryItem(null);
+  };
+
+  const printLetterFromModal = () => {
+    if (!selectedHistoryItem || !selectedEmployee) return;
+
+    const printWindow = window.open('', '_blank', 'width=900,height=700');
+    if (!printWindow) return;
+
+    const letterHtml = `
+      <html>
+        <head>
+          <title>Assignment Letter</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 32px; line-height: 1.5; color: #111; }
+            h2 { margin: 0 0 20px; }
+            .meta { margin: 10px 0; }
+            .section { margin-top: 18px; }
+          </style>
+        </head>
+        <body>
+          <h2>Employee Assignment Letter</h2>
+          <div class="meta"><strong>Employee:</strong> ${selectedEmployee.employeeName || selectedEmployee.name || 'N/A'}</div>
+          <div class="meta"><strong>Event Type:</strong> ${selectedHistoryItem.event_type || 'N/A'}</div>
+          <div class="meta"><strong>Effective Date:</strong> ${formatHistoryDate(selectedHistoryItem.effective_date)}</div>
+          <div class="meta"><strong>Department:</strong> ${selectedHistoryItem.from_department_code || '-'} to ${selectedHistoryItem.to_department_code || '-'}</div>
+          <div class="meta"><strong>Work Location:</strong> ${selectedHistoryItem.from_work_location_code || '-'} to ${selectedHistoryItem.to_work_location_code || '-'}</div>
+          <div class="meta"><strong>Job Role:</strong> ${selectedHistoryItem.from_job_role_code || '-'} to ${selectedHistoryItem.to_job_role_code || '-'}</div>
+          <div class="meta"><strong>Reference No:</strong> ${selectedHistoryItem.reference_no || 'N/A'}</div>
+          <div class="section"><strong>Reason:</strong></div>
+          <div>${selectedHistoryItem.reason || 'No reason provided.'}</div>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.write(letterHtml);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  };
+
+  const selectedDesignation = useMemo(() => {
+    if (!assignmentData.toJobRoleId) return null;
+    return userJobRoles.find((role) => String(role.id) === String(assignmentData.toJobRoleId)) || null;
+  }, [assignmentData.toJobRoleId, userJobRoles]);
+
+  const selectedRoleDescriptions = useMemo(() => {
+    if (!selectedDesignation) return [];
+    return userJobDescriptions
+      .filter((item) => String(item.jobRoleId) === String(selectedDesignation.id) && Number(item.status) === 1)
+      .sort((a, b) => Number(a.taskOrder || 0) - Number(b.taskOrder || 0));
+  }, [selectedDesignation, userJobDescriptions]);
+
+  const reportingOfficerOptions = useMemo(() => {
+    return allEmployees
+      .filter((emp) => String(emp.id) !== String(selectedEmployee?.id))
+      .map((emp) => ({
+        value: emp.id,
+        label: `${emp.id} - ${emp.employeeName || emp.preferredName || emp.empNo || 'Employee'}`
+      }));
+  }, [allEmployees, selectedEmployee?.id]);
 
   return (
     <div className="employee-assignment-container-ea">
@@ -175,28 +258,41 @@ const EmployeeAssignment = () => {
         <div className="ea-left-panel-ea">
           <div className="ea-panel-header-ea">
             <h2 className="ea-panel-title-ea">
-              {showAssigned ? 'Assigned Employee Queue' : 'Non-Assigned Employee Queue'}
+              {queueFilter === 'assigned'
+                ? 'Assigned Employee Queue'
+                : queueFilter === 'all'
+                  ? 'All Employees Queue'
+                  : 'Non-Assigned Employee Queue'}
             </h2>
             <div className="ea-toggle-container-ea">
               <button
-                className={`ea-toggle-btn-ea ${!showAssigned ? 'active-ea' : ''}`}
-                onClick={() => setShowAssigned(false)}
+                className={`ea-toggle-btn-ea ${queueFilter === 'all' ? 'active-ea' : ''}`}
+                onClick={() => setQueueFilter('all')}
               >
-                Not Assigned
+                All
               </button>
               <button
-                className={`ea-toggle-btn-ea ${showAssigned ? 'active-ea' : ''}`}
-                onClick={() => setShowAssigned(true)}
+                className={`ea-toggle-btn-ea ${queueFilter === 'assigned' ? 'active-ea' : ''}`}
+                onClick={() => setQueueFilter('assigned')}
               >
                 Assigned
+              </button>
+              <button
+                className={`ea-toggle-btn-ea ${queueFilter === 'not_assigned' ? 'active-ea' : ''}`}
+                onClick={() => setQueueFilter('not_assigned')}
+              >
+                Not Assigned
               </button>
             </div>
           </div>
 
           <div className="ea-employees-list-ea">
+            {loadingQueues && <div className="ea-empty-state-ea">Loading employee queue...</div>}
             {employeesToShow.length === 0 ? (
               <div className="ea-empty-state-ea">
-                No {showAssigned ? 'assigned' : 'non-assigned'} employees found.
+                {queueFilter === 'all'
+                  ? 'No employees found.'
+                  : `No ${queueFilter === 'assigned' ? 'assigned' : 'non-assigned'} employees found.`}
               </div>
             ) : (
               employeesToShow.map(employee => (
@@ -208,10 +304,10 @@ const EmployeeAssignment = () => {
                   onClick={() => handleEmployeeSelect(employee)}
                 >
                   <div className="ea-employee-info-ea">
-                    <span className="ea-employee-name-ea">{employee.name}</span>
-                    <span className="ea-employee-designation-ea">{employee.designation}</span>
-                    {showAssigned && employee.assignedDivision && (
-                      <span className="ea-assigned-division-ea">{employee.assignedDivision}</span>
+                    <span className="ea-employee-name-ea">{employee.employeeName || employee.name || 'N/A'}</span>
+                    <span className="ea-employee-designation-ea">{employee.designation || employee.employeeJobRoleName || 'No Role'}</span>
+                    {queueFilter !== 'not_assigned' && (employee.departmentName || employee.currentDivision) && (
+                      <span className="ea-assigned-division-ea">{employee.departmentName || employee.currentDivision}</span>
                     )}
                   </div>
                 </div>
@@ -228,21 +324,34 @@ const EmployeeAssignment = () => {
           <div className="ea-form-container-ea">
             <h2 className="ea-form-title-ea">Employee Assignment</h2>
 
-            {/* Current Division Header (if employee has division) */}
-            {assignmentData.currentServingDivision && (
+            {selectedEmployee && (
               <div className="ea-current-division-header-ea">
                 <span className="ea-current-division-label-ea">Current Serving Division:</span>
-                <span className="ea-current-division-value-ea">{assignmentData.currentServingDivision}</span>
+                <span className="ea-current-division-value-ea">
+                  {selectedEmployee.departmentName || selectedEmployee.departmentCode || 'N/A'}
+                </span>
+                <span className="ea-current-division-label-ea">| Designation:</span>
+                <span className="ea-current-division-value-ea">
+                  {selectedEmployee.employeeJobRoleName || selectedEmployee.designation || 'N/A'}
+                </span>
+                <span className="ea-current-division-label-ea">| Reporting Officer:</span>
+                <span className="ea-current-division-value-ea">
+                  {reportingOfficerOptions.find((opt) => String(opt.value) === String(selectedEmployee.reportofficer))?.label ||
+                    (selectedEmployee.reportofficer ? String(selectedEmployee.reportofficer) : 'N/A')}
+                </span>
+                <span className="ea-current-division-label-ea">| Work Location:</span>
+                <span className="ea-current-division-value-ea">
+                  {selectedEmployee.workLocationName || selectedEmployee.workLocationCode || 'N/A'}
+                </span>
               </div>
             )}
 
             <div className="ea-form-content-ea">
-              {/* Employee Info Display */}
-              {assignmentData.employeeName ? (
+              {selectedEmployee ? (
                 <div className="ea-employee-info-display-ea">
-                  <span className="ea-info-value-ea">{assignmentData.employeeName}</span>
+                  <span className="ea-info-value-ea">{selectedEmployee.employeeName || selectedEmployee.name}</span>
                   <span className="ea-info-designation-ea">
-                    {assignmentData.employeeDesignation || 'Not Assigned'}
+                    {selectedEmployee.designation || selectedEmployee.employeeJobRoleName || 'Not Assigned'}
                   </span>
                 </div>
               ) : (
@@ -251,22 +360,39 @@ const EmployeeAssignment = () => {
                 </div>
               )}
 
-              {/* Designation Selection (only if employee selected but no designation) */}
-              {assignmentData.employeeName && !assignmentData.employeeDesignation && (
+              {selectedEmployee && (
                 <div className="ea-form-row-ea">
                   <div className="ea-form-group-ea">
-                    <label>Assign Designation:</label>
+                    <label>Event Type:</label>
                     <div className="ea-select-wrapper-ea">
                       <select
-                        name="employeeDesignation"
-                        value={assignmentData.employeeDesignation}
+                        name="eventType"
+                        value={assignmentData.eventType}
+                        onChange={handleInputChange}
+                        className="ea-select-ea"
+                      >
+                        <option value="assignment">Assignment</option>
+                        <option value="transfer">Transfer</option>
+                        <option value="promotion">Promotion</option>
+                        <option value="demotion">Demotion</option>
+                        <option value="acting_assignment">Acting Assignment</option>
+                        <option value="reversion">Reversion</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="ea-form-group-ea">
+                    <label>Designation:</label>
+                    <div className="ea-select-wrapper-ea">
+                      <select
+                        name="toJobRoleId"
+                        value={assignmentData.toJobRoleId}
                         onChange={handleInputChange}
                         className="ea-select-ea"
                       >
                         <option value="">-- Select Designation --</option>
-                        {designations.map((designation, index) => (
-                          <option key={index} value={designation.name}>
-                            {designation.name}
+                        {userJobRoles.filter((role) => Number(role.status) === 1).map((role) => (
+                          <option key={role.id} value={role.id}>
+                            {role.designation}
                           </option>
                         ))}
                       </select>
@@ -275,15 +401,14 @@ const EmployeeAssignment = () => {
                 </div>
               )}
 
-              {/* Job Description - Auto-populated and displayed near designation */}
-              {selectedDesignation && (
+              {selectedRoleDescriptions.length > 0 && (
                 <div className="ea-job-description-section-ea">
                   <label>Job Description:</label>
                   <div className="ea-description-box-ea">
-                    {selectedDesignation.description.map((task, index) => (
+                    {selectedRoleDescriptions.map((task, index) => (
                       <div key={index} className="ea-description-item-ea">
                         <span className="ea-task-number-ea">{index + 1}.</span>
-                        <span className="ea-task-text-ea">{task}</span>
+                        <span className="ea-task-text-ea">{task.taskDescription}</span>
                       </div>
                     ))}
                   </div>
@@ -295,36 +420,33 @@ const EmployeeAssignment = () => {
                   <label>Reporting Officer:</label>
                   <div className="ea-select-wrapper-ea">
                     <select
-                      name="reportingOfficer"
-                      value={assignmentData.reportingOfficer}
+                      name="toReportingOfficerId"
+                      value={assignmentData.toReportingOfficerId}
                       onChange={handleInputChange}
                       className="ea-select-ea"
                     >
                       <option value="">-- Select Reporting Officer --</option>
-                      {reportingOfficers.map((officer, index) => (
-                        <option key={index} value={officer}>
-                          {officer}
+                      {reportingOfficerOptions.map((officer) => (
+                        <option key={officer.value} value={officer.value}>
+                          {officer.label}
                         </option>
                       ))}
                     </select>
                   </div>
                 </div>
-              </div>
-
-              <div className="ea-form-row-ea">
                 <div className="ea-form-group-ea">
                   <label>Assigned/Transfer Division:</label>
                   <div className="ea-select-wrapper-ea">
                     <select
-                      name="assignedDivision"
-                      value={assignmentData.assignedDivision}
+                      name="toDepartmentId"
+                      value={assignmentData.toDepartmentId}
                       onChange={handleInputChange}
                       className="ea-select-ea"
                     >
                       <option value="">-- Select Division --</option>
-                      {divisions.map((division, index) => (
-                        <option key={index} value={division}>
-                          {division}
+                      {wings.map((wing) => (
+                        <option key={wing.id} value={wing.id}>
+                          {wing.wing}
                         </option>
                       ))}
                     </select>
@@ -337,47 +459,130 @@ const EmployeeAssignment = () => {
                   <label>Work Location:</label>
                   <div className="ea-select-wrapper-ea">
                     <select
-                      name="workLocation"
-                      value={assignmentData.workLocation}
+                      name="toWorkLocationId"
+                      value={assignmentData.toWorkLocationId}
                       onChange={handleInputChange}
                       className="ea-select-ea"
                     >
                       <option value="">-- Select Work Location --</option>
-                      {workLocations.map((location, index) => (
-                        <option key={index} value={location}>
-                          {location}
+                      {workLocations.map((location) => (
+                        <option key={location.id} value={location.id}>
+                          {location.locationName}
                         </option>
                       ))}
                     </select>
                   </div>
                 </div>
-              </div>
-
-              <div className="ea-form-row-ea">
                 <div className="ea-form-group-ea">
                   <label>Assignment Date:</label>
                   <DatePicker
-                    selected={assignmentData.assignmentDate}
+                    selected={assignmentData.effectiveDate}
                     onChange={handleDateChange}
                     dateFormat="yyyy/MM/dd"
                     customInput={<CustomDateInput />}
                   />
                 </div>
               </div>
+
+              <div className="ea-form-row-ea">
+                <div className="ea-form-group-ea">
+                  <label>Reason:</label>
+                  <textarea
+                    name="reason"
+                    value={assignmentData.reason}
+                    onChange={handleInputChange}
+                    className="ea-select-ea"
+                    rows={3}
+                  />
+                </div>
+                <div className="ea-form-group-ea">
+                  <label>Reference No:</label>
+                  <input
+                    type="text"
+                    name="referenceNo"
+                    value={assignmentData.referenceNo}
+                    onChange={handleInputChange}
+                    className="ea-select-ea"
+                  />
+                </div>
+              </div>
+
+              {message.text && (
+                <div className="ea-form-row-ea">
+                  <div className="ea-form-group-ea">
+                    <span style={{ color: message.type === 'error' ? '#b00020' : '#0f766e' }}>{message.text}</span>
+                  </div>
+                </div>
+              )}
+
+              <div className="ea-form-row-ea">
+                <div className="ea-form-group-ea">
+                  <label>Assignment History:</label>
+                  <div className="ea-description-box-ea">
+                    {loadingHistory && <div className="ea-description-item-ea">Loading history...</div>}
+                    {!loadingHistory && historyItems.length === 0 && (
+                      <div className="ea-description-item-ea">No history records available.</div>
+                    )}
+                    {!loadingHistory && historyItems.map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        className="ea-description-item-ea ea-history-item-button-ea"
+                        onClick={() => openAssignmentLetter(item)}
+                        title="View assignment letter"
+                      >
+                        <span className="ea-task-number-ea">{item.event_type}</span>
+                        <span className="ea-task-text-ea">
+                          {formatHistoryDate(item.effective_date)} | {item.from_department_code || '-'} to {item.to_department_code || '-'} | {item.reason || 'No reason'}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="ea-action-buttons-ea ea-action-buttons-inline-ea">
+                <button className="ea-btn-assign-ea" onClick={handleAssign} disabled={isApplying}>
+                  {isApplying ? 'Saving...' : 'Assign'}
+                </button>
+                <button className="ea-btn-print-ea" onClick={handlePrint}>
+                  Print Assignment Letter
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Action Buttons */}
-      <div className="ea-action-buttons-ea">
-        <button className="ea-btn-assign-ea" onClick={handleAssign}>
-          Assign
-        </button>
-        <button className="ea-btn-print-ea" onClick={handlePrint}>
-          Print Assignment Letter
-        </button>
-      </div>
+      {showLetterModal && selectedHistoryItem && (
+        <div className="ea-letter-modal-overlay-ea" onClick={closeAssignmentLetter}>
+          <div className="ea-letter-modal-content-ea" onClick={(e) => e.stopPropagation()}>
+            <div className="ea-letter-modal-header-ea">
+              <h3>Assignment Letter</h3>
+              <button type="button" className="ea-letter-close-btn-ea" onClick={closeAssignmentLetter}>
+                ×
+              </button>
+            </div>
+
+            <div className="ea-letter-modal-body-ea">
+              <p><strong>Employee:</strong> {selectedEmployee?.employeeName || selectedEmployee?.name || 'N/A'}</p>
+              <p><strong>Event Type:</strong> {selectedHistoryItem.event_type || 'N/A'}</p>
+              <p><strong>Effective Date:</strong> {formatHistoryDate(selectedHistoryItem.effective_date)}</p>
+              <p><strong>Department:</strong> {selectedHistoryItem.from_department_code || '-'} to {selectedHistoryItem.to_department_code || '-'}</p>
+              <p><strong>Work Location:</strong> {selectedHistoryItem.from_work_location_code || '-'} to {selectedHistoryItem.to_work_location_code || '-'}</p>
+              <p><strong>Job Role:</strong> {selectedHistoryItem.from_job_role_code || '-'} to {selectedHistoryItem.to_job_role_code || '-'}</p>
+              <p><strong>Reference No:</strong> {selectedHistoryItem.reference_no || 'N/A'}</p>
+              <p><strong>Reason:</strong> {selectedHistoryItem.reason || 'No reason provided.'}</p>
+            </div>
+
+            <div className="ea-letter-modal-actions-ea">
+              <button type="button" className="ea-btn-print-ea" onClick={printLetterFromModal}>
+                Print Assignment Letter
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

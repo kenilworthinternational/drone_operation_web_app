@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { useGetUserMemberTypesQuery, useGetUserJobRolesQuery, useGetUserLevelsQuery, useGetWingsQuery, useGetDrivingLicenseTypesQuery, useGetWorkLocationsQuery, useGetDSCSQuery, useGetProvincesQuery, useGetDistrictsQuery, useGetASCSQuery, useCreateEmployeeRegistrationMutation, useGetLastEmpNoQuery } from '../../api/services NodeJs/jdManagementApi';
+import { useGetUserMemberTypesQuery, useGetUserJobRolesQuery, useGetUserLevelsQuery, useGetWingsQuery, useGetDrivingLicenseTypesQuery, useGetWorkLocationsQuery, useGetDSCSQuery, useGetProvincesQuery, useGetDistrictsQuery, useGetASCSQuery, useCreateEmployeeRegistrationMutation, useGetLastEmpNoQuery, useGetAllEmployeeRegistrationsQuery } from '../../api/services NodeJs/jdManagementApi';
 import '../../styles/employeeRegistration.css';
 
 const EmployeeRegistration = () => {
@@ -53,6 +53,15 @@ const EmployeeRegistration = () => {
     return [];
   }, [workLocationsData]);
 
+  // Fetch existing employees for Reporting Officer dropdown
+  const { data: employeesData, isLoading: loadingEmployees } = useGetAllEmployeeRegistrationsQuery();
+  const employees = useMemo(() => {
+    if (!employeesData) return [];
+    if (Array.isArray(employeesData)) return employeesData;
+    if (employeesData.data && Array.isArray(employeesData.data)) return employeesData.data;
+    return [];
+  }, [employeesData]);
+
   const [activeTab, setActiveTab] = useState('employee');
   const [showLicenseHelpPopup, setShowLicenseHelpPopup] = useState(false);
   const [showLicenseDropdown, setShowLicenseDropdown] = useState(false);
@@ -101,9 +110,12 @@ const EmployeeRegistration = () => {
     empNo: '',
     employeeType: 'i', // Default to Internal (typeCode: 'i')
     employeeJobRole: '',
+    joinedDate: '',
     appointmentDate: '',
     department: '',
+    reportingOfficer: '',
     jobRoleLayer: '',
+    bulkLeaveAvailable: '0',
     workStatus: '',
     permanentDate: '',
     workLocation: '',
@@ -487,9 +499,12 @@ const EmployeeRegistration = () => {
           empNo: '',
           employeeType: 'i',
           employeeJobRole: '',
+          joinedDate: '',
           appointmentDate: '',
           department: '',
+          reportingOfficer: '',
           jobRoleLayer: '',
+          bulkLeaveAvailable: '0',
           workStatus: '',
           permanentDate: '',
           workLocation: '',
@@ -1452,13 +1467,36 @@ const EmployeeRegistration = () => {
                 )}
               </div>
               <div className="form-group-emp-reg">
-                {/* Empty placeholder for 2-column layout */}
+                <label>Reporting Officer:</label>
+                <select
+                  name="reportingOfficer"
+                  value={formData.reportingOfficer}
+                  onChange={handleInputChange}
+                  disabled={loadingEmployees}
+                >
+                  <option value="">-- Select Reporting Officer --</option>
+                  {employees.map((emp) => (
+                    <option key={emp.id} value={emp.id}>
+                      {emp.id} - {emp.employeeName || emp.preferredName || emp.empNo || 'Employee'}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 
             <div className="form-row-emp-reg">
               <div className="form-group-emp-reg">
-                <label>Appointment Date:</label>
+                <label>Joined Date:</label>
+                <input
+                  type="date"
+                  name="joinedDate"
+                  value={formData.joinedDate}
+                  onChange={handleInputChange}
+                  onClick={handleDateInputClick}
+                />
+              </div>
+              <div className="form-group-emp-reg">
+                <label>Appointment Date (Current Start):</label>
                 <input
                   type="date"
                   name="appointmentDate"
@@ -1466,6 +1504,20 @@ const EmployeeRegistration = () => {
                   onChange={handleInputChange}
                   onClick={handleDateInputClick}
                 />
+              </div>
+            </div>
+
+            <div className="form-row-emp-reg">
+              <div className="form-group-emp-reg">
+                <label>Bulk Leave Available:</label>
+                <select
+                  name="bulkLeaveAvailable"
+                  value={formData.bulkLeaveAvailable}
+                  onChange={handleInputChange}
+                >
+                  <option value="0">No</option>
+                  <option value="1">Yes</option>
+                </select>
               </div>
               <div className="form-group-emp-reg">
                 <label>Work Status:</label>

@@ -9,6 +9,15 @@ import { jsPDF } from "jspdf";
 import autoTable from 'jspdf-autotable';
 import { Bars } from "react-loader-spinner";
 import { FiRefreshCw, FiDownload, FiPrinter } from "react-icons/fi";
+
+/** Same 2dp rounding as the table; avoids false "issue" rows when floats differ only below display precision. */
+const hasFinanceExtentIssue = (row) => {
+    if (!row) return false;
+    const land = Number((Number(row.landExtent) || 0).toFixed(2));
+    const completed = Number((Number(row.fieldExtent) || 0).toFixed(2));
+    return land < completed;
+};
+
 const EstateSprayedAreaReport = () => {
     const dispatch = useAppDispatch();
     const [plantations, setPlantations] = useState([]);
@@ -29,7 +38,8 @@ const EstateSprayedAreaReport = () => {
     const [selectedMissionType, setSelectedMissionType] = useState('all');
 
     const getFilteredRows = () => {
-        return reportData
+        const rows = Array.isArray(reportData) ? reportData : [];
+        return rows
             .filter(row => {
                 const missionMatch = selectedMissionType === 'all' || row.missionType === selectedMissionType;
                 return missionMatch && row.fieldExtent > 0;
@@ -43,7 +53,7 @@ const EstateSprayedAreaReport = () => {
                 setLoading(true);
                 const result = await dispatch(baseApi.endpoints.getAllPlantations.initiate());
                 const data = result.data;
-                setPlantations(data);
+                setPlantations(Array.isArray(data) ? data : []);
                 setError(null);
             } catch (err) {
                 setError("Failed to load plantations");
@@ -61,7 +71,7 @@ const EstateSprayedAreaReport = () => {
                     setLoading(true);
                     const result = await dispatch(baseApi.endpoints.getEstatesByPlantation.initiate(selectedPlantation));
                     const data = result.data;
-                    setEstates(data);
+                    setEstates(Array.isArray(data) ? data : []);
                     setSelectedEstates([]); // Reset selected estates
                     setReportData([]); // Clear previous report data
                     setError(null);
@@ -159,7 +169,7 @@ const EstateSprayedAreaReport = () => {
     };
 
     const handlePlantationSelect = (id) => {
-        const selected = plantations.find(p => p.id === id);
+        const selected = (Array.isArray(plantations) ? plantations : []).find(p => p.id === id);
         if (!selected) return;
 
         setSelectedPlantation(id);
@@ -183,16 +193,18 @@ const EstateSprayedAreaReport = () => {
     };
 
     const handleSelectAll = () => {
+        const list = Array.isArray(estates) ? estates : [];
         setSelectedEstates(prev =>
-            prev.length === estates.length
+            prev.length === list.length
                 ? []
-                : estates.map(estate => estate.id)
+                : list.map(estate => estate.id)
         );
     };
 
-    const filteredPlantations = plantations.filter(p =>
+    const filteredPlantations = (Array.isArray(plantations) ? plantations : []).filter(p =>
         p.plantation.toLowerCase().includes(searchTerm.toLowerCase())
     );
+    const safeEstates = Array.isArray(estates) ? estates : [];
     const handleDateChange = (dates) => {
         setSelectedDates(dates);
         if (dates[0] && dates[1]) {
@@ -201,7 +213,7 @@ const EstateSprayedAreaReport = () => {
     };
 
     const exportToExcel = () => {
-        if (reportData.length === 0) return;
+        if (!Array.isArray(reportData) || reportData.length === 0) return;
 
         // Filter out rows with fieldExtent <= 0, sort by date ascending
         const filteredData = getFilteredRows();
@@ -246,7 +258,7 @@ const EstateSprayedAreaReport = () => {
             return `${year}-${month}-${day}`;
         };
         // Get selected estate names from estates array
-        const excelEstateNames = estates
+        const excelEstateNames = (Array.isArray(estates) ? estates : [])
             .filter(e => selectedEstates.includes(e.id))
             .map(e => e.estate.replace(/\s+/g, '_'))
             .join('_') || 'All_Estates';
@@ -276,9 +288,9 @@ const EstateSprayedAreaReport = () => {
         doc.text("7B , 1/1 D.W Rupasinghe Mawatha, Nugegoda", pageWidth / 2, 30, { align: 'center' });
 
         // Plantation Info
-        const selectedPlantationData = plantations.find(p => p.id === selectedPlantation);
+        const selectedPlantationData = (Array.isArray(plantations) ? plantations : []).find(p => p.id === selectedPlantation);
         const plantation = selectedPlantationData ? selectedPlantationData.plantation : "N/A";
-        const selectedEstateNames = estates
+        const selectedEstateNames = (Array.isArray(estates) ? estates : [])
             .filter(estate => selectedEstates.includes(estate.id))
             .map(estate => estate.estate)
             .join(", ");
@@ -375,7 +387,7 @@ const EstateSprayedAreaReport = () => {
         doc.text("Date:", rightColX, sigY + 10);
 
         // Get selected estate names from estates array for PDF
-        const pdfEstateNames = estates
+        const pdfEstateNames = (Array.isArray(estates) ? estates : [])
             .filter(e => selectedEstates.includes(e.id))
             .map(e => e.estate.replace(/\s+/g, '_'))
             .join('_') || 'All_Estates';
@@ -384,7 +396,7 @@ const EstateSprayedAreaReport = () => {
 
     const exportIssuesPdf = () => {
         const filteredData = getFilteredRows();
-        const issueRows = filteredData.filter(row => (row.landExtent || 0) < (row.fieldExtent || 0));
+        const issueRows = filteredData.filter(hasFinanceExtentIssue);
         if (issueRows.length === 0) return;
 
         const doc = new jsPDF();
@@ -402,9 +414,9 @@ const EstateSprayedAreaReport = () => {
         doc.setFontSize(10);
         doc.text("7B , 1/1 D.W Rupasinghe Mawatha, Nugegoda", pageWidth / 2, 30, { align: 'center' });
 
-        const selectedPlantationData = plantations.find(p => p.id === selectedPlantation);
+        const selectedPlantationData = (Array.isArray(plantations) ? plantations : []).find(p => p.id === selectedPlantation);
         const plantation = selectedPlantationData ? selectedPlantationData.plantation : "N/A";
-        const selectedEstateNames = estates
+        const selectedEstateNames = (Array.isArray(estates) ? estates : [])
             .filter(estate => selectedEstates.includes(estate.id))
             .map(estate => estate.estate)
             .join(", ");
@@ -485,7 +497,7 @@ const EstateSprayedAreaReport = () => {
         doc.text("Stamp:", rightColX, sigY);
         doc.text("Date:", rightColX, sigY + 10);
 
-        const pdfEstateNames = estates
+        const pdfEstateNames = (Array.isArray(estates) ? estates : [])
             .filter(e => selectedEstates.includes(e.id))
             .map(e => e.estate.replace(/\s+/g, '_'))
             .join('_') || 'All_Estates';
@@ -503,7 +515,7 @@ const EstateSprayedAreaReport = () => {
     };
 
     const filteredRows = getFilteredRows();
-    const issueRows = filteredRows.filter(row => (row.landExtent || 0) < (row.fieldExtent || 0));
+    const issueRows = filteredRows.filter(hasFinanceExtentIssue);
     const hasIssues = issueRows.length > 0;
 
     return (
@@ -645,22 +657,22 @@ const EstateSprayedAreaReport = () => {
                 <div className="bottom-finance-part">
                     <div className="bottom-finance-part-left">
 
-                        {estates.length > 0 && (
+                        {safeEstates.length > 0 && (
                             <div className="finance-checkbox-group" role="group" aria-labelledby="estate-selection">
                                 <div className="select-all-container">
                                     <input
                                         type="checkbox"
                                         id="select-all"
-                                        checked={selectedEstates.length === estates.length}
+                                        checked={selectedEstates.length === safeEstates.length}
                                         onChange={handleSelectAll}
-                                        aria-label={selectedEstates.length === estates.length ?
+                                        aria-label={selectedEstates.length === safeEstates.length ?
                                             "Unselect all estates" : "Select all estates"}
                                     />
                                     <label htmlFor="select-all">Select All</label>
                                 </div>
 
                                 <div className="finance-estates-list">
-                                    {estates.map((estate) => (
+                                    {safeEstates.map((estate) => (
                                         <div key={estate.id} className="estate-item-fin">
                                             <input
                                                 type="checkbox"
@@ -710,7 +722,7 @@ const EstateSprayedAreaReport = () => {
                                             {filteredRows
                                                 .map((row, index) => {
                                                     const safeDate = row.date ? new Date(row.date) : null;
-                                                    const isIssue = (row.landExtent || 0) < (row.fieldExtent || 0);
+                                                    const isIssue = hasFinanceExtentIssue(row);
                                                     return (
                                                         <tr key={index}>
                                                             <td>{index + 1}</td>
