@@ -1,38 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import '../../../styles/roasterPlanning.css';
-
-const initialEmployees = [
-  {
-    id: 1,
-    name: 'Employee 01',
-    role: 'Pilot',
-    plannedLeaveDays: ['2025-11-05', '2025-11-06', '2025-11-07', '2025-11-18', '2025-11-19'],
-    attendance: {
-      attended: ['2025-11-01', '2025-11-02', '2025-11-03'],
-      absent: ['2025-11-08'],
-    },
-  },
-  {
-    id: 2,
-    name: 'Employee 02',
-    role: 'Ground Crew',
-    plannedLeaveDays: ['2025-11-12'],
-    attendance: {
-      attended: ['2025-11-04', '2025-11-05'],
-      absent: [],
-    },
-  },
-  {
-    id: 3,
-    name: 'Employee 03',
-    role: 'Ops Support',
-    plannedLeaveDays: ['2025-11-02', '2025-11-03', '2025-11-04'],
-    attendance: {
-      attended: ['2025-11-06', '2025-11-07'],
-      absent: ['2025-11-10'],
-    },
-  },
-];
+import { useGetHrRosterPlanQuery, useSaveHrRosterPlanMutation } from '../../../api/services NodeJs/hrLeaveApi';
+import { useGetAllEmployeeRegistrationsQuery } from '../../../api/services NodeJs/jdManagementApi';
 
 const formatDate = (year, month, day) => {
   return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -54,39 +23,54 @@ const getMonthDays = (monthValue) => {
   });
 };
 
-const expandRangeToDays = (start, end) => {
-  const days = [];
-  let current = new Date(start);
-  const last = new Date(end);
-  while (current <= last) {
-    const iso = current.toISOString().slice(0, 10);
-    days.push(iso);
-    current.setDate(current.getDate() + 1);
-  }
-  return days;
-};
-
-const prepareRoster = (data) =>
-  data.map((emp) => ({
-    id: emp.id,
-    name: emp.name,
-    role: emp.role,
-    leaveDays: [...emp.plannedLeaveDays],
-    attendance: {
-      attended: emp.attendance?.attended ?? [],
-      absent: emp.attendance?.absent ?? [],
-    },
-  }));
-
 const RoasterPlanning = () => {
-  const [selectedMonth, setSelectedMonth] = useState('2025-11');
-  const [roster, setRoster] = useState(() => prepareRoster(initialEmployees));
-  const [editableRows, setEditableRows] = useState(() =>
-    Object.fromEntries(initialEmployees.map((emp) => [emp.id, false]))
-  );
+  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
+  const [editableRows, setEditableRows] = useState({});
+  const [saveStatus, setSaveStatus] = useState('');
+  const [localRoster, setLocalRoster] = useState([]);
+  const { data: employeeResponse } = useGetAllEmployeeRegistrationsQuery();
+  const employeesRaw = employeeResponse?.data || employeeResponse?.employees || [];
+  const { data: rosterResponse, refetch } = useGetHrRosterPlanQuery({ monthKey: selectedMonth });
+  const [saveRosterPlan, { isLoading: savingRoster }] = useSaveHrRosterPlanMutation();
 
   const monthDays = useMemo(() => getMonthDays(selectedMonth), [selectedMonth]);
   const dayGridStyle = useMemo(() => ({}), []);
+  const rosterEntries = rosterResponse?.data?.entries || rosterResponse?.entries || [];
+
+  const rosterFromServer = useMemo(() => {
+    const byEmployee = {};
+    rosterEntries.forEach((entry) => {
+      const id = Number(entry.employee_id);
+      if (!byEmployee[id]) {
+        byEmployee[id] = {
+          id,
+          name: entry.employeeName || `Employee ${id}`,
+          role: entry.employeeJobRoleName || '-',
+          leaveDays: [],
+          attendance: { attended: [], absent: [] },
+        };
+      }
+      if (Number(entry.leave_planned) === 1) {
+        byEmployee[id].leaveDays.push(entry.work_date);
+      }
+    });
+
+    const normalized = (employeesRaw || []).map((emp) => {
+      const id = Number(emp.id);
+      if (byEmployee[id]) return byEmployee[id];
+      return {
+        id,
+        name: emp.employeeName || emp.name || `Employee ${id}`,
+        role: emp.employeeJobRoleName || emp.designation || '-',
+        leaveDays: [],
+        attendance: { attended: [], absent: [] },
+      };
+    });
+
+    return normalized;
+  }, [employeesRaw, rosterEntries]);
+
+  const roster = localRoster.length ? localRoster : rosterFromServer;
 
   const toggleRowEdit = (employeeId) => {
     setEditableRows((prev) => ({ ...prev, [employeeId]: !prev[employeeId] }));
@@ -95,20 +79,39 @@ const RoasterPlanning = () => {
   const handleDayClick = (employeeId, dateString) => {
     if (!editableRows[employeeId]) return;
 
-    setRoster((current) =>
-      current.map((emp) => {
-        if (emp.id !== employeeId) return emp;
+    const nextRoster = roster.map((emp) => {
+      if (emp.id !== employeeId) return emp;
+      const hasDay = emp.leaveDays.includes(dateString);
+      return {
+        ...emp,
+        leaveDays: hasDay ? emp.leaveDays.filter((day) => day !== dateString) : [...emp.leaveDays, dateString],
+      };
+    });
+    setSaveStatus('Unsaved changes');
+    setLocalRoster(nextRoster);
+  };
 
-        const hasDay = emp.leaveDays.includes(dateString);
-
-        return {
-          ...emp,
-          leaveDays: hasDay
-            ? emp.leaveDays.filter((day) => day !== dateString)
-            : [...emp.leaveDays, dateString],
-        };
-      })
-    );
+  const saveChanges = async () => {
+    try {
+      const entries = [];
+      roster.forEach((emp) => {
+        monthDays.forEach((day) => {
+          entries.push({
+            employeeId: emp.id,
+            workDate: day.dateString,
+            shiftCode: null,
+            shiftLabel: null,
+            leavePlanned: emp.leaveDays.includes(day.dateString),
+          });
+        });
+      });
+      await saveRosterPlan({ monthKey: selectedMonth, entries }).unwrap();
+      setSaveStatus('Roster saved');
+      setLocalRoster([]);
+      refetch();
+    } catch (error) {
+      setSaveStatus(error?.data?.message || 'Failed to save roster');
+    }
   };
 
   return (
@@ -122,9 +125,14 @@ const RoasterPlanning = () => {
             value={selectedMonth}
             onChange={(e) => {
               setSelectedMonth(e.target.value);
+              setLocalRoster([]);
             }}
           />
         </div>
+        <button type="button" className="roaster-primary-btn" onClick={saveChanges} disabled={savingRoster}>
+          {savingRoster ? 'Saving...' : 'Save Roster'}
+        </button>
+        {saveStatus ? <p>{saveStatus}</p> : null}
       </section>
 
       <section className="planning-board-roaster">

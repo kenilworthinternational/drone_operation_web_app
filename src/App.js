@@ -55,6 +55,7 @@ import JDManagement from './sections/hr&admin/JDManagement';
 import EmployeeAssignment from './sections/hr&admin/EmployeeAssignment';
 import MonthlyRoaster from './sections/hr&admin/roaster/MonthlyRoaster';
 import RoasterPlanning from './sections/hr&admin/roaster/RoasterPlanning';
+import LeaveManagement from './sections/hr&admin/leave/LeaveManagement';
 import ResourceAllocation from './sections/fleet/resource-allocation/ResourceAllocation';
 import AccidentReports from './sections/fleet/accident-reports/AccidentReports';
 import Maintenance from './sections/fleet/maintenance/Maintenance';
@@ -657,6 +658,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <RoasterPlanning />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="attendance/leave-management"
+            element={
+              <ProtectedRoute>
+                <LeaveManagement />
               </ProtectedRoute>
             }
           />

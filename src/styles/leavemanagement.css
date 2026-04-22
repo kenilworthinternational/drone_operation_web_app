@@ -1,0 +1,196 @@
+.leave-page-leavemgt {
+  padding: 20px;
+  background: #f6f8fb;
+  min-height: calc(100vh - 90px);
+}
+
+.leave-header-leavemgt h2 {
+  margin: 0;
+  color: #0f4f72;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.leave-header-leavemgt p {
+  margin: 8px 0 18px;
+  color: #5b6b7b;
+  font-size: 14px;
+}
+
+.leave-grid-leavemgt {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.leave-card-leavemgt {
+  background: #ffffff;
+  border: 1px solid #dce4ed;
+  border-radius: 10px;
+  padding: 16px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+}
+
+.leave-card-leavemgt h3 {
+  margin: 0 0 12px;
+  color: #0f4f72;
+  font-size: 18px;
+}
+
+.leave-form-leavemgt {
+  display: grid;
+  gap: 10px;
+}
+
+.leave-input-leavemgt {
+  width: 100%;
+  border: 1px solid #ccd8e5;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 14px;
+  background: #fff;
+  color: #1f2b38;
+  box-sizing: border-box;
+}
+
+.leave-input-leavemgt:focus {
+  outline: none;
+  border-color: #0f4f72;
+  box-shadow: 0 0 0 3px rgba(15, 79, 114, 0.12);
+}
+
+.leave-textarea-leavemgt {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.leave-row-leavemgt {
+  display: flex;
+  gap: 10px;
+}
+
+.leave-filter-row-leavemgt {
+  align-items: center;
+}
+
+.leave-actions-leavemgt {
+  margin-top: 10px;
+}
+
+.leave-list-leavemgt {
+  display: grid;
+  gap: 10px;
+}
+
+.leave-item-leavemgt {
+  border: 1px solid #d7dde7;
+  border-radius: 8px;
+  padding: 10px;
+  background: #fff;
+  color: #25313f;
+  line-height: 1.45;
+}
+
+.leave-empty-leavemgt {
+  border: 1px dashed #bccad8;
+  border-radius: 8px;
+  padding: 12px;
+  color: #6d7e90;
+  text-align: center;
+  background: #f9fbfd;
+}
+
+.leave-btn-leavemgt {
+  border: none;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.leave-btn-leavemgt:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.leave-btn-primary-leavemgt {
+  background: #0f4f72;
+  color: #fff;
+}
+
+.leave-btn-primary-leavemgt:hover:not(:disabled) {
+  background: #0a3f5d;
+}
+
+.leave-btn-secondary-leavemgt {
+  background: #e8eef5;
+  color: #1f2b38;
+}
+
+.leave-btn-secondary-leavemgt:hover:not(:disabled) {
+  background: #dce6f0;
+}
+
+.leave-btn-approve-leavemgt {
+  background: #0f766e;
+  color: #fff;
+}
+
+.leave-btn-approve-leavemgt:hover:not(:disabled) {
+  background: #0d615a;
+}
+
+.leave-btn-reject-leavemgt {
+  background: #b91c1c;
+  color: #fff;
+}
+
+.leave-btn-reject-leavemgt:hover:not(:disabled) {
+  background: #991b1b;
+}
+
+.leave-span-2-leavemgt {
+  grid-column: 1 / -1;
+}
+
+.leave-message-leavemgt {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  border: 1px solid transparent;
+}
+
+.leave-message-leavemgt.success-leavemgt {
+  background: #ecfdf3;
+  border-color: #bbf7d0;
+  color: #166534;
+}
+
+.leave-message-leavemgt.error-leavemgt {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #991b1b;
+}
+
+@media (max-width: 960px) {
+  .leave-grid-leavemgt {
+    grid-template-columns: 1fr;
+  }
+
+  .leave-span-2-leavemgt {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .leave-page-leavemgt {
+    padding: 12px;
+  }
+
+  .leave-row-leavemgt {
+    flex-direction: column;
+  }
+}

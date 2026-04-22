@@ -175,14 +175,14 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 30px;
+  padding: 24px;
   background: white;
   overflow-y: auto;
 }
 
 .ea-form-container-ea {
-  max-width: 800px;
-  margin: 0 auto;
+  max-width: none;
+  margin: 0;
   width: 100%;
   min-height: 100%;
   display: flex;
@@ -207,7 +207,8 @@
   margin-bottom: 25px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: 8px 10px;
 }
 
 .ea-current-division-label-ea {
@@ -584,6 +585,15 @@
 
   .ea-right-panel-ea {
     padding: 20px;
+  }
+
+  .ea-current-division-header-ea {
+    gap: 6px;
+  }
+
+  .ea-current-division-label-ea,
+  .ea-current-division-value-ea {
+    font-size: 13px;
   }
 
   .ea-form-row-ea {

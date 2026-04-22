@@ -86,7 +86,9 @@ export const baseApi = createApi({
     // Task Cancel Status
     'TaskCancelStatus',
     // Others
-    'Calendar', 'Reasons', 'ASC'
+    'Calendar', 'Reasons', 'ASC',
+    // HR Leave and Attendance
+    'HrLeave', 'HrAttendance', 'HrRoster'
   ],
   endpoints: () => ({}),
 });

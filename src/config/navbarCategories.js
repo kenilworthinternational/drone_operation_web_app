@@ -102,6 +102,7 @@ const navbarCategories = [
       { path: '/home/jdManagement', label: 'JD Management', icon: FaClipboardList },
       { path: '/home/employeeAssignment', label: 'Employee Assignment', icon: FaUserTie },
       { path: '/home/attendance/roaster-planning', label: 'Attendance & Roaster', icon: FaClock },
+      { path: '/home/attendance/leave-management', label: 'Leave Management', icon: FaCalendarAlt },
     ],
   },
   {

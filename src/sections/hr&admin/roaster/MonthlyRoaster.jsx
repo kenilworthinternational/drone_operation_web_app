@@ -1,55 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import '../../../styles/monthlyRoaster.css';
+import { useGetHrRosterPlanQuery } from '../../../api/services NodeJs/hrLeaveApi';
 
 const estates = ['All Estates', 'Pedro', 'Bogawantalawa', 'Kenilworth'];
 const departments = ['Operations', 'Pilots', 'Ground Crew', 'Office Staff'];
-
-const monthlyRosterData = [
-  {
-    date: '2025-11-01',
-    day: 'Sat',
-    shift: 'Morning',
-    lead: 'Charmila G.',
-    estate: 'Pedro',
-    department: 'Operations',
-    headCount: 12,
-    attendance: 11,
-    status: 'On Track',
-  },
-  {
-    date: '2025-11-02',
-    day: 'Sun',
-    shift: 'Evening',
-    lead: 'Roshan W.',
-    estate: 'Pedro',
-    department: 'Operations',
-    headCount: 10,
-    attendance: 8,
-    status: 'Attention',
-  },
-  {
-    date: '2025-11-03',
-    day: 'Mon',
-    shift: 'Night',
-    lead: 'Nilmini S.',
-    estate: 'Bogawantalawa',
-    department: 'Pilots',
-    headCount: 8,
-    attendance: 8,
-    status: 'On Track',
-  },
-  {
-    date: '2025-11-04',
-    day: 'Tue',
-    shift: 'Morning',
-    lead: 'Arruna P.',
-    estate: 'Kenilworth',
-    department: 'Ground Crew',
-    headCount: 9,
-    attendance: 7,
-    status: 'Critical',
-  },
-];
 
 const statusBadgeClass = {
   'On Track': 'status-on-track',
@@ -58,9 +12,29 @@ const statusBadgeClass = {
 };
 
 const MonthlyRoaster = () => {
-  const [selectedMonth, setSelectedMonth] = useState('2025-11');
+  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
   const [selectedEstate, setSelectedEstate] = useState('All Estates');
   const [selectedDepartment, setSelectedDepartment] = useState('Operations');
+  const { data: rosterResponse, refetch, isFetching } = useGetHrRosterPlanQuery({ monthKey: selectedMonth });
+  const entries = rosterResponse?.data?.entries || rosterResponse?.entries || [];
+  const monthlyRosterData = useMemo(() => {
+    return entries.map((entry) => {
+      const dateObj = new Date(entry.work_date);
+      const day = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+      const attendance = entry.leave_planned ? 0 : 1;
+      return {
+        date: entry.work_date,
+        day,
+        shift: entry.shift_label || '-',
+        lead: entry.employeeName || '-',
+        estate: selectedEstate === 'All Estates' ? '-' : selectedEstate,
+        department: selectedDepartment,
+        headCount: 1,
+        attendance,
+        status: entry.leave_planned ? 'Attention' : 'On Track',
+      };
+    });
+  }, [entries, selectedDepartment, selectedEstate]);
 
   const filteredRoster = useMemo(() => {
     return monthlyRosterData.filter((entry) => {
@@ -132,8 +106,8 @@ const MonthlyRoaster = () => {
             ))}
           </select>
         </div>
-        <button type="button" className="roaster-primary-btn">
-          Refresh
+        <button type="button" className="roaster-primary-btn" onClick={refetch}>
+          {isFetching ? 'Refreshing...' : 'Refresh'}
         </button>
       </section>
 

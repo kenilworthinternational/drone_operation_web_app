@@ -437,6 +437,16 @@ const EmployeeRegistration = () => {
         formDataToSend.append('gndCertificate', formData.gndCertificate);
       }
 
+      // TEMP DEBUG: verify values before API call
+      console.log('[EMP-REG][DEBUG][FRONTEND] Submit payload values:', {
+        employeeName: formData.employeeName,
+        nic: formData.nic,
+        telephoneHome: formData.telephoneHome,
+        mobileNumber: formData.mobileNumber,
+      });
+      console.log('[EMP-REG][DEBUG][FRONTEND] FormData mobileNumber entries:', formDataToSend.getAll('mobileNumber'));
+      console.log('[EMP-REG][DEBUG][FRONTEND] FormData telephoneHome entries:', formDataToSend.getAll('telephoneHome'));
+
       const result = await createEmployeeRegistration(formDataToSend).unwrap();
 
       if (result.status) {
