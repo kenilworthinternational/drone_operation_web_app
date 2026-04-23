@@ -1,144 +1,333 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import {
-  useCreateHrLeaveRequestMutation,
   useDecideHrLeaveRequestMutation,
+  useGetHrHolidayCalendarQuery,
   useGetHrApprovalsInboxQuery,
-  useGetHrLeaveTypesQuery,
-  useGetHrMyLeaveRequestsQuery
+  useGetHrLeaveTypesAllQuery,
+  useSaveHrHolidayMarkMutation,
 } from '../../../api/services NodeJs/hrLeaveApi';
+import {
+  useGetAllEmployeeRegistrationsQuery,
+  useUpdateEmployeeRegistrationMutation,
+} from '../../../api/services NodeJs/jdManagementApi';
 import '../../../styles/leavemanagement.css';
 
 const LeaveManagement = () => {
-  const [filters, setFilters] = useState({ yearMonth: '', status: '' });
-  const [form, setForm] = useState({
-    leaveTypeCode: 'annual_leave',
-    requestMode: 'full_day',
-    startDate: '',
-    endDate: '',
-    reason: ''
-  });
-  const { data: leaveTypeResponse } = useGetHrLeaveTypesQuery();
-  const { data: myRequestsResponse, refetch: refetchMine } = useGetHrMyLeaveRequestsQuery(filters);
+  const [activeTab, setActiveTab] = useState('approvals');
+  const [holidayMonth, setHolidayMonth] = useState(() => new Date().toISOString().slice(0, 7));
   const { data: inboxResponse, refetch: refetchInbox } = useGetHrApprovalsInboxQuery({});
-  const [createLeaveRequest, { isLoading: submitting }] = useCreateHrLeaveRequestMutation();
+  const { data: leaveTypesResponse } = useGetHrLeaveTypesAllQuery();
+  const { data: holidayResponse, refetch: refetchHolidays } = useGetHrHolidayCalendarQuery({ yearMonth: holidayMonth });
+  const { data: allEmployeesResponse, refetch: refetchEmployees } = useGetAllEmployeeRegistrationsQuery();
   const [decideLeaveRequest, { isLoading: deciding }] = useDecideHrLeaveRequestMutation();
+  const [saveHrHolidayMark, { isLoading: savingHoliday }] = useSaveHrHolidayMarkMutation();
+  const [updateEmployeeRegistration, { isLoading: updatingEmployee }] = useUpdateEmployeeRegistrationMutation();
   const [message, setMessage] = useState('');
+  const [savingEmployeeId, setSavingEmployeeId] = useState(null);
+  const [editedAccessByEmployee, setEditedAccessByEmployee] = useState({});
 
-  const leaveTypes = leaveTypeResponse?.data || [];
-  const myRequests = myRequestsResponse?.data || [];
   const inbox = inboxResponse?.data || [];
+  const leaveTypes = leaveTypesResponse?.data || [];
+  const allEmployees = Array.isArray(allEmployeesResponse)
+    ? allEmployeesResponse
+    : Array.isArray(allEmployeesResponse?.data)
+      ? allEmployeesResponse.data
+      : Array.isArray(allEmployeesResponse?.data?.data)
+        ? allEmployeesResponse.data.data
+        : [];
+  const holidayRows = Array.isArray(holidayResponse?.data) ? holidayResponse.data : [];
+  const holidayByDate = holidayRows.reduce((acc, row) => {
+    const key = String(row?.holiday_date || '');
+    if (key) acc[key] = String(row?.holiday_type || '').toLowerCase();
+    return acc;
+  }, {});
 
-  const canSubmit = useMemo(() => {
-    return form.leaveTypeCode && form.startDate;
-  }, [form]);
-
-  const onSubmit = async (event) => {
-    event.preventDefault();
-    if (!canSubmit) return;
-    try {
-      await createLeaveRequest({
-        ...form,
-        endDate: form.endDate || form.startDate
-      }).unwrap();
-      setMessage('Leave request submitted');
-      setForm((prev) => ({ ...prev, reason: '' }));
-      refetchMine();
-      refetchInbox();
-    } catch (error) {
-      setMessage(error?.data?.message || 'Failed to submit request');
+  const buildMonthDays = (yearMonthValue) => {
+    const [yearText, monthText] = String(yearMonthValue || '').split('-');
+    const year = Number(yearText);
+    const month = Number(monthText);
+    if (!Number.isFinite(year) || !Number.isFinite(month)) return [];
+    const start = new Date(year, month - 1, 1);
+    const end = new Date(year, month, 0);
+    const days = [];
+    for (let day = 1; day <= end.getDate(); day += 1) {
+      const date = new Date(year, month - 1, day);
+      days.push({
+        dateKey: `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
+        dayNumber: day,
+        weekDay: date.getDay(),
+      });
     }
+    const leading = start.getDay();
+    return [...Array.from({ length: leading }, (_, idx) => ({ empty: true, key: `lead-${idx}` })), ...days];
+  };
+  const holidayCalendarCells = buildMonthDays(holidayMonth);
+  const formatStatus = (value) => {
+    const text = String(value || '').trim().toLowerCase();
+    if (!text) return 'Unknown';
+    if (text === 'pending_l1') return 'Pending L1';
+    if (text === 'pending_l2') return 'Pending L2';
+    return text.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
   };
 
+  const getStatusBadgeClass = (value) => {
+    const text = String(value || '').trim().toLowerCase();
+    if (text === 'approved') return 'approved-leavemgt';
+    if (text === 'rejected') return 'rejected-leavemgt';
+    return 'pending-leavemgt';
+  };
   const onDecision = async (requestId, action) => {
     try {
       await decideLeaveRequest({ requestId, action }).unwrap();
       setMessage(`Request ${action}d`);
-      refetchMine();
       refetchInbox();
     } catch (error) {
       setMessage(error?.data?.message || `Failed to ${action}`);
     }
   };
 
+  const onToggleLeaveTypeAccess = (employeeId, leaveCode) => {
+    setEditedAccessByEmployee((prev) => {
+      const existingRaw =
+        prev[employeeId] !== undefined
+          ? prev[employeeId]
+          : String(allEmployees.find((item) => String(item.id) === String(employeeId))?.leaveTypeAccess || '');
+      const existingSet = new Set(
+        existingRaw
+          .split(',')
+          .map((item) => item.trim())
+          .filter(Boolean)
+      );
+      if (existingSet.has(leaveCode)) existingSet.delete(leaveCode);
+      else existingSet.add(leaveCode);
+      return {
+        ...prev,
+        [employeeId]: Array.from(existingSet).join(','),
+      };
+    });
+  };
+
+  const onSaveLeaveTypeAccess = async (employee) => {
+    try {
+      setSavingEmployeeId(employee.id);
+      const leaveTypeAccessRaw =
+        editedAccessByEmployee[employee.id] !== undefined
+          ? editedAccessByEmployee[employee.id]
+          : String(employee.leaveTypeAccess || '');
+      const visibleCodes = new Set(leaveTypes.map((type) => String(type.code || '').trim()).filter(Boolean));
+      const existingCodes = String(employee.leaveTypeAccess || '')
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean);
+      const selectedCodes = leaveTypeAccessRaw
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean);
+      const hiddenExistingCodes = existingCodes.filter((code) => !visibleCodes.has(code));
+      const finalCodes = Array.from(new Set([...selectedCodes, ...hiddenExistingCodes]));
+      const leaveTypeAccess = finalCodes.join(',');
+      await updateEmployeeRegistration({
+        id: employee.id,
+        leaveTypeAccess,
+      }).unwrap();
+      setMessage(`Updated leave types for ${employee.employeeName || employee.empNo || employee.id}`);
+      refetchEmployees();
+    } catch (error) {
+      setMessage(error?.data?.message || 'Failed to update employee leave types');
+    } finally {
+      setSavingEmployeeId(null);
+    }
+  };
+
+  const onToggleHolidayMark = async (dateKey) => {
+    const currentType = holidayByDate[dateKey] || '';
+    const nextType = currentType === '' ? 'mercantile' : currentType === 'mercantile' ? 'poya' : '';
+    try {
+      await saveHrHolidayMark({
+        holidayDate: dateKey,
+        holidayType: nextType || null,
+      }).unwrap();
+      refetchHolidays();
+      setMessage(nextType ? `Marked ${dateKey} as ${nextType}` : `Removed holiday mark for ${dateKey}`);
+    } catch (error) {
+      setMessage(error?.data?.message || 'Failed to save holiday mark');
+    }
+  };
+
   return (
     <div className="leave-page-leavemgt">
-      <div className="leave-header-leavemgt">
-        <h2>Leave Management</h2>
-        <p>Employee requests, approval queue, and two-step approval flow</p>
+      <div className="leave-tabs-leavemgt">
+        <button
+          type="button"
+          className={`leave-tab-btn-leavemgt ${activeTab === 'approvals' ? 'active-leavemgt' : ''}`}
+          onClick={() => setActiveTab('approvals')}
+        >
+          Approvals
+        </button>
+        <button
+          type="button"
+          className={`leave-tab-btn-leavemgt ${activeTab === 'data_handling' ? 'active-leavemgt' : ''}`}
+          onClick={() => setActiveTab('data_handling')}
+        >
+          Data Handling
+        </button>
+        <button
+          type="button"
+          className={`leave-tab-btn-leavemgt ${activeTab === 'holiday_marking' ? 'active-leavemgt' : ''}`}
+          onClick={() => setActiveTab('holiday_marking')}
+        >
+          Holiday Marking
+        </button>
       </div>
 
-      <div className="leave-grid-leavemgt">
-        <form onSubmit={onSubmit} className="leave-card-leavemgt leave-form-leavemgt">
-          <h3>Create Leave Request</h3>
-          <select className="leave-input-leavemgt" value={form.leaveTypeCode} onChange={(e) => setForm((prev) => ({ ...prev, leaveTypeCode: e.target.value }))}>
-          {leaveTypes.map((leaveType) => (
-            <option key={leaveType.code} value={leaveType.code}>
-              {leaveType.name}
-            </option>
-          ))}
-          </select>
-          <select className="leave-input-leavemgt" value={form.requestMode} onChange={(e) => setForm((prev) => ({ ...prev, requestMode: e.target.value }))}>
-            <option value="full_day">Full Day</option>
-            <option value="half_day">Half Day</option>
-            <option value="short">Short Leave</option>
-          </select>
-          <div className="leave-row-leavemgt">
-            <input className="leave-input-leavemgt" type="date" value={form.startDate} onChange={(e) => setForm((prev) => ({ ...prev, startDate: e.target.value }))} />
-            <input className="leave-input-leavemgt" type="date" value={form.endDate} onChange={(e) => setForm((prev) => ({ ...prev, endDate: e.target.value }))} />
-          </div>
-          <textarea
-            className="leave-input-leavemgt leave-textarea-leavemgt"
-            value={form.reason}
-            placeholder="Notes"
-            onChange={(e) => setForm((prev) => ({ ...prev, reason: e.target.value }))}
-            rows={3}
-          />
-          <button className="leave-btn-leavemgt leave-btn-primary-leavemgt" type="submit" disabled={!canSubmit || submitting}>
-            {submitting ? 'Submitting...' : 'Submit Leave'}
-          </button>
-        </form>
-
-        <div className="leave-card-leavemgt">
-          <h3>My Requests</h3>
-          <div className="leave-row-leavemgt leave-filter-row-leavemgt">
-            <input className="leave-input-leavemgt" type="month" value={filters.yearMonth} onChange={(e) => setFilters((prev) => ({ ...prev, yearMonth: e.target.value }))} />
-            <select className="leave-input-leavemgt" value={filters.status} onChange={(e) => setFilters((prev) => ({ ...prev, status: e.target.value }))}>
-              <option value="">All</option>
-              <option value="pending_l1">Pending L1</option>
-              <option value="pending_l2">Pending L2</option>
-              <option value="approved">Approved</option>
-              <option value="rejected">Rejected</option>
-            </select>
-            <button className="leave-btn-leavemgt leave-btn-secondary-leavemgt" type="button" onClick={() => refetchMine()}>Refresh</button>
-          </div>
-          <div className="leave-list-leavemgt">
-            {myRequests.length === 0 && <div className="leave-empty-leavemgt">No requests found.</div>}
-            {myRequests.map((request) => (
-              <div key={request.id} className="leave-item-leavemgt">
-                <strong>{request.leaveTypeName}</strong> ({request.request_mode})<br />
-                {request.start_date} to {request.end_date} - {request.current_status}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="leave-card-leavemgt leave-span-2-leavemgt">
-          <h3>Approvals Inbox</h3>
-          <div className="leave-list-leavemgt">
-            {inbox.length === 0 && <div className="leave-empty-leavemgt">No pending approvals.</div>}
-            {inbox.map((request) => (
-              <div key={request.id} className="leave-item-leavemgt">
-                <strong>{request.employeeName}</strong> - {request.leaveTypeName}<br />
-                {request.start_date} to {request.end_date} ({request.current_status})
-                <div className="leave-row-leavemgt leave-actions-leavemgt">
-                  <button className="leave-btn-leavemgt leave-btn-approve-leavemgt" type="button" disabled={deciding} onClick={() => onDecision(request.id, 'approve')}>Approve</button>
-                  <button className="leave-btn-leavemgt leave-btn-reject-leavemgt" type="button" disabled={deciding} onClick={() => onDecision(request.id, 'reject')}>Reject</button>
+      {activeTab === 'approvals' ? (
+        <div className="leave-grid-leavemgt">
+          <div className="leave-card-leavemgt leave-span-2-leavemgt">
+            <div className="leave-card-header-leavemgt">
+              <h3>Approvals Inbox</h3>
+              <span className="leave-muted-leavemgt">{inbox.length} requests</span>
+            </div>
+            <div className="leave-list-leavemgt">
+              {inbox.length === 0 && <div className="leave-empty-leavemgt">No pending approvals.</div>}
+              {inbox.map((request) => (
+                <div key={request.id} className="leave-item-leavemgt leave-item-approval-leavemgt">
+                  <div className="leave-item-top-leavemgt">
+                    <div>
+                      <strong>{request.employeeName}</strong>
+                      <div className="leave-subtext-leavemgt">{request.leaveTypeName}</div>
+                    </div>
+                    <span className={`leave-status-badge-leavemgt ${getStatusBadgeClass(request.current_status)}`}>
+                      {formatStatus(request.current_status)}
+                    </span>
+                  </div>
+                  <div className="leave-item-meta-leavemgt">
+                    {request.start_date} to {request.end_date}
+                  </div>
+                  <div className="leave-row-leavemgt leave-actions-leavemgt">
+                    <button className="leave-btn-leavemgt leave-btn-approve-leavemgt" type="button" disabled={deciding} onClick={() => onDecision(request.id, 'approve')}>Approve</button>
+                    <button className="leave-btn-leavemgt leave-btn-reject-leavemgt" type="button" disabled={deciding} onClick={() => onDecision(request.id, 'reject')}>Reject</button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
-      </div>
+      ) : activeTab === 'data_handling' ? (
+        <div className="leave-grid-leavemgt">
+          <div className="leave-card-leavemgt leave-span-2-leavemgt">
+            <div className="leave-card-header-leavemgt">
+              <h3>Data Handling</h3>
+              <span className="leave-muted-leavemgt">Assign leave types per employee</span>
+            </div>
+            <div className="leave-list-leavemgt">
+              {allEmployees.length === 0 && <div className="leave-empty-leavemgt">No employees found.</div>}
+              {allEmployees.map((employee) => {
+                const effectiveAccess =
+                  editedAccessByEmployee[employee.id] !== undefined
+                    ? editedAccessByEmployee[employee.id]
+                    : String(employee.leaveTypeAccess || '');
+                const selectedCodes = new Set(
+                  effectiveAccess
+                    .split(',')
+                    .map((item) => item.trim())
+                    .filter(Boolean)
+                );
+                const selectedTypeNames = leaveTypes
+                  .filter((type) => selectedCodes.has(String(type.code || '').trim()))
+                  .map((type) => type.name)
+                  .filter(Boolean);
+                const currentAccessText = selectedTypeNames.length > 0
+                  ? selectedTypeNames.join(', ')
+                  : 'All requestable types';
+                return (
+                  <div key={employee.id} className="leave-item-leavemgt leave-item-data-leavemgt">
+                    <div className="leave-item-top-leavemgt">
+                      <div className="leave-employee-meta-leavemgt">
+                        <strong>{employee.employeeName || employee.preferredName || employee.empNo || `Employee ${employee.id}`}</strong>
+                        <div className="leave-subtext-leavemgt">Emp No: {employee.empNo || '-'}</div>
+                      </div>
+                      <div className="leave-current-access-center-leavemgt" title={currentAccessText}>
+                        {currentAccessText}
+                      </div>
+                      <div className="leave-top-actions-leavemgt">
+                        <button
+                          className="leave-btn-leavemgt leave-btn-approve-leavemgt"
+                          type="button"
+                          disabled={updatingEmployee && String(savingEmployeeId) === String(employee.id)}
+                          onClick={() => onSaveLeaveTypeAccess(employee)}
+                        >
+                          {updatingEmployee && String(savingEmployeeId) === String(employee.id) ? 'Saving...' : 'Save Access'}
+                        </button>
+                      </div>
+                    </div>
+                    <div className="leave-access-grid-leavemgt">
+                      {leaveTypes
+                        .filter((type) => Number(type?.employee_requestable ?? type?.employeeRequestable ?? 1) === 1 && String(type?.code || '') !== 'bulk_leave')
+                        .map((type) => (
+                          <label key={`${employee.id}-${type.code}`} className="leave-checkbox-chip-leavemgt">
+                            <input
+                              type="checkbox"
+                              checked={selectedCodes.has(type.code)}
+                              onChange={() => onToggleLeaveTypeAccess(employee.id, type.code)}
+                            />
+                            {type.name}
+                          </label>
+                        ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="leave-grid-leavemgt">
+          <div className="leave-card-leavemgt leave-span-2-leavemgt">
+            <div className="leave-card-header-leavemgt">
+              <h3>Mark Holidays</h3>
+              <span className="leave-muted-leavemgt">Click date to cycle: None -> Mercantile -> Poya</span>
+            </div>
+            <div className="leave-holiday-toolbar-leavemgt">
+              <input
+                type="month"
+                value={holidayMonth}
+                onChange={(e) => setHolidayMonth(e.target.value)}
+                className="leave-month-input-leavemgt"
+              />
+              <div className="leave-holiday-legend-leavemgt">
+                <span className="holiday-dot-leavemgt mercantile-leavemgt" /> Mercantile
+                <span className="holiday-dot-leavemgt poya-leavemgt" /> Poya
+              </div>
+            </div>
+            <div className="leave-holiday-weekdays-leavemgt">
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+                <div key={day} className="leave-holiday-weekday-leavemgt">{day}</div>
+              ))}
+            </div>
+            <div className="leave-holiday-grid-leavemgt">
+              {holidayCalendarCells.map((cell) => {
+                if (cell.empty) {
+                  return <div key={cell.key} className="leave-holiday-cell-leavemgt empty-leavemgt" />;
+                }
+                const type = holidayByDate[cell.dateKey] || '';
+                return (
+                  <button
+                    key={cell.dateKey}
+                    type="button"
+                    className={`leave-holiday-cell-leavemgt ${type ? `${type}-leavemgt` : 'normal-leavemgt'}`}
+                    onClick={() => onToggleHolidayMark(cell.dateKey)}
+                    disabled={savingHoliday}
+                    title={type ? `${cell.dateKey} - ${type}` : `${cell.dateKey} - no holiday`}
+                  >
+                    <span>{cell.dayNumber}</span>
+                    {type ? <small>{type === 'mercantile' ? 'Mercantile' : 'Poya'}</small> : null}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {message ? (
         <div className={`leave-message-leavemgt ${message.toLowerCase().includes('failed') ? 'error-leavemgt' : 'success-leavemgt'}`}>

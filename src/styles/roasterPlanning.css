@@ -99,6 +99,11 @@
     background: #b2cbff;
 }
 
+.requested-pill-roaster {
+    border-color: #7c3aed;
+    background: #e9d5ff;
+}
+
 .attended-pill-roaster {
     border-color: #2f8f63;
     background: #b2e8cd;
@@ -203,6 +208,10 @@
     background: #ffffff;
     cursor: pointer;
     transition: all 0.15s ease;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .day-cell-roaster.weekend {
@@ -218,6 +227,11 @@
     border: 1px solid #4477d6;
 }
 
+.day-cell-roaster.requested {
+    background: #e9d5ff;
+    border: 1px solid #7c3aed;
+}
+
 .day-cell-roaster.attended {
     background: #b2e8cd;
     border: 1px solid #2f8f63;
@@ -226,6 +240,30 @@
 .day-cell-roaster.absent {
     background: #ffbdb8;
     border: 1px solid #c64f4f;
+}
+
+.approval-dot-roaster {
+    display: inline-block;
+    width: 11px;
+    height: 11px;
+    min-width: 11px;
+    min-height: 11px;
+    border-radius: 50%;
+    border: 1px solid rgba(15, 23, 42, 0.35);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.4);
+    vertical-align: middle;
+}
+
+.approval-dot-red-roaster {
+    background: #b91c1c;
+}
+
+.approval-dot-yellow-roaster {
+    background: #b45309;
+}
+
+.approval-dot-green-roaster {
+    background: #166534;
 }
 
 .timeline-row-roaster {

@@ -116,6 +116,9 @@ const EmployeeRegistration = () => {
     reportingOfficer: '',
     jobRoleLayer: '',
     bulkLeaveAvailable: '0',
+    flexHoursEnabled: '0',
+    flexHoursMinutes: '0',
+    leaveTypeAccess: '',
     workStatus: '',
     permanentDate: '',
     workLocation: '',
@@ -216,6 +219,9 @@ const EmployeeRegistration = () => {
         // If Driving License is set to "No", clear Driving License Type
         if (name === 'drivingLicense' && value === 'No') {
           updates.drivingLicenseType = [];
+        }
+        if (name === 'flexHoursEnabled' && value !== '1') {
+          updates.flexHoursMinutes = '0';
         }
         
         return {
@@ -515,6 +521,9 @@ const EmployeeRegistration = () => {
           reportingOfficer: '',
           jobRoleLayer: '',
           bulkLeaveAvailable: '0',
+          flexHoursEnabled: '0',
+          flexHoursMinutes: '0',
+          leaveTypeAccess: '',
           workStatus: '',
           permanentDate: '',
           workLocation: '',
@@ -1530,6 +1539,17 @@ const EmployeeRegistration = () => {
                 </select>
               </div>
               <div className="form-group-emp-reg">
+                <label>Flex Hours Enabled:</label>
+                <select
+                  name="flexHoursEnabled"
+                  value={formData.flexHoursEnabled}
+                  onChange={handleInputChange}
+                >
+                  <option value="0">No</option>
+                  <option value="1">Yes</option>
+                </select>
+              </div>
+              <div className="form-group-emp-reg">
                 <label>Work Status:</label>
                 <select
                   name="workStatus"
@@ -1546,6 +1566,27 @@ const EmployeeRegistration = () => {
             </div>
 
             <div className="form-row-emp-reg">
+              <div className="form-group-emp-reg">
+                <label>Flex Hours Minutes:</label>
+                <input
+                  type="number"
+                  name="flexHoursMinutes"
+                  min="0"
+                  value={formData.flexHoursMinutes}
+                  onChange={handleInputChange}
+                  disabled={formData.flexHoursEnabled !== '1'}
+                />
+              </div>
+              <div className="form-group-emp-reg">
+                <label>Leave Type Access (codes):</label>
+                <input
+                  type="text"
+                  name="leaveTypeAccess"
+                  value={formData.leaveTypeAccess}
+                  onChange={handleInputChange}
+                  placeholder="e.g. annual_leave,casual_leave,short_leave"
+                />
+              </div>
               <div className="form-group-emp-reg">
                 <label>Permanent Date:</label>
                 <input

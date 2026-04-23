@@ -232,6 +232,15 @@ const Employees = () => {
           employeeDetails.bulkLeaveAvailable !== undefined && employeeDetails.bulkLeaveAvailable !== null
             ? String(employeeDetails.bulkLeaveAvailable)
             : '0',
+        flexHoursEnabled:
+          employeeDetails.flexHoursEnabled !== undefined && employeeDetails.flexHoursEnabled !== null
+            ? String(employeeDetails.flexHoursEnabled)
+            : '0',
+        flexHoursMinutes:
+          employeeDetails.flexHoursMinutes !== undefined && employeeDetails.flexHoursMinutes !== null
+            ? String(employeeDetails.flexHoursMinutes)
+            : '0',
+        leaveTypeAccess: employeeDetails.leaveTypeAccess || '',
         workStatus: employeeDetails.workStatus || '',
         permanentDate: employeeDetails.permanentDate ? employeeDetails.permanentDate.split('T')[0] : '',
         workLocation: workLocationId,
@@ -866,6 +875,12 @@ const Employees = () => {
                         { value: '0', label: 'No' },
                         { value: '1', label: 'Yes' },
                       ])}
+                      {renderField('Flex Hours Enabled', 'flexHoursEnabled', employeeDetails.flexHoursEnabled, 'select', [
+                        { value: '0', label: 'No' },
+                        { value: '1', label: 'Yes' },
+                      ])}
+                      {renderField('Flex Hours Minutes', 'flexHoursMinutes', employeeDetails.flexHoursMinutes, 'number')}
+                      {renderField('Leave Type Access (codes)', 'leaveTypeAccess', employeeDetails.leaveTypeAccess, 'text')}
                       {renderField('Permanent Date', 'permanentDate', formatDate(employeeDetails.permanentDate), 'date')}
                       {renderField('Work Status', 'workStatus', employeeDetails.workStatus, 'select', [
                         { value: '', label: '-- Select --' },
@@ -911,6 +926,18 @@ const Employees = () => {
                       <div className="detail-item-emp-view">
                         <label>Bulk Leave Available:</label>
                         <span>{String(employeeDetails.bulkLeaveAvailable) === '1' ? 'Yes' : 'No'}</span>
+                      </div>
+                      <div className="detail-item-emp-view">
+                        <label>Flex Hours Enabled:</label>
+                        <span>{String(employeeDetails.flexHoursEnabled) === '1' ? 'Yes' : 'No'}</span>
+                      </div>
+                      <div className="detail-item-emp-view">
+                        <label>Flex Hours Minutes:</label>
+                        <span>{employeeDetails.flexHoursMinutes ?? 0}</span>
+                      </div>
+                      <div className="detail-item-emp-view">
+                        <label>Leave Type Access:</label>
+                        <span>{employeeDetails.leaveTypeAccess || 'All requestable types'}</span>
                       </div>
                       <div className="detail-item-emp-view">
                         <label>Permanent Date:</label>

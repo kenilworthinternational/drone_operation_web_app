@@ -8,6 +8,11 @@ export const hrLeaveApi = baseApi.injectEndpoints({
         nodeBackendBaseQuery({ url: '/api/hr-leave/types', method: 'POST', body: {} }, {}, {}),
       providesTags: ['HrLeave'],
     }),
+    getHrLeaveTypesAll: builder.query({
+      queryFn: async () =>
+        nodeBackendBaseQuery({ url: '/api/hr-leave/types', method: 'POST', body: { includeAll: 1 } }, {}, {}),
+      providesTags: ['HrLeave'],
+    }),
     getHrDashboard: builder.query({
       queryFn: async (body = {}) =>
         nodeBackendBaseQuery({ url: '/api/hr-leave/dashboard', method: 'POST', body }, {}, {}),
@@ -53,11 +58,22 @@ export const hrLeaveApi = baseApi.injectEndpoints({
         nodeBackendBaseQuery({ url: '/api/hr-leave/roster/view', method: 'POST', body }, {}, {}),
       providesTags: ['HrRoster'],
     }),
+    getHrHolidayCalendar: builder.query({
+      queryFn: async (body = {}) =>
+        nodeBackendBaseQuery({ url: '/api/hr-leave/holidays/list', method: 'POST', body }, {}, {}),
+      providesTags: ['HrHoliday'],
+    }),
+    saveHrHolidayMark: builder.mutation({
+      queryFn: async (body) =>
+        nodeBackendBaseQuery({ url: '/api/hr-leave/holidays/save', method: 'POST', body }, {}, {}),
+      invalidatesTags: ['HrHoliday'],
+    }),
   }),
 });
 
 export const {
   useGetHrLeaveTypesQuery,
+  useGetHrLeaveTypesAllQuery,
   useGetHrDashboardQuery,
   useGetHrMyLeaveRequestsQuery,
   useCreateHrLeaveRequestMutation,
@@ -67,4 +83,6 @@ export const {
   useGetHrAttendanceLogQuery,
   useSaveHrRosterPlanMutation,
   useGetHrRosterPlanQuery,
+  useGetHrHolidayCalendarQuery,
+  useSaveHrHolidayMarkMutation,
 } = hrLeaveApi;

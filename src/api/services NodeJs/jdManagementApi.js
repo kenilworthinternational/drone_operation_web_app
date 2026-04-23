@@ -139,6 +139,22 @@ export const jdManagementApi = baseApi.injectEndpoints({
       providesTags: ['WorkLocations'],
     }),
 
+    saveWorkLocation: builder.mutation({
+      queryFn: async (data) => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: '/api/jd-management/work-locations/save',
+            method: 'POST',
+            body: data,
+          },
+          {},
+          {}
+        );
+        return result;
+      },
+      invalidatesTags: ['WorkLocations'],
+    }),
+
     // =====================================================
     // DSCS (DIVISIONAL SECRETARIATS)
     // =====================================================
@@ -1024,6 +1040,7 @@ export const {
   useSaveWingMutation,
   useGetDrivingLicenseTypesQuery,
   useGetWorkLocationsQuery,
+  useSaveWorkLocationMutation,
   useGetDSCSQuery,
   useGetProvincesQuery,
   useGetDistrictsQuery,

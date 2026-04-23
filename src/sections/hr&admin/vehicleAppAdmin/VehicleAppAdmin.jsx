@@ -21,6 +21,8 @@ import {
   useGetWingsQuery,
   useSaveWingMutation,
   useGetAllEmployeeRegistrationsQuery,
+  useGetWorkLocationsQuery,
+  useSaveWorkLocationMutation,
 } from '../../../api/services NodeJs/jdManagementApi';
 import '../../../styles/vehicleAppAdmin.css';
 
@@ -46,6 +48,7 @@ const VehicleAppAdmin = ({ mode = 'full' }) => {
   const { data: wingsData } = useGetWingsQuery();
   const { data: legacyWingsData } = useGetLegacyWingsQuery();
   const { data: employeesData } = useGetAllEmployeeRegistrationsQuery();
+  const { data: workLocationsData } = useGetWorkLocationsQuery();
   const wings = useMemo(() => {
     const fromJd = Array.isArray(wingsData)
       ? wingsData
@@ -73,6 +76,12 @@ const VehicleAppAdmin = ({ mode = 'full' }) => {
     if (Array.isArray(employeesData?.data)) return employeesData.data;
     return [];
   }, [employeesData]);
+  const workLocations = useMemo(() => {
+    if (!workLocationsData) return [];
+    if (Array.isArray(workLocationsData)) return workLocationsData;
+    if (Array.isArray(workLocationsData?.data)) return workLocationsData.data;
+    return [];
+  }, [workLocationsData]);
 
   const [saveVehicleCategory] = useSaveVehicleAppVehicleCategoryMutation();
   const [saveMaintenanceCategory] = useSaveVehicleAppMaintenanceCategoryMutation();
@@ -80,6 +89,7 @@ const VehicleAppAdmin = ({ mode = 'full' }) => {
   const [decideMaintenance] = useDecideVehicleAppMaintenanceRequestMutation();
   const [saveFuelCategory] = useSaveFuelCategoryMutation();
   const [saveWing] = useSaveWingMutation();
+  const [saveWorkLocation] = useSaveWorkLocationMutation();
 
   const [newVehicleCategory, setNewVehicleCategory] = useState('');
   const [newMaintenanceCategory, setNewMaintenanceCategory] = useState('');
@@ -103,6 +113,9 @@ const VehicleAppAdmin = ({ mode = 'full' }) => {
   const [editingWingName, setEditingWingName] = useState('');
   const [editingWingCode, setEditingWingCode] = useState('');
   const [editingWingHod, setEditingWingHod] = useState('');
+  const [newWorkLocationName, setNewWorkLocationName] = useState('');
+  const [newWorkLocationCode, setNewWorkLocationCode] = useState('');
+  const [newWorkLocationMapLink, setNewWorkLocationMapLink] = useState('');
   const [editModal, setEditModal] = useState(null);
   const [modalDraft, setModalDraft] = useState({});
   const [quickMessage, setQuickMessage] = useState({ type: '', text: '' });
@@ -131,6 +144,13 @@ const VehicleAppAdmin = ({ mode = 'full' }) => {
     if (type === 'maintenanceDescription') setModalDraft({ description: item.description || '' });
     if (type === 'fuel') setModalDraft({ category: item.category || '', unit_price: item.unit_price != null ? String(item.unit_price) : '' });
     if (type === 'wing') setModalDraft({ wing: item.wing || '', wingsCode: item.wingsCode || '', hod: item.hod ? String(item.hod) : '' });
+    if (type === 'workLocation') {
+      setModalDraft({
+        locationName: item.locationName || '',
+        locationCode: item.locationCode || '',
+        map_link: item.map_link || '',
+      });
+    }
   };
 
   const closeEditModal = () => {
@@ -161,6 +181,14 @@ const VehicleAppAdmin = ({ mode = 'full' }) => {
           wing: modalDraft.wing,
           wingsCode: modalDraft.wingsCode,
           hod: modalDraft.hod || null,
+          activated: editModal.item.activated ?? 1,
+        }).unwrap();
+      } else if (editModal.type === 'workLocation') {
+        await saveWorkLocation({
+          id: editModal.item.id,
+          locationName: modalDraft.locationName,
+          locationCode: modalDraft.locationCode,
+          map_link: modalDraft.map_link || null,
           activated: editModal.item.activated ?? 1,
         }).unwrap();
       }
@@ -422,6 +450,62 @@ const VehicleAppAdmin = ({ mode = 'full' }) => {
           </div>
 
           <div className="vehicle-admin-card">
+            <h3>Work Locations</h3>
+            <div className="inline-form" style={{ flexWrap: 'wrap', gap: '6px' }}>
+              <input
+                value={newWorkLocationName}
+                onChange={(e) => setNewWorkLocationName(e.target.value)}
+                placeholder="Location name"
+                style={{ flex: '1 1 140px' }}
+              />
+              <input
+                value={newWorkLocationCode}
+                onChange={(e) => setNewWorkLocationCode(e.target.value)}
+                placeholder="Location code"
+                style={{ flex: '1 1 120px' }}
+              />
+              <input
+                value={newWorkLocationMapLink}
+                onChange={(e) => setNewWorkLocationMapLink(e.target.value)}
+                placeholder="Google map link"
+                style={{ flex: '1 1 220px' }}
+              />
+              <button
+                onClick={() => handleQuickSave(async () => {
+                  await saveWorkLocation({
+                    locationName: newWorkLocationName,
+                    locationCode: newWorkLocationCode,
+                    map_link: newWorkLocationMapLink || null,
+                    activated: 1,
+                  }).unwrap();
+                  setNewWorkLocationName('');
+                  setNewWorkLocationCode('');
+                  setNewWorkLocationMapLink('');
+                })}
+              >
+                Add
+              </button>
+            </div>
+            <div className="master-list">
+              {workLocations.map((w) => (
+                <div key={w.id} className="master-row">
+                  <div style={{ flex: 1 }}>
+                    <span className="master-label">{w.locationName}</span>
+                    <span style={{ marginLeft: 8, fontSize: '0.82em', color: '#555' }}>
+                      [{w.locationCode || '-'}] {w.latitude && w.longitude ? `${w.latitude}, ${w.longitude}` : 'No geo set'}
+                    </span>
+                  </div>
+                  <div className="master-actions">
+                    <button className="action-btn neutral" onClick={() => openEditModal('workLocation', w)}>
+                      Edit
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="vehicle-admin-card">
             <h3>Maintenance Descriptions</h3>
             <div className="inline-form">
               <input value={newMaintenanceDescription} onChange={(e) => setNewMaintenanceDescription(e.target.value)} placeholder="New description" />
@@ -594,6 +678,28 @@ const VehicleAppAdmin = ({ mode = 'full' }) => {
                     </option>
                   ))}
                 </select>
+              </div>
+            )}
+            {editModal.type === 'workLocation' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <input
+                  className="master-edit-input"
+                  value={modalDraft.locationName || ''}
+                  onChange={(e) => setModalDraft((p) => ({ ...p, locationName: e.target.value }))}
+                  placeholder="Location name"
+                />
+                <input
+                  className="master-edit-input"
+                  value={modalDraft.locationCode || ''}
+                  onChange={(e) => setModalDraft((p) => ({ ...p, locationCode: e.target.value }))}
+                  placeholder="Location code"
+                />
+                <input
+                  className="master-edit-input"
+                  value={modalDraft.map_link || ''}
+                  onChange={(e) => setModalDraft((p) => ({ ...p, map_link: e.target.value }))}
+                  placeholder="Google map link"
+                />
               </div>
             )}
             <div className="update-popup-actions">
