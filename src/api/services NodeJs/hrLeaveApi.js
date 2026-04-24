@@ -66,7 +66,7 @@ export const hrLeaveApi = baseApi.injectEndpoints({
     saveHrHolidayMark: builder.mutation({
       queryFn: async (body) =>
         nodeBackendBaseQuery({ url: '/api/hr-leave/holidays/save', method: 'POST', body }, {}, {}),
-      invalidatesTags: ['HrHoliday'],
+      invalidatesTags: ['HrHoliday', 'HrRoster'],
     }),
   }),
 });

@@ -110,6 +110,108 @@ export const jdManagementApi = baseApi.injectEndpoints({
     }),
 
     // =====================================================
+    // VEHICLE MASTER DATA
+    // =====================================================
+    getVehicleCategories: builder.query({
+      queryFn: async () => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: '/api/jd-management/vehicle-categories',
+            method: 'POST',
+            body: {},
+          },
+          {},
+          {}
+        );
+        if (result.error) return result;
+        return { data: result.data?.data || [] };
+      },
+      providesTags: ['VehicleCategories'],
+    }),
+
+    saveVehicleCategory: builder.mutation({
+      queryFn: async (data) => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: '/api/jd-management/vehicle-categories/save',
+            method: 'POST',
+            body: data,
+          },
+          {},
+          {}
+        );
+        return result;
+      },
+      invalidatesTags: ['VehicleCategories'],
+    }),
+
+    getVehicleMakes: builder.query({
+      queryFn: async ({ vehicle_category_id } = {}) => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: '/api/jd-management/vehicle-makes',
+            method: 'POST',
+            body: { vehicle_category_id: vehicle_category_id || null },
+          },
+          {},
+          {}
+        );
+        if (result.error) return result;
+        return { data: result.data?.data || [] };
+      },
+      providesTags: ['VehicleMakes'],
+    }),
+
+    saveVehicleMake: builder.mutation({
+      queryFn: async (data) => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: '/api/jd-management/vehicle-makes/save',
+            method: 'POST',
+            body: data,
+          },
+          {},
+          {}
+        );
+        return result;
+      },
+      invalidatesTags: ['VehicleMakes', 'VehicleModels'],
+    }),
+
+    getVehicleModels: builder.query({
+      queryFn: async ({ vehicle_make_id } = {}) => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: '/api/jd-management/vehicle-models',
+            method: 'POST',
+            body: { vehicle_make_id: vehicle_make_id || null },
+          },
+          {},
+          {}
+        );
+        if (result.error) return result;
+        return { data: result.data?.data || [] };
+      },
+      providesTags: ['VehicleModels'],
+    }),
+
+    saveVehicleModel: builder.mutation({
+      queryFn: async (data) => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: '/api/jd-management/vehicle-models/save',
+            method: 'POST',
+            body: data,
+          },
+          {},
+          {}
+        );
+        return result;
+      },
+      invalidatesTags: ['VehicleModels'],
+    }),
+
+    // =====================================================
     // WORK LOCATIONS
     // =====================================================
     getWorkLocations: builder.query({
@@ -1039,6 +1141,12 @@ export const {
   useGetWingsQuery,
   useSaveWingMutation,
   useGetDrivingLicenseTypesQuery,
+  useGetVehicleCategoriesQuery,
+  useSaveVehicleCategoryMutation,
+  useGetVehicleMakesQuery,
+  useSaveVehicleMakeMutation,
+  useGetVehicleModelsQuery,
+  useSaveVehicleModelMutation,
   useGetWorkLocationsQuery,
   useSaveWorkLocationMutation,
   useGetDSCSQuery,

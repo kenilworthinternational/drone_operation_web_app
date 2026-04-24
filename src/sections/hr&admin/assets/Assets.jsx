@@ -513,6 +513,10 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
       rate_per_km: asset?.rate_per_km != null ? String(asset.rate_per_km) : '',
       starting_date: formatDateForInput(asset?.starting_date),
       end_date: formatDateForInput(asset?.end_date),
+      owner_name: asset?.owner_name ?? '',
+      owner_nic: asset?.owner_nic ?? '',
+      owner_contact_no: asset?.owner_contact_no ?? '',
+      owner_address: asset?.owner_address ?? '',
     };
   }, [wingNameToId]);
 
@@ -664,6 +668,9 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
         'activated',
         'wing_id'
       ];
+      if (formData.ownership === 'r') {
+        requiredFields.push('owner_name', 'owner_contact_no');
+      }
     } else {
       if (formData.have_insurance === '1') {
         requiredFields.push('insurance_type');
@@ -796,6 +803,10 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
               rate_per_km: formData.rate_per_km ? parseFloat(formData.rate_per_km) : null,
               starting_date: formatDateForApi(formData.starting_date) || null,
               end_date: formatDateForApi(formData.end_date) || null,
+              owner_name: formData.owner_name ? formData.owner_name.trim() : null,
+              owner_nic: formData.owner_nic ? formData.owner_nic.trim() : null,
+              owner_contact_no: formData.owner_contact_no ? formData.owner_contact_no.trim() : null,
+              owner_address: formData.owner_address ? formData.owner_address.trim() : null,
             } : {})
           };
           break;
@@ -853,6 +864,8 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
           <th>Vehicle No</th>
           <th>Make</th>
           <th>Model</th>
+          <th>Owner</th>
+          <th>Owner Contact</th>
           <th>Purchase Price</th>
           <th>Wing</th>
           <th>Insurance Expiry</th>
@@ -905,6 +918,8 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
           <td>{asset?.vehicle_no || '-'}</td>
           <td>{asset?.make || '-'}</td>
           <td>{asset?.model || '-'}</td>
+          <td>{asset?.ownership === 'r' ? (asset?.owner_name || '-') : '-'}</td>
+          <td>{asset?.ownership === 'r' ? (asset?.owner_contact_no || '-') : '-'}</td>
           <td>{purchasePriceDisplay}</td>
           <td>{wingDisplay}</td>
           <td>{formatDateForInput(asset?.insurance_expire_date) || '-'}</td>
@@ -997,6 +1012,13 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
             { label: 'Insurance Expiry', value: formatDateForInput(selectedAsset.insurance_expire_date) },
             { label: 'Revenue License Expiry', value: formatDateForInput(selectedAsset.revenue_license_expire_date) },
             { label: 'Operational Status', value: formatOperationalStatus(selectedAsset.operational_status) }
+            ,
+            ...(selectedAsset.ownership === 'r' ? [
+              { label: 'Owner Name', value: selectedAsset.owner_name || '-' },
+              { label: 'Owner NIC', value: selectedAsset.owner_nic || '-' },
+              { label: 'Owner Contact', value: selectedAsset.owner_contact_no || '-' },
+              { label: 'Owner Address', value: selectedAsset.owner_address || '-' },
+            ] : [])
           ]
         : [
             { label: 'Tag', value: selectedAsset.tag },
@@ -1645,6 +1667,60 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
                               name="end_date"
                               value={formData.end_date}
                               onChange={handleFormChange}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="form-section-divider-assets">
+                          <h4>Owner Information</h4>
+                        </div>
+
+                        <div className="form-row-assets">
+                          <div className="form-group-assets">
+                            <label htmlFor="owner_name">Owner Name</label>
+                            <input
+                              type="text"
+                              id="owner_name"
+                              name="owner_name"
+                              value={formData.owner_name}
+                              onChange={handleFormChange}
+                              placeholder="Enter owner name"
+                            />
+                          </div>
+                          <div className="form-group-assets">
+                            <label htmlFor="owner_nic">Owner NIC</label>
+                            <input
+                              type="text"
+                              id="owner_nic"
+                              name="owner_nic"
+                              value={formData.owner_nic}
+                              onChange={handleFormChange}
+                              placeholder="Enter owner NIC"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="form-row-assets">
+                          <div className="form-group-assets">
+                            <label htmlFor="owner_contact_no">Owner Contact No</label>
+                            <input
+                              type="text"
+                              id="owner_contact_no"
+                              name="owner_contact_no"
+                              value={formData.owner_contact_no}
+                              onChange={handleFormChange}
+                              placeholder="Enter owner contact"
+                            />
+                          </div>
+                          <div className="form-group-assets">
+                            <label htmlFor="owner_address">Owner Address</label>
+                            <input
+                              type="text"
+                              id="owner_address"
+                              name="owner_address"
+                              value={formData.owner_address}
+                              onChange={handleFormChange}
+                              placeholder="Enter owner address"
                             />
                           </div>
                         </div>

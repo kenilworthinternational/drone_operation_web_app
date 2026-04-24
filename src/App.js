@@ -80,7 +80,7 @@ import ProcurementProcess from './sections/stock-assets/ProcurementProcess';
 import CentralStores from './sections/stock-assets/CentralStores';
 import AssetTransfer from './sections/stock-assets/AssetTransfer';
 import AssetRequest from './sections/stock-assets/AssetRequest';
-import VehicleAppAdmin from './sections/hr&admin/vehicleAppAdmin/VehicleAppAdmin';
+import MasterData from './sections/ict/masterData/MasterData';
 import PlantationDashboard from './sections/plantation/plantationDashboard/PlantationDashboard';
 import PlantationChartsPage from './sections/plantation/plantationDashboard/pages/PlantationChartsPage';
 import PlantationCalendarPage from './sections/plantation/plantationDashboard/pages/PlantationCalendarPage';
@@ -737,7 +737,7 @@ function App() {
             path="ict/system-admin/master-data-update"
             element={
               <ProtectedRoute>
-                <VehicleAppAdmin mode="masters" />
+                <MasterData mode="masters" />
               </ProtectedRoute>
             }
           />
@@ -801,7 +801,7 @@ function App() {
             path="hr-admin/vehicle-app-admin"
             element={
               <ProtectedRoute>
-                <VehicleAppAdmin mode="operations" />
+                <MasterData mode="operations" />
               </ProtectedRoute>
             }
           />

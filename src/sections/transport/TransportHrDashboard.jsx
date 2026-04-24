@@ -511,8 +511,10 @@ function TransportHrDashboard() {
               <tr>
                 <th>Vehicle No</th>
                 <th>Driver</th>
+                <th>Ownership</th>
                 <th>Category</th>
                 <th>Make / Model</th>
+                <th>Owner Details</th>
                 <th>Status</th>
               </tr>
             </thead>
@@ -521,14 +523,20 @@ function TransportHrDashboard() {
                 <tr key={row.id}>
                   <td>{row.vehicle_no || '-'}</td>
                   <td>{row.assigned_driver_name || '-'}</td>
+                  <td>{row.ownership === 'r' ? 'Rented' : row.ownership === 'o' ? 'Own' : '-'}</td>
                   <td>{row.vehicle_category_name || '-'}</td>
                   <td>{row.make || '-'} / {row.model || '-'}</td>
+                  <td>
+                    {row.ownership === 'r'
+                      ? `${row.owner_name || '-'}${row.owner_contact_no ? ` (${row.owner_contact_no})` : ''}`
+                      : '-'}
+                  </td>
                   <td>{Number(row.activated) === 1 ? 'Active' : 'Inactive'}</td>
                 </tr>
               ))}
               {!vehicles.length ? (
                 <tr>
-                  <td colSpan={5}>No vehicle records found.</td>
+                  <td colSpan={7}>No vehicle records found.</td>
                 </tr>
               ) : null}
             </tbody>

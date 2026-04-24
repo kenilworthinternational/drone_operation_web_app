@@ -45,7 +45,6 @@ const navbarCategories = [
     icon: FaUserTie,
     children: [
       { path: '/home/reports/management', label: 'Reports', icon: FaFileAlt },
-      { path: '/home/calenderView/management', label: 'Mission Calendar', icon: FaCalendarAlt },
       { path: '/home/earnings', label: 'Pilot Earnings', icon: FaMoneyBill },
       { path: '/home/reportReview', label: 'Review Reports', icon: FaFlag },
       { path: '/home/deactivatePlan', label: 'Deactive Plan', icon: FaPauseCircle },

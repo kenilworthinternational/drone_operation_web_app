@@ -21,13 +21,278 @@
 }
 
 .planning-controls-roaster {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 16px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px 24px;
     padding: 18px;
     background: #ffffff;
     border-radius: 16px;
     box-shadow: 0 10px 24px rgba(12, 35, 64, 0.08);
+}
+
+.planning-month-field-roaster {
+    flex: 1 1 240px;
+    min-width: 180px;
+}
+
+.planning-filter-field-roaster {
+    flex: 1 1 240px;
+    min-width: 180px;
+}
+
+.roaster-toolbar-actions-roaster {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px 16px;
+    flex: 1 1 320px;
+    min-width: 260px;
+}
+
+.roaster-save-help-group-roaster {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+}
+
+.roaster-save-compact-btn-roaster {
+    border: none;
+    background: linear-gradient(135deg, #006c9e, #00a0b8);
+    color: #fff;
+    padding: 10px 18px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    white-space: nowrap;
+    flex: 0 0 auto;
+}
+
+.roaster-save-compact-btn-roaster:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 108, 158, 0.35);
+}
+
+.roaster-save-compact-btn-roaster:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+.roaster-export-btn-roaster {
+    border: 1px solid #0ea5e9;
+    background: #e0f2fe;
+    color: #0c4a6e;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.roaster-export-btn-roaster:hover {
+    background: #bae6fd;
+}
+
+.roaster-help-tip-btn-roaster {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border-radius: 999px;
+    border: 1px solid #cbd5e1;
+    background: #f8fafc;
+    color: #475569;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1;
+    cursor: help;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.roaster-help-tip-btn-roaster:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+}
+
+.roaster-help-tip-btn-roaster span {
+    display: block;
+    transform: translateY(-0.5px);
+}
+
+.roaster-help-popup-roaster {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: min(340px, 80vw);
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 12px;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18);
+    padding: 10px 12px;
+    z-index: 30;
+}
+
+.roaster-help-popup-title-roaster {
+    margin: 0 0 6px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.roaster-help-popup-list-roaster {
+    margin: 0;
+    padding-left: 16px;
+    display: grid;
+    gap: 4px;
+    color: #334155;
+    font-size: 12px;
+}
+
+.roaster-unsaved-chip-roaster {
+    margin: 0;
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 1px solid #fcd34d;
+    background: #fffbeb;
+    color: #92400e;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.roaster-unsaved-chip-roaster:hover {
+    background: #fef3c7;
+}
+
+.roaster-unsaved-group-roaster {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.roaster-unsaved-note-roaster {
+    font-size: 12px;
+    color: #64748b;
+    white-space: nowrap;
+}
+
+.roaster-unsaved-chip-roaster:focus-visible {
+    outline: 2px solid #000000;
+    outline-offset: 1px;
+}
+
+.roaster-unsaved-chip-roaster.active {
+    background: #fde68a;
+    box-shadow: inset 0 0 0 2px #f59e0b;
+}
+
+.roaster-unsaved-chip-roaster.active:focus-visible {
+    box-shadow: inset 0 0 0 2px #f59e0b, 0 0 0 2px #000000;
+}
+
+.roaster-save-status-text-roaster {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: #334155;
+}
+
+.roaster-save-status-text-roaster.is-success {
+    color: #047857;
+}
+
+.roaster-save-status-text-roaster.is-error {
+    color: #b91c1c;
+}
+
+.roaster-nav-confirm-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(2, 6, 23, 0.45);
+    z-index: 1200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+
+.roaster-nav-confirm-panel {
+    width: min(460px, 92vw);
+    background: #ffffff;
+    border-radius: 14px;
+    border: 1px solid #cbd5e1;
+    box-shadow: 0 16px 34px rgba(15, 23, 42, 0.24);
+    padding: 16px;
+}
+
+.roaster-nav-confirm-panel h3 {
+    margin: 0 0 8px;
+    font-size: 18px;
+    color: #0f172a;
+}
+
+.roaster-nav-confirm-panel p {
+    margin: 0;
+    font-size: 14px;
+    color: #334155;
+    line-height: 1.4;
+}
+
+.roaster-nav-confirm-actions {
+    margin-top: 14px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.roaster-nav-ignore-btn {
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    color: #0f172a;
+    padding: 10px 16px;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.roaster-nav-ignore-btn:hover:not(:disabled) {
+    background: #f8fafc;
+}
+
+.roaster-nav-ignore-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.roaster-nav-cancel-btn {
+    border: 1px solid #94a3b8;
+    background: #f8fafc;
+    color: #0f172a;
+    padding: 10px 16px;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.roaster-nav-cancel-btn:hover:not(:disabled) {
+    background: #e2e8f0;
+}
+
+.roaster-nav-cancel-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }
 
 .control-field-roaster {
@@ -76,6 +341,23 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
+    position: relative;
+}
+
+.roaster-month-loading-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(252, 252, 252, 0.78);
+    border-radius: 20px;
+    z-index: 8;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: #0f4d75;
+    font-size: 13px;
+    font-weight: 600;
 }
 
 .status-legend-roaster {
@@ -95,23 +377,28 @@
 }
 
 .leave-pill-roaster {
-    border-color: #4477d6;
-    background: #b2cbff;
+    border-color: #c2410c;
+    background: #ffedd5;
+    color: #9a3412;
+    font-weight: 600;
 }
 
 .requested-pill-roaster {
-    border-color: #7c3aed;
-    background: #e9d5ff;
+    border-color: #5b21b6;
+    background: #c4b5fd;
+    color: #1e1b4b;
 }
 
 .attended-pill-roaster {
-    border-color: #2f8f63;
-    background: #b2e8cd;
+    border-color: #047857;
+    background: #6ee7b7;
+    color: #064e3b;
 }
 
 .absent-pill-roaster {
-    border-color: #c64f4f;
-    background: #ffbdb8;
+    border-color: #b91c1c;
+    background: #fca5a5;
+    color: #450a0a;
 }
 
 .editing-pill-roaster {
@@ -119,12 +406,75 @@
     background: #ffeac2;
 }
 
+/* Statutory (DB: mercantile) = brown; Poya = purple — aligned with Leave Management holiday calendar. */
+.holiday-mercantile-legend-roaster {
+    border-color: #c4a574;
+    background: #faf5f0;
+    color: #78350f;
+    font-weight: 600;
+}
+
+.holiday-poya-legend-roaster {
+    border-color: #c4b5fd;
+    background: #f5f3ff;
+    color: #6d28d9;
+    font-weight: 600;
+}
+
+.day-header-roaster.holiday-mercantile-roaster {
+    background: #faf5f0;
+    border: 1px solid #c4a574;
+    color: #78350f;
+}
+
+.day-header-roaster.holiday-mercantile-roaster span {
+    color: #78350f;
+}
+
+.day-header-roaster.holiday-mercantile-roaster small {
+    color: #92400e;
+}
+
+.day-header-roaster.holiday-poya-roaster {
+    background: #f5f3ff;
+    border: 1px solid #c4b5fd;
+    color: #6d28d9;
+}
+
+.day-header-roaster.holiday-poya-roaster span {
+    color: #6d28d9;
+}
+
+.day-header-roaster.holiday-poya-roaster small {
+    color: #7c3aed;
+}
+
+/* Holiday accent on cells: border-top works at fixed 32px height (inset shadow looked broken when cells were stretched). */
+.day-cell-roaster.holiday-mercantile-roaster {
+    border-top: 3px solid #92400e;
+    padding-top: 0;
+}
+
+.day-cell-roaster.holiday-poya-roaster {
+    border-top: 3px solid #6d28d9;
+    padding-top: 0;
+}
+
+
 .timeline-header-roaster,
 .timeline-row-roaster {
     display: grid;
     grid-template-columns: 150px 1fr;
     gap: 12px;
-    align-items: stretch;
+    /* Avoid stretching the day grid to the full employee column height (was causing ~80px-tall cells with only a thin holiday bar visible). */
+    align-items: start;
+    border-radius: 12px;
+    transition: box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.timeline-row-roaster.timeline-row-unsaved-roaster {
+    background: rgba(254, 243, 199, 0.45);
+    box-shadow: inset 3px 0 0 0 #f59e0b;
 }
 
 .employee-col-roaster {
@@ -141,6 +491,23 @@
     margin: 0;
     font-weight: 600;
     color: #0f1f32;
+}
+
+.employee-name-export-btn-roaster {
+    border: none;
+    background: transparent;
+    margin: 0;
+    padding: 0;
+    font-weight: 600;
+    color: #0f1f32;
+    text-align: left;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.employee-name-export-btn-roaster:hover {
+    text-decoration: underline;
+    color: #0c4a6e;
 }
 
 .row-edit-btn-roaster {
@@ -161,14 +528,22 @@
 }
 
 .day-cell-roaster.locked {
-    opacity: 0.4;
+    opacity: 1;
     pointer-events: none;
+    cursor: default;
+    filter: none;
 }
 
 .days-row-roaster {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(34px, 1fr));
     gap: 2px;
+    align-self: start;
+    width: 100%;
+}
+
+.days-row-roaster .day-cell-roaster {
+    align-self: start;
 }
 
 .day-header-roaster {
@@ -196,13 +571,16 @@
 }
 
 .day-header-roaster.weekend {
-    background: #e4f4ff;
-    color: #1d4ed8;
+    background: #bfdbfe;
+    color: #1e3a8a;
 }
 
 .day-cell-roaster {
     margin: 0;
     height: 32px;
+    min-height: 32px;
+    max-height: 32px;
+    box-sizing: border-box;
     border-radius: 8px;
     border: none;
     background: #ffffff;
@@ -212,10 +590,15 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    outline: none;
+}
+
+.day-cell-roaster:focus-visible {
+    box-shadow: inset 0 0 0 2px #0ea5e9;
 }
 
 .day-cell-roaster.weekend {
-    background: #e4f4ff;
+    background: #bfdbfe;
 }
 
 .day-cell-roaster:hover {
@@ -223,23 +606,97 @@
 }
 
 .day-cell-roaster.leave {
-    background: #b2cbff;
-    border: 1px solid #4477d6;
+    background: #ffedd5;
+    border: 1px solid #ea580c;
+    color: #7c2d12;
+}
+
+.day-cell-roaster.day-cell-bulk-leave-diff-roaster {
+    box-shadow: inset 0 0 0 3px #f59e0b;
+    z-index: 1;
 }
 
 .day-cell-roaster.requested {
-    background: #e9d5ff;
-    border: 1px solid #7c3aed;
+    background: #c4b5fd;
+    border: 1px solid #5b21b6;
 }
 
 .day-cell-roaster.attended {
-    background: #b2e8cd;
-    border: 1px solid #2f8f63;
+    background: #6ee7b7;
+    border: 1px solid #047857;
 }
 
 .day-cell-roaster.absent {
-    background: #ffbdb8;
-    border: 1px solid #c64f4f;
+    background: #fca5a5;
+    border: 1px solid #b91c1c;
+}
+
+/* Restore holiday top accent after state borders (`.leave` etc. use `border` shorthand and would reset `border-top`). */
+.day-cell-roaster.leave.holiday-mercantile-roaster,
+.day-cell-roaster.requested.holiday-mercantile-roaster,
+.day-cell-roaster.attended.holiday-mercantile-roaster,
+.day-cell-roaster.absent.holiday-mercantile-roaster,
+.day-cell-roaster.weekend.holiday-mercantile-roaster {
+    border-top-width: 3px;
+    border-top-style: solid;
+    border-top-color: #92400e;
+}
+
+.day-cell-roaster.leave.holiday-poya-roaster,
+.day-cell-roaster.requested.holiday-poya-roaster,
+.day-cell-roaster.attended.holiday-poya-roaster,
+.day-cell-roaster.absent.holiday-poya-roaster,
+.day-cell-roaster.weekend.holiday-poya-roaster {
+    border-top-width: 3px;
+    border-top-style: solid;
+    border-top-color: #6d28d9;
+}
+
+.approval-dot-hit-roaster {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    margin: -4px;
+    border-radius: 50%;
+    cursor: pointer;
+    vertical-align: middle;
+}
+
+.day-cell-roaster.locked .approval-dot-hit-roaster {
+    pointer-events: auto;
+    cursor: pointer;
+}
+
+.attendance-info-hit-roaster {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    margin: -4px;
+    border-radius: 50%;
+    cursor: pointer;
+    vertical-align: middle;
+}
+
+.day-cell-roaster.locked .attendance-info-hit-roaster {
+    pointer-events: auto;
+    cursor: pointer;
+}
+
+.attendance-info-dot-roaster {
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    line-height: 1;
+    font-weight: 700;
+    color: #064e3b;
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(6, 78, 59, 0.35);
 }
 
 .approval-dot-roaster {
@@ -252,6 +709,7 @@
     border: 1px solid rgba(15, 23, 42, 0.35);
     box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.4);
     vertical-align: middle;
+    pointer-events: none;
 }
 
 .approval-dot-red-roaster {
@@ -264,6 +722,128 @@
 
 .approval-dot-green-roaster {
     background: #166534;
+}
+
+.approval-popup-backdrop-roaster {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    background: rgba(15, 23, 42, 0.25);
+}
+
+.approval-popup-panel-roaster {
+    position: fixed;
+    z-index: 2001;
+    width: min(300px, calc(100vw - 20px));
+    max-height: min(70vh, 420px);
+    overflow: auto;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 12px;
+    padding: 10px 12px 12px;
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
+}
+
+.roaster-attendance-popup-panel {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: min(560px, calc(100vw - 24px));
+    max-height: calc(100vh - 24px);
+    overflow: auto;
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid #cbd5e1;
+    box-shadow: 0 14px 30px rgba(15, 23, 42, 0.24);
+    padding: 12px 14px 14px;
+    z-index: 2100;
+}
+
+.roaster-attendance-details-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(200px, 1fr));
+    gap: 8px 14px;
+    font-size: 13px;
+    color: #1f2937;
+}
+
+.roaster-attendance-map-links {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.roaster-attendance-map-links a {
+    color: #0369a1;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.roaster-attendance-map-links a:hover {
+    text-decoration: underline;
+}
+
+.roaster-attendance-no-data {
+    font-size: 13px;
+    color: #475569;
+}
+
+.approval-popup-header-row-roaster {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.approval-popup-title-roaster {
+    flex: 1;
+    min-width: 0;
+    font-weight: 700;
+    font-size: 14px;
+    color: #0f172a;
+    line-height: 1.35;
+    margin: 0;
+    padding-right: 4px;
+}
+
+.approval-popup-close-x-roaster {
+    border: none;
+    background: transparent;
+    color: #dc2626;
+    font-size: 24px;
+    line-height: 1;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 0 0 0 8px;
+    margin: -6px -4px 0 0;
+    flex-shrink: 0;
+    line-height: 0.85;
+}
+
+.approval-popup-close-x-roaster:hover {
+    color: #991b1b;
+}
+
+.approval-popup-section-roaster {
+    margin-bottom: 12px;
+}
+
+.approval-popup-section-heading-roaster {
+    font-size: 12px;
+    font-weight: 700;
+    color: #64748b;
+    margin-bottom: 6px;
+}
+
+.approval-popup-line-roaster {
+    font-size: 13px;
+    color: #1e293b;
+    line-height: 1.45;
+    margin-bottom: 4px;
 }
 
 .timeline-row-roaster {

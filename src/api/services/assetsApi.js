@@ -451,6 +451,46 @@ export const assetsApi = baseApi.injectEndpoints({
       providesTags: ['VehicleCategories'],
     }),
 
+    getVehicleMakes: builder.query({
+      queryFn: async ({ vehicle_category_id } = {}) => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: '/api/jd-management/vehicle-makes',
+            method: 'POST',
+            body: { vehicle_category_id: vehicle_category_id || null },
+          },
+          {},
+          {}
+        );
+        if (result.error) {
+          return { error: result.error };
+        }
+        const makes = result.data?.data || result.data || [];
+        return { data: makes };
+      },
+      providesTags: ['VehicleCategories'],
+    }),
+
+    getVehicleModels: builder.query({
+      queryFn: async ({ vehicle_make_id } = {}) => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: '/api/jd-management/vehicle-models',
+            method: 'POST',
+            body: { vehicle_make_id: vehicle_make_id || null },
+          },
+          {},
+          {}
+        );
+        if (result.error) {
+          return { error: result.error };
+        }
+        const models = result.data?.data || result.data || [];
+        return { data: models };
+      },
+      providesTags: ['VehicleCategories'],
+    }),
+
     // Fuel Categories
     getFuelCategories: builder.query({
       queryFn: async () => {
@@ -556,6 +596,8 @@ export const {
     useGetWingsQuery,
     useGetVehicleDriversQuery,
     useGetVehicleCategoriesQuery,
+    useGetVehicleMakesQuery,
+    useGetVehicleModelsQuery,
     useGetFuelCategoriesQuery,
     useSaveFuelCategoryMutation,
     useUpdateAssetsSectorDroneMutation,

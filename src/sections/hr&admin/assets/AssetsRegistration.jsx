@@ -9,7 +9,7 @@ import {
   selectLoading,
   selectActiveTab,
 } from '../../../store/slices/assetsSlice';
-import { useGetWingsQuery, useGetBatteryTypesQuery, useGetVehicleDriversQuery, useGetVehicleCategoriesQuery, useGetFuelCategoriesQuery } from '../../../api/services/assetsApi';
+import { useGetWingsQuery, useGetBatteryTypesQuery, useGetVehicleDriversQuery, useGetVehicleCategoriesQuery, useGetVehicleMakesQuery, useGetVehicleModelsQuery, useGetFuelCategoriesQuery } from '../../../api/services/assetsApi';
 
 const parsePurchasePrice = (value) => {
   if (value === undefined || value === null) return null;
@@ -125,6 +125,10 @@ const vehicleInitialState = {
   rate_per_km: '',
   starting_date: '',
   end_date: '',
+  owner_name: '',
+  owner_nic: '',
+  owner_contact_no: '',
+  owner_address: '',
 };
 
 const AssetsRegistration = ({
@@ -181,6 +185,7 @@ const AssetsRegistration = ({
     data: fuelCategoriesResponse,
     isLoading: fuelCategoriesLoading,
   } = useGetFuelCategoriesQuery();
+
 
   const wings = useMemo(() => {
     if (!wingsResponse) return [];
@@ -305,6 +310,36 @@ const AssetsRegistration = ({
   // Form fields for Remote Controls
   const [remoteControlFormData, setRemoteControlFormData] = useState(() => ({ ...equipmentInitialState }));
 
+  const {
+    data: vehicleMakesResponse,
+    isLoading: vehicleMakesLoading,
+  } = useGetVehicleMakesQuery(
+    { vehicle_category_id: vehicleFormData.vehicle_category || null },
+    { skip: !vehicleFormData.vehicle_category }
+  );
+
+  const {
+    data: vehicleModelsResponse,
+    isLoading: vehicleModelsLoading,
+  } = useGetVehicleModelsQuery(
+    { vehicle_make_id: vehicleFormData.make || null },
+    { skip: !vehicleFormData.make }
+  );
+
+  const vehicleMakes = useMemo(() => {
+    if (!vehicleMakesResponse) return [];
+    if (Array.isArray(vehicleMakesResponse)) return vehicleMakesResponse;
+    if (Array.isArray(vehicleMakesResponse?.data)) return vehicleMakesResponse.data;
+    return [];
+  }, [vehicleMakesResponse]);
+
+  const vehicleModels = useMemo(() => {
+    if (!vehicleModelsResponse) return [];
+    if (Array.isArray(vehicleModelsResponse)) return vehicleModelsResponse;
+    if (Array.isArray(vehicleModelsResponse?.data)) return vehicleModelsResponse.data;
+    return [];
+  }, [vehicleModelsResponse]);
+
   const handleTabSelection = (tabKey) => {
     setActiveTab(tabKey);
   };
@@ -327,6 +362,14 @@ const AssetsRegistration = ({
         ...prev,
         [name]: normalizedValue
       };
+
+      if (formType === 'vehicles' && name === 'vehicle_category') {
+        updated.make = '';
+        updated.model = '';
+      }
+      if (formType === 'vehicles' && name === 'make') {
+        updated.model = '';
+      }
 
       if (['drones', 'generators', 'batteries', 'remoteControls'].includes(formType) && name === 'have_insurance' && value !== '1') {
         updated.insurance_type = '';
@@ -388,6 +431,9 @@ const AssetsRegistration = ({
       }
       case 'vehicles': {
         const fields = ['ownership', 'chassis_no', 'engine_no', 'vehicle_no', 'make', 'model', 'purchase_price', 'insurance_expire_date', 'revenue_license_expire_date', 'initial_mileage', 'operational_status', 'activated', 'wing_id'];
+        if (formData.ownership === 'r') {
+          fields.push('owner_name', 'owner_contact_no');
+        }
         return fields;
       }
       case 'generators':
@@ -548,8 +594,10 @@ const AssetsRegistration = ({
         formDataToSend.append('chassis_no', formData.chassis_no.trim());
         formDataToSend.append('engine_no', formData.engine_no.trim());
         formDataToSend.append('vehicle_no', formData.vehicle_no.trim());
-        formDataToSend.append('make', formData.make.trim());
-        formDataToSend.append('model', formData.model.trim());
+        const selectedMake = vehicleMakes.find((row) => String(row.id) === String(formData.make));
+        const selectedModel = vehicleModels.find((row) => String(row.id) === String(formData.model));
+        formDataToSend.append('make', (selectedMake?.make || '').trim());
+        formDataToSend.append('model', (selectedModel?.model || '').trim());
         formDataToSend.append('purchase_price', normalizedPurchasePrice);
         if (formData.insurance_expire_date) {
           formDataToSend.append('insurance_expire_date', formatDate(formData.insurance_expire_date));
@@ -617,6 +665,18 @@ const AssetsRegistration = ({
           }
           if (formData.end_date) {
             formDataToSend.append('end_date', formatDate(formData.end_date));
+          }
+          if (formData.owner_name) {
+            formDataToSend.append('owner_name', formData.owner_name.trim());
+          }
+          if (formData.owner_nic) {
+            formDataToSend.append('owner_nic', formData.owner_nic.trim());
+          }
+          if (formData.owner_contact_no) {
+            formDataToSend.append('owner_contact_no', formData.owner_contact_no.trim());
+          }
+          if (formData.owner_address) {
+            formDataToSend.append('owner_address', formData.owner_address.trim());
           }
         }
         
@@ -1004,32 +1064,73 @@ const AssetsRegistration = ({
 
       <div className="form-row-assets-reg">
         <div className="form-group-assets-reg">
+          <label htmlFor="vehicle_category">Vehicle Category</label>
+          <select
+            id="vehicle_category"
+            name="vehicle_category"
+            value={vehicleFormData.vehicle_category}
+            onChange={(e) => handleInputChange(e, 'vehicles')}
+            disabled={vehicleCategoriesLoading}
+          >
+            <option value="">{vehicleCategoriesLoading ? 'Loading...' : 'Select vehicle category'}</option>
+            {vehicleCategories.map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.category}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="form-group-assets-reg">
           <label htmlFor="make">Make <span className="required-assets-reg">*</span></label>
-          <input
-            type="text"
+          <select
             id="make"
             name="make"
             value={vehicleFormData.make}
             onChange={(e) => handleInputChange(e, 'vehicles')}
-            placeholder="Enter vehicle make"
+            disabled={!vehicleFormData.vehicle_category || vehicleMakesLoading}
             required
-          />
-        </div>
-        <div className="form-group-assets-reg">
-          <label htmlFor="model">Model <span className="required-assets-reg">*</span></label>
-          <input
-            type="text"
-            id="model"
-            name="model"
-            value={vehicleFormData.model}
-            onChange={(e) => handleInputChange(e, 'vehicles')}
-            placeholder="Enter vehicle model"
-            required
-          />
+          >
+            <option value="">
+              {!vehicleFormData.vehicle_category
+                ? 'Select vehicle category first'
+                : vehicleMakesLoading
+                  ? 'Loading makes...'
+                  : 'Select make'}
+            </option>
+            {vehicleMakes.map((makeRow) => (
+              <option key={makeRow.id} value={makeRow.id}>
+                {makeRow.make}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
       <div className="form-row-assets-reg">
+        <div className="form-group-assets-reg">
+          <label htmlFor="model">Model <span className="required-assets-reg">*</span></label>
+          <select
+            id="model"
+            name="model"
+            value={vehicleFormData.model}
+            onChange={(e) => handleInputChange(e, 'vehicles')}
+            disabled={!vehicleFormData.make || vehicleModelsLoading}
+            required
+          >
+            <option value="">
+              {!vehicleFormData.make
+                ? 'Select make first'
+                : vehicleModelsLoading
+                  ? 'Loading models...'
+                  : 'Select model'}
+            </option>
+            {vehicleModels.map((modelRow) => (
+              <option key={modelRow.id} value={modelRow.id}>
+                {modelRow.model}
+              </option>
+            ))}
+          </select>
+        </div>
         <div className="form-group-assets-reg">
           <label htmlFor="chassis_no">Chassis Number <span className="required-assets-reg">*</span></label>
           <input
@@ -1042,6 +1143,9 @@ const AssetsRegistration = ({
             required
           />
         </div>
+      </div>
+
+      <div className="form-row-assets-reg">
         <div className="form-group-assets-reg">
           <label htmlFor="engine_no">Engine Number <span className="required-assets-reg">*</span></label>
           <input
@@ -1168,23 +1272,6 @@ const AssetsRegistration = ({
           <small className="form-field-helper-assets-reg">
             Driver license images are reused from User Registration driver profile.
           </small>
-        </div>
-        <div className="form-group-assets-reg">
-          <label htmlFor="vehicle_category">Vehicle Category</label>
-          <select
-            id="vehicle_category"
-            name="vehicle_category"
-            value={vehicleFormData.vehicle_category}
-            onChange={(e) => handleInputChange(e, 'vehicles')}
-            disabled={vehicleCategoriesLoading}
-          >
-            <option value="">{vehicleCategoriesLoading ? 'Loading...' : 'Select vehicle category'}</option>
-            {vehicleCategories.map((category) => (
-              <option key={category.id} value={category.id}>
-                {category.category}
-              </option>
-            ))}
-          </select>
         </div>
       </div>
 
@@ -1460,6 +1547,62 @@ const AssetsRegistration = ({
                 name="end_date"
                 value={vehicleFormData.end_date}
                 onChange={(e) => handleInputChange(e, 'vehicles')}
+              />
+            </div>
+          </div>
+
+          <div className="form-section-divider-assets-reg">
+            <h4>Owner Information</h4>
+          </div>
+
+          <div className="form-row-assets-reg">
+            <div className="form-group-assets-reg">
+              <label htmlFor="owner_name">Owner Name <span className="required-assets-reg">*</span></label>
+              <input
+                type="text"
+                id="owner_name"
+                name="owner_name"
+                value={vehicleFormData.owner_name}
+                onChange={(e) => handleInputChange(e, 'vehicles')}
+                placeholder="Enter owner full name"
+                required={vehicleFormData.ownership === 'r'}
+              />
+            </div>
+            <div className="form-group-assets-reg">
+              <label htmlFor="owner_nic">Owner NIC</label>
+              <input
+                type="text"
+                id="owner_nic"
+                name="owner_nic"
+                value={vehicleFormData.owner_nic}
+                onChange={(e) => handleInputChange(e, 'vehicles')}
+                placeholder="Enter owner NIC"
+              />
+            </div>
+          </div>
+
+          <div className="form-row-assets-reg">
+            <div className="form-group-assets-reg">
+              <label htmlFor="owner_contact_no">Owner Contact No <span className="required-assets-reg">*</span></label>
+              <input
+                type="text"
+                id="owner_contact_no"
+                name="owner_contact_no"
+                value={vehicleFormData.owner_contact_no}
+                onChange={(e) => handleInputChange(e, 'vehicles')}
+                placeholder="Enter owner contact number"
+                required={vehicleFormData.ownership === 'r'}
+              />
+            </div>
+            <div className="form-group-assets-reg">
+              <label htmlFor="owner_address">Owner Address</label>
+              <input
+                type="text"
+                id="owner_address"
+                name="owner_address"
+                value={vehicleFormData.owner_address}
+                onChange={(e) => handleInputChange(e, 'vehicles')}
+                placeholder="Enter owner address"
               />
             </div>
           </div>

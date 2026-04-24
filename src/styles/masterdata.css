@@ -1,0 +1,528 @@
+.vehicle-admin-page-master-data {
+  padding: 18px;
+  background: #f4f6f9;
+}
+
+.vehicle-admin-header-master-data {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px 18px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+.vehicle-admin-header-master-data h1 {
+  margin: 0;
+  font-size: 21px;
+  color: #0f172a;
+}
+
+.vehicle-admin-header-master-data p {
+  margin: 4px 0 0;
+  color: #475569;
+}
+
+.vehicle-admin-month-master-data {
+  padding: 9px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.vehicle-admin-tabs-master-data {
+  margin-top: 14px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.vehicle-admin-tabs-master-data button {
+  border: 1px solid #d2dbe6;
+  background: #ffffff;
+  padding: 8px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: 600;
+  color: #334155;
+  transition: all 0.18s ease;
+}
+
+.vehicle-admin-tabs-master-data button.active-master-data {
+  background: #004b71;
+  color: #fff;
+  border-color: #004b71;
+}
+
+.vehicle-admin-grid-master-data {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.vehicle-admin-grid-master-data.three-master-data {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.masters-layout-master-data {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: minmax(240px, 25%) minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.masters-picker-master-data {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 10px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
+  display: grid;
+  gap: 8px;
+}
+
+.masters-picker-item-master-data {
+  border: 1px solid #d6deea;
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 10px 12px;
+  text-align: left;
+  color: #334155;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.masters-picker-item-master-data:hover {
+  border-color: #8ab5cd;
+  background: #f7fbff;
+}
+
+.masters-picker-item-master-data.active-master-data {
+  border-color: #004b71;
+  background: #e8f4fb;
+  color: #004b71;
+}
+
+.masters-workspace-master-data {
+  min-width: 0;
+}
+
+.vehicle-master-forms-master-data {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  align-items: start;
+}
+
+.vehicle-master-note-master-data {
+  margin: -2px 0 12px;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.vehicle-master-form-card-master-data {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 10px;
+  background: #fcfdff;
+}
+
+.vehicle-master-form-card-master-data h4 {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: #334155;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.vehicle-master-inline-master-data {
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.vehicle-master-form-card-master-data .inline-form-master-data {
+  margin-bottom: 0;
+}
+
+.vehicle-master-form-stack-master-data {
+  display: grid;
+  gap: 8px;
+}
+
+.vehicle-master-form-stack-master-data select,
+.vehicle-master-form-stack-master-data input,
+.vehicle-master-form-row-master-data input,
+.vehicle-master-form-row-master-data select {
+  width: 100%;
+}
+
+.vehicle-master-form-row-master-data {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.vehicle-master-tree-master-data {
+  margin-top: 14px;
+  gap: 12px;
+}
+
+.vehicle-master-tree-board-master-data {
+  padding: 2px;
+}
+
+.vehicle-tree-category-master-data {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  padding: 12px;
+  background: #ffffff;
+  width: 100%;
+  border: 1px solid #e7edf5;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.vehicle-tree-row-master-data {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+}
+
+.vehicle-tree-make-wrap-master-data {
+  margin-left: 10px;
+  padding-left: 12px;
+  border-left: 2px solid #d9e5f0;
+  display: grid;
+  gap: 10px;
+  width: calc(100% - 10px);
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.vehicle-tree-model-row-master-data {
+  margin-left: 6px;
+  padding: 6px 8px;
+  border-top: 1px dashed #e8eef5;
+  border-radius: 8px;
+  background: #fbfdff;
+  width: calc(100% - 6px);
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.master-edit-btn-master-data {
+  border: 1px solid #d9e3ee;
+  background: #ffffff;
+  color: #3b4b5f;
+  border-radius: 8px;
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+}
+
+.master-edit-btn-master-data:hover {
+  border-color: #8ab5cd;
+  color: #004b71;
+  background: #f2f9ff;
+}
+
+.vehicle-admin-card-master-data {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
+}
+
+.vehicle-admin-card-master-data h3 {
+  margin: 0 0 10px;
+  color: #0f172a;
+  font-size: 16px;
+}
+
+.metric-list-master-data {
+  display: grid;
+  gap: 8px;
+}
+
+.metric-row-master-data {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  color: #475569;
+}
+
+.metric-row-master-data strong {
+  color: #0f172a;
+}
+
+.inline-form-master-data {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.inline-form-master-data input,
+.vehicle-form-grid-master-data input,
+.vehicle-form-grid-master-data select {
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 9px 10px;
+  background: #fff;
+  color: #0f172a;
+}
+
+.inline-form-master-data button,
+.vehicle-form-grid-master-data button,
+.actions-master-data button {
+  border: none;
+  border-radius: 8px;
+  padding: 9px 12px;
+  background: #0ea5e9;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.actions-master-data .danger-master-data {
+  background: #dc2626;
+}
+
+.master-list-master-data {
+  display: grid;
+  gap: 8px;
+}
+
+.master-row-master-data {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.master-label-master-data {
+  color: #1e293b;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.master-label-make-master-data {
+  color: #334155;
+  font-weight: 500;
+}
+
+.master-label-model-master-data {
+  color: #475569;
+  font-weight: 500;
+}
+
+.master-edit-input-master-data {
+  flex: 1;
+  min-width: 120px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.master-actions-master-data {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.vehicle-form-grid-master-data {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.vehicle-admin-note-master-data {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 13px;
+}
+
+.vehicle-table-wrap-master-data {
+  overflow-x: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+
+.vehicle-table-master-data {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 760px;
+  background: #fff;
+}
+
+.vehicle-table-master-data th,
+.vehicle-table-master-data td {
+  border-bottom: 1px solid #e2e8f0;
+  padding: 10px 10px;
+  text-align: left;
+  font-size: 13px;
+  vertical-align: middle;
+}
+
+.vehicle-table-master-data th {
+  background: #f8fafc;
+  color: #334155;
+  font-weight: 700;
+}
+
+.status-chip-master-data {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.status-chip-master-data.active-master-data,
+.status-chip-master-data.approved-master-data {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-chip-master-data.inactive-master-data,
+.status-chip-master-data.declined-master-data {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.actions-master-data {
+  display: flex;
+  gap: 8px;
+}
+
+.action-btn-master-data {
+  border: none;
+  border-radius: 8px;
+  padding: 7px 10px;
+  color: #fff;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.action-btn-master-data.approve-master-data {
+  background: #16a34a;
+}
+
+.action-btn-master-data.danger-master-data {
+  background: #dc2626;
+}
+
+.action-btn-master-data.neutral-master-data {
+  background: #64748b;
+}
+
+.update-popup-overlay-master-data {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.28);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.update-popup-card-master-data {
+  width: min(520px, calc(100vw - 32px));
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.2);
+  display: grid;
+  gap: 10px;
+}
+
+.update-popup-actions-master-data {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.btn-search-master-data,
+.btn-submit-master-data {
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn-search-master-data {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.btn-submit-master-data {
+  background: #0ea5e9;
+  color: #fff;
+}
+
+@media (max-width: 1100px) {
+  .vehicle-admin-grid-master-data,
+  .vehicle-admin-grid-master-data.three-master-data {
+    grid-template-columns: 1fr;
+  }
+
+  .masters-layout-master-data {
+    grid-template-columns: 1fr;
+  }
+
+  .masters-picker-master-data {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .vehicle-form-grid-master-data {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .vehicle-master-forms-master-data {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  .masters-picker-master-data {
+    grid-template-columns: 1fr;
+  }
+
+  .vehicle-tree-row-master-data {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .vehicle-master-form-row-master-data {
+    grid-template-columns: 1fr;
+  }
+}
