@@ -342,6 +342,7 @@ const RoasterPlanning = () => {
           name: entry.employeeName || `Employee ${id}`,
           role: entry.employeeJobRoleName || '-',
           workLocation: getEmployeeWorkLocation(entry),
+          isBulkLeaveEligible: Number(entry.bulkLeaveAvailable ?? entry.bulk_leave_available ?? 0) === 1,
           leaveDays: [],
           requestedLeaveDays: [],
           requestedLeaveStatusByDate: {},
@@ -420,6 +421,7 @@ const RoasterPlanning = () => {
           name: emp.employeeName || emp.name || byEmployee[id].name || `Employee ${id}`,
           role: emp.employeeJobRoleName || emp.designation || byEmployee[id].role || '-',
           workLocation: getEmployeeWorkLocation(emp) || byEmployee[id].workLocation || '-',
+          isBulkLeaveEligible: Number(emp.bulkLeaveAvailable ?? byEmployee[id].isBulkLeaveEligible ?? 0) === 1,
         };
       }
       return {
@@ -427,6 +429,7 @@ const RoasterPlanning = () => {
         name: emp.employeeName || emp.name || `Employee ${id}`,
         role: emp.employeeJobRoleName || emp.designation || '-',
         workLocation: getEmployeeWorkLocation(emp),
+        isBulkLeaveEligible: Number(emp.bulkLeaveAvailable ?? 0) === 1,
         leaveDays: [],
         requestedLeaveDays: [],
         requestedLeaveStatusByDate: {},
@@ -607,10 +610,14 @@ const RoasterPlanning = () => {
   }, [hasUnsavedChanges]);
 
   const toggleRowEdit = (employeeId) => {
+    const employee = roster.find((row) => Number(row.id) === Number(employeeId));
+    if (!employee?.isBulkLeaveEligible) return;
     setEditableRows((prev) => ({ ...prev, [employeeId]: !prev[employeeId] }));
   };
 
   const handleDayClick = (employeeId, dateString) => {
+    const employee = roster.find((row) => Number(row.id) === Number(employeeId));
+    if (!employee?.isBulkLeaveEligible) return;
     if (!editableRows[employeeId]) return;
 
     const nextRoster = roster.map((emp) => {
@@ -950,6 +957,8 @@ const RoasterPlanning = () => {
                 className={`row-edit-btn-roaster ${editableRows[employee.id] ? 'active' : ''}`}
                 onClick={() => toggleRowEdit(employee.id)}
                 aria-label={editableRows[employee.id] ? 'Save changes' : 'Enable editing'}
+                disabled={!employee.isBulkLeaveEligible}
+                title={employee.isBulkLeaveEligible ? 'Enable editing' : 'Editing disabled: employee is not bulk leave eligible'}
               >
                 {editableRows[employee.id] ? '✔' : '✏️'}
               </button>
