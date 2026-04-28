@@ -3,6 +3,22 @@ import { useGetUserMemberTypesQuery, useGetUserJobRolesQuery, useGetUserLevelsQu
 import '../../styles/employeeRegistration.css';
 
 const EmployeeRegistration = () => {
+  const isValidNic = (nic) => {
+    const value = String(nic || '').trim().toUpperCase();
+    return /^\d{12}$/.test(value) || /^\d{9}V$/.test(value);
+  };
+
+  const isValidEmail = (email) => {
+    const value = String(email || '').trim();
+    if (!value) return true; // optional field
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+  };
+
+  const sanitizePhone9 = (value) => {
+    const digits = String(value || '').replace(/\D/g, '').slice(0, 9);
+    return digits.startsWith('0') ? digits.slice(1) : digits;
+  };
+
   // Fetch User Member Types for Employee Type dropdown
   const { data: userMemberTypesData, isLoading: loadingMemberTypes } = useGetUserMemberTypesQuery();
   const userMemberTypes = userMemberTypesData?.data || [];
@@ -66,6 +82,9 @@ const EmployeeRegistration = () => {
   const [showLicenseHelpPopup, setShowLicenseHelpPopup] = useState(false);
   const [showLicenseDropdown, setShowLicenseDropdown] = useState(false);
   const licenseDropdownRef = useRef(null);
+  const [reportingOfficerSearch, setReportingOfficerSearch] = useState('');
+  const [showReportingOfficerDropdown, setShowReportingOfficerDropdown] = useState(false);
+  const reportingOfficerDropdownRef = useRef(null);
   const [formData, setFormData] = useState({
     // Employee Details
     employeeName: '',
@@ -127,6 +146,12 @@ const EmployeeRegistration = () => {
   // State for form submission
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState({ type: '', text: '' });
+  const nicInvalid = Boolean(formData.nic) && !isValidNic(formData.nic);
+  const emailInvalid = Boolean(formData.emailAddress) && !isValidEmail(formData.emailAddress);
+  const companyEmailInvalid = Boolean(formData.companyEmailAddress) && !isValidEmail(formData.companyEmailAddress);
+  const mobileInvalid = Boolean(formData.mobileNumber) && !/^[1-9]\d{8}$/.test(String(formData.mobileNumber || '').trim());
+  const telephoneInvalid = Boolean(formData.telephoneHome) && !/^[1-9]\d{8}$/.test(String(formData.telephoneHome || '').trim());
+  const emergencyPhoneInvalid = Boolean(formData.emergencyContactNumber) && !/^[1-9]\d{8}$/.test(String(formData.emergencyContactNumber || '').trim());
   
   // Employee Registration Mutation
   const [createEmployeeRegistration, { isLoading: isCreating }] = useCreateEmployeeRegistrationMutation();
@@ -194,9 +219,17 @@ const EmployeeRegistration = () => {
         }));
       }
     } else {
+      let normalizedValue = value;
+      if (name === 'nic') {
+        normalizedValue = String(value || '').toUpperCase().replace(/[^0-9V]/g, '').slice(0, 12);
+      }
+      if (name === 'mobileNumber' || name === 'telephoneHome' || name === 'emergencyContactNumber') {
+        normalizedValue = sanitizePhone9(value);
+      }
+
       // Handle cascading dropdowns - reset dependent fields
       setFormData(prev => {
-        const updates = { [name]: value || '' };
+        const updates = { [name]: normalizedValue || '' };
         
         // If province changes, reset district and dependent fields
         if (name === 'province') {
@@ -301,15 +334,18 @@ const EmployeeRegistration = () => {
       if (licenseDropdownRef.current && !licenseDropdownRef.current.contains(event.target)) {
         setShowLicenseDropdown(false);
       }
+      if (reportingOfficerDropdownRef.current && !reportingOfficerDropdownRef.current.contains(event.target)) {
+        setShowReportingOfficerDropdown(false);
+      }
     };
 
-    if (showLicenseDropdown) {
+    if (showLicenseDropdown || showReportingOfficerDropdown) {
       document.addEventListener('mousedown', handleClickOutside);
       return () => {
         document.removeEventListener('mousedown', handleClickOutside);
       };
     }
-  }, [showLicenseDropdown]);
+  }, [showLicenseDropdown, showReportingOfficerDropdown]);
 
   // Close dropdown when driving license is set to "No"
   useEffect(() => {
@@ -317,6 +353,18 @@ const EmployeeRegistration = () => {
       setShowLicenseDropdown(false);
     }
   }, [formData.drivingLicense]);
+
+  useEffect(() => {
+    if (!formData.reportingOfficer) {
+      setReportingOfficerSearch('');
+      return;
+    }
+    const selected = employees.find((emp) => String(emp.id) === String(formData.reportingOfficer));
+    if (selected) {
+      const displayName = selected.employeeName || selected.preferredName || selected.empNo || `Employee ${selected.id}`;
+      setReportingOfficerSearch(displayName);
+    }
+  }, [formData.reportingOfficer, employees]);
 
   // Handle file removal
   const handleRemoveFile = (fieldName, fileIndex = null) => {
@@ -364,6 +412,44 @@ const EmployeeRegistration = () => {
   };
 
   const handleSubmit = async () => {
+    // Client-side validation
+    if (!isValidNic(formData.nic)) {
+      setSubmitMessage({
+        type: 'error',
+        text: 'NIC must be either 12 digits or 9 digits ending with V (example: 123456789V).'
+      });
+      return;
+    }
+    if (!isValidEmail(formData.emailAddress)) {
+      setSubmitMessage({
+        type: 'error',
+        text: 'Please enter a valid Email Address.'
+      });
+      return;
+    }
+    if (!isValidEmail(formData.companyEmailAddress)) {
+      setSubmitMessage({
+        type: 'error',
+        text: 'Please enter a valid Company Email Address.'
+      });
+      return;
+    }
+    const phoneFields = [
+      { key: 'mobileNumber', label: 'Mobile Number' },
+      { key: 'telephoneHome', label: 'Telephone - Home' },
+      { key: 'emergencyContactNumber', label: 'Emergency Contact Number' },
+    ];
+    for (const field of phoneFields) {
+      const v = String(formData[field.key] || '').trim();
+      if (v && !/^[1-9]\d{8}$/.test(v)) {
+        setSubmitMessage({
+          type: 'error',
+          text: `${field.label} must be exactly 9 digits and cannot start with 0.`
+        });
+        return;
+      }
+    }
+
     // Reset message
     setSubmitMessage({ type: '', text: '' });
     setIsSubmitting(true);
@@ -646,7 +732,15 @@ const EmployeeRegistration = () => {
                   name="nic"
                   value={formData.nic}
                   onChange={handleInputChange}
+                  maxLength={12}
+                  placeholder="12 digits or 9 digits + V"
+                  className={nicInvalid ? 'invalid-field-emp-reg' : ''}
                 />
+                {nicInvalid && (
+                  <span className="field-error-emp-reg">
+                    Invalid NIC format. Use 12 digits or 9 digits ending with V.
+                  </span>
+                )}
               </div>
               <div className="form-group-emp-reg">
                 <label>Driving License:</label>
@@ -827,7 +921,14 @@ const EmployeeRegistration = () => {
                   name="emailAddress"
                   value={formData.emailAddress}
                   onChange={handleInputChange}
+                  placeholder="example@domain.com"
+                  className={emailInvalid ? 'invalid-field-emp-reg' : ''}
                 />
+                {emailInvalid && (
+                  <span className="field-error-emp-reg">
+                    Invalid email format for Email Address.
+                  </span>
+                )}
               </div>
             </div>
 
@@ -839,7 +940,14 @@ const EmployeeRegistration = () => {
                   name="companyEmailAddress"
                   value={formData.companyEmailAddress}
                   onChange={handleInputChange}
+                  className={companyEmailInvalid ? 'invalid-field-emp-reg' : ''}
+                  placeholder="company@domain.com"
                 />
+                {companyEmailInvalid && (
+                  <span className="field-error-emp-reg">
+                    Invalid email format for Company Email Address.
+                  </span>
+                )}
               </div>
             </div>
 
@@ -875,7 +983,15 @@ const EmployeeRegistration = () => {
                   name="telephoneHome"
                   value={formData.telephoneHome}
                   onChange={handleInputChange}
+                  maxLength={9}
+                  placeholder="9 digits (no leading 0)"
+                  className={telephoneInvalid ? 'invalid-field-emp-reg' : ''}
                 />
+                {telephoneInvalid && (
+                  <span className="field-error-emp-reg">
+                    Telephone - Home must be 9 digits and cannot start with 0.
+                  </span>
+                )}
               </div>
               <div className="form-group-emp-reg">
                 <label>Mobile Number:</label>
@@ -884,7 +1000,15 @@ const EmployeeRegistration = () => {
                   name="mobileNumber"
                   value={formData.mobileNumber}
                   onChange={handleInputChange}
+                  maxLength={9}
+                  placeholder="9 digits (no leading 0)"
+                  className={mobileInvalid ? 'invalid-field-emp-reg' : ''}
                 />
+                {mobileInvalid && (
+                  <span className="field-error-emp-reg">
+                    Mobile Number must be 9 digits and cannot start with 0.
+                  </span>
+                )}
               </div>
             </div>
 
@@ -1202,7 +1326,15 @@ const EmployeeRegistration = () => {
                   name="emergencyContactNumber"
                   value={formData.emergencyContactNumber}
                   onChange={handleInputChange}
+                  maxLength={9}
+                  placeholder="9 digits (no leading 0)"
+                  className={emergencyPhoneInvalid ? 'invalid-field-emp-reg' : ''}
                 />
+                {emergencyPhoneInvalid && (
+                  <span className="field-error-emp-reg">
+                    Emergency Contact Number must be 9 digits and cannot start with 0.
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -1487,19 +1619,70 @@ const EmployeeRegistration = () => {
               </div>
               <div className="form-group-emp-reg">
                 <label>Reporting Officer:</label>
-                <select
-                  name="reportingOfficer"
-                  value={formData.reportingOfficer}
-                  onChange={handleInputChange}
-                  disabled={loadingEmployees}
-                >
-                  <option value="">-- Select Reporting Officer --</option>
-                  {employees.map((emp) => (
-                    <option key={emp.id} value={emp.id}>
-                      {emp.id} - {emp.employeeName || emp.preferredName || emp.empNo || 'Employee'}
-                    </option>
-                  ))}
-                </select>
+                <div className="reporting-officer-search-wrapper-emp-reg" ref={reportingOfficerDropdownRef}>
+                  <input
+                    type="text"
+                    className="reporting-officer-search-input-emp-reg"
+                    placeholder={loadingEmployees ? 'Loading employees...' : 'Search by name or EMP NO...'}
+                    value={reportingOfficerSearch}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setReportingOfficerSearch(value);
+                      setShowReportingOfficerDropdown(true);
+                      if (!value.trim()) {
+                        setFormData((prev) => ({ ...prev, reportingOfficer: '' }));
+                      }
+                    }}
+                    onFocus={() => setShowReportingOfficerDropdown(true)}
+                    disabled={loadingEmployees}
+                    autoComplete="off"
+                  />
+                  <span className="reporting-officer-dropdown-indicator-emp-reg">▼</span>
+
+                  {showReportingOfficerDropdown && !loadingEmployees && (
+                    <div className="reporting-officer-suggestions-list-emp-reg">
+                      {employees
+                        .filter((emp) => {
+                          const q = reportingOfficerSearch.trim().toLowerCase();
+                          if (!q) return true;
+                          const name = String(emp.employeeName || emp.preferredName || '').toLowerCase();
+                          const empNo = String(emp.empNo || '').toLowerCase();
+                          const id = String(emp.id || '').toLowerCase();
+                          return name.includes(q) || empNo.includes(q) || id.includes(q);
+                        })
+                        .slice(0, 50)
+                        .map((emp) => {
+                          const displayName = emp.employeeName || emp.preferredName || emp.empNo || `Employee ${emp.id}`;
+                          return (
+                            <div
+                              key={emp.id}
+                              className="reporting-officer-suggestion-item-emp-reg"
+                              onClick={() => {
+                                setFormData((prev) => ({ ...prev, reportingOfficer: String(emp.id) }));
+                                setReportingOfficerSearch(displayName);
+                                setShowReportingOfficerDropdown(false);
+                              }}
+                            >
+                              <div className="reporting-officer-name-emp-reg">{displayName}</div>
+                              <div className="reporting-officer-meta-emp-reg">
+                                {emp.empNo ? `EMP: ${emp.empNo}` : `ID: ${emp.id}`}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      {employees.filter((emp) => {
+                        const q = reportingOfficerSearch.trim().toLowerCase();
+                        if (!q) return true;
+                        const name = String(emp.employeeName || emp.preferredName || '').toLowerCase();
+                        const empNo = String(emp.empNo || '').toLowerCase();
+                        const id = String(emp.id || '').toLowerCase();
+                        return name.includes(q) || empNo.includes(q) || id.includes(q);
+                      }).length === 0 && (
+                        <div className="reporting-officer-no-result-emp-reg">No matching employees found</div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -1527,7 +1710,7 @@ const EmployeeRegistration = () => {
             </div>
 
             <div className="form-row-emp-reg">
-              <div className="form-group-emp-reg">
+              <div className="form-group-emp-reg bulk-leave-special-emp-reg">
                 <label>Bulk Leave Available:</label>
                 <select
                   name="bulkLeaveAvailable"
@@ -1575,16 +1758,6 @@ const EmployeeRegistration = () => {
                   value={formData.flexHoursMinutes}
                   onChange={handleInputChange}
                   disabled={formData.flexHoursEnabled !== '1'}
-                />
-              </div>
-              <div className="form-group-emp-reg">
-                <label>Leave Type Access (codes):</label>
-                <input
-                  type="text"
-                  name="leaveTypeAccess"
-                  value={formData.leaveTypeAccess}
-                  onChange={handleInputChange}
-                  placeholder="e.g. annual_leave,casual_leave,short_leave"
                 />
               </div>
               <div className="form-group-emp-reg">

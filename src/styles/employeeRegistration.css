@@ -97,6 +97,21 @@
   font-size: 14px;
 }
 
+/* Special highlight for bulk leave field */
+.bulk-leave-special-emp-reg label {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+.bulk-leave-special-emp-reg select {
+  border-color: #dc2626 !important;
+}
+
+.bulk-leave-special-emp-reg select:focus {
+  border-color: #dc2626 !important;
+  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.12) !important;
+}
+
 .form-group-emp-reg input,
 .form-group-emp-reg select,
 .form-group-emp-reg textarea {
@@ -117,6 +132,17 @@
   outline: none;
   border-color: #004B71;
   box-shadow: 0 0 0 2px rgba(0, 75, 113, 0.1);
+}
+
+.invalid-field-emp-reg {
+  border-color: #dc2626 !important;
+}
+
+.field-error-emp-reg {
+  margin-top: 6px;
+  color: #dc2626;
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .form-group-emp-reg select {
@@ -578,5 +604,82 @@
   color: #333;
   font-size: 14px;
   line-height: 1.6;
+}
+
+/* Reporting Officer searchable dropdown */
+.reporting-officer-search-wrapper-emp-reg {
+  position: relative;
+  width: 100%;
+}
+
+.reporting-officer-search-input-emp-reg {
+  width: 100%;
+  padding: 10px 34px 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.reporting-officer-search-input-emp-reg:focus {
+  outline: none;
+  border-color: #004B71;
+  box-shadow: 0 0 0 2px rgba(0, 75, 113, 0.1);
+}
+
+.reporting-officer-dropdown-indicator-emp-reg {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #666;
+  font-size: 11px;
+  pointer-events: none;
+}
+
+.reporting-officer-suggestions-list-emp-reg {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 240px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid #dbe3ea;
+  border-radius: 6px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  z-index: 1200;
+}
+
+.reporting-officer-suggestion-item-emp-reg {
+  padding: 9px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.reporting-officer-suggestion-item-emp-reg:last-child {
+  border-bottom: none;
+}
+
+.reporting-officer-suggestion-item-emp-reg:hover {
+  background: #f8fafc;
+}
+
+.reporting-officer-name-emp-reg {
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.reporting-officer-meta-emp-reg {
+  color: #64748b;
+  font-size: 11px;
+  margin-top: 2px;
+}
+
+.reporting-officer-no-result-emp-reg {
+  padding: 10px 12px;
+  color: #64748b;
+  font-size: 12px;
 }
 

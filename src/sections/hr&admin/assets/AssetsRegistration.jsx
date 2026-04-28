@@ -230,10 +230,15 @@ const AssetsRegistration = ({
     } else if (Array.isArray(vehicleDriversResponse?.data)) {
       drivers = vehicleDriversResponse.data;
     }
-    // For rented vehicles: member_type = 'e' (external) AND job_role = 'dri' (driver)
-    return drivers.filter(driver => driver.member_type === 'e' && driver.job_role === 'dri' && driver.activated === 1);
+    // For rented vehicles: member_type = 'e' (external) and must be a driver-like user
+    // (either primary driver role or marked as part-time driver).
+    return drivers.filter(
+      (driver) =>
+        driver.member_type === 'e'
+        && (driver.job_role === 'dri' || Number(driver.part_time_driver || 0) === 1)
+        && driver.activated === 1
+    );
   }, [vehicleDriversResponse]);
-
   const vehicleCategories = useMemo(() => {
     if (!vehicleCategoriesResponse) return [];
     // RTK Query returns the data directly from queryFn
@@ -300,6 +305,32 @@ const AssetsRegistration = ({
 
   // Form fields for Vehicles
   const [vehicleFormData, setVehicleFormData] = useState(() => ({ ...vehicleInitialState }));
+  const [driverSearchTerm, setDriverSearchTerm] = useState('');
+  const [showDriverDropdown, setShowDriverDropdown] = useState(false);
+  const availableDrivers = useMemo(() => {
+    if (vehicleFormData.ownership === 'o') return internalDrivers;
+    if (vehicleFormData.ownership === 'r') return externalDrivers;
+    const byId = new Map();
+    [...internalDrivers, ...externalDrivers].forEach((driver) => {
+      byId.set(String(driver.id), driver);
+    });
+    return [...byId.values()];
+  }, [vehicleFormData.ownership, internalDrivers, externalDrivers]);
+  const selectedDriver = useMemo(
+    () => availableDrivers.find((driver) => String(driver.id) === String(vehicleFormData.driver || '')) || null,
+    [availableDrivers, vehicleFormData.driver]
+  );
+  const filteredDrivers = useMemo(() => {
+    const q = String(driverSearchTerm || '').trim().toLowerCase();
+    if (!q) return availableDrivers;
+    return availableDrivers.filter((driver) => {
+      const name = String(driver.user_name || '').toLowerCase();
+      const nic = String(driver.user_nic || '').toLowerCase();
+      const mobile = String(driver.user_mobile_no || '').toLowerCase();
+      const idText = String(driver.id || '').toLowerCase();
+      return name.includes(q) || nic.includes(q) || mobile.includes(q) || idText.includes(q);
+    });
+  }, [availableDrivers, driverSearchTerm]);
 
   // Form fields for Generators
   const [generatorFormData, setGeneratorFormData] = useState(() => ({ ...equipmentInitialState }));
@@ -418,6 +449,17 @@ const AssetsRegistration = ({
       dispatch(fetchInsuranceTypes());
     }
   }, [dispatch, insuranceOptions.length, insuranceLoading]);
+
+  useEffect(() => {
+    if (!vehicleFormData.driver) return;
+    const stillAvailable = availableDrivers.some(
+      (driver) => String(driver.id) === String(vehicleFormData.driver)
+    );
+    if (!stillAvailable) {
+      setVehicleFormData((prev) => ({ ...prev, driver: '' }));
+      setDriverSearchTerm('');
+    }
+  }, [availableDrivers, vehicleFormData.driver]);
 
   const getRequiredFields = (tab, formData = {}) => {
     switch (tab) {
@@ -1239,36 +1281,72 @@ const AssetsRegistration = ({
       <div className="form-row-assets-reg">
         <div className="form-group-assets-reg">
           <label htmlFor="driver">Driver</label>
-          <select
-            id="driver"
-            name="driver"
-            value={vehicleFormData.driver}
-            onChange={(e) => handleInputChange(e, 'vehicles')}
-            disabled={vehicleDriversLoading}
-          >
-            <option value="">
-              {vehicleDriversLoading 
-                ? 'Loading drivers...' 
-                : (vehicleFormData.ownership === 'o' && internalDrivers.length === 0) || (vehicleFormData.ownership === 'r' && externalDrivers.length === 0)
-                  ? 'No drivers available'
-                  : 'Select driver'}
-            </option>
-            {vehicleFormData.ownership === 'o' ? (
-              // Own Vehicle - Show Internal Drivers (member_type = 'i')
-              internalDrivers.map((driver) => (
-                <option key={driver.id} value={driver.id}>
-                  {driver.user_name} {driver.user_nic ? `(${driver.user_nic})` : ''}
-                </option>
-              ))
-            ) : (
-              // Rented Vehicle - Show External Drivers (member_type = 'e' AND job_role = 'dri')
-              externalDrivers.map((driver) => (
-                <option key={driver.id} value={driver.id}>
-                  {driver.user_name} {driver.user_nic ? `(${driver.user_nic})` : ''}
-                </option>
-              ))
-            )}
-          </select>
+          <div className="driver-search-wrapper-assets-reg">
+            <input
+              id="driver"
+              type="text"
+              value={
+                showDriverDropdown
+                  ? driverSearchTerm
+                  : (selectedDriver
+                    ? `${selectedDriver.user_name || ''}${selectedDriver.user_nic ? ` (${selectedDriver.user_nic})` : ''}`
+                    : '')
+              }
+              onChange={(e) => {
+                setDriverSearchTerm(e.target.value);
+                setShowDriverDropdown(true);
+                setVehicleFormData((prev) => ({ ...prev, driver: '' }));
+              }}
+              onFocus={() => setShowDriverDropdown(true)}
+              onBlur={() => {
+                window.setTimeout(() => {
+                  setShowDriverDropdown(false);
+                  setDriverSearchTerm('');
+                }, 120);
+              }}
+              placeholder={
+                vehicleDriversLoading
+                  ? 'Loading drivers...'
+                  : !availableDrivers.length
+                    ? 'No drivers available'
+                    : 'Search by name / NIC / mobile'
+              }
+              disabled={vehicleDriversLoading}
+              autoComplete="off"
+            />
+            <div
+              className="driver-dropdown-indicator-assets-reg"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => setShowDriverDropdown((prev) => !prev)}
+            >
+              ▼
+            </div>
+            {showDriverDropdown && !vehicleDriversLoading && availableDrivers.length > 0 ? (
+              <div className="driver-suggestions-list-assets-reg">
+                {filteredDrivers.length ? (
+                  filteredDrivers.map((driver) => (
+                    <button
+                      className="driver-suggestion-item-assets-reg"
+                      key={driver.id}
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => {
+                        setVehicleFormData((prev) => ({ ...prev, driver: String(driver.id) }));
+                        setDriverSearchTerm('');
+                        setShowDriverDropdown(false);
+                      }}
+                    >
+                      {driver.user_name || '-'} {driver.user_nic ? `(${driver.user_nic})` : ''}
+                    </button>
+                  ))
+                ) : (
+                  <div className="driver-no-results-assets-reg">
+                    No matching drivers found
+                  </div>
+                )}
+              </div>
+            ) : null}
+          </div>
           <small className="form-field-helper-assets-reg">
             Driver license images are reused from User Registration driver profile.
           </small>
@@ -1430,7 +1508,7 @@ const AssetsRegistration = ({
 
       <div className="form-row-assets-reg">
         <div className="form-group-assets-reg">
-          <label htmlFor="smoke_test_image">Smoke Test Image</label>
+          <label htmlFor="smoke_test_image">Emission Test Image</label>
           <input
             ref={smokeTestRef}
             type="file"

@@ -265,6 +265,50 @@ export const financialCardsApi = baseApi.injectEndpoints({
       invalidatesTags: ['FinancialCards'],
     }),
 
+    // Get all security code metadata (actual code values never returned)
+    getSecurityCodeList: builder.query({
+      queryFn: async () => {
+        try {
+          const result = await nodeBackendBaseQuery(
+            {
+              url: '/api/financial-cards/security-code/list',
+              method: 'POST',
+              body: {},
+            },
+            {},
+            {}
+          );
+          if (result.error) return { error: result.error };
+          return { data: result.data?.data || [] };
+        } catch (error) {
+          return { error: { status: 'FETCH_ERROR', error: error.message } };
+        }
+      },
+      providesTags: ['FinancialCards'],
+    }),
+
+    // Reset one security code item (auto-generated 4-digit)
+    resetSecurityCode: builder.mutation({
+      queryFn: async (body) => {
+        try {
+          const result = await nodeBackendBaseQuery(
+            {
+              url: '/api/financial-cards/security-code/reset',
+              method: 'POST',
+              body,
+            },
+            {},
+            {}
+          );
+          if (result.error) return { error: result.error };
+          return { data: result.data?.data || null };
+        } catch (error) {
+          return { error: { status: 'FETCH_ERROR', error: error.message } };
+        }
+      },
+      invalidatesTags: ['FinancialCards'],
+    }),
+
     // Get transactions for approval
     getTransactionsForApproval: builder.query({
       queryFn: async () => {
@@ -362,6 +406,30 @@ export const financialCardsApi = baseApi.injectEndpoints({
       },
       invalidatesTags: ['FinancialCards', 'Transactions'],
     }),
+
+    // Settle multiple approved 'use' transactions: creates linked topup row
+    settleApprovedTransactions: builder.mutation({
+      queryFn: async (body) => {
+        try {
+          const result = await nodeBackendBaseQuery(
+            {
+              url: '/api/financial-cards/settle',
+              method: 'POST',
+              body,
+            },
+            {},
+            {}
+          );
+          if (result.error) {
+            return { error: result.error };
+          }
+          return { data: result.data };
+        } catch (error) {
+          return { error: { status: 'FETCH_ERROR', error: error.message } };
+        }
+      },
+      invalidatesTags: ['FinancialCards', 'FinancialCardTransactions', 'Transactions'],
+    }),
   }),
 });
 
@@ -378,9 +446,12 @@ export const {
   useGetTransactionsQuery,
   useCreateTransactionMutation,
   useVerifySecurityCodeAndGetCardMutation,
+  useGetSecurityCodeListQuery,
+  useResetSecurityCodeMutation,
   useGetTransactionsForApprovalQuery,
   useApproveTransactionMutation,
   useGetPendingSettlementsQuery,
   useSettleTransactionMutation,
+  useSettleApprovedTransactionsMutation,
 } = financialCardsApi;
 

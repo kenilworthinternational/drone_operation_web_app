@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { FaCreditCard, FaPlus, FaEdit, FaTrash, FaArrowUp, FaArrowDown, FaHistory, FaEye } from 'react-icons/fa';
+import { FaCreditCard, FaPlus, FaEdit, FaTrash, FaArrowUp, FaArrowDown, FaHistory, FaEye, FaCheckDouble } from 'react-icons/fa';
 import {
-  useGetCardsQuery,
   useGetUsersQuery,
+  useGetCardsQuery,
   useGetBanksQuery,
   useGetFinanceCategoriesQuery,
   useGetTransactionsQuery,
@@ -14,7 +14,9 @@ import {
   useVerifySecurityCodeAndGetCardMutation,
   useGetPendingSettlementsQuery,
   useSettleTransactionMutation,
+  useSettleApprovedTransactionsMutation,
 } from '../../../api/services NodeJs/financialCardsApi';
+import { useSendMessageMutation } from '../../../api/services/authApi';
 import '../../../styles/financialCards.css';
 
 /** Strip commas and keep digits + at most one decimal point (for limitation / balance fields). */
@@ -82,7 +84,6 @@ const FinancialCards = () => {
     card_holder: '',
     exp_date: '',
     category: '',
-    user: '',
     limitation: '',
     amount: '',
     bank_id: '',
@@ -100,9 +101,62 @@ const FinancialCards = () => {
   const [verifySecurityCode] = useVerifySecurityCodeAndGetCardMutation();
   const { data: pendingSettlementsData, refetch: refetchSettlements } = useGetPendingSettlementsQuery();
   const [settleTransaction, { isLoading: isSettling }] = useSettleTransactionMutation();
+  const [settleApprovedTransactions, { isLoading: isSettlingApproved }] = useSettleApprovedTransactionsMutation();
+  const [sendMessage] = useSendMessageMutation();
+
+  // Top-level tab: 'cards' (card view) or 'settlements' (transactions to settle)
+  const [activeTab, setActiveTab] = useState('cards');
+
+  // Settle dialog state (multi-select approved 'use' transactions for one card)
+  const [settleDialogCard, setSettleDialogCard] = useState(null);
+  const [settleSelectedIds, setSettleSelectedIds] = useState([]);
+  const [settleDescription, setSettleDescription] = useState('');
+
+  // Per-card-group selection in the bottom "Transactions to Settle" table.
+  // Shape: { [card_id]: number[] }
+  const [tableSelectedByCard, setTableSelectedByCard] = useState({});
+  const toggleTableSelection = (cardId, txId) => {
+    setTableSelectedByCard((prev) => {
+      const current = prev[cardId] || [];
+      const next = current.includes(txId)
+        ? current.filter((x) => x !== txId)
+        : [...current, txId];
+      return { ...prev, [cardId]: next };
+    });
+  };
+  const toggleTableSelectAll = (cardId, allIds) => {
+    setTableSelectedByCard((prev) => {
+      const current = prev[cardId] || [];
+      const allSelected = current.length === allIds.length;
+      return { ...prev, [cardId]: allSelected ? [] : allIds.slice() };
+    });
+  };
 
   const cards = cardsData || [];
   const users = usersData || [];
+  const getCardLast4 = (cardLike) => {
+    const raw = String(cardLike?.no || cardLike?.card_number || '').trim();
+    const m = raw.match(/(\d{4})(?!.*\d)/);
+    return m ? m[1] : null;
+  };
+
+  const getCardHolderMobile = (cardLike) => {
+    const cardUserId = Number(cardLike?.user || cardLike?.user_id || 0);
+    if (!cardUserId) return null;
+    const holder = users.find((u) => Number(u.id) === cardUserId);
+    return holder?.mobile_no || null;
+  };
+
+  const notifyCardRecharged = async (cardLike) => {
+    const mobileNo = String(getCardHolderMobile(cardLike) || '').trim();
+    const last4 = getCardLast4(cardLike);
+    if (!mobileNo || !last4) return;
+    await sendMessage({
+      mobile_no: mobileNo,
+      content: `DSMS notice: Your card ending ${last4} has been recharged successfully.`,
+    }).unwrap();
+  };
+
   const banks = banksData || [];
   const categories = categoriesData || [];
   const allTransactions = allTransactionsData || [];
@@ -157,7 +211,6 @@ const FinancialCards = () => {
         card_holder: card.card_holder || '',
         exp_date: formattedExpDate,
         category: card.category ? String(card.category) : '',
-        user: card.user ? String(card.user) : '',
         limitation: numberToAmountString(card.limitation),
         amount: numberToAmountString(card.amount),
         bank_id: card.bank_id ? String(card.bank_id) : '',
@@ -170,7 +223,6 @@ const FinancialCards = () => {
         card_holder: '',
         exp_date: '',
         category: '',
-        user: '',
         limitation: '',
         amount: '',
         bank_id: '',
@@ -188,7 +240,6 @@ const FinancialCards = () => {
         card_holder: '',
         exp_date: '',
         category: '',
-        user: '',
         limitation: '',
         amount: '',
         bank_id: '',
@@ -230,7 +281,6 @@ const FinancialCards = () => {
       const cardData = {
         ...cardFormData,
         category: cardFormData.category ? parseInt(cardFormData.category) : null,
-        user: cardFormData.user || null,
         limitation: parseAmountField(cardFormData.limitation),
         amount: parseAmountField(cardFormData.amount),
         bank_id: cardFormData.bank_id ? parseInt(cardFormData.bank_id) : null,
@@ -356,23 +406,33 @@ const FinancialCards = () => {
     if (!selectedCard) return;
 
     try {
-      const formData = new FormData();
-      formData.append('card', selectedCard.id);
-      formData.append('type', transactionType);
-      formData.append('amount', transactionFormData.amount);
-      formData.append('description', transactionFormData.description);
-      if (transactionFormData.image) {
-        formData.append('image', transactionFormData.image);
-      }
+      // Encode the optional receipt as a base64 data URI; the backend persists
+      // it to uploads/fuel_bill and stores only the filename in transactions.image.
+      const fileToDataUri = (file) =>
+        new Promise((resolve, reject) => {
+          if (!file) return resolve(null);
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = () => reject(reader.error);
+          reader.readAsDataURL(file);
+        });
+      const imageDataUri = await fileToDataUri(transactionFormData.image);
 
-      // For now, send as JSON (image upload can be handled separately if needed)
       await createTransaction({
         card: selectedCard.id,
         type: transactionType,
         amount: parseFloat(transactionFormData.amount),
         description: transactionFormData.description,
-        image: transactionFormData.image ? transactionFormData.image.name : null,
+        image: imageDataUri,
       }).unwrap();
+
+      if (transactionType === 'add') {
+        try {
+          await notifyCardRecharged(selectedCard);
+        } catch (_) {
+          // Do not block transaction success if SMS fails.
+        }
+      }
 
       handleCloseTransactionModal();
       if (showCardDetails) {
@@ -399,22 +459,26 @@ const FinancialCards = () => {
     }, 0);
   };
 
-  const handleOpenSettlementModal = (settlement, singleTransactionId = null) => {
+  const handleOpenSettlementModal = (settlement, selection = null) => {
     setSelectedSettlement(settlement);
-    
-    if (singleTransactionId) {
-      // Settle single transaction
-      const transaction = settlement.transactions.find(t => t.id === singleTransactionId);
-      if (transaction) {
-        setSettlementAmount(parseFloat(transaction.amount || 0).toFixed(2));
-        setSelectedTransactionIds([singleTransactionId]);
-      }
+
+    // Selection can be: a single id (number/string), an array of ids, or null
+    // (= settle all transactions for the card).
+    let ids = [];
+    if (Array.isArray(selection)) {
+      ids = selection.slice();
+    } else if (selection != null) {
+      ids = [selection];
     } else {
-      // Settle all transactions for the card
-      setSettlementAmount(settlement.total_to_settle.toFixed(2));
-      setSelectedTransactionIds(settlement.transactions.map(t => t.id));
+      ids = settlement.transactions.map((t) => t.id);
     }
-    
+
+    const total = settlement.transactions
+      .filter((t) => ids.includes(t.id))
+      .reduce((s, t) => s + (parseFloat(t.amount) || 0), 0);
+
+    setSettlementAmount(total.toFixed(2));
+    setSelectedTransactionIds(ids);
     setShowSettlementModal(true);
   };
 
@@ -465,11 +529,17 @@ const FinancialCards = () => {
         image: settlementImage ? settlementImage.name : null,
         is_settlement: true,
       }).unwrap();
+
+      try {
+        const cardForNotify = cards.find((c) => Number(c.id) === Number(selectedSettlement.card_id));
+        if (cardForNotify) await notifyCardRecharged(cardForNotify);
+      } catch (_) {
+        // Keep settlement flow successful even if SMS fails.
+      }
       
       refetchCards();
       refetchSettlements();
       handleCloseSettlementModal();
-      alert('Transactions settled successfully!');
     } catch (error) {
       console.error('Error settling transactions:', error);
       alert('Error settling transactions: ' + (error.data?.message || error.message || 'Unknown error'));
@@ -480,12 +550,34 @@ const FinancialCards = () => {
     <div className="financial-cards-container">
       <div className="financial-cards-header">
         <h1>Financial Cards Management</h1>
-        <button className="btn-primary-financial-cards" onClick={() => handleOpenCardModal()}>
-          <FaPlus /> Add New Card
+        {activeTab === 'cards' ? (
+          <button className="btn-primary-financial-cards" onClick={() => handleOpenCardModal()}>
+            <FaPlus /> Add New Card
+          </button>
+        ) : null}
+      </div>
+
+      <div className="financial-cards-tabs">
+        <button
+          type="button"
+          className={`financial-cards-tab${activeTab === 'cards' ? ' active' : ''}`}
+          onClick={() => setActiveTab('cards')}
+        >
+          Card View
+        </button>
+        <button
+          type="button"
+          className={`financial-cards-tab${activeTab === 'settlements' ? ' active' : ''}`}
+          onClick={() => setActiveTab('settlements')}
+        >
+          Transactions to Settle
+          {pendingSettlements.length > 0 ? (
+            <span className="financial-cards-tab-badge">{pendingSettlements.length}</span>
+          ) : null}
         </button>
       </div>
 
-      {cardsLoading ? (
+      {activeTab === 'cards' && (cardsLoading ? (
         <div className="loading-financial-cards">Loading cards...</div>
       ) : (
         <div className="cards-grid-financial-cards">
@@ -545,6 +637,31 @@ const FinancialCards = () => {
                           >
                             <FaArrowUp />
                           </button>
+                          {(() => {
+                            const cardSettlement = pendingSettlements.find(
+                              (s) => Number(s.card_id) === Number(card.id)
+                            );
+                            const pendingCount = cardSettlement?.transactions?.length || 0;
+                            const hasPending = pendingCount > 0;
+                            return (
+                              <button
+                                className={`btn-card-icon-financial-cards btn-card-settle-financial-cards${hasPending ? ' has-pending-financial-cards' : ''}`}
+                                onClick={() => {
+                                  setSettleDialogCard(card);
+                                  setSettleSelectedIds([]);
+                                  setSettleDescription('');
+                                }}
+                                title={hasPending
+                                  ? `Settle ${pendingCount} approved spend${pendingCount === 1 ? '' : 's'}`
+                                  : 'Settle Approved Spends'}
+                              >
+                                <FaCheckDouble />
+                                {hasPending ? (
+                                  <span className="btn-card-settle-badge-financial-cards">{pendingCount}</span>
+                                ) : null}
+                              </button>
+                            );
+                          })()}
                           <button
                             className="btn-card-icon-financial-cards btn-card-history-financial-cards"
                             onClick={() => handleViewCardDetails(card)}
@@ -610,10 +727,10 @@ const FinancialCards = () => {
             );
           })}
         </div>
-      )}
+      ))}
 
       {/* Pending Settlements Section - Table View */}
-      {pendingSettlements.length > 0 && (() => {
+      {activeTab === 'settlements' && pendingSettlements.length > 0 && (() => {
         // Flatten all transactions from all settlements into a single list
         const allSettlementTransactions = [];
         pendingSettlements.forEach(settlement => {
@@ -700,6 +817,7 @@ const FinancialCards = () => {
                 <table className="settlements-table-financial-cards">
                   <thead>
                     <tr>
+                      <th style={{ width: 36 }}></th>
                       <th>Card Holder</th>
                       <th>Card Number</th>
                       <th>Date</th>
@@ -713,56 +831,87 @@ const FinancialCards = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredSettlements.map((settlement) => (
-                      <React.Fragment key={settlement.card_id}>
-                        {settlement.transactions.map((transaction, index) => (
-                          <tr key={transaction.id} className={index === 0 ? 'first-transaction-row-financial-cards' : ''}>
-                            {index === 0 && (
-                              <>
-                                <td rowSpan={settlement.transactions.length} className="card-info-cell-financial-cards">
-                                  <div className="card-info-financial-cards">
-                                    <strong>{settlement.card_holder || 'N/A'}</strong>
-                                  </div>
-                                </td>
-                                <td rowSpan={settlement.transactions.length} className="card-info-cell-financial-cards">
-                                  <div className="card-info-financial-cards">
-                                    {settlement.card_number || 'N/A'}
-                                  </div>
-                                </td>
-                              </>
-                            )}
-                            <td>{new Date(transaction.date).toLocaleDateString()}</td>
-                            <td>{transaction.time || 'N/A'}</td>
-                            <td className="amount-cell-financial-cards">LKR {parseFloat(transaction.amount || 0).toFixed(2)}</td>
-                            <td>{transaction.description || 'N/A'}</td>
-                            <td>
-                              {transaction.approved === 1 ? (
-                                <span style={{ color: '#28a745', fontWeight: '600' }}>Approved</span>
-                              ) : transaction.approved === 2 ? (
-                                <span style={{ color: '#dc3545', fontWeight: '600' }}>Rejected</span>
-                              ) : (
-                                <span style={{ color: '#ffc107', fontWeight: '600' }}>Pending</span>
+                    {filteredSettlements.map((settlement) => {
+                      const allIds = settlement.transactions.map((t) => t.id);
+                      const selectedIds = tableSelectedByCard[settlement.card_id] || [];
+                      const allSelected = selectedIds.length === allIds.length && allIds.length > 0;
+                      const groupTotal = settlement.transactions
+                        .filter((t) => selectedIds.includes(t.id))
+                        .reduce((s, t) => s + (parseFloat(t.amount) || 0), 0);
+                      return (
+                        <React.Fragment key={settlement.card_id}>
+                          {settlement.transactions.map((transaction, index) => (
+                            <tr key={transaction.id} className={index === 0 ? 'first-transaction-row-financial-cards' : ''}>
+                              <td style={{ textAlign: 'center' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={selectedIds.includes(transaction.id)}
+                                  onChange={() => toggleTableSelection(settlement.card_id, transaction.id)}
+                                  aria-label={`Select transaction ${transaction.id}`}
+                                />
+                              </td>
+                              {index === 0 && (
+                                <>
+                                  <td rowSpan={settlement.transactions.length} className="card-info-cell-financial-cards">
+                                    <div className="card-info-financial-cards">
+                                      <strong>{settlement.card_holder || 'N/A'}</strong>
+                                      <label style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6, fontSize: 12, fontWeight: 500, color: '#475569', cursor: 'pointer' }}>
+                                        <input
+                                          type="checkbox"
+                                          checked={allSelected}
+                                          onChange={() => toggleTableSelectAll(settlement.card_id, allIds)}
+                                        />
+                                        Select all ({allIds.length})
+                                      </label>
+                                    </div>
+                                  </td>
+                                  <td rowSpan={settlement.transactions.length} className="card-info-cell-financial-cards">
+                                    <div className="card-info-financial-cards">
+                                      {settlement.card_number || 'N/A'}
+                                    </div>
+                                  </td>
+                                </>
                               )}
-                            </td>
-                            <td>{transaction.approved_by_name || 'N/A'}</td>
-                            <td className="amount-cell-financial-cards">
-                              <strong className="settlement-total-amount-financial-cards">
-                                LKR {parseFloat(transaction.amount || 0).toFixed(2)}
-                              </strong>
-                            </td>
-                            <td>
-                              <button
-                                className="settle-button-table-financial-cards"
-                                onClick={() => handleOpenSettlementModal(settlement, transaction.id)}
-                                disabled={isSettling}
-                              >
-                                {isSettling ? 'Settling...' : 'Settle'}
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </React.Fragment>
-                    ))}
+                              <td>{new Date(transaction.date).toLocaleDateString()}</td>
+                              <td>{transaction.time || 'N/A'}</td>
+                              <td className="amount-cell-financial-cards">LKR {parseFloat(transaction.amount || 0).toFixed(2)}</td>
+                              <td>{transaction.description || 'N/A'}</td>
+                              <td>
+                                {transaction.approved === 1 ? (
+                                  <span style={{ color: '#28a745', fontWeight: '600' }}>Approved</span>
+                                ) : transaction.approved === 2 ? (
+                                  <span style={{ color: '#dc3545', fontWeight: '600' }}>Rejected</span>
+                                ) : (
+                                  <span style={{ color: '#ffc107', fontWeight: '600' }}>Pending</span>
+                                )}
+                              </td>
+                              <td>{transaction.approved_by_name || 'N/A'}</td>
+                              <td className="amount-cell-financial-cards">
+                                <strong className="settlement-total-amount-financial-cards">
+                                  LKR {parseFloat(transaction.amount || 0).toFixed(2)}
+                                </strong>
+                              </td>
+                              {index === 0 ? (
+                                <td rowSpan={settlement.transactions.length} style={{ verticalAlign: 'middle', textAlign: 'center' }}>
+                                  <button
+                                    className="settle-button-table-financial-cards"
+                                    onClick={() => handleOpenSettlementModal(settlement, selectedIds.length > 0 ? selectedIds : null)}
+                                    disabled={isSettling}
+                                    title={selectedIds.length > 0 ? 'Settle selected transactions' : 'Settle all transactions for this card'}
+                                  >
+                                    {isSettling
+                                      ? 'Settling...'
+                                      : selectedIds.length > 0
+                                        ? `Settle ${selectedIds.length} (LKR ${groupTotal.toFixed(2)})`
+                                        : `Settle All (LKR ${parseFloat(settlement.total_to_settle || 0).toFixed(2)})`}
+                                  </button>
+                                </td>
+                              ) : null}
+                            </tr>
+                          ))}
+                        </React.Fragment>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -770,6 +919,14 @@ const FinancialCards = () => {
           </div>
         );
       })()}
+
+      {activeTab === 'settlements' && pendingSettlements.length === 0 ? (
+        <div className="pending-settlements-section-financial-cards">
+          <div className="no-settlements-financial-cards">
+            <p>No pending settlements found</p>
+          </div>
+        </div>
+      ) : null}
 
       {/* Card Modal */}
       {showCardModal && (
@@ -920,20 +1077,6 @@ const FinancialCards = () => {
                 </select>
               </div>
               <div className="form-group-financial-cards">
-                <label>User (Optional)</label>
-                <select
-                  value={cardFormData.user}
-                  onChange={(e) => setCardFormData({ ...cardFormData, user: e.target.value })}
-                >
-                  <option value="">-- No User --</option>
-                  {users.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.name} ({user.email})
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="form-group-financial-cards">
                 <label>Limitation</label>
                 <input
                   type="text"
@@ -1048,7 +1191,7 @@ const FinancialCards = () => {
               <p className="security-code-hint-financial-cards">Enter 4-digit code</p>
               <div className="security-code-input-wrapper-financial-cards">
                 <input
-                  type="tel"
+                  type="password"
                   inputMode="numeric"
                   value={securityCode}
                   onChange={(e) => {
@@ -1070,11 +1213,6 @@ const FinancialCards = () => {
                     }
                   }}
                 />
-                <div className="security-code-dots-financial-cards">
-                  {[0, 1, 2, 3].map((i) => (
-                    <span key={i} className={securityCode.length > i ? 'filled-financial-cards' : ''}></span>
-                  ))}
-                </div>
                 {securityCodeError && (
                   <div className="security-code-error-financial-cards">
                     {securityCodeError}
@@ -1360,6 +1498,191 @@ const FinancialCards = () => {
           </div>
         </div>
       )}
+
+      {/* Settle approved spends dialog (multi-select) */}
+      {settleDialogCard ? (
+        <SettleApprovedDialog
+          card={settleDialogCard}
+          selectedIds={settleSelectedIds}
+          setSelectedIds={setSettleSelectedIds}
+          description={settleDescription}
+          setDescription={setSettleDescription}
+          onClose={() => setSettleDialogCard(null)}
+          onSubmit={async (payload) => {
+            try {
+              await settleApprovedTransactions(payload).unwrap();
+              try {
+                await notifyCardRecharged(settleDialogCard);
+              } catch (_) {
+                // Keep settlement flow successful even if SMS fails.
+              }
+              setSettleDialogCard(null);
+            } catch (err) {
+              alert(err?.data?.message || err?.message || 'Settlement failed');
+            }
+          }}
+          submitting={isSettlingApproved}
+        />
+      ) : null}
+    </div>
+  );
+};
+
+/**
+ * Dialog rendered when a user clicks the "Settle" icon on a card.
+ * Lists the unsettled approved 'use' transactions for that card with
+ * multi-select; on submit creates one topup row linked back via
+ * settles_transaction_ids and increments the card's balance.
+ */
+const SettleApprovedDialog = ({ card, selectedIds, setSelectedIds, description, setDescription, onClose, onSubmit, submitting }) => {
+  const { data: txData, isLoading } = useGetCardTransactionsQuery(card?.id, { skip: !card?.id });
+  const transactions = txData || [];
+  const settleable = transactions.filter(
+    (t) => t.type === 'use' && Number(t.approved) === 1 && Number(t.settled) === 0 && Number(t.activated) === 1
+  );
+  const total = settleable
+    .filter((t) => selectedIds.includes(t.id))
+    .reduce((s, t) => s + (Number(t.amount) || 0), 0);
+
+  const [slipImage, setSlipImage] = useState(null);
+
+  const toggle = (id) => {
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  };
+  const toggleAll = () => {
+    if (selectedIds.length === settleable.length) setSelectedIds([]);
+    else setSelectedIds(settleable.map((t) => t.id));
+  };
+
+  const fileToDataUri = (file) =>
+    new Promise((resolve, reject) => {
+      if (!file) return resolve(null);
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    });
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!card?.id || selectedIds.length === 0) return;
+    const imageDataUri = await fileToDataUri(slipImage);
+    onSubmit({
+      card_id: card.id,
+      transaction_ids: selectedIds,
+      description: description || null,
+      image: imageDataUri,
+    });
+  };
+
+  return (
+    <div className="modal-overlay-financial-cards" onClick={(e) => e.target === e.currentTarget && !submitting && onClose()}>
+      <div className="modal-content-financial-cards" style={{ maxWidth: 720 }}>
+        <div className="modal-header-financial-cards">
+          <h2>Settle Approved Spends</h2>
+          <button type="button" className="modal-close-financial-cards" onClick={onClose} disabled={submitting}>×</button>
+        </div>
+        <form onSubmit={handleSubmit}>
+          <div style={{ padding: '12px 16px' }}>
+            <div style={{ marginBottom: 8, color: '#475569', fontSize: 13 }}>
+              Card: <strong>{card?.card_holder || '—'}</strong> &nbsp;|&nbsp;
+              Current balance: <strong>LKR {Number(card?.amount || 0).toFixed(2)}</strong>
+            </div>
+            {isLoading ? (
+              <div style={{ padding: 24, textAlign: 'center' }}>Loading transactions…</div>
+            ) : settleable.length === 0 ? (
+              <div style={{ padding: 24, textAlign: 'center', color: '#94a3b8' }}>
+                No approved spends pending settlement on this card.
+              </div>
+            ) : (
+              <div style={{ border: '1px solid #e5e7eb', borderRadius: 8, overflow: 'hidden' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                  <thead>
+                    <tr style={{ background: '#f8fafc' }}>
+                      <th style={{ padding: 10, textAlign: 'left' }}>
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.length === settleable.length}
+                          onChange={toggleAll}
+                        />
+                      </th>
+                      <th style={{ padding: 10, textAlign: 'left' }}>Date</th>
+                      <th style={{ padding: 10, textAlign: 'left' }}>Description</th>
+                      <th style={{ padding: 10, textAlign: 'right' }}>Amount (LKR)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {settleable.map((t) => (
+                      <tr key={t.id} style={{ borderTop: '1px solid #f1f5f9' }}>
+                        <td style={{ padding: 10 }}>
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.includes(t.id)}
+                            onChange={() => toggle(t.id)}
+                          />
+                        </td>
+                        <td style={{ padding: 10 }}>{String(t.date || '').slice(0, 10) || '-'}</td>
+                        <td style={{ padding: 10 }}>{t.description || '-'}</td>
+                        <td style={{ padding: 10, textAlign: 'right', fontWeight: 600 }}>
+                          {Number(t.amount || 0).toFixed(2)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr style={{ background: '#eef4ff' }}>
+                      <td style={{ padding: 10 }} colSpan={3}><strong>Total ({selectedIds.length} selected)</strong></td>
+                      <td style={{ padding: 10, textAlign: 'right', fontWeight: 700, color: '#1d4ed8' }}>
+                        LKR {total.toFixed(2)}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            )}
+            <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4 }}>
+                  Transaction Slip No (Description)
+                </label>
+                <input
+                  type="text"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="e.g. SLIP-1234 / April fuel reimbursement"
+                  style={{ width: '100%', padding: 8, border: '1px solid #cbd5e1', borderRadius: 6 }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4 }}>
+                  Image (Optional)
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setSlipImage(e.target.files?.[0] || null)}
+                  style={{ width: '100%', padding: 6, border: '1px solid #cbd5e1', borderRadius: 6, background: '#fff' }}
+                />
+                {slipImage ? (
+                  <div style={{ marginTop: 4, fontSize: 11, color: '#475569' }}>
+                    Selected: {slipImage.name}
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          </div>
+          <div className="modal-actions-financial-cards">
+            <button type="button" className="btn-cancel-financial-cards" onClick={onClose} disabled={submitting}>Cancel</button>
+            <button
+              type="submit"
+              className="btn-submit-financial-cards"
+              disabled={submitting || selectedIds.length === 0}
+            >
+              {submitting ? 'Settling…' : `Settle (LKR ${total.toFixed(2)})`}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };

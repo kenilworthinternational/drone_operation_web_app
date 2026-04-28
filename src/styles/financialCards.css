@@ -1,6 +1,6 @@
 /* Financial Cards Styles */
 .financial-cards-container {
-  padding: 1rem;
+  padding: 0.75rem 1rem;
   background: linear-gradient(135deg, #f5f7fa 0%, #e8f4f8 100%);
   min-height: 100vh;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -117,6 +117,7 @@
 
 .security-code-input-financial-cards {
   width: 100%;
+  box-sizing: border-box;
   padding: 1rem;
   font-size: 1.5rem;
   text-align: center;
@@ -176,11 +177,9 @@
   display: flex;
   justify-content: center;
   gap: 0.75rem;
-  margin-top: 1rem;
-  position: absolute;
-  bottom: -2rem;
-  left: 50%;
-  transform: translateX(-50%);
+  margin-top: 0.85rem;
+  position: static;
+  transform: none;
   pointer-events: none;
 }
 
@@ -231,39 +230,39 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
+  margin-bottom: 0.85rem;
   background: white;
-  padding: 1.5rem 2rem;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 0.75rem 1.25rem;
+  border-radius: 10px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
 }
 
 .financial-cards-header h1 {
   margin: 0;
   color: #004B71;
-  font-size: 2rem;
+  font-size: 1.35rem;
   font-weight: 700;
 }
 
 .btn-primary-financial-cards {
-  background: linear-gradient(135deg, #004B71 0%, #0066a1 100%);
+  background: linear-gradient(135deg, #c67a2e 0%, #d8902f 100%);
   color: white;
   border: none;
-  padding: 12px 24px;
+  padding: 8px 16px;
   border-radius: 8px;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 8px;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(0, 75, 113, 0.3);
+  box-shadow: 0 3px 10px rgba(198, 122, 46, 0.3);
 }
 
 .btn-primary-financial-cards:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0, 75, 113, 0.4);
+  transform: translateY(-1px);
+  box-shadow: 0 5px 14px rgba(198, 122, 46, 0.45);
 }
 
 .loading-financial-cards {
@@ -273,11 +272,82 @@
   color: #666;
 }
 
+/* =====================================================
+   TOP-LEVEL TABS (Card View / Transactions to Settle)
+   ===================================================== */
+.financial-cards-tabs {
+  display: flex;
+  gap: 4px;
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 4px;
+  margin-bottom: 0.85rem;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e5e7eb;
+}
+
+.financial-cards-tab {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border: none;
+  background: transparent;
+  color: #6b7280;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  position: relative;
+}
+
+.financial-cards-tab:hover:not(.active) {
+  background: rgba(198, 122, 46, 0.08);
+  color: #c67a2e;
+}
+
+.financial-cards-tab.active {
+  background: linear-gradient(135deg, #c67a2e 0%, #d8902f 100%);
+  color: #ffffff;
+  box-shadow: 0 3px 10px rgba(198, 122, 46, 0.3);
+}
+
+.financial-cards-tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: #c67a2e;
+  color: #ffffff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.financial-cards-tab.active .financial-cards-tab-badge {
+  background: #ffffff;
+  color: #c67a2e;
+}
+
+@media (max-width: 640px) {
+  .financial-cards-tab {
+    padding: 7px 10px;
+    font-size: 0.8rem;
+  }
+}
+
 .cards-grid-financial-cards {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
-  padding: 10px;
+  gap: 14px;
+  padding: 4px;
   position: relative;
   z-index: 1;
 }
@@ -287,7 +357,7 @@
   flex-direction: column;
   transition: transform 0.3s ease;
   isolation: isolate;
-  margin-bottom: 20px;
+  margin-bottom: 8px;
   width: 100%;
   position: relative;
   z-index: 1;
@@ -300,7 +370,7 @@
 .bank-card-container-financial-cards {
   position: relative;
   width: 100%;
-  height: 240px;
+  height: 280px;
   cursor: pointer;
   perspective: 1000px;
   -webkit-perspective: 1000px;
@@ -351,15 +421,16 @@
 
 .bank-card-front-financial-cards {
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-  padding: 1.5rem;
+  padding: 1.25rem 1.5rem;
   color: white;
   position: relative;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  gap: 0.5rem;
   box-sizing: border-box;
-  min-height: 200px;
+  min-height: 240px;
 }
 
 .bank-card-front-financial-cards::before {
@@ -377,7 +448,7 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.85rem;
 }
 
 .bank-card-chip-financial-cards {
@@ -463,6 +534,45 @@
   background: rgba(23, 162, 184, 0.6);
 }
 
+.btn-card-settle-financial-cards:hover {
+  background: rgba(124, 58, 237, 0.6);
+}
+
+.btn-card-settle-financial-cards.has-pending-financial-cards {
+  background: #dc2626;
+  color: #ffffff;
+  position: relative;
+  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.35);
+  animation: settlePulse 1.6s ease-in-out infinite;
+}
+
+.btn-card-settle-financial-cards.has-pending-financial-cards:hover {
+  background: #b91c1c;
+}
+
+@keyframes settlePulse {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.35); }
+  50%      { box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.15); }
+}
+
+.btn-card-settle-badge-financial-cards {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #dc2626;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  border: 1.5px solid #dc2626;
+  box-sizing: border-box;
+}
+
 .btn-card-danger-financial-cards:hover {
   background: rgba(220, 53, 69, 0.6);
 }
@@ -471,7 +581,7 @@
   font-size: 1.4rem;
   font-weight: 600;
   letter-spacing: 2px;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.7rem;
   font-family: 'Courier New', monospace;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
@@ -479,7 +589,9 @@
 .bank-card-details-financial-cards {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 1rem;
+  align-items: flex-end;
+  margin-bottom: 0.5rem;
+  gap: 0.6rem;
 }
 
 .bank-card-holder-financial-cards,
@@ -499,6 +611,17 @@
   font-size: 0.9rem;
   font-weight: 600;
   letter-spacing: 0.5px;
+}
+
+.bank-card-holder-financial-cards .bank-card-value-financial-cards {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.15;
+  min-height: calc(1.15em * 2);
+  word-break: break-word;
 }
 
 .bank-card-footer-financial-cards {
@@ -534,14 +657,14 @@
 /* Card Back Side Styles */
 .bank-card-back-financial-cards {
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-  padding: 1.5rem;
+  padding: 1.25rem 1.5rem;
   color: white;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   box-sizing: border-box;
-  min-height: 200px;
+  min-height: 240px;
 }
 
 .bank-card-back-stripe-financial-cards {
@@ -959,8 +1082,8 @@
   }
 
   .bank-card-front-financial-cards {
-    min-height: 180px;
-    padding: 1.2rem;
+    min-height: 220px;
+    padding: 1.1rem 1.2rem;
   }
 
   .bank-card-number-financial-cards {
@@ -1048,7 +1171,7 @@
    PENDING SETTLEMENTS SECTION - TABLE VIEW
    ===================================================== */
 .pending-settlements-section-financial-cards {
-  margin-top: 3rem;
+  margin-top: 0;
   padding: 2rem;
   background: white;
   border-radius: 12px;

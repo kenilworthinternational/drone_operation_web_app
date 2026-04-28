@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import * as XLSX from 'xlsx';
 import { Bars } from 'react-loader-spinner';
-import { FaCalendarAlt, FaCarSide, FaCheckCircle, FaDownload, FaMoneyBillWave, FaTools, FaChartLine } from 'react-icons/fa';
+import { FaCalendarAlt, FaCarSide, FaCheckCircle, FaDownload, FaGasPump, FaMoneyBillWave, FaTools, FaChartLine } from 'react-icons/fa';
 import {
   ResponsiveContainer,
   AreaChart,
@@ -28,6 +28,8 @@ import {
   useGetDailyKmSummaryForHrQuery,
 } from '../../api/services NodeJs/vehicleRentApi';
 import DriverAdvanceApprovals from '../hr&admin/driverAdvanceApprovals/DriverAdvanceApprovals';
+import FuelApprovals from '../hr&admin/fuelApprovals/FuelApprovals';
+import { useGetPendingFuelApprovalsQuery } from '../../api/services NodeJs/fuelApprovalsApi';
 import DriverLeaveDatesHr from '../hr&admin/driverLeaveDates/DriverLeaveDatesHr';
 import VehicleRentApprovals from '../hr&admin/vehicleRentApprovals/VehicleRentApprovals';
 import AssetsRegistration from '../hr&admin/assets/AssetsRegistration';
@@ -89,11 +91,12 @@ const MODULE_META = [
   { key: 'rentApprovals', title: 'Vehicle Rent Approvals', icon: FaCarSide },
   { key: 'advanceApprovals', title: 'Driver Advance Approvals', icon: FaMoneyBillWave },
   { key: 'maintenanceApprovals', title: 'Maintenance Approvals', icon: FaTools },
+  { key: 'fuelApprovals', title: 'Fuel Approvals', icon: FaGasPump },
   { key: 'leaveDates', title: 'Driver Leave Dates', icon: FaCalendarAlt },
   { key: 'vehicleAdminVehicles', title: 'Vehicle Admin - Vehicles', icon: FaTools },
   { key: 'vehicleAdminMaintenance', title: 'Vehicle Admin - Maintenance', icon: FaTools },
 ];
-const SUMMARY_DETAIL_KEYS = new Set(['availableToday', 'rentApprovals', 'advanceApprovals', 'maintenanceApprovals', 'leaveDates']);
+const SUMMARY_DETAIL_KEYS = new Set(['availableToday', 'rentApprovals', 'advanceApprovals', 'maintenanceApprovals', 'fuelApprovals', 'leaveDates']);
 
 function TransportHrDashboard() {
   const [detailModule, setDetailModule] = useState(null);
@@ -131,6 +134,11 @@ function TransportHrDashboard() {
   const { data: leaveRows = [], isLoading: loadingLeaves } = useGetLeaveDaysForHrQuery({ yearMonth: monthKey });
   const { data: rentRows = [], isLoading: loadingRent } = useGetPendingApprovalsQuery({ yearMonth: monthKey, status: 'all' });
   const { data: advanceRows = [], isLoading: loadingAdvance } = useGetAdvanceRequestsForHrQuery({ yearMonth: monthKey, status: 'all' });
+  const { data: fuelPendingRows = [], isLoading: loadingFuel } = useGetPendingFuelApprovalsQuery();
+  const fuelPendingTotal = useMemo(
+    () => (fuelPendingRows || []).reduce((s, r) => s + (Number(r.amount) || 0), 0),
+    [fuelPendingRows]
+  );
   const effectiveChartMonth = chartMonth || monthKey;
   const {
     data: kmChartRows = [],
@@ -502,6 +510,7 @@ function TransportHrDashboard() {
     }
     if (detailModule === 'rentApprovals') return <VehicleRentApprovals embedded />;
     if (detailModule === 'advanceApprovals') return <DriverAdvanceApprovals embedded />;
+    if (detailModule === 'fuelApprovals') return <FuelApprovals embedded />;
     if (detailModule === 'leaveDates') return <DriverLeaveDatesHr embedded />;
     if (detailModule === 'vehicleAdminVehicles') {
       return (
@@ -903,6 +912,32 @@ function TransportHrDashboard() {
           className="summary-card-transport-hr summary-card-clickable-transport-hr"
           role="button"
           tabIndex={0}
+          onClick={() => setDetailModule('fuelApprovals')}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              setDetailModule('fuelApprovals');
+            }
+          }}
+        >
+          <div className="summary-head-transport-hr">
+            <FaGasPump color="#b45309" />
+            <strong>Fuel Approvals</strong>
+          </div>
+          <div className="metric-chip-row-transport-hr">
+            <span className="metric-chip-transport-hr">
+              Pending: {loadingFuel ? '-' : fuelPendingRows.length}
+            </span>
+            <span className="metric-chip-transport-hr">
+              Pending total: LKR {loadingFuel ? '-' : fuelPendingTotal.toFixed(2)}
+            </span>
+          </div>
+        </div>
+
+        <div
+          className="summary-card-transport-hr summary-card-clickable-transport-hr"
+          role="button"
+          tabIndex={0}
           onClick={() => setDetailModule('rentApprovals')}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
@@ -1276,7 +1311,7 @@ function TransportHrDashboard() {
               </button>
             </div>
             <p className="quick-add-modal-hint-transport-hr">
-              Same flow as ICT User Registration. Job role is fixed to Driver.
+              Same flow as ICT User Registration. If Part Time Driver is No, job role stays Driver; if Yes, any job role can be selected.
             </p>
             <div className="quick-add-modal-body-transport-hr">
               <Users

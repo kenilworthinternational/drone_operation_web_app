@@ -30,6 +30,11 @@ import {
   useGetVehicleModelsQuery as useGetMasterVehicleModelsQuery,
   useSaveVehicleModelMutation as useSaveMasterVehicleModelMutation,
 } from '../../../api/services NodeJs/jdManagementApi';
+import {
+  useGetSecurityCodeListQuery,
+  useResetSecurityCodeMutation,
+} from '../../../api/services NodeJs/financialCardsApi';
+import { useSendMessageMutation } from '../../../api/services/authApi';
 import '../../../styles/masterdata.css';
 
 const TAB_CONFIG = {
@@ -103,6 +108,9 @@ const MasterData = ({ mode = 'full' }) => {
   const [saveMasterVehicleCategory] = useSaveMasterVehicleCategoryMutation();
   const [saveMasterVehicleMake] = useSaveMasterVehicleMakeMutation();
   const [saveMasterVehicleModel] = useSaveMasterVehicleModelMutation();
+  const { data: securityCodeItems = [], refetch: refetchSecurityCodeItems } = useGetSecurityCodeListQuery();
+  const [resetSecurityCode, { isLoading: resettingFinanceSecurity }] = useResetSecurityCodeMutation();
+  const [sendMessage] = useSendMessageMutation();
 
   const [newMaintenanceCategory, setNewMaintenanceCategory] = useState('');
   const [newMaintenanceDescription, setNewMaintenanceDescription] = useState('');
@@ -304,7 +312,9 @@ const MasterData = ({ mode = 'full' }) => {
   };
 
   return (
-    <div className="vehicle-admin-page-master-data">
+    <div
+      className={`vehicle-admin-page-master-data ${mode === 'masters' ? 'vehicle-admin-page-master-data--split-scroll' : ''}`}
+    >
       <div className="vehicle-admin-header-master-data">
         <div>
           <h1>{mode === 'masters' ? 'Master Data Update' : 'Vehicle App Administration'}</h1>
@@ -396,6 +406,7 @@ const MasterData = ({ mode = 'full' }) => {
               { key: 'workLocations', label: 'Work Locations' },
               { key: 'maintenanceCategories', label: 'Maintenance Categories' },
               { key: 'maintenanceDescriptions', label: 'Maintenance Descriptions' },
+              { key: 'securityCodes', label: 'Security Codes' },
             ].map((item) => (
               <button
                 key={item.key}
@@ -592,6 +603,69 @@ const MasterData = ({ mode = 'full' }) => {
                       <div className="master-actions-master-data">
                         <button className="action-btn-master-data neutral-master-data" onClick={() => openEditModal('maintenanceDescription', c)}>Edit</button>
                       </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {selectedMasterModule === 'securityCodes' && (
+              <div className="vehicle-admin-card-master-data">
+                <h3>Security Codes</h3>
+                <p className="vehicle-admin-note-master-data">
+                  Current code is hidden for security. Any existing security code item can be reset to a new auto-generated 4-digit value.
+                </p>
+                <div className="master-list-master-data">
+                  {securityCodeItems.length === 0 ? (
+                    <div className="master-row-master-data">
+                      <span style={{ color: '#666' }}>No security code items found.</span>
+                    </div>
+                  ) : securityCodeItems.map((item) => (
+                    <div key={item.id} className="master-row-master-data">
+                      <div style={{ flex: 1, minWidth: 260 }}>
+                        <span className="master-label-master-data">
+                          {item.section || '-'} / {item.sec_tag || '-'}
+                        </span>
+                        <div style={{ marginTop: 4, fontSize: '0.82em', color: '#555' }}>
+                          Code: {item.current_code || 'Not set'} | Last Changed By:{' '}
+                          {item.last_changed_by_name
+                            ? `${item.last_changed_by_name}${item.last_changed_by_mobile_masked ? ` (${item.last_changed_by_mobile_masked})` : ''}`
+                            : 'Not available'}
+                          {' '}| Last Changed At:{' '}
+                          {item.last_changed_at ? new Date(item.last_changed_at).toLocaleString() : 'Not available'}
+                        </div>
+                      </div>
+                      <button
+                        className="btn-submit-master-data"
+                        disabled={resettingFinanceSecurity}
+                        onClick={async () => {
+                          try {
+                            const payload = await resetSecurityCode({ id: item.id }).unwrap();
+                            const smsMobile = String(payload?.mobile_no || '').trim();
+                            const otp = String(payload?.otp_code || '').trim();
+                            if (!smsMobile || !otp) {
+                              throw new Error('Unable to send OTP. Missing mobile number or generated code.');
+                            }
+                            const codeLabel = `${item.section || '-'} / ${item.sec_tag || '-'}`;
+                            await sendMessage({
+                              mobile_no: smsMobile,
+                              content: `Your DSMS security code for ${codeLabel} is: ${otp}. Do not share this code with anyone.`,
+                            }).unwrap();
+                            await refetchSecurityCodeItems();
+                            setQuickMessage({
+                              type: 'success',
+                              text: `Security code reset for ${item.section || '-'} / ${item.sec_tag || '-'} and message sent to ${payload?.changed_by_mobile_masked || 'your mobile'}.`,
+                            });
+                          } catch (error) {
+                            setQuickMessage({
+                              type: 'error',
+                              text: error?.data?.message || error?.message || 'Security code reset failed',
+                            });
+                          }
+                        }}
+                      >
+                        {resettingFinanceSecurity ? 'Resetting...' : 'Reset & Send OTP'}
+                      </button>
                     </div>
                   ))}
                 </div>

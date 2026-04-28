@@ -3,6 +3,14 @@
   background: #f4f6f9;
 }
 
+.vehicle-admin-page-master-data.vehicle-admin-page-master-data--split-scroll {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
 .vehicle-admin-header-master-data {
   display: flex;
   justify-content: space-between;
@@ -76,6 +84,12 @@
   align-items: start;
 }
 
+.vehicle-admin-page-master-data--split-scroll .masters-layout-master-data {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .masters-picker-master-data {
   background: #fff;
   border: 1px solid #e2e8f0;
@@ -84,6 +98,11 @@
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
   display: grid;
   gap: 8px;
+}
+
+.vehicle-admin-page-master-data--split-scroll .masters-picker-master-data {
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .masters-picker-item-master-data {
@@ -111,6 +130,11 @@
 
 .masters-workspace-master-data {
   min-width: 0;
+}
+
+.vehicle-admin-page-master-data--split-scroll .masters-workspace-master-data {
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .vehicle-master-forms-master-data {

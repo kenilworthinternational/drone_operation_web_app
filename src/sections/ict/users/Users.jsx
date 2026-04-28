@@ -4,7 +4,6 @@ import {
   useGetUserMemberTypesQuery, 
   useGetUserJobRolesQuery, 
   useGetUserLevelsQuery,
-  useSearchEmployeeQuery,
   useGetAllEmployeeRegistrationsQuery,
   useCreateUserMutation,
   useGetAllUsersQuery,
@@ -19,6 +18,9 @@ import { useGetWingsQuery } from '../../../api/services/assetsApi';
 import '../../../styles/userRegistration.css';
 
 const DRIVER_JOB_ROLE_CODE = 'dri';
+const coerceEmbeddedTransportJobRole = (currentRole, partTimeDriverValue) => {
+  return Number(partTimeDriverValue || 0) === 1 ? (currentRole || '') : DRIVER_JOB_ROLE_CODE;
+};
 
 const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = {}) => {
   const rootRef = useRef(null);
@@ -81,7 +83,7 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
   const [userType, setUserType] = useState(''); // 'i' for internal, 'e' for external
   const [employeeSearchTerm, setEmployeeSearchTerm] = useState('');
   const [selectedEmployee, setSelectedEmployee] = useState(null);
-  const [isSearchingEmployee, setIsSearchingEmployee] = useState(false);
+  const [showEmployeeDropdown, setShowEmployeeDropdown] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -91,6 +93,7 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
     confirmPassword: '',
     member_type: '',
     job_role: '',
+    part_time_driver: '0',
     user_level: 'g',
     employeeId: null, // Link to employees table
     sect_command: '0',
@@ -105,7 +108,7 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
     driver_license_no: '',
     driver_license_front_image: null,
     driver_license_back_image: null,
-    fuel_card_id: '',
+    card_id: '',
   });
 
   const [submitMessage, setSubmitMessage] = useState({ type: '', text: '' });
@@ -121,6 +124,8 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
   const [showUpdatePopup, setShowUpdatePopup] = useState(false);
   const [showEditPassword, setShowEditPassword] = useState(false);
   const [showEditConfirmPassword, setShowEditConfirmPassword] = useState(false);
+  const [editEmployeeSearchTerm, setEditEmployeeSearchTerm] = useState('');
+  const [showEditEmployeeDropdown, setShowEditEmployeeDropdown] = useState(false);
   const [selectedUserImageUrl, setSelectedUserImageUrl] = useState('');
   const [editImagePreviewUrl, setEditImagePreviewUrl] = useState('');
   const [editFormData, setEditFormData] = useState({
@@ -132,6 +137,7 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
     confirmPassword: '',
     member_type: '',
     job_role: '',
+    part_time_driver: '0',
     user_level: 'g',
     employeeId: '',
     activated: '1',
@@ -140,62 +146,48 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
     plantation: '',
     region: '',
     estate: '',
-    fuel_card_id: '',
+    card_id: '',
   });
-
-  // Search employee query (only when userType is 'i' and searchTerm is provided)
-  const { data: employeeSearchResult, isLoading: searchingEmployee } = useSearchEmployeeQuery(
-    { searchTerm: employeeSearchTerm },
-    { skip: !employeeSearchTerm || userType !== 'i' || !isSearchingEmployee }
+  const activeUserJobRoles = useMemo(
+    () => userJobRoles.filter((role) => Number(role?.status) === 1),
+    [userJobRoles]
   );
+  const roleMetaByCode = useMemo(() => {
+    const map = new Map();
+    activeUserJobRoles.forEach((role) => {
+      const key = String(role?.jdCode || role?.id || '').trim();
+      if (!key) return;
+      map.set(key, {
+        memberTypeCode: String(role?.memberTypeCode || '').trim(),
+        userLevelCode: String(role?.userLevelCode || '').trim(),
+      });
+    });
+    return map;
+  }, [activeUserJobRoles]);
+  const effectiveUserType = String(formData.member_type || userType || '').trim();
 
   useEffect(() => {
     if (!embeddedTransportDriver) return;
-    setFormData((prev) =>
-      prev.job_role === DRIVER_JOB_ROLE_CODE ? prev : { ...prev, job_role: DRIVER_JOB_ROLE_CODE }
-    );
+    setFormData((prev) => ({
+      ...prev,
+      job_role: coerceEmbeddedTransportJobRole(prev.job_role, prev.part_time_driver),
+    }));
   }, [embeddedTransportDriver]);
-
-  // Auto-fill form when employee is found
   useEffect(() => {
-    if (employeeSearchResult?.status && employeeSearchResult?.data && isSearchingEmployee) {
-      const employee = employeeSearchResult.data;
-      setSelectedEmployee(employee);
-      
-      // employee.employeeJobRole and employee.jobRoleLayer are now codes, not IDs
-      // Use the codes directly from employee data
-      const jobRoleCode = employee.employeeJobRole || '';
-      const userLevelCode = employee.jobRoleLayer || 'g';
-      
-      // Auto-fill form with employee data
-      setFormData(prev => ({
-        ...prev,
-        name: employee.employeeName || employee.preferredName || '',
-        email: employee.companyEmailAddress || employee.emailAddress || '',
-        nic: employee.nic || '',
-        mobile_no: normalizeMobileNo(employee.mobileNumber || ''),
-        employeeId: employee.id,
-        // Map job details from employee - use codes directly (they're already codes now)
-        job_role: embeddedTransportDriver ? DRIVER_JOB_ROLE_CODE : jobRoleCode,
-        user_level: userLevelCode, // employee.jobRoleLayer is now levelCode
-        member_type: employee.employeeType || 'i', // employee.employeeType is already a code (e.g., 'i')
-      }));
-      
-      setIsSearchingEmployee(false);
-      setSubmitMessage({ 
-        type: 'success', 
-        text: 'Employee data loaded successfully. Job details have been auto-filled. Please review and complete remaining fields.' 
-      });
-    } else if (employeeSearchResult?.status === false && isSearchingEmployee) {
-      setSubmitMessage({ 
-        type: 'error', 
-        text: 'Employee not found. Please check the NIC or Employee Number.' 
-      });
-      setIsSearchingEmployee(false);
+    if (userType !== effectiveUserType) {
+      setUserType(effectiveUserType);
     }
-  }, [employeeSearchResult, isSearchingEmployee, userJobRoles, userLevels]);
+  }, [effectiveUserType, userType]);
 
   const allUsers = useMemo(() => allUsersData?.data || [], [allUsersData]);
+  const availableEmployeeOptionsForRegister = useMemo(() => {
+    const usedEmployeeIds = new Set(
+      allUsers
+        .filter((u) => u?.employeeId)
+        .map((u) => String(u.employeeId))
+    );
+    return employeeOptions.filter((employee) => !usedEmployeeIds.has(String(employee.id)));
+  }, [allUsers, employeeOptions]);
   const availableEmployeeOptionsForEdit = useMemo(() => {
     const usedEmployeeIds = new Set(
       allUsers
@@ -255,6 +247,23 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
     },
     []
   );
+  const filteredRegisterEmployeeOptions = useMemo(() => {
+    const q = employeeSearchTerm.trim().toLowerCase();
+    if (!q) return availableEmployeeOptionsForRegister;
+    return availableEmployeeOptionsForRegister.filter((employee) => {
+      const name = String(employee.employeeName || employee.preferredName || employee.name || '').toLowerCase();
+      const empNo = String(employee.empNo || '').toLowerCase();
+      const nic = String(employee.nic || '').toLowerCase();
+      const idText = String(employee.id || '').toLowerCase();
+      return (
+        name.includes(q) ||
+        empNo.includes(q) ||
+        nic.includes(q) ||
+        idText.includes(q) ||
+        formatEmployeeOptionLabel(employee).toLowerCase().includes(q)
+      );
+    });
+  }, [availableEmployeeOptionsForRegister, employeeSearchTerm, formatEmployeeOptionLabel]);
 
 
   const plantationLabelMap = useMemo(() => {
@@ -292,6 +301,16 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
     const withoutLeadingZero = digits.startsWith('0') ? digits.slice(1) : digits;
     return withoutLeadingZero.slice(0, 9);
   };
+  const isValidEmail = (value) => {
+    const v = String(value || '').trim();
+    if (!v) return true;
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+  };
+  const isValidMobileNo = (value) => /^[1-9]\d{8}$/.test(String(value || '').trim());
+  const registerEmailInvalid = Boolean(formData.email) && !isValidEmail(formData.email);
+  const registerMobileInvalid = Boolean(formData.mobile_no) && !isValidMobileNo(formData.mobile_no);
+  const editEmailInvalid = Boolean(editFormData.email) && !isValidEmail(editFormData.email);
+  const editMobileInvalid = Boolean(editFormData.mobile_no) && !isValidMobileNo(editFormData.mobile_no);
 
   const generateEightLetterPassword = () => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
@@ -343,6 +362,19 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
     return undefined;
   }, [editFormData.image]);
 
+  useEffect(() => {
+    if (!editFormData.employeeId) {
+      setEditEmployeeSearchTerm('');
+      return;
+    }
+    const selected = availableEmployeeOptionsForEdit.find(
+      (employee) => String(employee.id) === String(editFormData.employeeId)
+    );
+    if (selected) {
+      setEditEmployeeSearchTerm(formatEmployeeOptionLabel(selected));
+    }
+  }, [editFormData.employeeId, availableEmployeeOptionsForEdit, formatEmployeeOptionLabel]);
+
   const startEditUser = (user) => {
     setSelectedUserId(user?.id || null);
     setEditMessage({ type: '', text: '' });
@@ -355,6 +387,7 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
       confirmPassword: '',
       member_type: user?.member_type || '',
       job_role: user?.job_role || '',
+      part_time_driver: String(user?.part_time_driver ?? '0'),
       user_level: user?.user_level || 'g',
       employeeId: user?.employeeId != null ? String(user.employeeId) : '',
       activated: String(user?.activated ?? '1'),
@@ -363,7 +396,7 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
       plantation: user?.plantation ? String(user.plantation) : '',
       region: user?.region ? String(user.region) : '',
       estate: user?.estate ? String(user.estate) : '',
-      fuel_card_id: user?.card_id ? String(user.card_id) : '',
+      card_id: user?.card_id ? String(user.card_id) : '',
     });
     setSelectedUserImageUrl(user?.image || '');
     setShowEditPopup(true);
@@ -393,8 +426,10 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
         next.estate = '';
       }
 
-      if (name === 'job_role' && value !== 'dri') {
-        next.fuel_card_id = '';
+      const nextJobRole = name === 'job_role' ? value : next.job_role;
+      const nextPartTimeDriver = Number(name === 'part_time_driver' ? value : next.part_time_driver) === 1;
+      if (nextJobRole !== 'dri' && !nextPartTimeDriver) {
+        next.card_id = '';
       }
 
       if (name === 'estate' && value) {
@@ -430,6 +465,7 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
 
   const handleClearEmployeeLink = async () => {
     setEditFormData((prev) => ({ ...prev, employeeId: '' }));
+    setEditEmployeeSearchTerm('');
 
     if (!selectedUserId) return;
 
@@ -464,10 +500,8 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
       payload.region = null;
       payload.estate = null;
     }
-    // Normalize fuel card field for backend compatibility.
-    payload.card_id = payload.fuel_card_id || null;
-    delete payload.fuel_card_id;
-    if (payload.job_role !== 'dri') {
+    payload.card_id = payload.card_id || null;
+    if (payload.job_role !== 'dri' && Number(payload.part_time_driver || 0) !== 1) {
       payload.card_id = null;
     }
 
@@ -528,37 +562,6 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
     setShowUpdatePopup(true);
   };
 
-  const handleUserTypeChange = (e) => {
-    const newUserType = e.target.value;
-    setUserType(newUserType);
-    setFormData(prev => ({
-      ...prev,
-      member_type: newUserType,
-      employeeId: null, // Reset employee link when changing type
-      // Clear job details if switching from internal to external
-      ...(newUserType === 'e' && {
-        job_role: embeddedTransportDriver ? DRIVER_JOB_ROLE_CODE : '',
-        user_level: 'g',
-        group: '',
-        plantation: '',
-        region: '',
-        estate: '',
-        fuel_card_id: '',
-      }),
-      // Clear external fields if switching to internal
-      ...(newUserType === 'i' && {
-        group: '',
-        plantation: '',
-        region: '',
-        estate: '',
-        fuel_card_id: '',
-      })
-    }));
-    setSelectedEmployee(null);
-    setEmployeeSearchTerm('');
-    setSubmitMessage({ type: '', text: '' });
-  };
-
   const handleInputChange = (e) => {
     const { name, value, files } = e.target;
     
@@ -576,6 +579,28 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
         ...prev,
         [name]: name === 'mobile_no' ? normalizeMobileNo(value) : (value || ''),
       };
+      if (embeddedTransportDriver && name === 'part_time_driver' && Number(value || 0) !== 1) {
+        newData.job_role = DRIVER_JOB_ROLE_CODE;
+      }
+      const nextJobRole = name === 'job_role' ? value : newData.job_role;
+      const nextPartTimeDriver = Number(name === 'part_time_driver' ? value : newData.part_time_driver) === 1;
+      const roleMeta = roleMetaByCode.get(String(nextJobRole || '').trim());
+      if (roleMeta) {
+        newData.member_type = roleMeta.memberTypeCode || newData.member_type;
+        newData.user_level = roleMeta.userLevelCode || newData.user_level;
+      }
+      if (newData.member_type !== 'e') {
+        newData.group = '';
+        newData.plantation = '';
+        newData.region = '';
+        newData.estate = '';
+      }
+      if (nextJobRole !== 'dri' && !nextPartTimeDriver) {
+        newData.driver_license_no = '';
+        newData.driver_license_front_image = null;
+        newData.driver_license_back_image = null;
+        newData.card_id = '';
+      }
       
       // Handle cascading dropdowns for external user fields - AUTO-POPULATE PARENT FIELDS
       if (name === 'estate' && value) {
@@ -622,13 +647,29 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
     }));
   };
 
-  const handleSearchEmployee = async () => {
-    if (!employeeSearchTerm.trim()) {
-      setSubmitMessage({ type: 'error', text: 'Please enter NIC or Employee Number' });
-      return;
-    }
-    setIsSearchingEmployee(true);
-    setSubmitMessage({ type: '', text: '' });
+  const handlePickRegisterEmployee = (employee) => {
+    setSelectedEmployee(employee);
+    setEmployeeSearchTerm(formatEmployeeOptionLabel(employee));
+    setShowEmployeeDropdown(false);
+    const jobRoleCode = employee.employeeJobRole || '';
+    const userLevelCode = employee.jobRoleLayer || 'g';
+    setFormData((prev) => ({
+      ...prev,
+      name: employee.employeeName || employee.preferredName || '',
+      email: employee.companyEmailAddress || employee.emailAddress || '',
+      nic: employee.nic || '',
+      mobile_no: normalizeMobileNo(employee.mobileNumber || ''),
+      employeeId: employee.id,
+      job_role: embeddedTransportDriver
+        ? coerceEmbeddedTransportJobRole(jobRoleCode, prev.part_time_driver)
+        : jobRoleCode,
+      user_level: userLevelCode,
+      member_type: employee.employeeType || 'i',
+    }));
+    setSubmitMessage({
+      type: 'success',
+      text: 'Employee selected. Data has been auto-filled.',
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -654,8 +695,13 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
       return;
     }
 
-    if (!userType) {
-      setSubmitMessage({ type: 'error', text: 'Please select user type (Internal/External)' });
+    if (!formData.job_role) {
+      setSubmitMessage({ type: 'error', text: 'Please select a Job Role.' });
+      setIsSubmitting(false);
+      return;
+    }
+    if (!effectiveUserType) {
+      setSubmitMessage({ type: 'error', text: 'Selected Job Role has no User Type mapping in JD Management.' });
       setIsSubmitting(false);
       return;
     }
@@ -664,11 +710,14 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
       // Prepare submission data (exclude confirmPassword)
       const { confirmPassword, image, ...submissionData } = formData;
       if (embeddedTransportDriver) {
-        submissionData.job_role = DRIVER_JOB_ROLE_CODE;
+        submissionData.job_role = coerceEmbeddedTransportJobRole(
+          submissionData.job_role,
+          submissionData.part_time_driver
+        );
       }
 
       // Only include external user fields if user is external
-      if (userType !== 'e') {
+      if (effectiveUserType !== 'e') {
         delete submissionData.group;
         delete submissionData.plantation;
         delete submissionData.region;
@@ -681,18 +730,14 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
         if (!submissionData.estate) submissionData.estate = null;
       }
       
-      if (submissionData.job_role !== 'dri') {
+      if (submissionData.job_role !== 'dri' && Number(submissionData.part_time_driver || 0) !== 1) {
         delete submissionData.driver_license_no;
         delete submissionData.driver_license_front_image;
         delete submissionData.driver_license_back_image;
-        delete submissionData.fuel_card_id;
         submissionData.card_id = null;
-      } else if (!submissionData.fuel_card_id) {
+      } else if (!submissionData.card_id) {
         submissionData.card_id = null;
-      } else {
-        submissionData.card_id = submissionData.fuel_card_id;
       }
-      delete submissionData.fuel_card_id;
 
       // Use FormData when any file is attached
       let dataToSend;
@@ -744,6 +789,7 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
           confirmPassword: '',
           member_type: '',
           job_role: embeddedTransportDriver ? DRIVER_JOB_ROLE_CODE : '',
+          part_time_driver: '0',
           user_level: 'g',
           employeeId: null,
           sect_command: '0',
@@ -756,7 +802,7 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
           driver_license_no: '',
           driver_license_front_image: null,
           driver_license_back_image: null,
-          fuel_card_id: '',
+          card_id: '',
         });
         if (!embeddedTransportDriver) {
           setUserType('');
@@ -804,7 +850,7 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
   const normalizedTypeFilter = String(userTypeFilter || '').trim().toLowerCase();
   const showExternalColumns = normalizedTypeFilter === 'e' || normalizedTypeFilter === 'external';
   const showInternalColumns = normalizedTypeFilter === 'i' || normalizedTypeFilter === 'internal';
-  const usersTableColSpan = 10 + (showExternalColumns ? 2 : 0) + (showInternalColumns ? 1 : 0);
+  const usersTableColSpan = 11 + (showExternalColumns ? 2 : 0) + (showInternalColumns ? 1 : 0);
 
   return (
     <div
@@ -836,51 +882,107 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
           <div className="form-section">
             <h2 className="section-title">User Type</h2>
             <div className="form-row">
-              <div className="form-group full-width">
-                <label>User Type: <span style={{ color: 'red' }}>*</span></label>
+              <div className="form-group">
+                <label>Job Role: <span style={{ color: 'red' }}>*</span></label>
                 <select
-                  name="userType"
-                  value={userType}
-                  onChange={handleUserTypeChange}
+                  name="job_role"
+                  value={formData.job_role}
+                  onChange={handleInputChange}
                   required
+                  disabled={embeddedTransportDriver && Number(formData.part_time_driver || 0) !== 1}
+                  style={embeddedTransportDriver && Number(formData.part_time_driver || 0) !== 1 ? { backgroundColor: '#f5f5f5', cursor: 'not-allowed' } : undefined}
                 >
-                  <option value="">-- Select User Type --</option>
-                  {userMemberTypes.map((type) => (
-                    <option key={type.id} value={type.typeCode}>
-                      {type.memberType}
+                  <option value="">-- Select Job Role --</option>
+                  {activeUserJobRoles.map((role) => (
+                    <option key={role.id} value={role.jdCode || role.id}>
+                      {role.designation}{role.memberTypeCode ? ` (${String(role.memberTypeCode).toLowerCase()})` : ''}
                     </option>
                   ))}
                 </select>
               </div>
+              <div className="form-group">
+                <label>User Type:</label>
+                <input
+                  type="text"
+                  value={memberTypeLabelMap[String(formData.member_type || '').trim()] || formData.member_type || ''}
+                  readOnly
+                  placeholder="Auto from Job Role"
+                  style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed' }}
+                />
+              </div>
+              <div className="form-group">
+                <label>User Level:</label>
+                <input
+                  type="text"
+                  value={userLevels.find((lvl) => String(lvl.levelCode || lvl.id) === String(formData.user_level || ''))?.userLevel || formData.user_level || ''}
+                  readOnly
+                  placeholder="Auto from Job Role"
+                  style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed' }}
+                />
+              </div>
+            </div>
+            <div className="form-row">
+              <div className="form-group full-width">
+                <small className="field-error-emp-reg" style={{ color: '#64748b', display: 'block', marginTop: 6 }}>
+                  User Type and User Level are auto-selected from JD Management mapping.
+                </small>
+              </div>
             </div>
 
             {/* Employee Search (only for Internal users) */}
-            {userType === 'i' && (
+            {effectiveUserType === 'i' && (
               <div className="form-row">
                 <div className="form-group full-width">
-                  <label>Search Employee (NIC or Employee Number):</label>
-                  <div style={{ display: 'flex', gap: '10px' }}>
+                  <label>Search Employee (Name / NIC / Employee Number):</label>
+                  <div className="employee-estate-like-wrapper-user-reg-ict">
                     <input
+                      id="employee-search-input-user-reg-ict"
+                      className="employee-estate-like-input-user-reg-ict"
                       type="text"
                       value={employeeSearchTerm}
-                      onChange={(e) => setEmployeeSearchTerm(e.target.value)}
-                      placeholder="Enter NIC or Employee Number (e.g., EMP001)"
-                      style={{ flex: 1 }}
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          handleSearchEmployee();
-                        }
+                      onChange={(e) => {
+                        setEmployeeSearchTerm(e.target.value);
+                        setShowEmployeeDropdown(true);
+                        setSelectedEmployee(null);
+                        setFormData((prev) => ({ ...prev, employeeId: null }));
                       }}
+                      onFocus={() => setShowEmployeeDropdown(true)}
+                      onBlur={() => {
+                        window.setTimeout(() => setShowEmployeeDropdown(false), 120);
+                      }}
+                      placeholder="Enter Name, NIC, or Employee Number (e.g., Kamal / 901234567V / EMP001)"
                     />
-                    <button
-                      type="button"
-                      onClick={handleSearchEmployee}
-                      disabled={searchingEmployee || !employeeSearchTerm.trim()}
-                      className="btn-search"
+                    <div
+                      className="employee-estate-like-indicator-user-reg-ict"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => setShowEmployeeDropdown((prev) => !prev)}
                     >
-                      {searchingEmployee ? 'Searching...' : 'Search'}
-                    </button>
+                      ▼
+                    </div>
+                    {showEmployeeDropdown ? (
+                      <div className="employee-estate-like-suggestions-user-reg-ict">
+                        {filteredRegisterEmployeeOptions.slice(0, 50).map((employee) => (
+                          <div
+                            key={employee.id}
+                            className="employee-estate-like-item-user-reg-ict"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => handlePickRegisterEmployee(employee)}
+                          >
+                            <div className="employee-estate-like-title-user-reg-ict">
+                              {employee.employeeName || employee.preferredName || employee.name || 'Unnamed'}
+                            </div>
+                            <div className="employee-estate-like-meta-user-reg-ict">
+                              EMP: {employee.empNo || '-'} | ID: {employee.id}
+                            </div>
+                          </div>
+                        ))}
+                        {filteredRegisterEmployeeOptions.length === 0 ? (
+                          <div className="employee-estate-like-empty-user-reg-ict">
+                            Not available
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : null}
                   </div>
                   {selectedEmployee && (
                     <div className="employee-info-box">
@@ -888,6 +990,12 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
                       <p>Data has been auto-filled below. Please complete remaining fields.</p>
                     </div>
                   )}
+                  {loadingEmployeeOptions ? (
+                    <div className="employee-suggestion-info-user-reg-ict">Loading employees...</div>
+                  ) : null}
+                  {employeeOptionsError ? (
+                    <div className="employee-suggestion-error-user-reg-ict">Failed to load employee list.</div>
+                  ) : null}
                 </div>
               </div>
             )}
@@ -917,7 +1025,13 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
                   value={formData.email}
                   onChange={handleInputChange}
                   placeholder="Enter email address"
+                  className={registerEmailInvalid ? 'invalid-field-emp-reg' : ''}
                 />
+                {registerEmailInvalid && (
+                  <span className="field-error-emp-reg">
+                    Invalid email format.
+                  </span>
+                )}
               </div>
             </div>
 
@@ -948,7 +1062,13 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
                   placeholder="Example: 771234567"
                   disabled={!!selectedEmployee}
                   style={selectedEmployee ? { backgroundColor: '#f5f5f5' } : {}}
+                  className={registerMobileInvalid ? 'invalid-field-emp-reg' : ''}
                 />
+                {registerMobileInvalid && (
+                  <span className="field-error-emp-reg">
+                    Mobile Number must be 9 digits and cannot start with 0.
+                  </span>
+                )}
               </div>
             </div>
 
@@ -1058,46 +1178,10 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
             <h2 className="section-title">Job Details</h2>
             
             <div className="form-row">
-              <div className="form-group">
-                <label>Job Role:</label>
-                {embeddedTransportDriver ? (
-                  <input
-                    type="text"
-                    readOnly
-                    value={jobRoleLabelMap[DRIVER_JOB_ROLE_CODE] || 'Driver'}
-                    style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed' }}
-                  />
-                ) : (
-                  <select
-                    name="job_role"
-                    value={formData.job_role}
-                    onChange={handleInputChange}
-                  >
-                    <option value="">-- Select --</option>
-                    {userJobRoles
-                      .filter(role => role.status === 1)
-                      .map((role) => (
-                        <option key={role.id} value={role.jdCode || role.id}>
-                          {role.designation}
-                        </option>
-                      ))}
-                  </select>
-                )}
-              </div>
-              <div className="form-group">
-                <label>User Level:</label>
-                <select
-                  name="user_level"
-                  value={formData.user_level}
-                  onChange={handleInputChange}
-                >
-                  <option value="g">Guest User</option>
-                  {userLevels.map((level) => (
-                    <option key={level.id} value={level.levelCode || level.id}>
-                      {level.userLevel}
-                    </option>
-                  ))}
-                </select>
+              <div className="form-group full-width">
+                <small style={{ color: '#6b7280' }}>
+                  Job Role, User Type, and User Level are controlled from the User Type section above.
+                </small>
               </div>
             </div>
 
@@ -1113,11 +1197,22 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
                   <option value="0">Inactive</option>
                 </select>
               </div>
+              <div className="form-group">
+                <label>Part Time Driver:</label>
+                <select
+                  name="part_time_driver"
+                  value={formData.part_time_driver}
+                  onChange={handleInputChange}
+                >
+                  <option value="0">No</option>
+                  <option value="1">Yes</option>
+                </select>
+              </div>
             </div>
           </div>
 
           {/* Driver Information (only if job_role='dri') */}
-          {(formData.job_role === 'dri' || embeddedTransportDriver) && (
+          {(formData.job_role === 'dri' || Number(formData.part_time_driver) === 1 || embeddedTransportDriver) && (
             <div className="form-section">
               <h2 className="section-title">Driver Information</h2>
               
@@ -1135,8 +1230,8 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
                 <div className="form-group">
                   <label>Fuel Card:</label>
                   <select
-                    name="fuel_card_id"
-                    value={formData.fuel_card_id}
+                    name="card_id"
+                    value={formData.card_id}
                     onChange={handleInputChange}
                   >
                     <option value="">-- Select Fuel Card --</option>
@@ -1189,7 +1284,7 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
           )}
 
           {/* External User Fields (Group, Plantation, Region, Estate) */}
-          {userType === 'e' && (
+          {effectiveUserType === 'e' && (
             <div className="form-section">
               <h2 className="section-title">Plantation Details</h2>
               
@@ -1360,6 +1455,7 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
                 {showExternalColumns && <th>Plantation</th>}
                 {showExternalColumns && <th>Estate</th>}
                 <th>Role</th>
+                <th>Part Time Driver</th>
                 <th>Status</th>
                 <th>Action</th>
               </tr>
@@ -1399,6 +1495,7 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
                       <td>{estateLabelMap[String(user.estate || '')] || user.estate || '-'}</td>
                     )}
                     <td>{jobRoleLabelMap[String(user.job_role || '').trim()] || user.job_role || '-'}</td>
+                    <td>{Number(user.part_time_driver || 0) === 1 ? 'Yes' : 'No'}</td>
                     <td>{String(user.activated) === '1' ? 'Active' : 'Inactive'}</td>
                     <td>
                       <button
@@ -1443,7 +1540,18 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
               </div>
               <div className="form-group">
                 <label>Email</label>
-                <input name="email" type="email" value={editFormData.email} onChange={handleEditInputChange} />
+                <input
+                  name="email"
+                  type="email"
+                  value={editFormData.email}
+                  onChange={handleEditInputChange}
+                  className={editEmailInvalid ? 'invalid-field-emp-reg' : ''}
+                />
+                {editEmailInvalid && (
+                  <span className="field-error-emp-reg">
+                    Invalid email format.
+                  </span>
+                )}
               </div>
             </div>
             <div className="form-row">
@@ -1461,7 +1569,13 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
                   inputMode="numeric"
                   required
                   placeholder="Example: 771234567"
+                  className={editMobileInvalid ? 'invalid-field-emp-reg' : ''}
                 />
+                {editMobileInvalid && (
+                  <span className="field-error-emp-reg">
+                    Mobile Number must be 9 digits and cannot start with 0.
+                  </span>
+                )}
               </div>
             </div>
             <div className="form-row">
@@ -1519,18 +1633,68 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
               <div className="form-group employee-link-field-user-reg-ict">
                 <label>Employee (link)</label>
                 <div className="employee-link-input-row-user-reg-ict">
-                  <select
-                    name="employeeId"
-                    value={editFormData.employeeId}
-                    onChange={handleEditInputChange}
-                  >
-                    <option value="">-- Not linked to employee --</option>
-                    {availableEmployeeOptionsForEdit.map((employee) => (
-                      <option key={employee.id} value={String(employee.id)}>
-                        {formatEmployeeOptionLabel(employee)}
-                      </option>
-                    ))}
-                  </select>
+                  <div style={{ position: 'relative', flex: 1 }}>
+                    <input
+                      type="text"
+                      value={editEmployeeSearchTerm}
+                      placeholder="Search employee by name, EMP NO, ID..."
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setEditEmployeeSearchTerm(v);
+                        setShowEditEmployeeDropdown(true);
+                        if (!v.trim()) {
+                          setEditFormData((prev) => ({ ...prev, employeeId: '' }));
+                        }
+                      }}
+                      onFocus={() => setShowEditEmployeeDropdown(true)}
+                      onBlur={() => setTimeout(() => setShowEditEmployeeDropdown(false), 150)}
+                    />
+                    {showEditEmployeeDropdown && (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          top: 'calc(100% + 4px)',
+                          left: 0,
+                          right: 0,
+                          background: '#fff',
+                          border: '1px solid #dbe3ea',
+                          borderRadius: '6px',
+                          boxShadow: '0 6px 16px rgba(0,0,0,0.12)',
+                          maxHeight: '220px',
+                          overflowY: 'auto',
+                          zIndex: 1200,
+                        }}
+                      >
+                        {availableEmployeeOptionsForEdit
+                          .filter((employee) => {
+                            const q = editEmployeeSearchTerm.trim().toLowerCase();
+                            if (!q) return true;
+                            const label = formatEmployeeOptionLabel(employee).toLowerCase();
+                            return label.includes(q);
+                          })
+                          .slice(0, 50)
+                          .map((employee) => (
+                            <div
+                              key={employee.id}
+                              style={{
+                                padding: '8px 10px',
+                                cursor: 'pointer',
+                                borderBottom: '1px solid #f1f5f9',
+                                fontSize: '13px',
+                              }}
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                setEditFormData((prev) => ({ ...prev, employeeId: String(employee.id) }));
+                                setEditEmployeeSearchTerm(formatEmployeeOptionLabel(employee));
+                                setShowEditEmployeeDropdown(false);
+                              }}
+                            >
+                              {formatEmployeeOptionLabel(employee)}
+                            </div>
+                          ))}
+                      </div>
+                    )}
+                  </div>
                   <button
                     type="button"
                     className="btn-search employee-clear-btn-user-reg-ict"
@@ -1592,6 +1756,13 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
                   <option value="0">Inactive</option>
                 </select>
               </div>
+              <div className="form-group">
+                <label>Part Time Driver</label>
+                <select name="part_time_driver" value={editFormData.part_time_driver} onChange={handleEditInputChange}>
+                  <option value="0">No</option>
+                  <option value="1">Yes</option>
+                </select>
+              </div>
             </div>
             <div className="form-row">
               <div className="form-group full-width">
@@ -1619,11 +1790,11 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
               </div>
             </div>
 
-            {editFormData.job_role === 'dri' && (
+            {(editFormData.job_role === 'dri' || Number(editFormData.part_time_driver) === 1) && (
               <div className="form-row">
                 <div className="form-group">
                   <label>Fuel Card</label>
-                  <select name="fuel_card_id" value={editFormData.fuel_card_id} onChange={handleEditInputChange}>
+                  <select name="card_id" value={editFormData.card_id} onChange={handleEditInputChange}>
                     <option value="">-- Select Fuel Card --</option>
                     {fuelCardsData.map((card) => (
                       <option key={card.id} value={card.id}>

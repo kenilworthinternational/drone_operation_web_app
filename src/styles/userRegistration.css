@@ -137,6 +137,17 @@
   box-shadow: 0 0 0 2px rgba(0, 75, 113, 0.1);
 }
 
+.invalid-field-emp-reg {
+  border-color: #dc2626 !important;
+}
+
+.field-error-emp-reg {
+  margin-top: 6px;
+  color: #dc2626;
+  font-size: 12px;
+  font-weight: 600;
+}
+
 .form-group-user-maintain select,
 .form-group select {
   cursor: pointer;
@@ -580,6 +591,70 @@
 
 .employee-suggestion-item-user-reg-ict:hover {
   background: #f8fafc;
+}
+
+.employee-estate-like-wrapper-user-reg-ict {
+  position: relative;
+}
+
+.employee-estate-like-input-user-reg-ict {
+  width: 100%;
+  padding-right: 34px !important;
+}
+
+.employee-estate-like-indicator-user-reg-ict {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #004b71;
+  font-size: 12px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.employee-estate-like-suggestions-user-reg-ict {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  max-height: 260px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border: 1px solid #0f4c81;
+  border-radius: 6px;
+  background: #ffffff;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.18);
+}
+
+.employee-estate-like-item-user-reg-ict {
+  padding: 8px 10px;
+  border-bottom: 1px solid #e5e7eb;
+  cursor: pointer;
+  background: #fff;
+}
+
+.employee-estate-like-item-user-reg-ict:hover {
+  background: #f1f5f9;
+}
+
+.employee-estate-like-title-user-reg-ict {
+  color: #0f172a;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.employee-estate-like-meta-user-reg-ict {
+  color: #475569;
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.employee-estate-like-empty-user-reg-ict {
+  padding: 10px;
+  color: #6b7280;
+  font-size: 13px;
 }
 
 /* Responsive Design */

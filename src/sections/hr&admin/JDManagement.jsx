@@ -266,6 +266,14 @@ const JDManagement = () => {
       setError('Please enter a JD Code');
       return;
     }
+    if (!jobFormData.userMemberTypeId) {
+      setError('Please select Member Type (Internal/External) for this Job Role.');
+      return;
+    }
+    if (!jobFormData.userLevelId) {
+      setError('Please select User Level for this Job Role.');
+      return;
+    }
 
     // Check for duplicate JD Code before submitting
     if (checkJdCodeDuplicate(jobFormData.jdCode)) {
@@ -1026,7 +1034,7 @@ const JDManagement = () => {
                 )}
               </div>
               <div className="jd-form-group-jd-mgmt">
-                <label>User Level:</label>
+                <label>User Level: *</label>
                 <select
                   value={jobFormData.userLevelId}
                   onChange={(e) => setJobFormData({ ...jobFormData, userLevelId: e.target.value })}
@@ -1040,7 +1048,7 @@ const JDManagement = () => {
                 </select>
               </div>
               <div className="jd-form-group-jd-mgmt">
-                <label>Member Type:</label>
+                <label>Member Type: *</label>
                 <select
                   value={jobFormData.userMemberTypeId}
                   onChange={(e) => setJobFormData({ ...jobFormData, userMemberTypeId: e.target.value })}

@@ -244,6 +244,66 @@
   font-family: inherit;
 }
 
+.driver-search-wrapper-assets-reg {
+  position: relative;
+}
+
+.driver-dropdown-indicator-assets-reg {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #475569;
+  cursor: pointer;
+  user-select: none;
+  font-size: 12px;
+  z-index: 2;
+}
+
+.driver-suggestions-list-assets-reg {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  max-height: 240px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border: 1px solid #0f4c81;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.18);
+  box-sizing: border-box;
+}
+
+.driver-suggestion-item-assets-reg {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  border-bottom: 1px solid #e5e7eb;
+  background: #ffffff;
+  padding: 10px 12px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #111827;
+  box-sizing: border-box;
+}
+
+.driver-suggestion-item-assets-reg:last-child {
+  border-bottom: none;
+}
+
+.driver-suggestion-item-assets-reg:hover {
+  background: #f1f5f9;
+}
+
+.driver-no-results-assets-reg {
+  padding: 10px;
+  font-size: 13px;
+  color: #6b7280;
+}
+
 .form-section-divider-assets-reg {
   margin: 32px 0 20px 0;
   padding-bottom: 12px;

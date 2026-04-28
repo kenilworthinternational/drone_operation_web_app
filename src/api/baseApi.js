@@ -88,7 +88,9 @@ export const baseApi = createApi({
     // Others
     'Calendar', 'Reasons', 'ASC',
     // HR Leave and Attendance
-    'HrLeave', 'HrAttendance', 'HrRoster'
+    'HrLeave', 'HrAttendance', 'HrRoster',
+    // Financial cards / fuel approvals
+    'FinancialCards', 'FinancialCardTransactions', 'Transactions', 'FuelApprovals'
   ],
   endpoints: () => ({}),
 });
