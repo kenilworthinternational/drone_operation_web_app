@@ -4,11 +4,20 @@
 }
 
 .vehicle-admin-page-master-data.vehicle-admin-page-master-data--split-scroll {
-  height: 100%;
+  flex: 1 1 0;
   min-height: 0;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  width: 100%;
+}
+
+.vehicle-admin-page-master-data--split-scroll .vehicle-admin-header-master-data {
+  flex-shrink: 0;
+}
+
+.master-data-flash-banner-master-data {
+  flex-shrink: 0;
 }
 
 .vehicle-admin-header-master-data {
@@ -81,40 +90,61 @@
   display: grid;
   grid-template-columns: minmax(240px, 25%) minmax(0, 1fr);
   gap: 14px;
-  align-items: start;
+  align-items: stretch;
 }
 
 .vehicle-admin-page-master-data--split-scroll .masters-layout-master-data {
-  flex: 1;
+  flex: 1 1 0;
   min-height: 0;
   overflow: hidden;
+  margin-top: 14px;
+  align-self: stretch;
+  grid-template-rows: minmax(0, 1fr);
 }
 
 .masters-picker-master-data {
   background: #fff;
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 10px;
+  border-radius: 8px;
+  padding: 13px;
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
   display: grid;
-  gap: 8px;
+  gap: 2px;
+  /* Avoid stretching short items to match tall neighbors in multi-column layout */
+  align-items: start;
 }
 
 .vehicle-admin-page-master-data--split-scroll .masters-picker-master-data {
+  /* Row is 1fr tall; without this, the picker stretches to full row height and leaves empty space under the buttons */
+  align-self: start;
+  width: 100%;
   min-height: 0;
+  max-height: 100%;
+  overflow-x: hidden;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .masters-picker-item-master-data {
+  appearance: none;
+  -webkit-appearance: none;
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0;
+  min-height: 0;
   border: 1px solid #d6deea;
   background: #ffffff;
-  border-radius: 10px;
-  padding: 10px 12px;
+  border-radius: 5px;
+  padding: 22px 16px;
   text-align: left;
   color: #334155;
+  font-size: 11px;
   font-weight: 600;
+  line-height: 1.2;
   cursor: pointer;
   transition: all 0.18s ease;
+  font-family: inherit;
+  display: block;
 }
 
 .masters-picker-item-master-data:hover {
@@ -134,7 +164,13 @@
 
 .vehicle-admin-page-master-data--split-scroll .masters-workspace-master-data {
   min-height: 0;
+  max-height: 100%;
+  align-self: stretch;
+  overflow-x: hidden;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .vehicle-master-forms-master-data {

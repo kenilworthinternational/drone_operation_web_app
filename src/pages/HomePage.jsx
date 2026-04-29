@@ -47,6 +47,9 @@ const HomePage = () => {
   const fullWidthNoLeftNav =
     isWingHubLanding || showCombChrome || isDashboardChartBreakdownRoute || isOdWingShell;
 
+  /** Master Data Update: fixed main column; left/right scroll vertically only (no page scroll). */
+  const isMasterDataUpdateRoute = location.pathname.includes('/ict/system-admin/master-data-update');
+
   // Helper to detect mobile view
   const isMobile = () => window.innerWidth <= 768;
 
@@ -73,7 +76,7 @@ const HomePage = () => {
         />
       )}
       <div 
-        className={`content-dashboard${isWingHubLanding ? ' content-dashboard--wing-hub' : ''}${showCombChrome || isDashboardChartBreakdownRoute || isOdWingShell ? ' content-dashboard--comb' : ''}`}
+        className={`content-dashboard${isWingHubLanding ? ' content-dashboard--wing-hub' : ''}${showCombChrome || isDashboardChartBreakdownRoute || isOdWingShell ? ' content-dashboard--comb' : ''}${isMasterDataUpdateRoute ? ' content-dashboard--master-data-split' : ''}`}
         style={{
           marginLeft: isExternalUser || fullWidthNoLeftNav ? '0' : '280px',
           width: isExternalUser || fullWidthNoLeftNav ? '100vw' : 'calc(100vw - 280px)',

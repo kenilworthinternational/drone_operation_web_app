@@ -76,24 +76,6 @@ export const vehicleAppApi = baseApi.injectEndpoints({
       invalidatesTags: ['VehicleApp'],
     }),
 
-    getVehicleAppMaintenanceDescriptions: builder.query({
-      queryFn: async () => {
-        const result = await nodeBackendBaseQuery({ url: '/api/vehicle-app/admin/maintenance-descriptions', method: 'GET' }, {}, {});
-        if (result.error) return { error: result.error };
-        return { data: result.data?.data || [] };
-      },
-      providesTags: ['VehicleApp'],
-    }),
-
-    saveVehicleAppMaintenanceDescription: builder.mutation({
-      queryFn: async (body) => {
-        const result = await nodeBackendBaseQuery({ url: '/api/vehicle-app/admin/maintenance-descriptions', method: 'POST', body }, {}, {});
-        if (result.error) return { error: result.error };
-        return { data: result.data?.data || null };
-      },
-      invalidatesTags: ['VehicleApp'],
-    }),
-
     getVehicleAppMaintenanceRequests: builder.query({
       queryFn: async (yearMonth = '') => {
         const query = yearMonth ? `?yearMonth=${encodeURIComponent(yearMonth)}` : '';
@@ -174,8 +156,6 @@ export const {
   useSaveVehicleAppVehicleCategoryMutation,
   useGetVehicleAppMaintenanceCategoriesQuery,
   useSaveVehicleAppMaintenanceCategoryMutation,
-  useGetVehicleAppMaintenanceDescriptionsQuery,
-  useSaveVehicleAppMaintenanceDescriptionMutation,
   useGetVehicleAppMaintenanceRequestsQuery,
   useDecideVehicleAppMaintenanceRequestMutation,
   useHrDecideVehicleMaintenanceRequestMutation,

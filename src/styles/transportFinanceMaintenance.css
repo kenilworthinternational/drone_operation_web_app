@@ -163,6 +163,15 @@
   gap: 8px;
 }
 
+.maintenance-finance-action-cell-transport-finance {
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.maintenance-finance-actions-row-tight-transport-finance {
+  gap: 6px;
+}
+
 .maintenance-finance-proof-grid-transport-finance {
   display: grid;
   gap: 6px;
@@ -196,8 +205,8 @@
   background: #ffffff;
   color: #0b3d5c;
   border-radius: 10px;
-  padding: 8px 14px;
-  font-size: 13px;
+  padding: 6px 12px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
@@ -214,8 +223,8 @@
   color: #2d4557;
   border: 1px solid #c4d3df;
   border-radius: 10px;
-  padding: 8px 14px;
-  font-size: 13px;
+  padding: 6px 12px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;

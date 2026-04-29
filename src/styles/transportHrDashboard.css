@@ -553,6 +553,183 @@
   color: #16364a;
 }
 
+.image-view-btn-maintenance-approv {
+  border: 1px solid #93c5fd;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  pointer-events: auto !important;
+}
+
+.image-view-btn-maintenance-approv:hover {
+  background: #dbeafe;
+  border-color: #60a5fa;
+}
+
+.image-empty-maintenance-approv {
+  color: #9ca3af;
+  font-weight: 600;
+}
+
+.finance-status-maintenance-approv {
+  font-weight: 700;
+}
+
+.finance-status-maintenance-approv--approved {
+  color: #166534;
+}
+
+.finance-status-maintenance-approv--declined {
+  color: #991b1b;
+}
+
+.finance-status-maintenance-approv--pending {
+  color: #92400e;
+}
+
+.maintenance-decision-modal-maintenance-approv {
+  max-width: 860px;
+  border-radius: 16px;
+  border: 1px solid #cfdbe7;
+}
+
+.maintenance-decision-body-maintenance-approv {
+  padding-top: 12px;
+}
+
+.maintenance-decision-intent-maintenance-approv {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #dbe7f2;
+  background: #f4f8fc;
+  color: #25445e;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.maintenance-decision-meta-maintenance-approv {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  color: #0f2940;
+}
+
+.maintenance-decision-meta-maintenance-approv span {
+  background: #ffffff;
+  border: 1px solid #d9e5ef;
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.maintenance-decision-reason-wrap-maintenance-approv {
+  display: grid;
+  gap: 8px;
+}
+
+.maintenance-decision-reason-label-maintenance-approv {
+  font-weight: 700;
+  font-size: 14px;
+  color: #0f2940;
+}
+
+.maintenance-decision-reason-input-maintenance-approv {
+  width: 100%;
+  max-width: 100%;
+  min-height: 110px;
+  box-sizing: border-box;
+  border: 1px solid #b9c9da;
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 14px;
+  line-height: 1.45;
+  resize: vertical;
+  font-family: inherit;
+  color: #0b1f32;
+  background: #ffffff;
+}
+
+.maintenance-decision-reason-input-maintenance-approv:focus {
+  outline: none;
+  border-color: #0b6e9f;
+  box-shadow: 0 0 0 3px rgba(11, 110, 159, 0.14);
+  background: #ffffff;
+}
+
+.maintenance-decision-confirm-text-maintenance-approv {
+  margin: 0;
+  color: #0f2940;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.maintenance-decision-error-maintenance-approv {
+  margin: 10px 0 0;
+  color: #b91c1c;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.maintenance-decision-actions-maintenance-approv {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.maintenance-decision-btn-maintenance-approv {
+  min-width: 132px;
+  padding: 9px 14px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.maintenance-decision-btn-cancel-maintenance-approv {
+  color: #334155;
+  background: #eef3f7;
+  border-color: #c8d4df;
+}
+
+.maintenance-decision-btn-cancel-maintenance-approv:hover {
+  background: #e3ebf2;
+}
+
+.maintenance-decision-btn-confirm-maintenance-approv {
+  color: #ffffff;
+  background: linear-gradient(180deg, #0b6e9f, #095a82);
+  border-color: #0a638f;
+  box-shadow: 0 5px 12px rgba(11, 110, 159, 0.28);
+}
+
+.maintenance-decision-btn-confirm-maintenance-approv:hover {
+  background: linear-gradient(180deg, #0d7bb0, #0b628e);
+}
+
+.maintenance-decision-btn-maintenance-approv:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+@media (max-width: 760px) {
+  .maintenance-decision-meta-maintenance-approv {
+    grid-template-columns: 1fr;
+  }
+
+  .maintenance-decision-btn-maintenance-approv {
+    min-width: 112px;
+  }
+}
+
 .dashboard-header-row-transport-hr {
   display: flex;
   align-items: flex-start;

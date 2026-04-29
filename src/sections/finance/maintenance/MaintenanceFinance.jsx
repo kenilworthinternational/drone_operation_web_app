@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { CircularProgress } from '@mui/material';
 import {
   useFinanceDecideVehicleMaintenanceRequestMutation,
@@ -35,20 +35,20 @@ function hrStatusChip(row) {
   if (status === 'a') {
     return (
       <span className="maintenance-finance-chip-transport-finance maintenance-finance-chip-hr-approved-transport-finance">
-        HR Approved
+        Approved
       </span>
     );
   }
   if (status === 'd') {
     return (
       <span className="maintenance-finance-chip-transport-finance maintenance-finance-chip-hr-declined-transport-finance">
-        HR Declined
+         Declined
       </span>
     );
   }
   return (
     <span className="maintenance-finance-chip-transport-finance maintenance-finance-chip-hr-pending-transport-finance">
-      HR Pending
+      Pending
     </span>
   );
 }
@@ -58,20 +58,20 @@ function financeStatusChip(row) {
   if (status === 'a') {
     return (
       <span className="maintenance-finance-chip-transport-finance maintenance-finance-chip-finance-approved-transport-finance">
-        Finance Approved
+        Approved
       </span>
     );
   }
   if (status === 'd') {
     return (
       <span className="maintenance-finance-chip-transport-finance maintenance-finance-chip-finance-declined-transport-finance">
-        Finance Declined
+        Declined
       </span>
     );
   }
   return (
     <span className="maintenance-finance-chip-transport-finance maintenance-finance-chip-finance-pending-transport-finance">
-      Finance Pending
+      Pending
     </span>
   );
 }
@@ -125,9 +125,11 @@ function MaintenanceFinance({
     message: '',
     tone: 'success',
   });
-  const tableWrapRef = useRef(null);
-  const tableRef = useRef(null);
-  const containerRef = useRef(null);
+  const [paymentProofModal, setPaymentProofModal] = useState({
+    open: false,
+    row: null,
+    error: '',
+  });
 
   const selectedMonth = externalMonth || internalMonth;
   const monthOptions = useMemo(() => getRollingMonthOptions(24), []);
@@ -148,56 +150,17 @@ function MaintenanceFinance({
   );
   const filteredRows = useMemo(() => {
     const selectedVehicleKey = String(selectedVehicle || '').trim().toLowerCase();
-    if (!selectedVehicleKey) return rows || [];
-    return (rows || []).filter((r) => {
+    const hrVisibleRows = (rows || []).filter((r) => {
+      const hrStatus = String(r?.hr_approval || r?.approval || 'p');
+      return hrStatus !== 'd';
+    });
+    if (!selectedVehicleKey) return hrVisibleRows;
+    return hrVisibleRows.filter((r) => {
       const vehicleKey = String(r?.vehicle_no || r?.vehicle || '').trim().toLowerCase();
       return vehicleKey === selectedVehicleKey;
     });
   }, [rows, selectedVehicle]);
   const safeRows = Array.isArray(filteredRows) ? filteredRows : [];
-
-  useEffect(() => {
-    // #region agent log
-    fetch('http://127.0.0.1:7388/ingest/2847869f-00fd-4bf5-84a4-26f0333f83f0',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'6fcd8b'},body:JSON.stringify({sessionId:'6fcd8b',runId:'pre-fix-1',hypothesisId:'H2',location:'MaintenanceFinance.jsx:rows+filters',message:'Maintenance finance rows/filter snapshot',data:{selectedMonth,selectedVehicle,hasPrefetchedRows:Array.isArray(prefetchedRows),prefetchedRowsCount:Array.isArray(prefetchedRows)?prefetchedRows.length:-1,fetchedRowsCount:Array.isArray(fetchedRows)?fetchedRows.length:-1,rowsCount:Array.isArray(rows)?rows.length:-1,filteredRowsCount:Array.isArray(filteredRows)?filteredRows.length:-1,safeRowsCount:Array.isArray(safeRows)?safeRows.length:-1,isLoading,showSpinner},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion
-  }, [selectedMonth, selectedVehicle, prefetchedRows, fetchedRows, rows, filteredRows, safeRows, isLoading, showSpinner]);
-
-  useEffect(() => {
-    if (!safeRows.length) return;
-    const sample = safeRows[0] || {};
-    // #region agent log
-    fetch('http://127.0.0.1:7388/ingest/2847869f-00fd-4bf5-84a4-26f0333f83f0',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'6fcd8b'},body:JSON.stringify({sessionId:'6fcd8b',runId:'pre-fix-1',hypothesisId:'H3',location:'MaintenanceFinance.jsx:first-row-shape',message:'Maintenance finance first row shape',data:{keys:Object.keys(sample||{}).slice(0,30),id:sample?.id??null,hr_approval:sample?.hr_approval??null,finance_approval:sample?.finance_approval??null,finance_paid:sample?.finance_paid??null,vehicle_no:sample?.vehicle_no??null},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion
-  }, [safeRows]);
-
-  useEffect(() => {
-    const wrapEl = tableWrapRef.current;
-    const tableEl = tableRef.current;
-    const containerEl = containerRef.current;
-    const sectionWrapEl = wrapEl?.closest ? wrapEl.closest('.transport-finance-section-wrap') : null;
-    const wrapRect = wrapEl?.getBoundingClientRect ? wrapEl.getBoundingClientRect() : null;
-    const tableRect = tableEl?.getBoundingClientRect ? tableEl.getBoundingClientRect() : null;
-    const containerRect = containerEl?.getBoundingClientRect ? containerEl.getBoundingClientRect() : null;
-    const sectionWrapRect = sectionWrapEl?.getBoundingClientRect ? sectionWrapEl.getBoundingClientRect() : null;
-    const wrapStyle = wrapEl ? window.getComputedStyle(wrapEl) : null;
-    const tableStyle = tableEl ? window.getComputedStyle(tableEl) : null;
-    const containerStyle = containerEl ? window.getComputedStyle(containerEl) : null;
-    const sectionWrapStyle = sectionWrapEl ? window.getComputedStyle(sectionWrapEl) : null;
-    const pointX = tableRect ? Math.round(tableRect.left + 10) : null;
-    const pointY = tableRect ? Math.round(tableRect.top + 10) : null;
-    const topEl = pointX != null && pointY != null && document.elementFromPoint
-      ? document.elementFromPoint(pointX, pointY)
-      : null;
-    const topElMeta = topEl
-      ? { tag: topEl.tagName, className: topEl.className || null, id: topEl.id || null }
-      : null;
-    // #region agent log
-    fetch('http://127.0.0.1:7388/ingest/2847869f-00fd-4bf5-84a4-26f0333f83f0',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'6fcd8b'},body:JSON.stringify({sessionId:'6fcd8b',runId:'pre-fix-4',hypothesisId:'H6',location:'MaintenanceFinance.jsx:flow-position',message:'Maintenance finance flow/position diagnostics',data:{hasRows:safeRows.length>0,wrapTop:wrapRect?Math.round(wrapRect.top):null,wrapHeight:wrapRect?Math.round(wrapRect.height):null,tableTop:tableRect?Math.round(tableRect.top):null,tableHeight:tableRect?Math.round(tableRect.height):null,tablePosition:tableStyle?.position||null,tableFloat:tableStyle?.float||null,tableTransform:tableStyle?.transform||null,tableOffsetParentTag:tableEl?.offsetParent?.tagName||null,tableOffsetParentClass:tableEl?.offsetParent?.className||null,wrapPosition:wrapStyle?.position||null,wrapOverflowY:wrapStyle?.overflowY||null},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion
-    // #region agent log
-    fetch('http://127.0.0.1:7388/ingest/2847869f-00fd-4bf5-84a4-26f0333f83f0',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'6fcd8b'},body:JSON.stringify({sessionId:'6fcd8b',runId:'pre-fix-2',hypothesisId:'H4',location:'MaintenanceFinance.jsx:elementFromPoint',message:'elementFromPoint inside table',data:{hasRows:safeRows.length>0,pointX,pointY,topElMeta},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion
-  }, [safeRows, showSpinner]);
 
   const updateMonth = (value) => {
     if (onMonthChange) {
@@ -260,13 +223,8 @@ function MaintenanceFinance({
   const onMarkPaid = async (row) => {
     const proof = proofById[row.id];
     if (!proof?.dataUri) {
-      setMaintenanceNotice({
-        open: true,
-        title: 'Missing Payment Proof',
-        message: 'Payment proof is required before mark paid.',
-        tone: 'error',
-      });
-      return;
+      setPaymentProofModal((prev) => ({ ...prev, error: 'Payment proof is required before submit.' }));
+      return false;
     }
     try {
       await markPaid({
@@ -280,6 +238,7 @@ function MaintenanceFinance({
         message: `Maintenance request #${row.id} marked as paid.`,
         tone: 'success',
       });
+      return true;
     } catch (error) {
       setMaintenanceNotice({
         open: true,
@@ -287,14 +246,28 @@ function MaintenanceFinance({
         message: error?.data?.message || error?.message || 'Failed to mark paid',
         tone: 'error',
       });
+      return false;
     }
   };
 
+  const openPaymentProofModal = (row) => {
+    setPaymentProofModal({
+      open: true,
+      row,
+      error: '',
+    });
+  };
+
+  const closePaymentProofModal = () => {
+    setPaymentProofModal({
+      open: false,
+      row: null,
+      error: '',
+    });
+  };
+
   return (
-    <div
-      ref={containerRef}
-      className={`maintenance-finance-root-transport-finance ${embedded ? 'maintenance-finance-root-embedded-transport-finance' : ''}`}
-    >
+    <div className={`maintenance-finance-root-transport-finance ${embedded ? 'maintenance-finance-root-embedded-transport-finance' : ''}`}>
       <div className="maintenance-finance-toolbar-transport-finance">
         <strong className="maintenance-finance-toolbar-title-transport-finance">Maintenance Finance</strong>
       </div>
@@ -323,11 +296,8 @@ function MaintenanceFinance({
           <CircularProgress />
         </div>
       ) : (
-        <div ref={tableWrapRef} className="maintenance-finance-table-wrap-transport-finance">
-          <table
-            ref={tableRef}
-            className="maintenance-finance-table-transport-finance"
-          >
+        <div className="maintenance-finance-table-wrap-transport-finance">
+          <table className="maintenance-finance-table-transport-finance">
             <thead>
               <tr>
                 <th>ID</th>
@@ -338,9 +308,9 @@ function MaintenanceFinance({
                 <th>Cost</th>
                 <th>HR</th>
                 <th>Finance</th>
+                <th>Action</th>
                 <th>Paid</th>
                 <th>Payment Proof</th>
-                <th>Action</th>
               </tr>
             </thead>
             <tbody>
@@ -358,64 +328,47 @@ function MaintenanceFinance({
                     <td>{row.cost_estimation != null ? Number(row.cost_estimation).toFixed(2) : '-'}</td>
                     <td>{hrStatusChip(row)}</td>
                     <td>{financeStatusChip(row)}</td>
+                    <td className="maintenance-finance-action-cell-transport-finance">
+                      {paid && row.payment_image_url ? (
+                        <span className="maintenance-finance-muted-transport-finance">Completed</span>
+                      ) : hrStatus !== 'a' ? (
+                        <span className="maintenance-finance-muted-transport-finance">Awaiting HR</span>
+                      ) : financeStatus === 'p' ? (
+                        <div className="maintenance-finance-actions-row-transport-finance maintenance-finance-actions-row-tight-transport-finance">
+                          <button type="button" className="maintenance-finance-btn-outline-transport-finance" disabled={deciding} onClick={() => onFinanceDecision(row, 'a')}>
+                            Approve
+                          </button>
+                          <button type="button" className="maintenance-finance-btn-secondary-transport-finance" disabled={deciding} onClick={() => onFinanceDecision(row, 'd')}>
+                            Decline
+                          </button>
+                        </div>
+                      ) : financeStatus === 'a' && !paid ? (
+                        <button type="button" className="maintenance-finance-btn-outline-transport-finance" disabled={markingPaid} onClick={() => openPaymentProofModal(row)}>
+                          Mark Paid
+                        </button>
+                      ) : (
+                        <span className="maintenance-finance-muted-transport-finance">Finance Declined</span>
+                      )}
+                    </td>
                     <td>{paidStatusChip(row)}</td>
                     <td>
                       {paid && row.payment_image_url ? (
                         <a className="maintenance-finance-proof-link-transport-finance" href={row.payment_image_url} target="_blank" rel="noreferrer">
                           View proof
                         </a>
-                      ) : (
-                        <div className="maintenance-finance-proof-grid-transport-finance">
-                          <input
-                            type="file"
-                            accept="image/*,.pdf"
-                            onChange={async (e) => {
-                              const file = e.target.files?.[0];
-                              if (!file) return;
-                              try {
-                                const dataUri = await fileToDataUri(file);
-                                setProofById((prev) => ({ ...prev, [row.id]: { dataUri, fileName: file.name } }));
-                              } catch (error) {
-                                setMaintenanceNotice({
-                                  open: true,
-                                  title: 'Error',
-                                  message: error?.message || 'Failed to load proof file',
-                                  tone: 'error',
-                                });
-                              }
-                            }}
-                          />
-                          <small className="maintenance-finance-proof-filename-transport-finance">
-                            {proofById[row.id]?.fileName || 'No file selected'}
-                          </small>
-                          <input
-                            type="text"
-                            placeholder="Payment note (optional)"
-                            value={noteById[row.id] || ''}
-                            onChange={(e) => setNoteById((prev) => ({ ...prev, [row.id]: e.target.value }))}
-                            className="maintenance-finance-text-input-transport-finance"
-                          />
-                        </div>
-                      )}
-                    </td>
-                    <td>
-                      {hrStatus !== 'a' ? (
-                        <span className="maintenance-finance-muted-transport-finance">Awaiting HR</span>
+                      ) : financeStatus !== 'a' ? (
+                        <span className="maintenance-finance-muted-transport-finance">Enable after finance approval</span>
                       ) : financeStatus === 'p' ? (
-                        <div className="maintenance-finance-actions-row-transport-finance">
-                          <button type="button" className="maintenance-finance-btn-outline-transport-finance" disabled={deciding} onClick={() => onFinanceDecision(row, 'a')}>
-                            Finance Approve
-                          </button>
-                          <button type="button" className="maintenance-finance-btn-secondary-transport-finance" disabled={deciding} onClick={() => onFinanceDecision(row, 'd')}>
-                            Finance Decline
-                          </button>
-                        </div>
-                      ) : financeStatus === 'a' && !paid ? (
-                        <button type="button" className="maintenance-finance-btn-outline-transport-finance" disabled={markingPaid} onClick={() => onMarkPaid(row)}>
-                          Mark Paid
-                        </button>
+                        <span className="maintenance-finance-muted-transport-finance">Enable after finance approval</span>
                       ) : (
-                        <span className="maintenance-finance-muted-transport-finance">Completed</span>
+                        <button
+                          type="button"
+                          className="maintenance-finance-btn-outline-transport-finance"
+                          disabled={markingPaid}
+                          onClick={() => openPaymentProofModal(row)}
+                        >
+                          Add Proof
+                        </button>
                       )}
                     </td>
                   </tr>
@@ -500,6 +453,78 @@ function MaintenanceFinance({
                   onClick={() => setMaintenanceNotice({ open: false, title: '', message: '', tone: 'success' })}
                 >
                   OK
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {paymentProofModal.open ? (
+        <div className="maintenance-finance-modal-overlay-transport-finance" role="presentation" onClick={closePaymentProofModal}>
+          <div className="maintenance-finance-modal-card-transport-finance" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+            <div className="maintenance-finance-modal-toolbar-transport-finance">
+              <h3 className="maintenance-finance-modal-title-transport-finance">
+                Submit Payment Proof
+              </h3>
+              <button type="button" className="maintenance-finance-btn-secondary-transport-finance" onClick={closePaymentProofModal} disabled={markingPaid}>
+                Close
+              </button>
+            </div>
+            <div className="maintenance-finance-modal-body-transport-finance">
+              <p className="maintenance-finance-modal-hint-transport-finance">
+                Request #{paymentProofModal.row?.id} • Vehicle {paymentProofModal.row?.vehicle_no || '-'} • Driver {paymentProofModal.row?.driver_name || '-'}
+              </p>
+              <div className="maintenance-finance-proof-grid-transport-finance">
+                <input
+                  type="file"
+                  accept="image/*,.pdf"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    try {
+                      const dataUri = await fileToDataUri(file);
+                      setProofById((prev) => ({ ...prev, [paymentProofModal.row.id]: { dataUri, fileName: file.name } }));
+                      setPaymentProofModal((prev) => ({ ...prev, error: '' }));
+                    } catch (error) {
+                      setPaymentProofModal((prev) => ({ ...prev, error: error?.message || 'Failed to load proof file' }));
+                    }
+                  }}
+                />
+                <small className="maintenance-finance-proof-filename-transport-finance">
+                  {paymentProofModal.row ? (proofById[paymentProofModal.row.id]?.fileName || 'No file selected') : 'No file selected'}
+                </small>
+                <input
+                  type="text"
+                  placeholder="Payment note (optional)"
+                  value={paymentProofModal.row ? (noteById[paymentProofModal.row.id] || '') : ''}
+                  onChange={(e) => {
+                    if (!paymentProofModal.row) return;
+                    setNoteById((prev) => ({ ...prev, [paymentProofModal.row.id]: e.target.value }));
+                  }}
+                  className="maintenance-finance-text-input-transport-finance"
+                />
+              </div>
+              {paymentProofModal.error ? (
+                <p className="maintenance-finance-modal-error-transport-finance">{paymentProofModal.error}</p>
+              ) : null}
+              <div className="maintenance-finance-modal-actions-transport-finance">
+                <button type="button" className="maintenance-finance-btn-secondary-transport-finance" onClick={closePaymentProofModal} disabled={markingPaid}>
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="maintenance-finance-btn-outline-transport-finance"
+                  onClick={async () => {
+                    if (!paymentProofModal.row) return;
+                    const ok = await onMarkPaid(paymentProofModal.row);
+                    if (ok) {
+                      closePaymentProofModal();
+                    }
+                  }}
+                  disabled={markingPaid}
+                >
+                  {markingPaid ? 'Submitting...' : 'Submit'}
                 </button>
               </div>
             </div>

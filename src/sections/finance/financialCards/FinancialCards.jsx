@@ -147,13 +147,23 @@ const FinancialCards = () => {
     return holder?.mobile_no || null;
   };
 
-  const notifyCardRecharged = async (cardLike) => {
+  const notifyCardTopup = async (cardLike) => {
     const mobileNo = String(getCardHolderMobile(cardLike) || '').trim();
     const last4 = getCardLast4(cardLike);
     if (!mobileNo || !last4) return;
     await sendMessage({
       mobile_no: mobileNo,
-      content: `DSMS notice: Your card ending ${last4} has been recharged successfully.`,
+      content: `DSMS notice: Topup successful for your card ending ${last4}.`,
+    }).unwrap();
+  };
+
+  const notifyCardSettlement = async (cardLike) => {
+    const mobileNo = String(getCardHolderMobile(cardLike) || '').trim();
+    const last4 = getCardLast4(cardLike);
+    if (!mobileNo || !last4) return;
+    await sendMessage({
+      mobile_no: mobileNo,
+      content: `DSMS notice: Settlement posted to your card ending ${last4}.`,
     }).unwrap();
   };
 
@@ -428,7 +438,7 @@ const FinancialCards = () => {
 
       if (transactionType === 'add') {
         try {
-          await notifyCardRecharged(selectedCard);
+          await notifyCardTopup(selectedCard);
         } catch (_) {
           // Do not block transaction success if SMS fails.
         }
@@ -532,7 +542,7 @@ const FinancialCards = () => {
 
       try {
         const cardForNotify = cards.find((c) => Number(c.id) === Number(selectedSettlement.card_id));
-        if (cardForNotify) await notifyCardRecharged(cardForNotify);
+        if (cardForNotify) await notifyCardSettlement(cardForNotify);
       } catch (_) {
         // Keep settlement flow successful even if SMS fails.
       }
@@ -1512,7 +1522,7 @@ const FinancialCards = () => {
             try {
               await settleApprovedTransactions(payload).unwrap();
               try {
-                await notifyCardRecharged(settleDialogCard);
+                await notifyCardSettlement(settleDialogCard);
               } catch (_) {
                 // Keep settlement flow successful even if SMS fails.
               }

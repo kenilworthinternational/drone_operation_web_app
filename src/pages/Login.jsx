@@ -14,7 +14,6 @@ const Login = () => {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [showOTPInput, setShowOTPInput] = useState(false);
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
-  const [generatedOTP, setGeneratedOTP] = useState('');
   const [canResend, setCanResend] = useState(false);
   const [resendTimer, setResendTimer] = useState(60);
   const navigate = useNavigate();
@@ -85,23 +84,15 @@ const Login = () => {
     if (lastInput) lastInput.focus();
   };
 
-  const generateOTP = () => {
-    return Math.floor(100000 + Math.random() * 900000).toString();
-  };
-
   const handlePhoneSubmit = async (e) => {
     e.preventDefault();
     if (phoneNumber.length !== 9) return;
     dispatch(clearError());
     const verifyResult = await dispatch(verifyUserThunk(phoneNumber));
     if (verifyUserThunk.fulfilled.match(verifyResult)) {
-      const otpCode = generateOTP();
-      setGeneratedOTP(otpCode);
-      logger.log('Generated OTP:', otpCode);
-      const sendResult = await dispatch(sendOTPThunk({ phoneNumber, otpCode }));
-      if (sendOTPThunk.fulfilled.match(sendResult)) {
-        setShowOTPInput(true);
-      }
+      setResendTimer(Number(verifyResult.payload?.cooldown_seconds || 60));
+      setCanResend(false);
+      setShowOTPInput(true);
     }
   };
 
@@ -109,35 +100,26 @@ const Login = () => {
     e.preventDefault();
     const otpString = otp.join('').trim();
     if (otpString.length !== 6) return;
-    if (!generatedOTP) {
-      setShowOTPInput(false);
-      setOtp(['', '', '', '', '', '']);
-      return;
-    }
-    if (String(otpString) !== String(generatedOTP)) {
+    dispatch(clearError());
+    const loginResult = await dispatch(loginUserThunk({ phoneNumber, otp: otpString }));
+    if (loginUserThunk.fulfilled.match(loginResult)) {
+      logger.log('Login successful');
+    } else {
       setOtp(['', '', '', '', '', '']);
       setTimeout(() => {
         const firstInput = document.getElementById('otp-0');
         if (firstInput) firstInput.focus();
       }, 100);
-      return;
-    }
-    dispatch(clearError());
-    const loginResult = await dispatch(loginUserThunk(phoneNumber));
-    if (loginUserThunk.fulfilled.match(loginResult)) {
-      logger.log('Login successful');
     }
   };
 
   const handleResendOTP = async () => {
     setCanResend(false);
     dispatch(clearError());
-    const otpCode = generateOTP();
-    setGeneratedOTP(otpCode);
     setOtp(['', '', '', '', '', '']);
-    const sendResult = await dispatch(sendOTPThunk({ phoneNumber, otpCode }));
+    const sendResult = await dispatch(sendOTPThunk({ phoneNumber }));
     if (sendOTPThunk.fulfilled.match(sendResult)) {
-      setResendTimer(60);
+      setResendTimer(Number(sendResult.payload?.cooldown_seconds || 60));
     } else {
       setCanResend(true);
     }
@@ -159,7 +141,6 @@ const Login = () => {
   const handleBackToPhone = () => {
     setShowOTPInput(false);
     setOtp(['', '', '', '', '', '']);
-    setGeneratedOTP('');
     dispatch(clearError());
   };
 

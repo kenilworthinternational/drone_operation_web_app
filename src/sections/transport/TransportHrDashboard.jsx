@@ -20,6 +20,7 @@ import {
   useGetVehicleAppVehiclesQuery,
   useHrDecideVehicleMaintenanceRequestMutation,
 } from '../../api/services NodeJs/vehicleAppApi';
+import { getNodeBackendUrl } from '../../api/services NodeJs/nodeBackendConfig';
 import {
   useGetAdvanceRequestsForHrQuery,
   useGetLeaveDaysForHrQuery,
@@ -79,11 +80,50 @@ function monthLabelFromYearMonth(ym) {
   return new Date(y, m - 1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 }
 
-function getHrStatusInfo(row) {
-  const status = String(row?.hr_approval || row?.approval || 'p').toLowerCase();
-  if (status === 'a') return { label: 'HR Approved', bg: '#dcfce7', color: '#166534' };
-  if (status === 'd') return { label: 'HR Declined', bg: '#fee2e2', color: '#991b1b' };
-  return { label: 'HR Pending', bg: '#fef3c7', color: '#92400e' };
+function resolveMaintenanceImageCandidates(row, type) {
+  const direct =
+    type === 'damage'
+      ? (row?.image_url || row?.image)
+      : type === 'bill'
+        ? (row?.image_2_url || row?.image_2)
+        : (row?.payment_image_url || row?.payment_image);
+  const text = String(direct || '').trim();
+  if (!text) return [];
+  if (text.startsWith('data:')) return [text];
+
+  const apiBase = String(getNodeBackendUrl() || '').replace(/\/+$/, '');
+  const candidates = [];
+  if (/^https?:\/\//i.test(text)) {
+    candidates.push(text);
+    try {
+      const parsed = new URL(text);
+      const fileName = (parsed.pathname.split('/').pop() || '').trim();
+      if (fileName && /\.(jpg|jpeg|png|webp|gif|pdf)$/i.test(fileName)) {
+        candidates.push(`${apiBase}/uploads/maintenance_requests/${fileName}`);
+        candidates.push(`${apiBase}/uploads/vehicle_day/${fileName}`);
+        candidates.push(`${apiBase}/uploads/transactions/${fileName}`);
+      }
+    } catch (_) {}
+    return [...new Set(candidates)];
+  }
+
+  const normalizedPath = text.startsWith('/') ? text : `/${text}`;
+  if (normalizedPath.startsWith('/uploads/')) {
+    candidates.push(`${apiBase}${normalizedPath}`);
+    candidates.push(normalizedPath);
+    return [...new Set(candidates)];
+  }
+
+  const fileName = text.split('/').pop();
+  if (fileName && /\.(jpg|jpeg|png|webp|gif|pdf)$/i.test(fileName)) {
+    candidates.push(`${apiBase}/uploads/maintenance_requests/${fileName}`);
+    candidates.push(`${apiBase}/uploads/vehicle_day/${fileName}`);
+    candidates.push(`${apiBase}/uploads/transactions/${fileName}`);
+    candidates.push(`/uploads/maintenance_requests/${fileName}`);
+    candidates.push(`/uploads/vehicle_day/${fileName}`);
+    candidates.push(`/uploads/transactions/${fileName}`);
+  }
+  return [...new Set(candidates)];
 }
 
 const MODULE_META = [
@@ -123,6 +163,13 @@ function TransportHrDashboard() {
     title: '',
     message: '',
     tone: 'success',
+  });
+  const [imagePreview, setImagePreview] = useState({
+    open: false,
+    title: '',
+    urls: [],
+    index: 0,
+    failed: false,
   });
   const [fetchLeaveByMonth, leaveByMonthResult] = useLazyGetLeaveDaysForHrByMonthQuery();
   const rollingMonthOptions = useMemo(() => getRollingMonthOptions(24), []);
@@ -386,6 +433,216 @@ function TransportHrDashboard() {
       }));
     }
   };
+  const openImagePreview = (urlOrUrls, title) => {
+    const baseUrls = Array.isArray(urlOrUrls) ? urlOrUrls : [urlOrUrls];
+    const primary = String(baseUrls[0] || '').trim();
+    if (!primary) return;
+    const urls = baseUrls.filter(Boolean).map((item) => String(item).trim());
+    try {
+      const parsed = new URL(primary, window.location.origin);
+      // Try same path on current host too (helps when API base URL points elsewhere).
+      urls.push(`${window.location.origin}${parsed.pathname}`);
+      if (parsed.pathname.includes('/uploads/maintenance_requests/')) {
+        urls.push(`${window.location.origin}${parsed.pathname.replace('/uploads/maintenance_requests/', '/uploads/vehicle_day/')}`);
+      }
+    } catch (_) {}
+    if (primary.includes('/uploads/maintenance_requests/')) {
+      urls.push(primary.replace('/uploads/maintenance_requests/', '/uploads/vehicle_day/'));
+    }
+    setImagePreview({
+      open: true,
+      title: title || 'Image Preview',
+      urls: [...new Set(urls)],
+      index: 0,
+      failed: false,
+    });
+  };
+  const closeImagePreview = () => {
+    setImagePreview({ open: false, title: '', urls: [], index: 0, failed: false });
+  };
+  const renderImagePreviewModal = () => (
+    imagePreview.open ? (
+      <div
+        role="presentation"
+        className="quick-add-overlay-transport-hr"
+        onClick={closeImagePreview}
+      >
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="quick-add-modal-transport-hr"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="quick-add-modal-toolbar-transport-hr">
+            <h3 className="quick-add-modal-title-transport-hr">{imagePreview.title || 'Preview'}</h3>
+            <button type="button" className="action-btn-secondary-transport-hr" onClick={closeImagePreview}>Close</button>
+          </div>
+          <div className="quick-add-modal-body-transport-hr" style={{ textAlign: 'center' }}>
+            {(() => {
+              const currentUrl = imagePreview.urls[imagePreview.index] || '';
+              if (!currentUrl) {
+                return <p style={{ color: '#6b7280' }}>Image URL not available.</p>;
+              }
+              const isPdf = /\.pdf($|\?)/i.test(currentUrl);
+              if (isPdf) {
+                return (
+                  <iframe
+                    src={currentUrl}
+                    title="preview-pdf"
+                    style={{ width: '100%', height: 420, border: '1px solid #e5e7eb', borderRadius: 8 }}
+                  />
+                );
+              }
+              return (
+                <img
+                  src={currentUrl}
+                  alt="preview"
+                  style={{ maxWidth: '100%', maxHeight: 420, objectFit: 'contain', borderRadius: 8 }}
+                  onError={() => {
+                    if (imagePreview.index + 1 < imagePreview.urls.length) {
+                      setImagePreview((prev) => ({ ...prev, index: prev.index + 1, failed: false }));
+                    } else {
+                      setImagePreview((prev) => ({ ...prev, failed: true }));
+                    }
+                  }}
+                />
+              );
+            })()}
+            {imagePreview.failed ? (
+              <p style={{ marginTop: 10, color: '#b91c1c', fontWeight: 600 }}>
+                Image not found.
+              </p>
+            ) : null}
+          </div>
+        </div>
+      </div>
+    ) : null
+  );
+  const renderHrDecisionModal = () => (
+    hrDecisionModal.open ? (
+      <div
+        role="presentation"
+        className="quick-add-overlay-transport-hr"
+        onClick={savingHrDecision ? undefined : closeHrDecisionModal}
+      >
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="transport-hr-maintenance-decision-title"
+          className="quick-add-modal-transport-hr maintenance-decision-modal-maintenance-approv"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="quick-add-modal-toolbar-transport-hr">
+            <h3 id="transport-hr-maintenance-decision-title" className="quick-add-modal-title-transport-hr">
+              Confirm {hrDecisionModal.approval === 'a' ? 'Approval' : 'Decline'}
+            </h3>
+            <button
+              type="button"
+              className="action-btn-secondary-transport-hr"
+              onClick={closeHrDecisionModal}
+              disabled={savingHrDecision}
+            >
+              Close
+            </button>
+          </div>
+          <div className="quick-add-modal-body-transport-hr maintenance-decision-body-maintenance-approv">
+            <p className="maintenance-decision-intent-maintenance-approv">
+              {hrDecisionModal.approval === 'a'
+                ? 'This action will approve the request for processing.'
+                : 'Please provide a clear reason. Driver will see this message.'}
+            </p>
+            <div className="maintenance-decision-meta-maintenance-approv">
+              <span><strong>Request:</strong> #{hrDecisionModal.row?.id || '-'}</span>
+              <span><strong>Vehicle:</strong> {hrDecisionModal.row?.vehicle_no || '-'}</span>
+              <span><strong>Driver:</strong> {hrDecisionModal.row?.driver_name || '-'}</span>
+            </div>
+            {hrDecisionModal.approval === 'd' ? (
+              <div className="maintenance-decision-reason-wrap-maintenance-approv">
+                <label htmlFor="transport-hr-decline-reason" className="maintenance-decision-reason-label-maintenance-approv">
+                  Decline Reason
+                </label>
+                <textarea
+                  id="transport-hr-decline-reason"
+                  rows={4}
+                  className="maintenance-decision-reason-input-maintenance-approv"
+                  value={hrDecisionModal.declineReason}
+                  onChange={(e) => setHrDecisionModal((prev) => ({ ...prev, declineReason: e.target.value, error: '' }))}
+                  placeholder="Enter reason for declining this request"
+                />
+              </div>
+            ) : (
+              <p className="maintenance-decision-confirm-text-maintenance-approv">
+                Are you sure you want to approve this maintenance request?
+              </p>
+            )}
+            {hrDecisionModal.error ? (
+              <p className="maintenance-decision-error-maintenance-approv">
+                {hrDecisionModal.error}
+              </p>
+            ) : null}
+            <div className="maintenance-decision-actions-maintenance-approv">
+              <button
+                type="button"
+                className="maintenance-decision-btn-maintenance-approv maintenance-decision-btn-cancel-maintenance-approv"
+                onClick={closeHrDecisionModal}
+                disabled={savingHrDecision}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="maintenance-decision-btn-maintenance-approv maintenance-decision-btn-confirm-maintenance-approv"
+                onClick={submitHrDecision}
+                disabled={savingHrDecision}
+              >
+                {savingHrDecision ? 'Saving...' : hrDecisionModal.approval === 'a' ? 'Approve Request' : 'Decline Request'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    ) : null
+  );
+  const renderHrDecisionNoticeModal = () => (
+    hrDecisionNotice.open ? (
+      <div
+        role="presentation"
+        className="quick-add-overlay-transport-hr"
+        onClick={() => setHrDecisionNotice({ open: false, title: '', message: '', tone: 'success' })}
+      >
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="quick-add-modal-transport-hr"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="quick-add-modal-toolbar-transport-hr">
+            <h3 className="quick-add-modal-title-transport-hr">{hrDecisionNotice.title}</h3>
+          </div>
+          <div className="quick-add-modal-body-transport-hr">
+            <p
+              style={{
+                marginTop: 0,
+                color: hrDecisionNotice.tone === 'error' ? '#b91c1c' : '#14532d',
+                fontWeight: 600,
+              }}
+            >
+              {hrDecisionNotice.message}
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                className="action-btn-outline-transport-hr"
+                onClick={() => setHrDecisionNotice({ open: false, title: '', message: '', tone: 'success' })}
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    ) : null
+  );
   const chartVehicleOptions = useMemo(
     () =>
       [...new Set((vehicles || []).map((row) => String(row?.vehicle_no || '').trim()).filter(Boolean))]
@@ -593,38 +850,81 @@ function TransportHrDashboard() {
                 <th>Vehicle</th>
                 <th>Driver</th>
                 <th>Category</th>
-                <th>Status</th>
+                <th>Description</th>
+                <th>Incident Image</th>
+                <th>Bill Image</th>
+                <th>Finance Status</th>
+                <th>Paid</th>
+                <th>Paid Receipt</th>
                 <th>Action</th>
               </tr>
             </thead>
             <tbody>
               {filteredMaintenanceRequests.map((row) => (
                 <tr key={row.id}>
+                  {(() => {
+                    const damageUrls = resolveMaintenanceImageCandidates(row, 'damage');
+                    const billUrls = resolveMaintenanceImageCandidates(row, 'bill');
+                    const receiptUrls = resolveMaintenanceImageCandidates(row, 'receipt');
+                    return (
+                      <>
                   <td>{row.id}</td>
                   <td>{toDateOnly(row.date)}</td>
                   <td>{row.vehicle_no || row.vehicle || '-'}</td>
                   <td>{row.driver_name || row.driver || '-'}</td>
                   <td>{row.category_name || row.category || '-'}</td>
+                  <td>{String(row?.description || '').trim() || '-'}</td>
+                  <td>
+                    {damageUrls.length ? (
+                      <button
+                        type="button"
+                        className="image-view-btn-maintenance-approv"
+                        onClick={() => openImagePreview(damageUrls, `Incident Image - Request #${row.id}`)}
+                      >
+                        View
+                      </button>
+                    ) : (
+                      <span className="image-empty-maintenance-approv">-</span>
+                    )}
+                  </td>
+                  <td>
+                    {billUrls.length ? (
+                      <button
+                        type="button"
+                        className="image-view-btn-maintenance-approv"
+                        onClick={() => openImagePreview(billUrls, `Bill Image - Request #${row.id}`)}
+                      >
+                        View
+                      </button>
+                    ) : (
+                      <span className="image-empty-maintenance-approv">-</span>
+                    )}
+                  </td>
                   <td>
                     {(() => {
-                      const statusInfo = getHrStatusInfo(row);
-                      return (
-                        <span
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            padding: '2px 10px',
-                            borderRadius: 999,
-                            fontSize: 12,
-                            fontWeight: 700,
-                            background: statusInfo.bg,
-                            color: statusInfo.color,
-                          }}
-                        >
-                          {statusInfo.label}
-                        </span>
-                      );
+                      const fin = String(row?.finance_approval || 'p').toLowerCase();
+                      if (fin === 'a') return <span className="finance-status-maintenance-approv finance-status-maintenance-approv--approved">Approved</span>;
+                      if (fin === 'd') return <span className="finance-status-maintenance-approv finance-status-maintenance-approv--declined">Declined</span>;
+                      return <span className="finance-status-maintenance-approv finance-status-maintenance-approv--pending">Pending</span>;
                     })()}
+                  </td>
+                  <td>{Number(row?.finance_paid || 0) === 1 ? 'Yes' : 'No'}</td>
+                  <td>
+                    {Number(row?.finance_paid || 0) === 1 ? (
+                      receiptUrls.length ? (
+                        <button
+                          type="button"
+                          className="image-view-btn-maintenance-approv"
+                          onClick={() => openImagePreview(receiptUrls, `Paid Receipt - Request #${row.id}`)}
+                        >
+                          View
+                        </button>
+                      ) : (
+                        <span className="image-empty-maintenance-approv">-</span>
+                      )
+                    ) : (
+                      <span className="image-empty-maintenance-approv">-</span>
+                    )}
                   </td>
                   <td>
                     {String(row?.hr_approval || row?.approval || 'p') === 'p' ? (
@@ -647,14 +947,25 @@ function TransportHrDashboard() {
                         </button>
                       </div>
                     ) : (
-                      <span style={{ color: '#6b7280', fontSize: 12 }}>Completed</span>
+                      <span
+                        style={{
+                          color: String(row?.hr_approval || row?.approval || 'p') === 'a' ? '#166534' : '#991b1b',
+                          fontSize: 12,
+                          fontWeight: 700,
+                        }}
+                      >
+                        {String(row?.hr_approval || row?.approval || 'p') === 'a' ? 'Approved' : 'Declined'}
+                      </span>
                     )}
                   </td>
+                      </>
+                    );
+                  })()}
                 </tr>
               ))}
               {!filteredMaintenanceRequests.length ? (
                 <tr>
-                  <td colSpan={7}>No maintenance requests for selected filters.</td>
+                  <td colSpan={12}>No maintenance requests for selected filters.</td>
                 </tr>
               ) : null}
             </tbody>
@@ -698,6 +1009,9 @@ function TransportHrDashboard() {
           </div>
           <div className="standalone-details-body-transport-hr">{renderDetailsContent()}</div>
         </div>
+        {renderHrDecisionModal()}
+        {renderHrDecisionNoticeModal()}
+        {renderImagePreviewModal()}
       </div>
     );
   }
@@ -1159,131 +1473,8 @@ function TransportHrDashboard() {
         </div>
       )}
 
-      {hrDecisionModal.open && (
-        <div
-          role="presentation"
-          className="quick-add-overlay-transport-hr"
-          onClick={savingHrDecision ? undefined : closeHrDecisionModal}
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="transport-hr-maintenance-decision-title"
-            className="quick-add-modal-transport-hr"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="quick-add-modal-toolbar-transport-hr">
-              <h3 id="transport-hr-maintenance-decision-title" className="quick-add-modal-title-transport-hr">
-                Confirm {hrDecisionModal.approval === 'a' ? 'Approval' : 'Decline'}
-              </h3>
-              <button
-                type="button"
-                className="action-btn-secondary-transport-hr"
-                onClick={closeHrDecisionModal}
-                disabled={savingHrDecision}
-              >
-                Close
-              </button>
-            </div>
-            <div className="quick-add-modal-body-transport-hr">
-              <p className="quick-add-modal-hint-transport-hr" style={{ marginTop: 0 }}>
-                Request #{hrDecisionModal.row?.id} • Vehicle {hrDecisionModal.row?.vehicle_no || '-'} • Driver {hrDecisionModal.row?.driver_name || '-'}
-              </p>
-              {hrDecisionModal.approval === 'd' ? (
-                <div style={{ display: 'grid', gap: 6 }}>
-                  <label htmlFor="transport-hr-decline-reason" style={{ fontWeight: 600, fontSize: 13, color: '#1f2937' }}>
-                    Decline Reason
-                  </label>
-                  <textarea
-                    id="transport-hr-decline-reason"
-                    rows={4}
-                    value={hrDecisionModal.declineReason}
-                    onChange={(e) => setHrDecisionModal((prev) => ({ ...prev, declineReason: e.target.value, error: '' }))}
-                    placeholder="Enter reason for declining this request"
-                    style={{
-                      width: '100%',
-                      maxWidth: '100%',
-                      boxSizing: 'border-box',
-                      border: '1px solid #d1d5db',
-                      borderRadius: 8,
-                      padding: 10,
-                      fontSize: 13,
-                      resize: 'vertical',
-                      fontFamily: 'inherit',
-                    }}
-                  />
-                </div>
-              ) : (
-                <p style={{ margin: 0, color: '#334155', fontSize: 14 }}>
-                  Are you sure you want to approve this maintenance request?
-                </p>
-              )}
-              {hrDecisionModal.error ? (
-                <p style={{ margin: '10px 0 0', color: '#b91c1c', fontSize: 13, fontWeight: 600 }}>
-                  {hrDecisionModal.error}
-                </p>
-              ) : null}
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 14 }}>
-                <button
-                  type="button"
-                  className="action-btn-secondary-transport-hr"
-                  onClick={closeHrDecisionModal}
-                  disabled={savingHrDecision}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  className="action-btn-outline-transport-hr"
-                  onClick={submitHrDecision}
-                  disabled={savingHrDecision}
-                >
-                  {savingHrDecision ? 'Saving...' : 'Confirm'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {hrDecisionNotice.open && (
-        <div
-          role="presentation"
-          className="quick-add-overlay-transport-hr"
-          onClick={() => setHrDecisionNotice({ open: false, title: '', message: '', tone: 'success' })}
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            className="quick-add-modal-transport-hr"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="quick-add-modal-toolbar-transport-hr">
-              <h3 className="quick-add-modal-title-transport-hr">{hrDecisionNotice.title}</h3>
-            </div>
-            <div className="quick-add-modal-body-transport-hr">
-              <p
-                style={{
-                  marginTop: 0,
-                  color: hrDecisionNotice.tone === 'error' ? '#b91c1c' : '#14532d',
-                  fontWeight: 600,
-                }}
-              >
-                {hrDecisionNotice.message}
-              </p>
-              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <button
-                  type="button"
-                  className="action-btn-outline-transport-hr"
-                  onClick={() => setHrDecisionNotice({ open: false, title: '', message: '', tone: 'success' })}
-                >
-                  OK
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {renderHrDecisionModal()}
+      {renderHrDecisionNoticeModal()}
 
       {addDriverOpen && (
         <div
@@ -1325,6 +1516,8 @@ function TransportHrDashboard() {
           </div>
         </div>
       )}
+
+      {renderImagePreviewModal()}
 
       {leaveHistoryOpen && (
         <div

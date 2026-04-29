@@ -7,8 +7,6 @@ import {
   useSaveVehicleAppVehicleCategoryMutation,
   useGetVehicleAppMaintenanceCategoriesQuery,
   useSaveVehicleAppMaintenanceCategoryMutation,
-  useGetVehicleAppMaintenanceDescriptionsQuery,
-  useSaveVehicleAppMaintenanceDescriptionMutation,
   useGetVehicleAppMaintenanceRequestsQuery,
   useDecideVehicleAppMaintenanceRequestMutation,
 } from '../../../api/services NodeJs/vehicleAppApi';
@@ -54,7 +52,6 @@ const MasterData = ({ mode = 'full' }) => {
   const { data: drivers = [] } = useGetVehicleAppDriversQuery();
   const { data: vehicleCategories = [] } = useGetVehicleAppVehicleCategoriesQuery();
   const { data: maintenanceCategories = [] } = useGetVehicleAppMaintenanceCategoriesQuery();
-  const { data: maintenanceDescriptions = [] } = useGetVehicleAppMaintenanceDescriptionsQuery();
   const { data: maintenanceRequests = [] } = useGetVehicleAppMaintenanceRequestsQuery(yearMonth);
   const { data: fuelCategories = [], refetch: refetchFuelCategories } = useGetFuelCategoriesQuery();
   const { data: wingsData, refetch: refetchWings } = useGetWingsQuery();
@@ -100,7 +97,6 @@ const MasterData = ({ mode = 'full' }) => {
 
   const [saveVehicleCategory] = useSaveVehicleAppVehicleCategoryMutation();
   const [saveMaintenanceCategory] = useSaveVehicleAppMaintenanceCategoryMutation();
-  const [saveMaintenanceDescription] = useSaveVehicleAppMaintenanceDescriptionMutation();
   const [decideMaintenance] = useDecideVehicleAppMaintenanceRequestMutation();
   const [saveFuelCategory] = useSaveFuelCategoryMutation();
   const [saveWing] = useSaveWingMutation();
@@ -113,7 +109,6 @@ const MasterData = ({ mode = 'full' }) => {
   const [sendMessage] = useSendMessageMutation();
 
   const [newMaintenanceCategory, setNewMaintenanceCategory] = useState('');
-  const [newMaintenanceDescription, setNewMaintenanceDescription] = useState('');
 
   const [newFuelCategory, setNewFuelCategory] = useState('');
   const [newFuelUnitPrice, setNewFuelUnitPrice] = useState('');
@@ -200,7 +195,6 @@ const MasterData = ({ mode = 'full' }) => {
       });
     }
     if (type === 'maintenanceCategory') setModalDraft({ category: item.category || '' });
-    if (type === 'maintenanceDescription') setModalDraft({ description: item.description || '' });
     if (type === 'fuel') setModalDraft({ category: item.category || '', unit_price: item.unit_price != null ? String(item.unit_price) : '' });
     if (type === 'wing') setModalDraft({ wing: item.wing || '', wingsCode: item.wingsCode || '', hod: item.hod ? String(item.hod) : '' });
     if (type === 'workLocation') {
@@ -278,8 +272,6 @@ const MasterData = ({ mode = 'full' }) => {
         await refreshVehicleMasters();
       } else if (editModal.type === 'maintenanceCategory') {
         await saveMaintenanceCategory({ id: editModal.item.id, category: modalDraft.category, activated: editModal.item.activated ?? 1 }).unwrap();
-      } else if (editModal.type === 'maintenanceDescription') {
-        await saveMaintenanceDescription({ id: editModal.item.id, description: modalDraft.description, activated: editModal.item.activated ?? 1 }).unwrap();
       } else if (editModal.type === 'fuel') {
         await saveFuelCategory({
           id: editModal.item.id,
@@ -327,6 +319,7 @@ const MasterData = ({ mode = 'full' }) => {
       </div>
       {quickMessage.text ? (
         <div
+          className="master-data-flash-banner-master-data"
           style={{
             marginBottom: '12px',
             padding: '10px 12px',
@@ -405,7 +398,6 @@ const MasterData = ({ mode = 'full' }) => {
               { key: 'wings', label: 'Wings' },
               { key: 'workLocations', label: 'Work Locations' },
               { key: 'maintenanceCategories', label: 'Maintenance Categories' },
-              { key: 'maintenanceDescriptions', label: 'Maintenance Descriptions' },
               { key: 'securityCodes', label: 'Security Codes' },
             ].map((item) => (
               <button
@@ -579,29 +571,6 @@ const MasterData = ({ mode = 'full' }) => {
                       <span className="master-label-master-data">{c.category}</span>
                       <div className="master-actions-master-data">
                         <button className="action-btn-master-data neutral-master-data" onClick={() => openEditModal('maintenanceCategory', c)}>Edit</button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {selectedMasterModule === 'maintenanceDescriptions' && (
-              <div className="vehicle-admin-card-master-data">
-                <h3>Maintenance Descriptions</h3>
-                <div className="inline-form-master-data">
-                  <input value={newMaintenanceDescription} onChange={(e) => setNewMaintenanceDescription(e.target.value)} placeholder="New description" />
-                  <button onClick={() => handleQuickSave(async () => {
-                    await saveMaintenanceDescription({ description: newMaintenanceDescription, activated: 1 }).unwrap();
-                    setNewMaintenanceDescription('');
-                  })}>Add</button>
-                </div>
-                <div className="master-list-master-data">
-                  {maintenanceDescriptions.map((c) => (
-                    <div key={c.id} className="master-row-master-data">
-                      <span className="master-label-master-data">{c.description}</span>
-                      <div className="master-actions-master-data">
-                        <button className="action-btn-master-data neutral-master-data" onClick={() => openEditModal('maintenanceDescription', c)}>Edit</button>
                       </div>
                     </div>
                   ))}
@@ -817,14 +786,6 @@ const MasterData = ({ mode = 'full' }) => {
                   placeholder="Model"
                 />
               </div>
-            )}
-            {editModal.type === 'maintenanceDescription' && (
-              <input
-                className="master-edit-input-master-data"
-                value={modalDraft.description || ''}
-                onChange={(e) => setModalDraft((p) => ({ ...p, description: e.target.value }))}
-                placeholder="Description"
-              />
             )}
             {editModal.type === 'fuel' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>

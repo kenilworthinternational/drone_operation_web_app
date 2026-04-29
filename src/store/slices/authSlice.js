@@ -1,6 +1,12 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { baseApi } from '../../api/services/allEndpoints';
+import { getNodeBackendUrl } from '../../api/services NodeJs/nodeBackendConfig';
 import { logger } from '../../utils/logger';
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const AUTH_PUBLIC_BASE = `${getNodeBackendUrl()}/api/public/login`;
+
+const parseApiMessage = (payload, fallback) =>
+  payload?.message || payload?.error || fallback;
 
 // Load initial state from localStorage
 // Note: We load user data and token for API calls, but don't auto-authenticate
@@ -33,15 +39,23 @@ const loadInitialState = () => {
 // Async thunks using RTK Query
 export const verifyUserThunk = createAsyncThunk(
   'auth/verifyUser',
-  async (phoneNumber, { dispatch, rejectWithValue }) => {
+  async (phoneNumber, { rejectWithValue }) => {
     try {
-      const result = await dispatch(
-        baseApi.endpoints.verifyUser.initiate(phoneNumber)
-      );
-      if (result.data?.status === 'true') {
-        return { phoneNumber, verified: true };
+      const response = await fetch(`${AUTH_PUBLIC_BASE}/request-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mobile_no: phoneNumber }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (response.ok && payload?.status === true) {
+        return {
+          phoneNumber,
+          verified: true,
+          cooldown_seconds: Number(payload?.data?.cooldown_seconds || 60),
+          expires_in_seconds: Number(payload?.data?.expires_in_seconds || 300),
+        };
       }
-      return rejectWithValue('Not a verified user.');
+      return rejectWithValue(parseApiMessage(payload, 'Failed to send OTP'));
     } catch (error) {
       return rejectWithValue(error.message || 'Verification failed');
     }
@@ -50,36 +64,70 @@ export const verifyUserThunk = createAsyncThunk(
 
 export const sendOTPThunk = createAsyncThunk(
   'auth/sendOTP',
-  async ({ phoneNumber, otpCode }, { dispatch, rejectWithValue }) => {
-    try {
-      const result = await dispatch(
-        baseApi.endpoints.sendOTP.initiate({ mobile_no: phoneNumber, otp: otpCode })
-      );
-      if (result.data?.status === 'true') {
-        return { success: true };
+  async ({ phoneNumber }, { rejectWithValue }) => {
+    const maxAttempts = 3;
+    const endpoint = `${AUTH_PUBLIC_BASE}/request-otp`;
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      try {
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            mobile_no: phoneNumber,
+          }),
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (response.ok && payload?.status === true) {
+          return {
+            success: true,
+            cooldown_seconds: Number(payload?.data?.cooldown_seconds || 60),
+            expires_in_seconds: Number(payload?.data?.expires_in_seconds || 300),
+          };
+        }
+
+        const statusCode = Number(response?.status || 0);
+        const isRetryable = statusCode >= 500 || statusCode === 0;
+        if (attempt < maxAttempts && isRetryable) {
+          await sleep(attempt * 900);
+          continue;
+        }
+
+        const apiMessage = parseApiMessage(payload, '');
+        const fallback =
+          statusCode >= 500
+            ? 'OTP service is temporarily unavailable. Please try again in a few seconds.'
+            : 'Failed to send OTP';
+        return rejectWithValue(apiMessage || fallback);
+      } catch (error) {
+        if (attempt < maxAttempts) {
+          await sleep(attempt * 900);
+          continue;
+        }
+        const msg = error?.message || 'Failed to send OTP';
+        return rejectWithValue(msg);
       }
-      return rejectWithValue('Failed to send OTP');
-    } catch (error) {
-      return rejectWithValue(error.message || 'Failed to send OTP');
     }
+    return rejectWithValue('Failed to send OTP');
   }
 );
 
 export const loginUserThunk = createAsyncThunk(
   'auth/loginUser',
-  async (phoneNumber, { dispatch, rejectWithValue }) => {
+  async ({ phoneNumber, otp }, { rejectWithValue }) => {
     try {
-      const result = await dispatch(
-        baseApi.endpoints.loginUser.initiate(phoneNumber)
-      );
-      const response = result.data;
+      const apiResponse = await fetch(`${AUTH_PUBLIC_BASE}/verify-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mobile_no: phoneNumber, otp }),
+      });
+      const response = await apiResponse.json().catch(() => ({}));
       if (response?.login_status === true && response?.token) {
         // Store in localStorage
         localStorage.setItem('userData', JSON.stringify(response));
         localStorage.setItem('token', response.token);
         return response;
       }
-      return rejectWithValue('Login failed. Invalid credentials.');
+      return rejectWithValue(parseApiMessage(response, 'Login failed. Invalid OTP.'));
     } catch (error) {
       return rejectWithValue(error.message || 'Login failed');
     }

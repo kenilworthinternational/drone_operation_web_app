@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { CircularProgress } from '@mui/material';
 import {
   BarChart,
@@ -125,12 +125,6 @@ function TransportFinanceDashboard() {
 
   const loading = rentLoading || advanceLoading || maintenanceLoading;
 
-  useEffect(() => {
-    // #region agent log
-    fetch('http://127.0.0.1:7388/ingest/2847869f-00fd-4bf5-84a4-26f0333f83f0',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'6fcd8b'},body:JSON.stringify({sessionId:'6fcd8b',runId:'pre-fix-1',hypothesisId:'H1',location:'TransportFinanceDashboard.jsx:loading+maintenanceRows',message:'Finance dashboard maintenance dataset snapshot',data:{selectedMonth,maintenanceLoading,maintenanceRowsCount:Array.isArray(maintenanceRows)?maintenanceRows.length:-1,maintenancePendingFinance:kpi.maintenancePendingFinance,activeSection},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion
-  }, [selectedMonth, maintenanceLoading, maintenanceRows, kpi.maintenancePendingFinance, activeSection]);
-
   const sectionCards = [
     {
       key: 'vehicleSummary',
@@ -226,7 +220,25 @@ function TransportFinanceDashboard() {
         </label>
       </div>
 
-      {loading ? (
+      {activeSection ? (
+        <div className="transport-finance-inline-panel transport-finance-standalone-panel">
+          <div className="transport-finance-section-toolbar">
+            <button
+              type="button"
+              className="transport-finance-back-btn"
+              onClick={() => setActiveSection('')}
+            >
+              Back
+            </button>
+            <strong>
+              {sectionCards.find((s) => s.key === activeSection)?.title || 'Finance Section'}
+            </strong>
+          </div>
+          <div className="transport-finance-section-wrap">
+            {renderActiveSection()}
+          </div>
+        </div>
+      ) : loading ? (
         <div className="transport-finance-loading">
           <CircularProgress />
         </div>
@@ -310,63 +322,32 @@ function TransportFinanceDashboard() {
               )}
             </div>
           </div>
+
+          <div className="transport-finance-module-grid">
+            {sectionCards.map((card) => (
+              <button
+                key={card.key}
+                type="button"
+                className="transport-finance-module-card"
+                onClick={() => setActiveSection(card.key)}
+              >
+                <strong>{card.title}</strong>
+                <span>{card.caption}</span>
+                {card.stats ? (
+                  <div className="transport-finance-module-stats">
+                    {card.stats.map((stat) => (
+                      <div key={`${card.key}-${stat.label}`} className={`transport-finance-module-stat ${stat.tone}`}>
+                        <small>{stat.label}</small>
+                        <b>{stat.value}</b>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+              </button>
+            ))}
+          </div>
         </>
       )}
-
-      <div className="transport-finance-module-grid">
-        {sectionCards.map((card) => (
-          <button
-            key={card.key}
-            type="button"
-            className="transport-finance-module-card"
-            onClick={() => setActiveSection(card.key)}
-          >
-            <strong>{card.title}</strong>
-            <span>{card.caption}</span>
-            {card.stats ? (
-              <div className="transport-finance-module-stats">
-                {card.stats.map((stat) => (
-                  <div key={`${card.key}-${stat.label}`} className={`transport-finance-module-stat ${stat.tone}`}>
-                    <small>{stat.label}</small>
-                    <b>{stat.value}</b>
-                  </div>
-                ))}
-              </div>
-            ) : null}
-          </button>
-        ))}
-      </div>
-
-      {activeSection ? (
-        <div
-          className="transport-finance-overlay"
-          role="presentation"
-          onClick={() => setActiveSection('')}
-        >
-          <div
-            className="transport-finance-overlay-panel"
-            role="dialog"
-            aria-modal="true"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="transport-finance-section-toolbar">
-              <button
-                type="button"
-                className="transport-finance-back-btn"
-                onClick={() => setActiveSection('')}
-              >
-                Back
-              </button>
-              <strong>
-                {sectionCards.find((s) => s.key === activeSection)?.title || 'Finance Section'}
-              </strong>
-            </div>
-            <div className="transport-finance-section-wrap">
-              {renderActiveSection()}
-            </div>
-          </div>
-        </div>
-      ) : null}
     </div>
   );
 }
