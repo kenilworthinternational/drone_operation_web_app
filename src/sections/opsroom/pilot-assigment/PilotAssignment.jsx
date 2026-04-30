@@ -515,7 +515,7 @@ const PilotAssignment = () => {
       <div className="pilot-assignment-content-pilotsassign">
         {/* Plans Section */}
         <div className="pilot-assignment-section-pilotsassign">
-          <h2 className="pilot-assignment-section-title-pilotsassign">Plans</h2>
+          <h2 className="pilot-assignment-section-title-pilotsassign">Plantation</h2>
           
           {loadingPlans ? (
             <div className="pilot-assignment-loading-pilotsassign">
@@ -525,7 +525,7 @@ const PilotAssignment = () => {
           ) : (
             <div className="pilot-assignment-plans-grid-pilotsassign">
               {plans.length === 0 ? (
-                <div className="pilot-assignment-empty-pilotsassign">No plans available for this date</div>
+                <div className="pilot-assignment-empty-pilotsassign">No Plantation tasks available for this date</div>
               ) : (
                 plans.map(plan => {
                   // Check if selected team matches assigned team (for editing)
@@ -570,7 +570,7 @@ const PilotAssignment = () => {
 
         {/* Missions Section */}
         <div className="pilot-assignment-section-pilotsassign">
-          <h2 className="pilot-assignment-section-title-pilotsassign">Missions</h2>
+          <h2 className="pilot-assignment-section-title-pilotsassign">Non Plantation</h2>
           
           {loadingMissions ? (
             <div className="pilot-assignment-loading-pilotsassign">
@@ -580,7 +580,7 @@ const PilotAssignment = () => {
           ) : (
             <div className="pilot-assignment-plans-grid-pilotsassign">
               {missions.length === 0 ? (
-                <div className="pilot-assignment-empty-pilotsassign">No missions available for this date</div>
+                <div className="pilot-assignment-empty-pilotsassign">Non Plantation tasks available for this date</div>
               ) : (
                 missions.map(mission => {
                   // Check if selected team matches assigned team (for editing)

@@ -395,11 +395,6 @@
     color: #064e3b;
 }
 
-.absent-pill-roaster {
-    border-color: #b91c1c;
-    background: #fca5a5;
-    color: #450a0a;
-}
 
 .editing-pill-roaster {
     border-color: #d79230;
@@ -626,16 +621,11 @@
     border: 1px solid #047857;
 }
 
-.day-cell-roaster.absent {
-    background: #fca5a5;
-    border: 1px solid #b91c1c;
-}
 
 /* Restore holiday top accent after state borders (`.leave` etc. use `border` shorthand and would reset `border-top`). */
 .day-cell-roaster.leave.holiday-mercantile-roaster,
 .day-cell-roaster.requested.holiday-mercantile-roaster,
 .day-cell-roaster.attended.holiday-mercantile-roaster,
-.day-cell-roaster.absent.holiday-mercantile-roaster,
 .day-cell-roaster.weekend.holiday-mercantile-roaster {
     border-top-width: 3px;
     border-top-style: solid;
@@ -645,7 +635,6 @@
 .day-cell-roaster.leave.holiday-poya-roaster,
 .day-cell-roaster.requested.holiday-poya-roaster,
 .day-cell-roaster.attended.holiday-poya-roaster,
-.day-cell-roaster.absent.holiday-poya-roaster,
 .day-cell-roaster.weekend.holiday-poya-roaster {
     border-top-width: 3px;
     border-top-style: solid;

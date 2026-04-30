@@ -907,7 +907,6 @@ const RoasterPlanning = () => {
           <span className="legend-pill-roaster leave-pill-roaster">Bulk leave</span>
           <span className="legend-pill-roaster requested-pill-roaster">Leave Requested</span>
           <span className="legend-pill-roaster attended-pill-roaster">Attended</span>
-          <span className="legend-pill-roaster absent-pill-roaster">Absent</span>
           <span className="legend-pill-roaster holiday-mercantile-legend-roaster">Statutory holidays</span>
           <span className="legend-pill-roaster holiday-poya-legend-roaster">Poya holiday</span>
           <span className="legend-pill-roaster editing-pill-roaster">Editing Mode</span>
@@ -969,7 +968,6 @@ const RoasterPlanning = () => {
                 const isRequested = employee.requestedLeaveDays.includes(day.dateString);
                 const requestedLeaveStatus = employee.requestedLeaveStatusByDate?.[day.dateString] || null;
                 const isAttended = employee.attendance.attended.includes(day.dateString);
-                const isAbsent = employee.attendance.absent.includes(day.dateString);
                 const hol = holidayMetaByDate[day.dateString]?.type;
                 const holClass =
                   hol === 'mercantile' ? 'holiday-mercantile-roaster' : hol === 'poya' ? 'holiday-poya-roaster' : '';
@@ -981,8 +979,6 @@ const RoasterPlanning = () => {
                   stateClass = 'requested';
                 } else if (isAttended) {
                   stateClass = 'attended';
-                } else if (isAbsent) {
-                  stateClass = 'absent';
                 }
                 const holTitle = holidayHoverLine(day.dateString);
                 const serverLeaveSet = serverLeaveSetByEmployeeId.get(employee.id);
@@ -1000,7 +996,7 @@ const RoasterPlanning = () => {
                     className={`day-cell-roaster ${day.isWeekend ? 'weekend' : ''} ${stateClass} ${holClass} ${
                       locked ? 'locked' : ''
                     } ${cellBulkLeaveDiff ? 'day-cell-bulk-leave-diff-roaster' : ''}`.trim()}
-                    title={`${day.dateString}${isLeave ? ' | Bulk leave' : ''}${isRequested ? ' | Leave Requested' : ''}${isAttended ? ' | Attended' : ''}${isAbsent ? ' | Absent' : ''}${holTitle}`}
+                    title={`${day.dateString}${isLeave ? ' | Bulk leave' : ''}${isRequested ? ' | Leave Requested' : ''}${isAttended ? ' | Attended' : ''}${holTitle}`}
                     onClick={() => {
                       if (isAttended) {
                         openAttendancePopup(
