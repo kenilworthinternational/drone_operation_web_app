@@ -55,7 +55,8 @@
     "three": "^0.181.2",
     "three-fbx-loader": "^1.0.2",
     "web-vitals": "^4.2.4",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "xlsx-js-style": "^1.2.0"
   },
   "scripts": {
     "start": "react-scripts start",

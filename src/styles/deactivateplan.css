@@ -1,142 +1,377 @@
-/* Delete Plan Section */
 .delete-plan {
-    padding: 2rem;
-    margin: 0 auto;
-  }
-  
-  .text-area-delete {
-    background: #f8f9fa;
-    border-radius: 10px;
-    padding: 2rem;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  }
-  
-  .date-area-delete {
-    margin-bottom: 1.5rem;
-  }
-  
-  .date-area-delete label {
-    display: block;
-    margin-bottom: 0.5rem;
-    font-weight: 600;
-    color: #2c3e50;
-  }
-  
-  .mission-select-delete {
-    margin-bottom: 2rem;
-  }
-  
-  .mission-select-delete label {
-    display: block;
-    margin-bottom: 0.5rem;
-    font-weight: 600;
-    color: #2c3e50;
-  }
-  
-  .submit-resources {
-    text-align: center;
-    margin-top: 2rem;
-  }
-  
+  padding: 20px;
+}
 
-  
-  .submit-button:hover {
-    background: #0085c7;
-  }
-  
-  .submit-button:disabled {
-    background: #95a5a6;
-    cursor: not-allowed;
-  }
-  
+.deactivate-shell {
+  background: linear-gradient(180deg, #f8fbff 0%, #f3f6fa 100%);
+  border: 1px solid #dde6f0;
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.06);
+}
 
-  /* Modal Styles */
-  .modal-backdrop {
-    position: fixed;
-    top: 0;
-    left: 0;
+.deactivate-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.deactivate-header h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 24px;
+}
+
+.deactivate-header p {
+  margin: 4px 0 0;
+  color: #516076;
+  font-size: 14px;
+}
+
+.deactivate-date-card {
+  min-width: 280px;
+  background: #fff;
+  border: 1px solid #d7e1eb;
+  border-radius: 12px;
+  padding: 10px;
+}
+
+.deactivate-date-card label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #334155;
+}
+
+.deactivate-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.deactivate-summary-item {
+  background: #fff;
+  border: 1px solid #dbe5ef;
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.deactivate-summary-item span {
+  color: #5b6b80;
+  font-size: 13px;
+}
+
+.deactivate-summary-item strong {
+  color: #0f172a;
+  font-size: 20px;
+}
+
+.deactivate-list-wrap {
+  background: #fff;
+  border: 1px solid #dbe5ef;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.deactivate-list-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 10px;
+}
+
+.deactivate-plan-list {
+  display: grid;
+  gap: 10px;
+}
+
+.deactivate-plan-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #fcfdff;
+}
+
+.deactivate-plan-main {
+  min-width: 0;
+}
+
+.deactivate-plan-line1 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.deactivate-plan-id {
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.deactivate-plan-name {
+  font-weight: 600;
+  color: #334155;
+}
+
+.deactivate-plan-line2 {
+  margin-top: 5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.deactivate-status-chip {
+  border-radius: 999px;
+  padding: 2px 9px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.deactivate-status-chip.active {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.deactivate-status-chip.inactive {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.deactivate-plan-reason {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.deactivate-toggle-block {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 120px;
+  justify-content: flex-end;
+}
+
+.deactivate-toggle-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #334155;
+  min-width: 56px;
+}
+
+.deactivate-switch {
+  position: relative;
+  display: inline-block;
+  width: 52px;
+  height: 30px;
+  flex: 0 0 auto;
+}
+
+.deactivate-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.deactivate-slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background-color: #d3dbe6;
+  border: 1px solid #c3cedb;
+  transition: 0.2s ease;
+  border-radius: 999px;
+}
+
+.deactivate-slider:before {
+  position: absolute;
+  content: "";
+  height: 22px;
+  width: 22px;
+  left: 3px;
+  top: 3px;
+  background-color: #fff;
+  transition: 0.2s ease;
+  border-radius: 50%;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+
+.deactivate-switch input:checked + .deactivate-slider {
+  background: #0ea5e9;
+  border-color: #0284c7;
+}
+
+.deactivate-switch input:checked + .deactivate-slider:before {
+  transform: translateX(22px);
+}
+
+.deactivate-switch input:disabled + .deactivate-slider {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.deactivate-empty-state {
+  border: 1px dashed #cbd5e1;
+  border-radius: 10px;
+  padding: 20px;
+  text-align: center;
+  color: #64748b;
+  background: #f8fafc;
+}
+
+.submit-resources {
+  text-align: center;
+  padding: 20px 0;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.25);
+  max-width: 460px;
+  width: 94%;
+  border: 1px solid #e2e8f0;
+}
+
+.modal-content h3 {
+  margin-top: 0;
+  color: #0f172a;
+  font-size: 22px;
+}
+
+.modal-content p {
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.deactivate-modal-plan {
+  margin-top: 8px;
+  background: #f1f5f9;
+  border: 1px solid #d5e0eb;
+  color: #1e293b;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.modal-actions {
+  margin-top: 16px;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.confirm-button {
+  background: #0ea5e9;
+  color: white;
+  padding: 9px 14px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  font-weight: 700;
+}
+
+.confirm-button:hover {
+  background: #0284c7;
+}
+
+.cancel-button {
+  background: #cbd5e1;
+  color: #1e293b;
+  padding: 9px 14px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  font-weight: 700;
+}
+
+.cancel-button:hover {
+  background: #94a3b8;
+  color: #fff;
+}
+
+.custom-date-input {
+  position: relative;
+  width: 100%;
+}
+
+.date-picker-input {
+  width: 100%;
+  padding: 9px 34px 9px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #0f172a;
+  background: #fff;
+}
+
+.calendar-icon {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #64748b;
+}
+
+/* React DatePicker local tuning for this page */
+.delete-plan .react-datepicker {
+  font-size: 0.85rem;
+}
+
+.delete-plan .react-datepicker__current-month {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.delete-plan .react-datepicker__day-name {
+  font-size: 0.8rem;
+}
+
+@media (max-width: 900px) {
+  .deactivate-header {
+    flex-direction: column;
+  }
+
+  .deactivate-date-card {
     width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
+    min-width: 0;
   }
-  
-  .modal-content {
-    background: white;
-    padding: 2rem;
-    border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-    max-width: 400px;
-    width: 90%;
+
+  .deactivate-summary {
+    grid-template-columns: 1fr;
   }
-  
-  .modal-content h3 {
-    margin-top: 0;
-    color: #2c3e50;
-    font-size: 1.5rem;
+
+  .deactivate-plan-row {
+    flex-direction: column;
+    align-items: flex-start;
   }
-  
-  .modal-content p {
-    color: #7f8c8d;
-    line-height: 1.6;
-  }
-  
-  .modal-actions {
-    margin-top: 1.5rem;
-    display: flex;
-    gap: 1rem;
-    justify-content: flex-end;
-  }
-  
-  .confirm-button {
-    background: #004B71;
-    color: white;
-    padding: 0.6rem 1.2rem;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background 0.3s ease;
-  }
-  
-  .confirm-button:hover {
-    background: #0077b3;
-  }
-  
-  .cancel-button {
-    background: #95a5a6;
-    color: white;
-    padding: 0.6rem 1.2rem;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background 0.3s ease;
-  }
-  
-  .cancel-button:hover {
-    background: #7f8c8d;
-  }
-  
-  /* Date Picker Styles */
-  .custom-date-input {
-    position: relative;
+
+  .deactivate-toggle-block {
     width: 100%;
+    justify-content: flex-start;
   }
-  
-  .date-picker-input {
-    width: 100%;
-    padding: 0.8rem;
-    border: 1px solid #bdc3c7;
-    border-radius: 6px;
-    font-size: 1rem;
-  }
-  
-  .calendar-icon {
-    position: absolute;
-    right: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #7f8c8d;
-  }
+}

@@ -172,6 +172,7 @@ export const {
   useGetPlanCompletionStatsQuery,
   useGetPlansWithCompletionStatsQuery,
   useGetCancelReasonsQuery,
+  useLazyGetCancelReasonsQuery,
   useGetTasksCancelStatusQuery,
   useCancelTaskMutation,
   useResetPilotCancelMutation,

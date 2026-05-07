@@ -51,21 +51,32 @@
 }
 
 .vehicle-admin-tabs-master-data {
-  margin-top: 14px;
+  margin-top: 0;
+  margin-bottom: 10px;
+  margin-left: -14px;
+  margin-right: -14px;
   display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+  gap: 0;
+  flex-wrap: nowrap;
+  width: calc(100% + 28px);
 }
 
 .vehicle-admin-tabs-master-data button {
+  flex: 1 1 33.33%;
+  margin: 0;
   border: 1px solid #d2dbe6;
+  border-right: none;
   background: #ffffff;
-  padding: 8px 14px;
-  border-radius: 999px;
+  padding: 9px 10px;
+  border-radius: 0;
   cursor: pointer;
   font-weight: 600;
   color: #334155;
   transition: all 0.18s ease;
+}
+
+.vehicle-admin-tabs-master-data button:last-child {
+  border-right: 1px solid #d2dbe6;
 }
 
 .vehicle-admin-tabs-master-data button.active-master-data {
@@ -549,6 +560,46 @@
   color: #fff;
 }
 
+.reasons-toolbar-master-data {
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.reasons-toolbar-left-master-data {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.reasons-search-master-data {
+  width: min(460px, 100%);
+  min-width: 280px;
+  padding: 7px 10px !important;
+  font-size: 13px;
+}
+
+.reasons-filter-master-data {
+  min-width: 150px;
+  max-width: 180px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 7px 10px;
+  background: #fff;
+  color: #0f172a;
+  font-size: 13px;
+}
+
+.reasons-add-btn-master-data {
+  padding: 7px 11px;
+  font-size: 13px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
 @media (max-width: 1100px) {
   .vehicle-admin-grid-master-data,
   .vehicle-admin-grid-master-data.three-master-data {
@@ -584,5 +635,19 @@
 
   .vehicle-master-form-row-master-data {
     grid-template-columns: 1fr;
+  }
+
+  .reasons-toolbar-master-data {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .reasons-toolbar-left-master-data {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .reasons-search-master-data {
+    min-width: 100%;
   }
 }

@@ -173,6 +173,7 @@ const FuelApprovals = ({ embedded = false }) => {
                   <TableCell sx={{ fontWeight: 700 }} align="right">Unit Price</TableCell>
                   <TableCell sx={{ fontWeight: 700 }} align="right">Amount</TableCell>
                   <TableCell sx={{ fontWeight: 700 }} align="center">Bill</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }} align="center">Bank Slip</TableCell>
                   <TableCell sx={{ fontWeight: 700 }} align="center">Status</TableCell>
                   <TableCell sx={{ fontWeight: 700 }} align="center">Action</TableCell>
                 </TableRow>
@@ -180,7 +181,7 @@ const FuelApprovals = ({ embedded = false }) => {
               <TableBody>
                 {rows.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={10} align="center" sx={{ py: 4, color: '#7c8a99' }}>
+                    <TableCell colSpan={11} align="center" sx={{ py: 4, color: '#7c8a99' }}>
                       {tab === 0 ? 'No pending fuel approvals' : 'No history yet'}
                     </TableCell>
                   </TableRow>
@@ -217,6 +218,22 @@ const FuelApprovals = ({ embedded = false }) => {
                               size="small"
                               startIcon={<ImageIcon />}
                               onClick={() => setImagePreview(row.bill_image_url)}
+                              sx={{ textTransform: 'none' }}
+                            >
+                              View
+                            </Button>
+                          </Tooltip>
+                        ) : (
+                          <span style={{ color: '#aab4be' }}>-</span>
+                        )}
+                      </TableCell>
+                      <TableCell align="center">
+                        {row.bank_slip_image_url ? (
+                          <Tooltip title="View bank slip">
+                            <Button
+                              size="small"
+                              startIcon={<ImageIcon />}
+                              onClick={() => setImagePreview(row.bank_slip_image_url)}
                               sx={{ textTransform: 'none' }}
                             >
                               View

@@ -32,6 +32,14 @@ import {
   useGetSecurityCodeListQuery,
   useResetSecurityCodeMutation,
 } from '../../../api/services NodeJs/financialCardsApi';
+import {
+  useGetMissionPartialReasonsQuery,
+  useSaveMissionPartialReasonMutation,
+  useGetNotSprayingRecensQuery,
+  useSaveNotSprayingRecenMutation,
+  useGetDeactivateReasonsQuery,
+  useSaveDeactivateReasonMutation,
+} from '../../../api/services NodeJs/reasonsApi';
 import { useSendMessageMutation } from '../../../api/services/authApi';
 import '../../../styles/masterdata.css';
 
@@ -46,6 +54,9 @@ const MasterData = ({ mode = 'full' }) => {
   const [activeTab, setActiveTab] = useState(tabs[0]);
   const [yearMonth] = useState('');
   const [selectedMasterModule, setSelectedMasterModule] = useState('vehicleMaster');
+  const [activeReasonsTab, setActiveReasonsTab] = useState('pilotOps');
+  const [reasonSearch, setReasonSearch] = useState('');
+  const [reasonFlagFilter, setReasonFlagFilter] = useState('all');
 
   const { data: summary = {} } = useGetVehicleAppSummaryQuery(yearMonth);
   const { data: vehicles = [] } = useGetVehicleAppVehiclesQuery();
@@ -61,6 +72,9 @@ const MasterData = ({ mode = 'full' }) => {
   const { data: masterVehicleCategoriesData = [], refetch: refetchMasterVehicleCategories } = useGetMasterVehicleCategoriesQuery();
   const { data: masterVehicleMakesData = [], refetch: refetchMasterVehicleMakes } = useGetMasterVehicleMakesQuery();
   const { data: masterVehicleModelsData = [], refetch: refetchMasterVehicleModels } = useGetMasterVehicleModelsQuery();
+  const { data: missionPartialReasons = [] } = useGetMissionPartialReasonsQuery({ include_inactive: true });
+  const { data: notSprayingRecens = [] } = useGetNotSprayingRecensQuery({ include_inactive: true });
+  const { data: deactivateReasons = [] } = useGetDeactivateReasonsQuery({ include_inactive: true });
   const wings = useMemo(() => {
     const fromJd = Array.isArray(wingsData)
       ? wingsData
@@ -107,6 +121,9 @@ const MasterData = ({ mode = 'full' }) => {
   const { data: securityCodeItems = [], refetch: refetchSecurityCodeItems } = useGetSecurityCodeListQuery();
   const [resetSecurityCode, { isLoading: resettingFinanceSecurity }] = useResetSecurityCodeMutation();
   const [sendMessage] = useSendMessageMutation();
+  const [saveMissionPartialReason] = useSaveMissionPartialReasonMutation();
+  const [saveNotSprayingRecen] = useSaveNotSprayingRecenMutation();
+  const [saveDeactivateReason] = useSaveDeactivateReasonMutation();
 
   const [newMaintenanceCategory, setNewMaintenanceCategory] = useState('');
 
@@ -118,6 +135,8 @@ const MasterData = ({ mode = 'full' }) => {
   const [newWorkLocationName, setNewWorkLocationName] = useState('');
   const [newWorkLocationCode, setNewWorkLocationCode] = useState('');
   const [newWorkLocationMapLink, setNewWorkLocationMapLink] = useState('');
+  const [reasonAddModalType, setReasonAddModalType] = useState(null);
+  const [reasonAddDraft, setReasonAddDraft] = useState({});
   const [addModal, setAddModal] = useState(null);
   const [addDraft, setAddDraft] = useState({});
   const [editModal, setEditModal] = useState(null);
@@ -131,6 +150,10 @@ const MasterData = ({ mode = 'full' }) => {
     }, 3000);
     return () => clearTimeout(timer);
   }, [quickMessage]);
+  useEffect(() => {
+    setReasonFlagFilter('all');
+    setReasonSearch('');
+  }, [activeReasonsTab]);
 
   const masterVehicleCategories = useMemo(
     () => (Array.isArray(masterVehicleCategoriesData) ? masterVehicleCategoriesData : []),
@@ -161,6 +184,28 @@ const MasterData = ({ mode = 'full' }) => {
     () => (maintenanceRequests || []).filter((r) => r.approval === 'p'),
     [maintenanceRequests]
   );
+  const filteredPilotOpsReasons = useMemo(() => {
+    const q = reasonSearch.trim().toLowerCase();
+    return (missionPartialReasons || []).filter((row) => {
+      const matchSearch = !q || String(row.reason || '').toLowerCase().includes(q);
+      const matchFlag = reasonFlagFilter === 'all' || String(row.flag || '') === reasonFlagFilter;
+      return matchSearch && matchFlag;
+    });
+  }, [missionPartialReasons, reasonSearch, reasonFlagFilter]);
+  const filteredManagerReasons = useMemo(() => {
+    const q = reasonSearch.trim().toLowerCase();
+    return (notSprayingRecens || []).filter((row) => {
+      const matchSearch = !q || String(row.recen || '').toLowerCase().includes(q);
+      const matchFlag = reasonFlagFilter === 'all' || String(row.flag || '') === reasonFlagFilter;
+      return matchSearch && matchFlag;
+    });
+  }, [notSprayingRecens, reasonSearch, reasonFlagFilter]);
+  const filteredDeactivateReasons = useMemo(() => {
+    const q = reasonSearch.trim().toLowerCase();
+    return (deactivateReasons || []).filter((row) => (
+      !q || String(row.reason || '').toLowerCase().includes(q)
+    ));
+  }, [deactivateReasons, reasonSearch]);
 
   const handleQuickSave = async (action) => {
     try {
@@ -204,6 +249,9 @@ const MasterData = ({ mode = 'full' }) => {
         map_link: item.map_link || '',
       });
     }
+    if (type === 'missionPartialReason') setModalDraft({ reason: item.reason || '', flag: item.flag || 'c', chargeble: String(Number(item.chargeble) === 1 ? 1 : 0) });
+    if (type === 'notSprayingRecen') setModalDraft({ recen: item.recen || '', flag: item.flag || 'c' });
+    if (type === 'deactivateReason') setModalDraft({ reason: item.reason || '' });
   };
 
   const openAddModal = (type) => {
@@ -221,6 +269,44 @@ const MasterData = ({ mode = 'full' }) => {
   const closeEditModal = () => {
     setEditModal(null);
     setModalDraft({});
+  };
+
+  const openReasonAddModal = (type) => {
+    setReasonAddModalType(type);
+    if (type === 'missionPartialReason') setReasonAddDraft({ reason: '', flag: 'c', chargeble: '0' });
+    if (type === 'notSprayingRecen') setReasonAddDraft({ recen: '', flag: 'c' });
+    if (type === 'deactivateReason') setReasonAddDraft({ reason: '' });
+  };
+
+  const closeReasonAddModal = () => {
+    setReasonAddModalType(null);
+    setReasonAddDraft({});
+  };
+
+  const saveReasonAddModal = async () => {
+    if (!reasonAddModalType) return;
+    await handleQuickSave(async () => {
+      if (reasonAddModalType === 'missionPartialReason') {
+        await saveMissionPartialReason({
+          reason: reasonAddDraft.reason,
+          flag: reasonAddDraft.flag,
+          chargeble: Number(reasonAddDraft.chargeble) === 1 ? 1 : 0,
+          activated: 1,
+        }).unwrap();
+      } else if (reasonAddModalType === 'notSprayingRecen') {
+        await saveNotSprayingRecen({
+          recen: reasonAddDraft.recen,
+          flag: reasonAddDraft.flag,
+          activated: 1,
+        }).unwrap();
+      } else if (reasonAddModalType === 'deactivateReason') {
+        await saveDeactivateReason({
+          reason: reasonAddDraft.reason,
+          activated: 1,
+        }).unwrap();
+      }
+      closeReasonAddModal();
+    });
   };
 
   const saveAddModal = async () => {
@@ -298,6 +384,27 @@ const MasterData = ({ mode = 'full' }) => {
           activated: editModal.item.activated ?? 1,
         }).unwrap();
         refetchWorkLocations();
+      } else if (editModal.type === 'missionPartialReason') {
+        await saveMissionPartialReason({
+          id: editModal.item.id,
+          reason: modalDraft.reason,
+          flag: modalDraft.flag,
+          chargeble: Number(modalDraft.chargeble) === 1 ? 1 : 0,
+          activated: editModal.item.activated ?? 1,
+        }).unwrap();
+      } else if (editModal.type === 'notSprayingRecen') {
+        await saveNotSprayingRecen({
+          id: editModal.item.id,
+          recen: modalDraft.recen,
+          flag: modalDraft.flag,
+          activated: editModal.item.activated ?? 1,
+        }).unwrap();
+      } else if (editModal.type === 'deactivateReason') {
+        await saveDeactivateReason({
+          id: editModal.item.id,
+          reason: modalDraft.reason,
+          activated: editModal.item.activated ?? 1,
+        }).unwrap();
       }
       closeEditModal();
     });
@@ -398,6 +505,7 @@ const MasterData = ({ mode = 'full' }) => {
               { key: 'wings', label: 'Wings' },
               { key: 'workLocations', label: 'Work Locations' },
               { key: 'maintenanceCategories', label: 'Maintenance Categories' },
+              { key: 'reasons', label: 'Reasons' },
               { key: 'securityCodes', label: 'Security Codes' },
             ].map((item) => (
               <button
@@ -575,6 +683,269 @@ const MasterData = ({ mode = 'full' }) => {
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {selectedMasterModule === 'reasons' && (
+              <div className="vehicle-admin-card-master-data">
+                <h3>Reasons</h3>
+                <div className="vehicle-admin-tabs-master-data" style={{ marginTop: 0 }}>
+                  <button
+                    type="button"
+                    className={activeReasonsTab === 'pilotOps' ? 'active-master-data' : ''}
+                    onClick={() => setActiveReasonsTab('pilotOps')}
+                  >
+                    Pilot/OpsRoom Reasons
+                  </button>
+                  <button
+                    type="button"
+                    className={activeReasonsTab === 'manager' ? 'active-master-data' : ''}
+                    onClick={() => setActiveReasonsTab('manager')}
+                  >
+                    Manager Reasons
+                  </button>
+                  <button
+                    type="button"
+                    className={activeReasonsTab === 'deactivate' ? 'active-master-data' : ''}
+                    onClick={() => setActiveReasonsTab('deactivate')}
+                  >
+                    Deactivate Reasons
+                  </button>
+                </div>
+
+                {activeReasonsTab === 'pilotOps' && (
+                  <>
+                    <div className="inline-form-master-data reasons-toolbar-master-data">
+                      <div className="reasons-toolbar-left-master-data">
+                        <input
+                          className="reasons-search-master-data"
+                          value={reasonSearch}
+                          onChange={(e) => setReasonSearch(e.target.value)}
+                          placeholder="Search reason"
+                        />
+                        <select
+                          className="reasons-filter-master-data"
+                          value={reasonFlagFilter}
+                          onChange={(e) => setReasonFlagFilter(e.target.value)}
+                        >
+                          <option value="all">All Flags</option>
+                          <option value="h">Partially (h)</option>
+                          <option value="c">Cancel (c)</option>
+                        </select>
+                      </div>
+                      <button type="button" className="btn-submit-master-data reasons-add-btn-master-data" onClick={() => openReasonAddModal('missionPartialReason')}>
+                        Add Pilot/OpsRoom Reason
+                      </button>
+                    </div>
+
+                    <div className="master-list-master-data">
+                      {filteredPilotOpsReasons.map((row) => (
+                        <div key={row.id} className="master-row-master-data">
+                          <div style={{ flex: 1 }}>
+                            <span className="master-label-master-data">{row.reason}</span>
+                            <span style={{ marginLeft: 8, fontSize: '0.82em', color: '#555' }}>
+                              Flag: {row.flag === 'h' ? 'Partially (h)' : 'Cancel (c)'}
+                            </span>
+                            <span style={{ marginLeft: 8, fontSize: '0.82em', color: '#555' }}>
+                              Chargeble: {Number(row.chargeble) === 1 ? 'Yes' : 'No'}
+                            </span>
+                            <div style={{ marginTop: 4, fontSize: '0.82em', color: '#555' }}>
+                              Added By: {row.added_by_name || row.added_by || '-'} | Updated By:{' '}
+                              {row.updated_by_name || row.updated_by || '-'}
+                            </div>
+                          </div>
+                          <div className="master-actions-master-data" style={{ flexWrap: 'wrap' }}>
+                            <span
+                              className={
+                                Number(row.activated) === 1
+                                  ? 'status-chip-master-data active-master-data'
+                                  : 'status-chip-master-data inactive-master-data'
+                              }
+                            >
+                              {Number(row.activated) === 1 ? 'Active' : 'Inactive'}
+                            </span>
+                            <button
+                              type="button"
+                              className="action-btn-master-data neutral-master-data"
+                              onClick={() => openEditModal('missionPartialReason', row)}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              className="action-btn-master-data"
+                              style={{ background: Number(row.activated) === 1 ? '#dc2626' : '#16a34a' }}
+                              onClick={() =>
+                                handleQuickSave(async () => {
+                                  await saveMissionPartialReason({
+                                    id: row.id,
+                                    reason: row.reason,
+                                    flag: row.flag,
+                                    chargeble: Number(row.chargeble) === 1 ? 1 : 0,
+                                    activated: Number(row.activated) === 1 ? 0 : 1,
+                                  }).unwrap();
+                                })
+                              }
+                            >
+                              {Number(row.activated) === 1 ? 'Deactivate' : 'Activate'}
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                {activeReasonsTab === 'manager' && (
+                  <>
+                    <div className="inline-form-master-data reasons-toolbar-master-data">
+                      <div className="reasons-toolbar-left-master-data">
+                        <input
+                          className="reasons-search-master-data"
+                          value={reasonSearch}
+                          onChange={(e) => setReasonSearch(e.target.value)}
+                          placeholder="Search reason"
+                        />
+                        <select
+                          className="reasons-filter-master-data"
+                          value={reasonFlagFilter}
+                          onChange={(e) => setReasonFlagFilter(e.target.value)}
+                        >
+                          <option value="all">All Flags</option>
+                          <option value="c">Cancel (c)</option>
+                          <option value="r">Reschedule (r)</option>
+                          <option value="rm">Remove (rm)</option>
+                        </select>
+                      </div>
+                      <button type="button" className="btn-submit-master-data reasons-add-btn-master-data" onClick={() => openReasonAddModal('notSprayingRecen')}>
+                        Add Manager Reason
+                      </button>
+                    </div>
+
+                    <div className="master-list-master-data">
+                      {filteredManagerReasons.map((row) => (
+                        <div key={row.id} className="master-row-master-data">
+                          <div style={{ flex: 1 }}>
+                            <span className="master-label-master-data">{row.recen}</span>
+                            <span style={{ marginLeft: 8, fontSize: '0.82em', color: '#555' }}>
+                              Flag:{' '}
+                              {row.flag === 'r'
+                                ? 'Reschedule (r)'
+                                : row.flag === 'rm'
+                                  ? 'Remove (rm)'
+                                  : 'Cancel (c)'}
+                            </span>
+                            <div style={{ marginTop: 4, fontSize: '0.82em', color: '#555' }}>
+                              Added By: {row.added_by_name || row.added_by || '-'} | Updated By:{' '}
+                              {row.updated_by_name || row.updated_by || '-'}
+                            </div>
+                          </div>
+                          <div className="master-actions-master-data" style={{ flexWrap: 'wrap' }}>
+                            <span
+                              className={
+                                Number(row.activated) === 1
+                                  ? 'status-chip-master-data active-master-data'
+                                  : 'status-chip-master-data inactive-master-data'
+                              }
+                            >
+                              {Number(row.activated) === 1 ? 'Active' : 'Inactive'}
+                            </span>
+                            <button
+                              type="button"
+                              className="action-btn-master-data neutral-master-data"
+                              onClick={() => openEditModal('notSprayingRecen', row)}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              className="action-btn-master-data"
+                              style={{ background: Number(row.activated) === 1 ? '#dc2626' : '#16a34a' }}
+                              onClick={() =>
+                                handleQuickSave(async () => {
+                                  await saveNotSprayingRecen({
+                                    id: row.id,
+                                    recen: row.recen,
+                                    flag: row.flag,
+                                    activated: Number(row.activated) === 1 ? 0 : 1,
+                                  }).unwrap();
+                                })
+                              }
+                            >
+                              {Number(row.activated) === 1 ? 'Deactivate' : 'Activate'}
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                {activeReasonsTab === 'deactivate' && (
+                  <>
+                    <div className="inline-form-master-data reasons-toolbar-master-data">
+                      <div className="reasons-toolbar-left-master-data">
+                        <input
+                          className="reasons-search-master-data"
+                          value={reasonSearch}
+                          onChange={(e) => setReasonSearch(e.target.value)}
+                          placeholder="Search reason"
+                        />
+                      </div>
+                      <button type="button" className="btn-submit-master-data reasons-add-btn-master-data" onClick={() => openReasonAddModal('deactivateReason')}>
+                        Add Deactivate Reason
+                      </button>
+                    </div>
+
+                    <div className="master-list-master-data">
+                      {filteredDeactivateReasons.map((row) => (
+                        <div key={row.id} className="master-row-master-data">
+                          <div style={{ flex: 1 }}>
+                            <span className="master-label-master-data">{row.reason}</span>
+                            <div style={{ marginTop: 4, fontSize: '0.82em', color: '#555' }}>
+                              Added By: {row.added_by_name || row.added_by || '-'} | Updated By:{' '}
+                              {row.updated_by_name || row.updated_by || '-'}
+                            </div>
+                          </div>
+                          <div className="master-actions-master-data" style={{ flexWrap: 'wrap' }}>
+                            <span
+                              className={
+                                Number(row.activated) === 1
+                                  ? 'status-chip-master-data active-master-data'
+                                  : 'status-chip-master-data inactive-master-data'
+                              }
+                            >
+                              {Number(row.activated) === 1 ? 'Active' : 'Inactive'}
+                            </span>
+                            <button
+                              type="button"
+                              className="action-btn-master-data neutral-master-data"
+                              onClick={() => openEditModal('deactivateReason', row)}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              className="action-btn-master-data"
+                              style={{ background: Number(row.activated) === 1 ? '#dc2626' : '#16a34a' }}
+                              onClick={() =>
+                                handleQuickSave(async () => {
+                                  await saveDeactivateReason({
+                                    id: row.id,
+                                    reason: row.reason,
+                                    activated: Number(row.activated) === 1 ? 0 : 1,
+                                  }).unwrap();
+                                })
+                              }
+                            >
+                              {Number(row.activated) === 1 ? 'Deactivate' : 'Activate'}
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
             )}
 
@@ -856,6 +1227,69 @@ const MasterData = ({ mode = 'full' }) => {
                 />
               </div>
             )}
+            {editModal.type === 'missionPartialReason' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <input
+                  className="master-edit-input-master-data"
+                  value={modalDraft.reason || ''}
+                  onChange={(e) => setModalDraft((p) => ({ ...p, reason: e.target.value }))}
+                  placeholder="Reason"
+                />
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <label style={{ fontSize: 12, color: '#475569', fontWeight: 600 }}>Reason Type</label>
+                    <select
+                      className="master-edit-input-master-data"
+                      value={modalDraft.flag || 'c'}
+                      onChange={(e) => setModalDraft((p) => ({ ...p, flag: e.target.value }))}
+                    >
+                      <option value="c">Cancel (c)</option>
+                      <option value="h">Partially Completed (h)</option>
+                    </select>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <label style={{ fontSize: 12, color: '#475569', fontWeight: 600 }}>Chargeable?</label>
+                    <select
+                      className="master-edit-input-master-data"
+                      value={modalDraft.chargeble || '0'}
+                      onChange={(e) => setModalDraft((p) => ({ ...p, chargeble: e.target.value }))}
+                    >
+                      <option value="0">No</option>
+                      <option value="1">Yes</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            )}
+            {editModal.type === 'notSprayingRecen' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <input
+                  className="master-edit-input-master-data"
+                  value={modalDraft.recen || ''}
+                  onChange={(e) => setModalDraft((p) => ({ ...p, recen: e.target.value }))}
+                  placeholder="Reason"
+                />
+                <select
+                  className="master-edit-input-master-data"
+                  value={modalDraft.flag || 'c'}
+                  onChange={(e) => setModalDraft((p) => ({ ...p, flag: e.target.value }))}
+                >
+                  <option value="c">Cancel (c)</option>
+                  <option value="r">Reschedule (r)</option>
+                  <option value="rm">Remove (rm)</option>
+                </select>
+              </div>
+            )}
+            {editModal.type === 'deactivateReason' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <input
+                  className="master-edit-input-master-data"
+                  value={modalDraft.reason || ''}
+                  onChange={(e) => setModalDraft((p) => ({ ...p, reason: e.target.value }))}
+                  placeholder="Deactivate reason"
+                />
+              </div>
+            )}
             <div className="update-popup-actions-master-data">
               <button className="btn-search-master-data" onClick={closeEditModal}>Cancel</button>
               <button className="btn-submit-master-data" onClick={saveEditModal}>Save</button>
@@ -930,6 +1364,76 @@ const MasterData = ({ mode = 'full' }) => {
             <div className="update-popup-actions-master-data">
               <button className="btn-search-master-data" onClick={closeAddModal}>Cancel</button>
               <button className="btn-submit-master-data" onClick={saveAddModal}>Save</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {reasonAddModalType && (
+        <div className="update-popup-overlay-master-data">
+          <div className="update-popup-card-master-data">
+            <h3>
+              {reasonAddModalType === 'missionPartialReason'
+                ? 'Add Pilot/OpsRoom Reason'
+                : reasonAddModalType === 'notSprayingRecen'
+                  ? 'Add Manager Reason'
+                  : 'Add Deactivate Reason'}
+            </h3>
+            {reasonAddModalType === 'missionPartialReason' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <input
+                  className="master-edit-input-master-data"
+                  value={reasonAddDraft.reason || ''}
+                  onChange={(e) => setReasonAddDraft((p) => ({ ...p, reason: e.target.value }))}
+                  placeholder="Reason text"
+                />
+                <select
+                  className="master-edit-input-master-data"
+                  value={reasonAddDraft.flag || 'c'}
+                  onChange={(e) => setReasonAddDraft((p) => ({ ...p, flag: e.target.value }))}
+                >
+                  <option value="c">Cancel (c)</option>
+                  <option value="h">Partially Completed (h)</option>
+                </select>
+                <select
+                  className="master-edit-input-master-data"
+                  value={reasonAddDraft.chargeble || '0'}
+                  onChange={(e) => setReasonAddDraft((p) => ({ ...p, chargeble: e.target.value }))}
+                >
+                  <option value="0">Chargeable: No</option>
+                  <option value="1">Chargeable: Yes</option>
+                </select>
+              </div>
+            )}
+            {reasonAddModalType === 'notSprayingRecen' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <input
+                  className="master-edit-input-master-data"
+                  value={reasonAddDraft.recen || ''}
+                  onChange={(e) => setReasonAddDraft((p) => ({ ...p, recen: e.target.value }))}
+                  placeholder="Reason text"
+                />
+                <select
+                  className="master-edit-input-master-data"
+                  value={reasonAddDraft.flag || 'c'}
+                  onChange={(e) => setReasonAddDraft((p) => ({ ...p, flag: e.target.value }))}
+                >
+                  <option value="c">Cancel (c)</option>
+                  <option value="r">Reschedule (r)</option>
+                  <option value="rm">Remove (rm)</option>
+                </select>
+              </div>
+            )}
+            {reasonAddModalType === 'deactivateReason' && (
+              <input
+                className="master-edit-input-master-data"
+                value={reasonAddDraft.reason || ''}
+                onChange={(e) => setReasonAddDraft((p) => ({ ...p, reason: e.target.value }))}
+                placeholder="Deactivate reason"
+              />
+            )}
+            <div className="update-popup-actions-master-data">
+              <button className="btn-search-master-data" onClick={closeReasonAddModal}>Cancel</button>
+              <button className="btn-submit-master-data" onClick={saveReasonAddModal}>Save</button>
             </div>
           </div>
         </div>

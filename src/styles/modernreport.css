@@ -306,6 +306,28 @@
   margin-top: 20px;
 }
 
+/* Plan execution host layout: no outer scroll, table handles scrolling */
+.report-display-section.plan-excu-host {
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.report-display-content.plan-excu-host-content {
+  margin-top: 0;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.modern-report-container.plan-excu-root {
+  height: calc(100vh - 70px);
+  min-height: 0;
+  overflow: hidden !important;
+}
+
 /* Responsive Design */
 @media (max-width: 1400px) {
   .report-cards-grid {

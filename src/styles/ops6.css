@@ -381,6 +381,39 @@ div.flex.flex-col.justify-center.items-center div.text-2xl {
   cursor: not-allowed;
 }
 
+/* Plan Execution report: disable any header freeze/sticky behavior */
+.plan-execution-report .table-container {
+  height: calc(100vh - 300px);
+  max-height: calc(100vh - 300px);
+  min-height: 320px;
+  overflow: auto;
+}
+
+.plan-execution-report th,
+.plan-execution-report thead,
+.plan-execution-report thead tr {
+  position: static !important;
+  top: auto !important;
+  z-index: auto !important;
+}
+
+/* Plan Execution report: use full page area, only table scrolls */
+.plan-execution-report {
+  height: calc(100vh - 140px);
+  overflow: hidden;
+}
+
+.plan-execution-report > div:first-child {
+  height: auto;
+  margin-bottom: 10px;
+}
+
+.plan-execution-report > div:last-child {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
 /* Summary row styling for OpsReport8 */
 .summary-row {
   background-color: #f8f9fa;

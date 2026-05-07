@@ -1,0 +1,74 @@
+.plan-excu-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: #fff;
+  overflow: hidden;
+}
+
+.plan-excu-filters {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 10px;
+  background: #fff;
+}
+
+.plan-excu-filters-inner {
+  width: 100%;
+}
+
+.plan-excu-top {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.plan-excu-align {
+  display: flex;
+  align-items: center;
+}
+
+.plan-excu-table-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: auto;
+}
+
+.plan-excu-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.plan-excu-table th {
+  padding: 0.875rem 1rem;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #004b71;
+  text-transform: uppercase;
+  border: 1px solid #004b71;
+  background: #fff;
+}
+
+.plan-excu-table td {
+  padding: 0.875rem 1rem;
+  font-size: 0.875rem;
+  color: #111827;
+  border: 1px solid #e5e7eb;
+}
+
+.plan-excu-table-wrap::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.plan-excu-table-wrap::-webkit-scrollbar-thumb {
+  background: #004b71;
+  border-radius: 4px;
+}

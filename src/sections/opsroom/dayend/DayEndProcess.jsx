@@ -11,7 +11,7 @@ import { useAppDispatch } from '../../../store/hooks';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useGetUnlinkedDjiImagesQuery, useGetAllDjiImagesQuery, useLinkDjiImageToTaskMutation } from '../../../api/services NodeJs/djiImagesApi';
-import { dayEndProcessApi, useUpdateOpsTaskStatusMutation, useGetPlansWithCompletionStatsQuery, useGetCancelReasonsQuery, useCancelTaskMutation, useGetTasksCancelStatusQuery, useResetPilotCancelMutation } from '../../../api/services NodeJs/dayEndProcessApi';
+import { dayEndProcessApi, useUpdateOpsTaskStatusMutation, useGetPlansWithCompletionStatsQuery, useLazyGetCancelReasonsQuery, useCancelTaskMutation, useGetTasksCancelStatusQuery, useResetPilotCancelMutation } from '../../../api/services NodeJs/dayEndProcessApi';
 import { useGetMyPermissionsQuery } from '../../../api/services NodeJs/featurePermissionsApi';
 import { FEATURE_CODES } from '../../../utils/featurePermissions';
 import { isInternalDeveloper } from '../../../utils/authUtils';
@@ -105,7 +105,7 @@ const DayEndProcess = () => {
   const [updateOpsTaskStatus] = useUpdateOpsTaskStatusMutation();
 
   // Cancel task state
-  const { data: cancelReasons = [] } = useGetCancelReasonsQuery();
+  const [triggerCancelReasons, { data: cancelReasons = [] }] = useLazyGetCancelReasonsQuery();
   const [cancelTask] = useCancelTaskMutation();
   const [resetPilotCancel] = useResetPilotCancelMutation();
   const [showCancelPopup, setShowCancelPopup] = useState(false);
@@ -158,6 +158,8 @@ const DayEndProcess = () => {
 
   // Cancel task handlers
   const handleCancelTaskClick = (fieldId, task) => {
+    // Always fetch latest active reasons when opening popup (no cached view)
+    triggerCancelReasons(undefined, false);
     setCancelTaskId(task.task_id);
     setCancelFieldId(fieldId);
     // Pre-select existing ops cancel reason if task was already cancelled
@@ -701,6 +703,37 @@ const DayEndProcess = () => {
 
 
   const handleSubmit = async () => {
+    const parseArea = (value) => {
+      const n = Number(String(value ?? '').replace(/,/g, ''));
+      return Number.isFinite(n) ? n : 0;
+    };
+    const fullFieldArea = parseArea(currentField?.field_area || currentTask?.task_fieldArea || 0);
+    const enteredDjiFieldArea = parseArea(djiData?.dji_field_area);
+    const isBelowPartialThreshold = fullFieldArea > 0 && enteredDjiFieldArea < fullFieldArea * 0.7;
+
+    const hasSubmittedCancelReason = () => {
+      const cancelInfo = taskCancelStatusMap[currentTask?.task_id];
+      if (!cancelInfo) return false;
+      return Number(cancelInfo.ops_cancel_id || 0) > 0 || Boolean(String(cancelInfo.cancel_reason_text || '').trim());
+    };
+
+    const pilotFieldAreaValue = Number(currentTask?.task_fieldArea || currentField?.field_area || 0);
+    const hasPilotFieldArea = Number.isFinite(pilotFieldAreaValue) && pilotFieldAreaValue > 0;
+    const hasTaskImage = Boolean(String(currentTask?.task_image || '').trim());
+    if (!hasPilotFieldArea || !hasTaskImage) {
+      toast.warning('Pilot Field Area (Ha) and Task Image are required before submitting DJI data.');
+      return;
+    }
+
+    if (isBelowPartialThreshold && !hasSubmittedCancelReason()) {
+      setCancelTaskId(currentTask.task_id);
+      setCancelFieldId(currentTask.field_id);
+      setSelectedCancelReason(null);
+      setShowCancelPopup(true);
+      toast.info('DJI field area is below 70%. Please save a cancel reason before submitting DJI data.');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const formData = new FormData();
@@ -1254,6 +1287,11 @@ const DayEndProcess = () => {
                         className="popup-image"
                         onClick={() => openImage(currentTask.task_image)}
                       />
+                      {!String(currentTask.task_image || '').trim() && (
+                        <span style={{ color: '#dc2626', fontSize: '12px', marginTop: '6px', display: 'block' }}>
+                          Task Image is required to submit DJI data.
+                        </span>
+                      )}
                     </div>
                     <div className="image-card2">
                       <h4>DJI Image</h4>
@@ -1319,6 +1357,11 @@ const DayEndProcess = () => {
                         readOnly
                         disabled
                       />
+                      {!Number(currentTask.task_fieldArea || currentField?.field_area || 0) && (
+                        <span style={{ color: '#dc2626', fontSize: '12px', marginTop: '4px', display: 'block' }}>
+                          Pilot Field Area (Ha) is required.
+                        </span>
+                      )}
                     </div>
                     <div className="data-item">
                       <label>DJI Field Area (Ha):</label>
@@ -1433,6 +1476,8 @@ const DayEndProcess = () => {
                       onClick={handleSubmit}
                       disabled={
                         isSubmitting ||
+                        !Number(currentTask?.task_fieldArea || currentField?.field_area || 0) ||
+                        !String(currentTask?.task_image || '').trim() ||
                         !djiData.dji_flying_duration ||
                         !djiData.dji_no_of_flights ||
                         !djiData.dji_field_area ||

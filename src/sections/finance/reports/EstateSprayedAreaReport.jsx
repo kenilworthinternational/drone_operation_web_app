@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import PropTypes from 'prop-types';
 import '../../../styles/finance.css';
-import { useAppDispatch } from '../../../store/hooks';
-import { baseApi } from '../../../api/services/allEndpoints';
+import { useLazyGetFieldWiseFinanceReportQuery } from '../../../api/services NodeJs/financeReportApi';
+import { useLazyGetPlantationsListQuery, useLazyGetEstatesListQuery } from '../../../api/services NodeJs/plantationDashboardApi';
 import DatePicker from 'react-datepicker';
 import * as XLSX from "xlsx";
 import { jsPDF } from "jspdf";
@@ -18,8 +18,25 @@ const hasFinanceExtentIssue = (row) => {
     return land < completed;
 };
 
+const extractListData = (payload) => {
+    if (Array.isArray(payload)) return payload;
+    if (!payload || typeof payload !== 'object') return [];
+    if (Array.isArray(payload.data)) return payload.data;
+    if (payload.data && Array.isArray(payload.data.data)) return payload.data.data;
+    const numericKeys = Object.keys(payload).filter((k) => !isNaN(Number(k)));
+    if (numericKeys.length > 0) {
+        return numericKeys
+            .sort((a, b) => Number(a) - Number(b))
+            .map((k) => payload[k])
+            .filter(Boolean);
+    }
+    return [];
+};
+
 const EstateSprayedAreaReport = () => {
-    const dispatch = useAppDispatch();
+    const [triggerFieldWiseFinanceReport] = useLazyGetFieldWiseFinanceReportQuery();
+    const [triggerPlantationsList] = useLazyGetPlantationsListQuery();
+    const [triggerEstatesList] = useLazyGetEstatesListQuery();
     const [plantations, setPlantations] = useState([]);
     const [selectedPlantation, setSelectedPlantation] = useState(null);
     const [estates, setEstates] = useState([]);
@@ -42,7 +59,8 @@ const EstateSprayedAreaReport = () => {
         return rows
             .filter(row => {
                 const missionMatch = selectedMissionType === 'all' || row.missionType === selectedMissionType;
-                return missionMatch && row.fieldExtent > 0;
+                const shouldShowByExtent = row.fieldExtent > 0 || row.hasChargeableReason;
+                return missionMatch && shouldShowByExtent;
             })
             .sort((a, b) => new Date(a.date) - new Date(b.date));
     };
@@ -51,9 +69,9 @@ const EstateSprayedAreaReport = () => {
         const fetchPlantations = async () => {
             try {
                 setLoading(true);
-                const result = await dispatch(baseApi.endpoints.getAllPlantations.initiate());
-                const data = result.data;
-                setPlantations(Array.isArray(data) ? data : []);
+                const result = await triggerPlantationsList(undefined, true);
+                const data = extractListData(result?.data);
+                setPlantations(data);
                 setError(null);
             } catch (err) {
                 setError("Failed to load plantations");
@@ -69,9 +87,9 @@ const EstateSprayedAreaReport = () => {
             if (selectedPlantation) {
                 try {
                     setLoading(true);
-                    const result = await dispatch(baseApi.endpoints.getEstatesByPlantation.initiate(selectedPlantation));
-                    const data = result.data;
-                    setEstates(Array.isArray(data) ? data : []);
+                    const result = await triggerEstatesList(selectedPlantation, true);
+                    const data = extractListData(result?.data);
+                    setEstates(data);
                     setSelectedEstates([]); // Reset selected estates
                     setReportData([]); // Clear previous report data
                     setError(null);
@@ -84,7 +102,7 @@ const EstateSprayedAreaReport = () => {
             }
         };
         fetchEstates();
-    }, [selectedPlantation]); // This effect runs when selectedPlantation changes
+    }, [selectedPlantation, triggerEstatesList]); // This effect runs when selectedPlantation changes
 
 
     // Add this useEffect for fetching financial reports
@@ -96,7 +114,14 @@ const EstateSprayedAreaReport = () => {
                     const startDate = selectedDates[0].toLocaleDateString('en-CA');
                     const endDate = selectedDates[1].toLocaleDateString('en-CA');
 
-                    const result = await dispatch(baseApi.endpoints.getFinanceReport.initiate({ startDate, endDate, estates: selectedEstates }));
+                    const result = await triggerFieldWiseFinanceReport(
+                        {
+                            start_date: startDate,
+                            end_date: endDate,
+                            estates: selectedEstates
+                        },
+                        true
+                    );
                     const response = result.data;
 
                     if (response && typeof response === 'object') {
@@ -120,14 +145,35 @@ const EstateSprayedAreaReport = () => {
                                     if (Array.isArray(field.task) && field.task.length > 0) {
                                         djiFieldArea = field.task.reduce((sum, t) => sum + (Number(t.dji_field_area) || 0), 0);
                                     }
+                                    const comNarration = Array.from(
+                                        new Set(
+                                            (Array.isArray(field.task) ? field.task : [])
+                                                .map((t) => t?.com_naration_reason)
+                                                .filter((v) => v && String(v).trim() !== '')
+                                        )
+                                    ).join(', ');
+                                    const hasChargeableReason = (Array.isArray(field.task) ? field.task : [])
+                                        .some((t) => Number(t?.com_naration_chargeble) === 1);
+                                    const billingExtent = hasChargeableReason
+                                        ? (Number(field.field_extent) || 0)
+                                        : djiFieldArea;
+                                    const landExtent = Number(field.field_extent) || 0;
+                                    const coveredPercent = landExtent > 0
+                                        ? (djiFieldArea / landExtent) * 100
+                                        : 0;
                                     // Remove the filter: if (djiFieldArea > 0)
                                     processedData.push({
+                                        planId: Number(plan.plan_id) || 0,
                                         date: plan.plan_date,
-                                        fieldName: field.field_short_name || field.field_name,
-                                        pilotNames: field.pilot_names?.map(p => p.pilot_name).join(', ') || 'N/A',
-                                        landExtent: Number(field.field_extent) || 0,
+                                        fieldName: field.field_short_name || field.field_name || '',
+                                        pilotNames: field.pilot_names?.map(p => p.pilot_name).join(', ') || '',
+                                        landExtent,
                                         fieldExtent: djiFieldArea,
-                                        missionType: plan.mission_type_name
+                                        missionType: plan.mission_type_name,
+                                        comNarration,
+                                        hasChargeableReason,
+                                        billingExtent,
+                                        coveredPercent
                                     });
                                 });
                             });
@@ -223,26 +269,29 @@ const EstateSprayedAreaReport = () => {
         // Calculate totals
         const totalLandExtent = filteredData.reduce((sum, row) => sum + row.landExtent, 0).toFixed(2);
         const totalFieldExtent = filteredData.reduce((sum, row) => sum + row.fieldExtent, 0).toFixed(2);
+        const totalBillingExtent = filteredData.reduce((sum, row) => sum + (Number(row.billingExtent) || 0), 0).toFixed(2);
 
-        const formattedData = filteredData.map((row, index) => ({
-            No: index + 1,
+        const formattedData = filteredData.map((row) => ({
+            Plan: `${row.planId}-${row.missionType}`,
             Date: row.date ? new Date(row.date).toLocaleDateString() : "Invalid Date",
             "Field Name": row.fieldName,
-            "Pilot Name": row.pilotNames,
-            "Field Extent": row.landExtent.toFixed(2),
-            "Completed Extent": row.fieldExtent.toFixed(2),
-            "Mission Type": row.missionType,
+            "Field Extent (Ha)": row.landExtent.toFixed(2),
+            "Completed Extent (Ha)": row.fieldExtent.toFixed(2),
+            "Covered %": `${(Number(row.coveredPercent) || 0).toFixed(2)}%`,
+            "Billing Extent (Ha)": (Number(row.billingExtent) || 0).toFixed(2),
+            "Reason": row.comNarration || '-',
         }));
 
         // Add totals as the last row
         formattedData.push({
-            No: "Total",
+            Plan: "Total",
             Date: "",
             "Field Name": "",
-            "Pilot Name": "",
-            "Field Extent": totalLandExtent,
-            "Completed Extent": totalFieldExtent,
-            "Mission Type": "",
+            "Field Extent (Ha)": totalLandExtent,
+            "Completed Extent (Ha)": totalFieldExtent,
+            "Covered %": "",
+            "Billing Extent (Ha)": totalBillingExtent,
+            "Reason": "",
         });
 
         const ws = XLSX.utils.json_to_sheet(formattedData);
@@ -270,7 +319,7 @@ const EstateSprayedAreaReport = () => {
 
         if (filteredData.length === 0) return;
 
-        const doc = new jsPDF();
+        const doc = new jsPDF('l', 'mm', 'a4');
         const pageWidth = doc.internal.pageSize.getWidth();
         const pageHeight = doc.internal.pageSize.getHeight();
         const marginX = 15;
@@ -309,30 +358,33 @@ const EstateSprayedAreaReport = () => {
 
         // Table Data with Totals Row
         const tableData = filteredData.map((row, index) => [
-            index + 1,
+            `${row.planId}-${row.missionType}`,
             row.date ? new Date(row.date).toLocaleDateString() : "Invalid Date",
             row.fieldName,
-            // row.pilotNames,
             row.landExtent.toFixed(2),
             row.fieldExtent.toFixed(2),
-            row.missionType
+            `${(Number(row.coveredPercent) || 0).toFixed(2)}%`,
+            (Number(row.billingExtent) || 0).toFixed(2),
+            row.comNarration || '-'
         ]);
 
         // Add Totals Row
         const totalLandExtent = filteredData.reduce((sum, row) => sum + row.landExtent, 0).toFixed(2);
         const totalFieldExtent = filteredData.reduce((sum, row) => sum + row.fieldExtent, 0).toFixed(2);
+        const totalBillingExtent = filteredData.reduce((sum, row) => sum + (Number(row.billingExtent) || 0), 0).toFixed(2);
         tableData.push([
             'Total',
             '',
             '',
-            // '',
             totalLandExtent,
             totalFieldExtent,
+            '',
+            totalBillingExtent,
             ''
         ]);
 
         autoTable(doc, {
-            head: [["No", "Date", "Field Name", "Field Extent", "Completed Extent", "Mission Type"]],
+            head: [["Plan", "Date", "Field Name", "Field Extent (Ha)", "Completed Extent (Ha)", "Covered %", "Billing Extent (Ha)", "Reason"]],
             body: tableData,
             startY: currentY + 5,
             // Start at currentY on the first page, but keep a small top margin on subsequent pages
@@ -399,7 +451,7 @@ const EstateSprayedAreaReport = () => {
         const issueRows = filteredData.filter(hasFinanceExtentIssue);
         if (issueRows.length === 0) return;
 
-        const doc = new jsPDF();
+        const doc = new jsPDF('l', 'mm', 'a4');
         const pageWidth = doc.internal.pageSize.getWidth();
         const pageHeight = doc.internal.pageSize.getHeight();
         const marginX = 15;
@@ -434,27 +486,32 @@ const EstateSprayedAreaReport = () => {
         doc.text(`Field Wise Financial Report - Issues Only`, pageWidth / 2, currentY, { align: 'center' });
 
         const tableData = issueRows.map((row, index) => [
-            index + 1,
+            `${row.planId}-${row.missionType}`,
             row.date ? new Date(row.date).toLocaleDateString() : "Invalid Date",
             row.fieldName,
             row.landExtent.toFixed(2),
             row.fieldExtent.toFixed(2),
-            row.missionType
+            `${(Number(row.coveredPercent) || 0).toFixed(2)}%`,
+            (Number(row.billingExtent) || 0).toFixed(2),
+            row.comNarration || '-'
         ]);
 
         const totalLandExtent = issueRows.reduce((sum, row) => sum + row.landExtent, 0).toFixed(2);
         const totalFieldExtent = issueRows.reduce((sum, row) => sum + row.fieldExtent, 0).toFixed(2);
+        const totalBillingExtent = issueRows.reduce((sum, row) => sum + (Number(row.billingExtent) || 0), 0).toFixed(2);
         tableData.push([
             'Total',
             '',
             '',
             totalLandExtent,
             totalFieldExtent,
+            '',
+            totalBillingExtent,
             ''
         ]);
 
         autoTable(doc, {
-            head: [["No", "Date", "Field Name", "Field Extent", "Completed Extent", "Mission Type"]],
+            head: [["Plan", "Date", "Field Name", "Field Extent (Ha)", "Completed Extent (Ha)", "Covered %", "Billing Extent (Ha)", "Reason"]],
             body: tableData,
             startY: currentY + 5,
             margin: { top: 20, bottom: 50 },
@@ -515,6 +572,12 @@ const EstateSprayedAreaReport = () => {
     };
 
     const filteredRows = getFilteredRows();
+    const groupedRows = filteredRows.reduce((acc, row) => {
+        const key = `${row.planId}__${row.date}__${row.missionType}`;
+        if (!acc[key]) acc[key] = [];
+        acc[key].push(row);
+        return acc;
+    }, {});
     const issueRows = filteredRows.filter(hasFinanceExtentIssue);
     const hasIssues = issueRows.length > 0;
 
@@ -709,28 +772,35 @@ const EstateSprayedAreaReport = () => {
                                     <table className="finance-report-table">
                                         <thead>
                                             <tr>
-                                                <th>No</th>
-                                                <th>Date</th>
+                                                <th>Plan</th>
                                                 <th>Field Name</th>
                                                 <th>Pilot Name</th>
-                                                <th>Field Extent</th>
-                                                <th>Completed Extent</th>
-                                                <th>Mission Type</th>
+                                                <th>Field Extent (Ha)</th>
+                                                <th>Completed Extent (Ha)</th>
+                                                <th>Covered %</th>
+                                                <th>Billing Extent (Ha)</th>
+                                                <th>Reason</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {filteredRows
-                                                .map((row, index) => {
-                                                    const safeDate = row.date ? new Date(row.date) : null;
+                                            {Object.entries(groupedRows).flatMap(([key, rows]) => {
+                                                const firstRow = rows[0];
+                                                const safeDate = firstRow?.date ? new Date(firstRow.date) : null;
+
+                                                return rows.map((row, idx) => {
                                                     const isIssue = hasFinanceExtentIssue(row);
                                                     return (
-                                                        <tr key={index}>
-                                                            <td>{index + 1}</td>
-                                                            <td>
-                                                                {safeDate && !isNaN(safeDate)
-                                                                    ? safeDate.toLocaleDateString()
-                                                                    : 'Invalid Date'}
-                                                            </td>
+                                                        <tr key={`${key}-${idx}`}>
+                                                            {idx === 0 && (
+                                                                <td rowSpan={rows.length}>
+                                                                    <div><strong>{`${row.planId}-${row.missionType}`}</strong></div>
+                                                                    <div>
+                                                                        {safeDate && !isNaN(safeDate)
+                                                                            ? safeDate.toLocaleDateString()
+                                                                            : 'Invalid Date'}
+                                                                    </div>
+                                                                </td>
+                                                            )}
                                                             <td>{row.fieldName}</td>
                                                             <td>{row.pilotNames}</td>
                                                             <td className={isIssue ? 'finance-issue-cell' : ''}>
@@ -739,14 +809,21 @@ const EstateSprayedAreaReport = () => {
                                                             <td className={isIssue ? 'finance-issue-cell' : ''}>
                                                                 {(row.fieldExtent || 0).toFixed(2)}
                                                             </td>
-                                                            <td>{row.missionType}</td>
+                                                            <td>
+                                                                {(Number(row.coveredPercent) || 0).toFixed(2)}%
+                                                            </td>
+                                                            <td>
+                                                                {(row.billingExtent || 0).toFixed(2)}
+                                                            </td>
+                                                            <td>{row.comNarration || '-'}</td>
                                                         </tr>
                                                     );
-                                                })}
+                                                });
+                                            })}
                                         </tbody>
                                         <tfoot>
                                             <tr>
-                                                <td colSpan="4"><strong>Total</strong></td>
+                                                <td colSpan="3"><strong>Total</strong></td>
                                                 <td>
                                                     <strong>
                                                         {filteredRows
@@ -758,6 +835,14 @@ const EstateSprayedAreaReport = () => {
                                                     <strong>
                                                         {filteredRows
                                                             .reduce((sum, row) => sum + row.fieldExtent, 0)
+                                                            .toFixed(2)}
+                                                    </strong>
+                                                </td>
+                                                <td></td>
+                                                <td>
+                                                    <strong>
+                                                        {filteredRows
+                                                            .reduce((sum, row) => sum + (Number(row.billingExtent) || 0), 0)
                                                             .toFixed(2)}
                                                     </strong>
                                                 </td>

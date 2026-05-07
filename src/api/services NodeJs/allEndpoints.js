@@ -19,6 +19,7 @@ import './fieldSizeAdjustmentsApi';
 import './mappingHierarchyApi';
 import './fieldHistoryApi';
 import './vehicleAppApi';
+import './financeReportApi';
 
 // Export the complete API
 export { baseApi };
@@ -35,6 +36,7 @@ export * from './fieldSizeAdjustmentsApi';
 export * from './mappingHierarchyApi';
 export * from './fieldHistoryApi';
 export * from './vehicleAppApi';
+export * from './financeReportApi';
 
 /**
  * Node.js Backend Services:

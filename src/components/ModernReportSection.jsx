@@ -25,6 +25,7 @@ import ChemicalsReport from '../features/plantation/ChemicalsReport';
 import PilotRevenueDaily from '../sections/corporate/charts/PilotRevenueDaily';
 import PilotSummaryMonthly from '../sections/corporate/charts/PilotSummaryMonthly';
 import IndividualPilotSummary from '../sections/corporate/charts/IndividualPilotSummary';
+import PlanExecutionReasonReport from '../sections/management/reports/PlanExecutionReasonReport';
 
 // Placeholder component for reports under development
 const ComingSoonReport = ({ reportName }) => (
@@ -103,6 +104,14 @@ const ModernReportSection = ({ category = null }) => {
           icon: FaFileInvoiceDollar,
           component: DailyCoveredAreaSummary,
           metrics: { label: 'Reports', value: 'All' }
+        },
+        {
+          id: 'plan_execution_reasons',
+          name: 'Plan Execution Reasons Report',
+          description: 'Plan-wise covered and cancellation reasons',
+          icon: FaTasks,
+          component: PlanExecutionReasonReport,
+          metrics: { label: 'Plans', value: 'Date Range' }
         }
       ]
     },
@@ -313,7 +322,7 @@ const ModernReportSection = ({ category = null }) => {
   const currentCategory = reportCategories[currentCategoryKey];
 
   return (
-    <div className="modern-report-container">
+    <div className={`modern-report-container ${selectedReport?.id === 'plan_execution_reasons' ? 'plan-excu-root' : ''}`}>
       {/* Category Tabs - Only show in Corporate view */}
       {!selectedReport && isCorporateView && (
         <div className="report-category-tabs">
@@ -392,7 +401,7 @@ const ModernReportSection = ({ category = null }) => {
 
       {/* Selected Report Display */}
       {selectedReport && (
-        <div className="report-display-section">
+        <div className={`report-display-section ${selectedReport.id === 'plan_execution_reasons' ? 'plan-excu-host' : ''}`}>
           <div className="report-display-header">
             <button className="back-button" onClick={handleBackToReports}>
               ← Back to Reports
@@ -402,7 +411,7 @@ const ModernReportSection = ({ category = null }) => {
               <p>{selectedReport.description}</p>
             </div>
           </div>
-          <div className="report-display-content">
+          <div className={`report-display-content ${selectedReport.id === 'plan_execution_reasons' ? 'plan-excu-host-content' : ''}`}>
             {selectedReport.component ? (
               <selectedReport.component />
             ) : (
