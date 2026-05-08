@@ -275,10 +275,10 @@ const EstateSprayedAreaReport = () => {
             Plan: `${row.planId}-${row.missionType}`,
             Date: row.date ? new Date(row.date).toLocaleDateString() : "Invalid Date",
             "Field Name": row.fieldName,
-            "Field Extent (Ha)": row.landExtent.toFixed(2),
-            "Completed Extent (Ha)": row.fieldExtent.toFixed(2),
+            "Field(Ha)": row.landExtent.toFixed(2),
+            "Completed(Ha)": row.fieldExtent.toFixed(2),
             "Covered %": `${(Number(row.coveredPercent) || 0).toFixed(2)}%`,
-            "Billing Extent (Ha)": (Number(row.billingExtent) || 0).toFixed(2),
+            "Billing(Ha)": (Number(row.billingExtent) || 0).toFixed(2),
             "Reason": row.comNarration || '-',
         }));
 
@@ -287,10 +287,10 @@ const EstateSprayedAreaReport = () => {
             Plan: "Total",
             Date: "",
             "Field Name": "",
-            "Field Extent (Ha)": totalLandExtent,
-            "Completed Extent (Ha)": totalFieldExtent,
+            "Field(Ha)": totalLandExtent,
+            "Completed(Ha)": totalFieldExtent,
             "Covered %": "",
-            "Billing Extent (Ha)": totalBillingExtent,
+            "Billing(Ha)": totalBillingExtent,
             "Reason": "",
         });
 
@@ -319,7 +319,7 @@ const EstateSprayedAreaReport = () => {
 
         if (filteredData.length === 0) return;
 
-        const doc = new jsPDF('l', 'mm', 'a4');
+        const doc = new jsPDF('p', 'mm', 'a4');
         const pageWidth = doc.internal.pageSize.getWidth();
         const pageHeight = doc.internal.pageSize.getHeight();
         const marginX = 15;
@@ -334,7 +334,7 @@ const EstateSprayedAreaReport = () => {
         doc.setFontSize(14);
         doc.text("Kenilworth International Lanka Pvt Ltd", pageWidth / 2, 25, { align: 'center' });
         doc.setFontSize(10);
-        doc.text("7B , 1/1 D.W Rupasinghe Mawatha, Nugegoda", pageWidth / 2, 30, { align: 'center' });
+        doc.text("7B , D.W Rupasinghe Mawatha, Nugegoda", pageWidth / 2, 30, { align: 'center' });
 
         // Plantation Info
         const selectedPlantationData = (Array.isArray(plantations) ? plantations : []).find(p => p.id === selectedPlantation);
@@ -358,11 +358,10 @@ const EstateSprayedAreaReport = () => {
 
         // Table Data with Totals Row
         const tableData = filteredData.map((row, index) => [
-            `${row.planId}-${row.missionType}`,
-            row.date ? new Date(row.date).toLocaleDateString() : "Invalid Date",
+            `${row.planId}-${row.missionType}\n${row.date ? new Date(row.date).toLocaleDateString() : "Invalid Date"}`,
             row.fieldName,
-            row.landExtent.toFixed(2),
-            row.fieldExtent.toFixed(2),
+            (row.landExtent || 0).toFixed(2),
+            (row.fieldExtent || 0).toFixed(2),
             `${(Number(row.coveredPercent) || 0).toFixed(2)}%`,
             (Number(row.billingExtent) || 0).toFixed(2),
             row.comNarration || '-'
@@ -375,7 +374,6 @@ const EstateSprayedAreaReport = () => {
         tableData.push([
             'Total',
             '',
-            '',
             totalLandExtent,
             totalFieldExtent,
             '',
@@ -384,12 +382,22 @@ const EstateSprayedAreaReport = () => {
         ]);
 
         autoTable(doc, {
-            head: [["Plan", "Date", "Field Name", "Field Extent (Ha)", "Completed Extent (Ha)", "Covered %", "Billing Extent (Ha)", "Reason"]],
+            head: [["Plan / Date", "Field Name", "Field(Ha)", "Completed(Ha)", "Covered %", "Billing(Ha)", "Reason"]],
             body: tableData,
             startY: currentY + 5,
             // Start at currentY on the first page, but keep a small top margin on subsequent pages
             margin: { top: 20, bottom: 50 },
             theme: 'grid',
+            styles: { fontSize: 8, cellPadding: 2, overflow: 'linebreak' },
+            columnStyles: {
+                0: { cellWidth: 28 },
+                1: { cellWidth: 24 },
+                2: { cellWidth: 16, halign: 'right' },
+                3: { cellWidth: 20, halign: 'right' },
+                4: { cellWidth: 16, halign: 'right' },
+                5: { cellWidth: 16, halign: 'right' },
+                6: { cellWidth: 66 },
+            },
             headStyles: {
                 fillColor: [0, 75, 113],
                 textColor: [255, 255, 255],
@@ -451,7 +459,7 @@ const EstateSprayedAreaReport = () => {
         const issueRows = filteredData.filter(hasFinanceExtentIssue);
         if (issueRows.length === 0) return;
 
-        const doc = new jsPDF('l', 'mm', 'a4');
+        const doc = new jsPDF('p', 'mm', 'a4');
         const pageWidth = doc.internal.pageSize.getWidth();
         const pageHeight = doc.internal.pageSize.getHeight();
         const marginX = 15;
@@ -464,7 +472,7 @@ const EstateSprayedAreaReport = () => {
         doc.setFontSize(14);
         doc.text("Kenilworth International Lanka Pvt Ltd", pageWidth / 2, 25, { align: 'center' });
         doc.setFontSize(10);
-        doc.text("7B , 1/1 D.W Rupasinghe Mawatha, Nugegoda", pageWidth / 2, 30, { align: 'center' });
+        doc.text("7B , D.W Rupasinghe Mawatha, Nugegoda", pageWidth / 2, 30, { align: 'center' });
 
         const selectedPlantationData = (Array.isArray(plantations) ? plantations : []).find(p => p.id === selectedPlantation);
         const plantation = selectedPlantationData ? selectedPlantationData.plantation : "N/A";
@@ -486,8 +494,7 @@ const EstateSprayedAreaReport = () => {
         doc.text(`Field Wise Financial Report - Issues Only`, pageWidth / 2, currentY, { align: 'center' });
 
         const tableData = issueRows.map((row, index) => [
-            `${row.planId}-${row.missionType}`,
-            row.date ? new Date(row.date).toLocaleDateString() : "Invalid Date",
+            `${row.planId}-${row.missionType}\n${row.date ? new Date(row.date).toLocaleDateString() : "Invalid Date"}`,
             row.fieldName,
             row.landExtent.toFixed(2),
             row.fieldExtent.toFixed(2),
@@ -502,7 +509,6 @@ const EstateSprayedAreaReport = () => {
         tableData.push([
             'Total',
             '',
-            '',
             totalLandExtent,
             totalFieldExtent,
             '',
@@ -511,11 +517,21 @@ const EstateSprayedAreaReport = () => {
         ]);
 
         autoTable(doc, {
-            head: [["Plan", "Date", "Field Name", "Field Extent (Ha)", "Completed Extent (Ha)", "Covered %", "Billing Extent (Ha)", "Reason"]],
+            head: [["Plan / Date", "Field Name", "Field(Ha)", "Completed(Ha)", "Covered %", "Billing(Ha)", "Reason"]],
             body: tableData,
             startY: currentY + 5,
             margin: { top: 20, bottom: 50 },
             theme: 'grid',
+            styles: { fontSize: 8, cellPadding: 2, overflow: 'linebreak' },
+            columnStyles: {
+                0: { cellWidth: 28 },
+                1: { cellWidth: 24 },
+                2: { cellWidth: 16, halign: 'right' },
+                3: { cellWidth: 20, halign: 'right' },
+                4: { cellWidth: 16, halign: 'right' },
+                5: { cellWidth: 16, halign: 'right' },
+                6: { cellWidth: 66 },
+            },
             headStyles: {
                 fillColor: [185, 28, 28],
                 textColor: [255, 255, 255],
@@ -775,10 +791,10 @@ const EstateSprayedAreaReport = () => {
                                                 <th>Plan</th>
                                                 <th>Field Name</th>
                                                 <th>Pilot Name</th>
-                                                <th>Field Extent (Ha)</th>
-                                                <th>Completed Extent (Ha)</th>
+                                                <th>Field(Ha)</th>
+                                                <th>Completed(Ha)</th>
                                                 <th>Covered %</th>
-                                                <th>Billing Extent (Ha)</th>
+                                                <th>Billing(Ha)</th>
                                                 <th>Reason</th>
                                             </tr>
                                         </thead>

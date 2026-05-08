@@ -32,11 +32,71 @@
 }
 
 .plan-excu-table-wrap {
+  position: relative;
   flex: 1 1 auto;
   min-height: 0;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
   overflow: auto;
+}
+
+.plan-excu-fetch-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.72);
+  font-size: 1rem;
+  font-weight: 700;
+  color: #004b71;
+  pointer-events: all;
+  border-radius: 12px;
+}
+
+.plan-excu-table-dimmed {
+  opacity: 0.55;
+}
+
+.plan-excu-filters-disabled {
+  opacity: 0.85;
+}
+
+.plan-excu-date-range,
+.plan-excu-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.plan-excu-date-range label,
+.plan-excu-field label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #374151;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.plan-excu-range-input {
+  min-width: 220px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.875rem;
+}
+
+.plan-excu-filters select:disabled,
+.plan-excu-range-input:disabled,
+.plan-excu-excel-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.plan-excu-excel-btn:disabled {
+  filter: grayscale(0.25);
 }
 
 .plan-excu-table {
@@ -47,13 +107,20 @@
 
 .plan-excu-table th {
   padding: 0.875rem 1rem;
-  text-align: left;
+  text-align: center;
   font-size: 0.75rem;
   font-weight: 800;
   color: #004b71;
   text-transform: uppercase;
   border: 1px solid #004b71;
   background: #fff;
+  vertical-align: middle;
+}
+
+.plan-excu-table th:last-child,
+.plan-excu-table td.plan-excu-reasons-cell {
+  min-width: 22rem;
+  max-width: 40rem;
 }
 
 .plan-excu-table td {
@@ -61,6 +128,66 @@
   font-size: 0.875rem;
   color: #111827;
   border: 1px solid #e5e7eb;
+  vertical-align: middle;
+  text-align: center;
+}
+
+/* Reasons: left-aligned for reading; vertically centered with row */
+.plan-excu-table td.plan-excu-reasons-cell {
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+}
+
+.plan-excu-reasons {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.3;
+  margin: 0;
+  padding: 0;
+}
+
+.plan-excu-reasons > div {
+  margin: 0;
+  padding: 0;
+}
+
+/* Covered tint from Field Name onward; Date–Estate stay plain (no row tint). */
+.plan-excu-row-cov-green td.plan-excu-metric-cell {
+  background-color: #d1fae5;
+}
+
+.plan-excu-row-cov-blue td.plan-excu-metric-cell {
+  background-color: #dbeafe;
+}
+
+.plan-excu-row-deact-yellow td.plan-excu-metric-cell {
+  background-color: #fef08a;
+}
+
+.plan-excu-row-deact-gray td.plan-excu-metric-cell {
+  background-color: #d1d5db;
+}
+
+.plan-excu-lead-merge {
+  vertical-align: middle;
+  text-align: center;
+  background-color: #fff;
+}
+
+.plan-excu-row-total td {
+  background-color: #f8fafc;
+  font-weight: 700;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.plan-excu-row-grand td {
+  background-color: #e0e7ff;
+  font-weight: 700;
+  text-align: center;
+  vertical-align: middle;
+  border-top: 2px solid #004b71;
 }
 
 .plan-excu-table-wrap::-webkit-scrollbar {

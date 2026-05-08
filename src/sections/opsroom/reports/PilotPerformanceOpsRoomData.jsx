@@ -240,7 +240,7 @@ const PilotPerformanceOpsRoomData = () => {
         doc.setFont("helvetica", "normal");
         doc.setFontSize(10);
         doc.text("Kenilworth International Lanka Pvt Ltd", 60, 25);
-        doc.text("7B , 1/1 D.W Rupasinghe Mawatha, Nugegoda", 60, 30);
+        doc.text("7B , D.W Rupasinghe Mawatha, Nugegoda", 60, 30);
 
         const bodyData = filteredData.map(item => [
             item.date,
