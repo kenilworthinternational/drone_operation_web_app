@@ -20,6 +20,8 @@ import './mappingHierarchyApi';
 import './fieldHistoryApi';
 import './vehicleAppApi';
 import './financeReportApi';
+import './chemicalsApi';
+import './timeOfDaysApi';
 
 // Export the complete API
 export { baseApi };
@@ -37,6 +39,8 @@ export * from './mappingHierarchyApi';
 export * from './fieldHistoryApi';
 export * from './vehicleAppApi';
 export * from './financeReportApi';
+export * from './chemicalsApi';
+export * from './timeOfDaysApi';
 
 /**
  * Node.js Backend Services:

@@ -40,6 +40,16 @@ import {
   useGetDeactivateReasonsQuery,
   useSaveDeactivateReasonMutation,
 } from '../../../api/services NodeJs/reasonsApi';
+import {
+  useGetChemicalsQuery,
+  useCreateChemicalMutation,
+  useUpdateChemicalMutation,
+} from '../../../api/services NodeJs/chemicalsApi';
+import {
+  useGetTimeOfDaysQuery,
+  useCreateTimeOfDayMutation,
+  useUpdateTimeOfDayMutation,
+} from '../../../api/services NodeJs/timeOfDaysApi';
 import { useSendMessageMutation } from '../../../api/services/authApi';
 import '../../../styles/masterdata.css';
 
@@ -62,7 +72,7 @@ const MasterData = ({ mode = 'full' }) => {
   const { data: vehicles = [] } = useGetVehicleAppVehiclesQuery();
   const { data: drivers = [] } = useGetVehicleAppDriversQuery();
   const { data: vehicleCategories = [] } = useGetVehicleAppVehicleCategoriesQuery();
-  const { data: maintenanceCategories = [] } = useGetVehicleAppMaintenanceCategoriesQuery();
+  const { data: maintenanceCategories = [], refetch: refetchMaintenanceCategories } = useGetVehicleAppMaintenanceCategoriesQuery();
   const { data: maintenanceRequests = [] } = useGetVehicleAppMaintenanceRequestsQuery(yearMonth);
   const { data: fuelCategories = [], refetch: refetchFuelCategories } = useGetFuelCategoriesQuery();
   const { data: wingsData, refetch: refetchWings } = useGetWingsQuery();
@@ -75,6 +85,14 @@ const MasterData = ({ mode = 'full' }) => {
   const { data: missionPartialReasons = [] } = useGetMissionPartialReasonsQuery({ include_inactive: true });
   const { data: notSprayingRecens = [] } = useGetNotSprayingRecensQuery({ include_inactive: true });
   const { data: deactivateReasons = [] } = useGetDeactivateReasonsQuery({ include_inactive: true });
+  const { data: chemicalsRaw = [], refetch: refetchChemicals } = useGetChemicalsQuery(
+    { include_inactive: true },
+    { skip: activeTab !== 'masters' }
+  );
+  const { data: timeOfDaysRaw = [], refetch: refetchTimeOfDays } = useGetTimeOfDaysQuery(
+    { include_inactive: true },
+    { skip: activeTab !== 'masters' }
+  );
   const wings = useMemo(() => {
     const fromJd = Array.isArray(wingsData)
       ? wingsData
@@ -109,6 +127,21 @@ const MasterData = ({ mode = 'full' }) => {
     return [];
   }, [workLocationsData]);
 
+  const chemicals = useMemo(() => {
+    const raw = Array.isArray(chemicalsRaw) ? chemicalsRaw : [];
+    return [...raw].sort((a, b) => {
+      const pa = Number(a.priority) || 0;
+      const pb = Number(b.priority) || 0;
+      if (pa !== pb) return pa - pb;
+      return String(a.chemical || '').localeCompare(String(b.chemical || ''), undefined, { sensitivity: 'base' });
+    });
+  }, [chemicalsRaw]);
+
+  const workingTimes = useMemo(() => {
+    const raw = Array.isArray(timeOfDaysRaw) ? timeOfDaysRaw : [];
+    return [...raw].sort((a, b) => Number(a.id) - Number(b.id));
+  }, [timeOfDaysRaw]);
+
   const [saveVehicleCategory] = useSaveVehicleAppVehicleCategoryMutation();
   const [saveMaintenanceCategory] = useSaveVehicleAppMaintenanceCategoryMutation();
   const [decideMaintenance] = useDecideVehicleAppMaintenanceRequestMutation();
@@ -124,8 +157,23 @@ const MasterData = ({ mode = 'full' }) => {
   const [saveMissionPartialReason] = useSaveMissionPartialReasonMutation();
   const [saveNotSprayingRecen] = useSaveNotSprayingRecenMutation();
   const [saveDeactivateReason] = useSaveDeactivateReasonMutation();
+  const [createChemical] = useCreateChemicalMutation();
+  const [updateChemical] = useUpdateChemicalMutation();
+  const [createTimeOfDay] = useCreateTimeOfDayMutation();
+  const [updateTimeOfDay] = useUpdateTimeOfDayMutation();
 
   const [newMaintenanceCategory, setNewMaintenanceCategory] = useState('');
+  const [newChemicalName, setNewChemicalName] = useState('');
+  const [newChemicalCategory, setNewChemicalCategory] = useState('');
+  const [newChemicalPriority, setNewChemicalPriority] = useState('50');
+  const [newWorkingTimeText, setNewWorkingTimeText] = useState('');
+  const [newWorkingTimeActivated, setNewWorkingTimeActivated] = useState('1');
+  const [addChemicalOpen, setAddChemicalOpen] = useState(false);
+  const [addFuelOpen, setAddFuelOpen] = useState(false);
+  const [addWingOpen, setAddWingOpen] = useState(false);
+  const [addWorkLocationOpen, setAddWorkLocationOpen] = useState(false);
+  const [addMaintenanceCategoryOpen, setAddMaintenanceCategoryOpen] = useState(false);
+  const [addWorkingTimeOpen, setAddWorkingTimeOpen] = useState(false);
 
   const [newFuelCategory, setNewFuelCategory] = useState('');
   const [newFuelUnitPrice, setNewFuelUnitPrice] = useState('');
@@ -219,6 +267,168 @@ const MasterData = ({ mode = 'full' }) => {
     }
   };
 
+  const openAddChemicalModal = () => {
+    setNewChemicalName('');
+    setNewChemicalCategory('');
+    setNewChemicalPriority('50');
+    setAddChemicalOpen(true);
+  };
+
+  const closeAddChemicalModal = () => {
+    setAddChemicalOpen(false);
+    setNewChemicalName('');
+    setNewChemicalCategory('');
+    setNewChemicalPriority('50');
+  };
+
+  const saveAddChemicalModal = async () => {
+    const name = String(newChemicalName || '').trim();
+    if (!name) {
+      setQuickMessage({ type: 'error', text: 'Chemical name is required.' });
+      return;
+    }
+    await handleQuickSave(async () => {
+      await createChemical({
+        chemical: name,
+        category: newChemicalCategory || null,
+        priority: parseInt(newChemicalPriority, 10) || 50,
+        activated: 1,
+      }).unwrap();
+      await refetchChemicals();
+      closeAddChemicalModal();
+    });
+  };
+
+  const openAddFuelModal = () => {
+    setNewFuelCategory('');
+    setNewFuelUnitPrice('');
+    setAddFuelOpen(true);
+  };
+  const closeAddFuelModal = () => {
+    setAddFuelOpen(false);
+    setNewFuelCategory('');
+    setNewFuelUnitPrice('');
+  };
+  const saveAddFuelModal = async () => {
+    const cat = String(newFuelCategory || '').trim();
+    if (!cat) {
+      setQuickMessage({ type: 'error', text: 'Fuel type name is required.' });
+      return;
+    }
+    await handleQuickSave(async () => {
+      await saveFuelCategory({ category: cat, unit_price: newFuelUnitPrice || null, activated: 1 }).unwrap();
+      await refetchFuelCategories();
+      closeAddFuelModal();
+    });
+  };
+
+  const openAddWingModal = () => {
+    setNewWingName('');
+    setNewWingCode('');
+    setNewWingHod('');
+    setAddWingOpen(true);
+  };
+  const closeAddWingModal = () => {
+    setAddWingOpen(false);
+    setNewWingName('');
+    setNewWingCode('');
+    setNewWingHod('');
+  };
+  const saveAddWingModal = async () => {
+    const wing = String(newWingName || '').trim();
+    const code = String(newWingCode || '').trim();
+    if (!wing) {
+      setQuickMessage({ type: 'error', text: 'Wing name is required.' });
+      return;
+    }
+    if (!code) {
+      setQuickMessage({ type: 'error', text: 'Wing code is required.' });
+      return;
+    }
+    await handleQuickSave(async () => {
+      await saveWing({ wing, wingsCode: code, hod: newWingHod || null, activated: 1 }).unwrap();
+      await refetchWings();
+      closeAddWingModal();
+    });
+  };
+
+  const openAddWorkLocationModal = () => {
+    setNewWorkLocationName('');
+    setNewWorkLocationCode('');
+    setNewWorkLocationMapLink('');
+    setAddWorkLocationOpen(true);
+  };
+  const closeAddWorkLocationModal = () => {
+    setAddWorkLocationOpen(false);
+    setNewWorkLocationName('');
+    setNewWorkLocationCode('');
+    setNewWorkLocationMapLink('');
+  };
+  const saveAddWorkLocationModal = async () => {
+    const name = String(newWorkLocationName || '').trim();
+    if (!name) {
+      setQuickMessage({ type: 'error', text: 'Location name is required.' });
+      return;
+    }
+    await handleQuickSave(async () => {
+      await saveWorkLocation({
+        locationName: name,
+        locationCode: String(newWorkLocationCode || '').trim(),
+        map_link: newWorkLocationMapLink || null,
+        activated: 1,
+      }).unwrap();
+      await refetchWorkLocations();
+      closeAddWorkLocationModal();
+    });
+  };
+
+  const openAddMaintenanceCategoryModal = () => {
+    setNewMaintenanceCategory('');
+    setAddMaintenanceCategoryOpen(true);
+  };
+  const closeAddMaintenanceCategoryModal = () => {
+    setAddMaintenanceCategoryOpen(false);
+    setNewMaintenanceCategory('');
+  };
+  const saveAddMaintenanceCategoryModal = async () => {
+    const cat = String(newMaintenanceCategory || '').trim();
+    if (!cat) {
+      setQuickMessage({ type: 'error', text: 'Category name is required.' });
+      return;
+    }
+    await handleQuickSave(async () => {
+      await saveMaintenanceCategory({ category: cat, activated: 1 }).unwrap();
+      await refetchMaintenanceCategories();
+      closeAddMaintenanceCategoryModal();
+    });
+  };
+
+  const openAddWorkingTimeModal = () => {
+    setNewWorkingTimeText('');
+    setNewWorkingTimeActivated('1');
+    setAddWorkingTimeOpen(true);
+  };
+  const closeAddWorkingTimeModal = () => {
+    setAddWorkingTimeOpen(false);
+    setNewWorkingTimeText('');
+    setNewWorkingTimeActivated('1');
+  };
+  const saveAddWorkingTimeModal = async () => {
+    const text = String(newWorkingTimeText || '').trim();
+    if (!text) {
+      setQuickMessage({ type: 'error', text: 'Working time description is required.' });
+      return;
+    }
+    await handleQuickSave(async () => {
+      await createTimeOfDay({
+        time_of_day: text,
+        activated: parseInt(newWorkingTimeActivated, 10) === 0 ? 0 : 1,
+      }).unwrap();
+      await refetchTimeOfDays();
+      closeAddWorkingTimeModal();
+    });
+  };
+
   const refreshVehicleMasters = async () => {
     await Promise.all([
       refetchMasterVehicleCategories(),
@@ -252,6 +462,20 @@ const MasterData = ({ mode = 'full' }) => {
     if (type === 'missionPartialReason') setModalDraft({ reason: item.reason || '', flag: item.flag || 'c', chargeble: String(Number(item.chargeble) === 1 ? 1 : 0) });
     if (type === 'notSprayingRecen') setModalDraft({ recen: item.recen || '', flag: item.flag || 'c' });
     if (type === 'deactivateReason') setModalDraft({ reason: item.reason || '' });
+    if (type === 'chemical') {
+      setModalDraft({
+        chemical: item.chemical || '',
+        category: item.category != null && String(item.category).trim() !== '' ? String(item.category).trim() : '',
+        priority: String(item.priority != null ? item.priority : 50),
+        activated: String(Number(item.activated) === 0 ? 0 : 1),
+      });
+    }
+    if (type === 'workingTime') {
+      setModalDraft({
+        time_of_day: item.time_of_day || '',
+        activated: String(Number(item.activated) === 0 ? 0 : 1),
+      });
+    }
   };
 
   const openAddModal = (type) => {
@@ -336,6 +560,13 @@ const MasterData = ({ mode = 'full' }) => {
 
   const saveEditModal = async () => {
     if (!editModal?.item?.id) return;
+    if (editModal.type === 'workingTime') {
+      const wt = String(modalDraft.time_of_day || '').trim();
+      if (!wt) {
+        setQuickMessage({ type: 'error', text: 'Time of day is required.' });
+        return;
+      }
+    }
     await handleQuickSave(async () => {
       if (editModal.type === 'vehicleCategory') {
         await saveMasterVehicleCategory({ id: editModal.item.id, category: modalDraft.category, activated: editModal.item.activated ?? 1 }).unwrap();
@@ -405,6 +636,22 @@ const MasterData = ({ mode = 'full' }) => {
           reason: modalDraft.reason,
           activated: editModal.item.activated ?? 1,
         }).unwrap();
+      } else if (editModal.type === 'chemical') {
+        await updateChemical({
+          id: editModal.item.id,
+          chemical: modalDraft.chemical,
+          category: modalDraft.category ? modalDraft.category : null,
+          priority: parseInt(modalDraft.priority, 10) || 50,
+          activated: parseInt(modalDraft.activated, 10) === 0 ? 0 : 1,
+        }).unwrap();
+        await refetchChemicals();
+      } else if (editModal.type === 'workingTime') {
+        await updateTimeOfDay({
+          id: editModal.item.id,
+          time_of_day: String(modalDraft.time_of_day || '').trim(),
+          activated: parseInt(modalDraft.activated, 10) === 0 ? 0 : 1,
+        }).unwrap();
+        await refetchTimeOfDays();
       }
       closeEditModal();
     });
@@ -505,6 +752,8 @@ const MasterData = ({ mode = 'full' }) => {
               { key: 'wings', label: 'Wings' },
               { key: 'workLocations', label: 'Work Locations' },
               { key: 'maintenanceCategories', label: 'Maintenance Categories' },
+              { key: 'chemicals', label: 'Chemicals' },
+              { key: 'workingTimes', label: 'Working Times' },
               { key: 'reasons', label: 'Reasons' },
               { key: 'securityCodes', label: 'Security Codes' },
             ].map((item) => (
@@ -567,18 +816,19 @@ const MasterData = ({ mode = 'full' }) => {
 
             {selectedMasterModule === 'fuelTypes' && (
               <div className="vehicle-admin-card-master-data">
-                <h3>Fuel Types</h3>
-                <div className="inline-form-master-data" style={{ flexWrap: 'wrap', gap: '6px' }}>
-                  <input value={newFuelCategory} onChange={(e) => setNewFuelCategory(e.target.value)} placeholder="Fuel type name" style={{ flex: '1 1 120px' }} />
-                  <input type="number" value={newFuelUnitPrice} onChange={(e) => setNewFuelUnitPrice(e.target.value)} placeholder="Unit price (LKR/L)" min="0" step="0.01" style={{ flex: '1 1 120px' }} />
-                  <button onClick={() => handleQuickSave(async () => {
-                    await saveFuelCategory({ category: newFuelCategory, unit_price: newFuelUnitPrice || null, activated: 1 }).unwrap();
-                    setNewFuelCategory('');
-                    setNewFuelUnitPrice('');
-                    refetchFuelCategories();
-                  })}>Add</button>
+                <div className="master-data-chemicals-head-master-data">
+                  <div className="master-data-chemicals-head-text-master-data">
+                    <h3>Fuel Types</h3>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-submit-master-data master-data-chemicals-add-btn-master-data"
+                    onClick={openAddFuelModal}
+                  >
+                    Add fuel type
+                  </button>
                 </div>
-                <div className="master-list-master-data">
+                <div className="master-list-master-data" style={{ marginTop: 12 }}>
                   {fuelCategories.map((c) => (
                     <div key={c.id} className="master-row-master-data">
                       <div style={{ flex: 1 }}>
@@ -598,22 +848,19 @@ const MasterData = ({ mode = 'full' }) => {
 
             {selectedMasterModule === 'wings' && (
               <div className="vehicle-admin-card-master-data">
-                <h3>Wings</h3>
-                <div className="inline-form-master-data" style={{ flexWrap: 'wrap', gap: '6px' }}>
-                  <input value={newWingName} onChange={(e) => setNewWingName(e.target.value)} placeholder="Wing name" style={{ flex: '1 1 140px' }} />
-                  <input value={newWingCode} onChange={(e) => setNewWingCode(e.target.value)} placeholder="Wing code" style={{ flex: '1 1 120px' }} />
-                  <select value={newWingHod} onChange={(e) => setNewWingHod(e.target.value)} style={{ flex: '1 1 180px' }}>
-                    <option value="">HOD (Employee ID)</option>
-                    {employees.map((emp) => (
-                      <option key={emp.id} value={emp.id}>{emp.id} - {emp.employeeName || emp.preferredName || emp.empNo || 'Employee'}</option>
-                    ))}
-                  </select>
-                  <button onClick={() => handleQuickSave(async () => {
-                    await saveWing({ wing: newWingName, wingsCode: newWingCode, hod: newWingHod || null, activated: 1 }).unwrap();
-                    setNewWingName(''); setNewWingCode(''); setNewWingHod('');
-                  })}>Add</button>
+                <div className="master-data-chemicals-head-master-data">
+                  <div className="master-data-chemicals-head-text-master-data">
+                    <h3>Wings</h3>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-submit-master-data master-data-chemicals-add-btn-master-data"
+                    onClick={openAddWingModal}
+                  >
+                    Add wing
+                  </button>
                 </div>
-                <div className="master-list-master-data">
+                <div className="master-list-master-data" style={{ marginTop: 12 }}>
                   {wings.map((w) => {
                     const hodEmployee = employees.find((emp) => String(emp.id) === String(w.hod || ''));
                     const hodLabel = hodEmployee
@@ -637,17 +884,19 @@ const MasterData = ({ mode = 'full' }) => {
 
             {selectedMasterModule === 'workLocations' && (
               <div className="vehicle-admin-card-master-data">
-                <h3>Work Locations</h3>
-                <div className="inline-form-master-data" style={{ flexWrap: 'wrap', gap: '6px' }}>
-                  <input value={newWorkLocationName} onChange={(e) => setNewWorkLocationName(e.target.value)} placeholder="Location name" style={{ flex: '1 1 140px' }} />
-                  <input value={newWorkLocationCode} onChange={(e) => setNewWorkLocationCode(e.target.value)} placeholder="Location code" style={{ flex: '1 1 120px' }} />
-                  <input value={newWorkLocationMapLink} onChange={(e) => setNewWorkLocationMapLink(e.target.value)} placeholder="Google map link" style={{ flex: '1 1 220px' }} />
-                  <button onClick={() => handleQuickSave(async () => {
-                    await saveWorkLocation({ locationName: newWorkLocationName, locationCode: newWorkLocationCode, map_link: newWorkLocationMapLink || null, activated: 1 }).unwrap();
-                    setNewWorkLocationName(''); setNewWorkLocationCode(''); setNewWorkLocationMapLink('');
-                  })}>Add</button>
+                <div className="master-data-chemicals-head-master-data">
+                  <div className="master-data-chemicals-head-text-master-data">
+                    <h3>Work Locations</h3>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-submit-master-data master-data-chemicals-add-btn-master-data"
+                    onClick={openAddWorkLocationModal}
+                  >
+                    Add work location
+                  </button>
                 </div>
-                <div className="master-list-master-data">
+                <div className="master-list-master-data" style={{ marginTop: 12 }}>
                   {workLocations.map((w) => (
                     <div key={w.id} className="master-row-master-data">
                       <div style={{ flex: 1 }}>
@@ -665,15 +914,19 @@ const MasterData = ({ mode = 'full' }) => {
 
             {selectedMasterModule === 'maintenanceCategories' && (
               <div className="vehicle-admin-card-master-data">
-                <h3>Maintenance Categories</h3>
-                <div className="inline-form-master-data">
-                  <input value={newMaintenanceCategory} onChange={(e) => setNewMaintenanceCategory(e.target.value)} placeholder="New maintenance category" />
-                  <button onClick={() => handleQuickSave(async () => {
-                    await saveMaintenanceCategory({ category: newMaintenanceCategory, activated: 1 }).unwrap();
-                    setNewMaintenanceCategory('');
-                  })}>Add</button>
+                <div className="master-data-chemicals-head-master-data">
+                  <div className="master-data-chemicals-head-text-master-data">
+                    <h3>Maintenance Categories</h3>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-submit-master-data master-data-chemicals-add-btn-master-data"
+                    onClick={openAddMaintenanceCategoryModal}
+                  >
+                    Add category
+                  </button>
                 </div>
-                <div className="master-list-master-data">
+                <div className="master-list-master-data" style={{ marginTop: 12 }}>
                   {maintenanceCategories.map((c) => (
                     <div key={c.id} className="master-row-master-data">
                       <span className="master-label-master-data">{c.category}</span>
@@ -682,6 +935,132 @@ const MasterData = ({ mode = 'full' }) => {
                       </div>
                     </div>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {selectedMasterModule === 'chemicals' && (
+              <div className="vehicle-admin-card-master-data">
+                <div className="master-data-chemicals-head-master-data">
+                  <div className="master-data-chemicals-head-text-master-data">
+                    <h3>Chemicals</h3>
+                    <p className="vehicle-master-note-master-data">
+                      Plantation chemical master list (spray/spread category, display order, active flag).
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-submit-master-data master-data-chemicals-add-btn-master-data"
+                    onClick={openAddChemicalModal}
+                  >
+                    Add chemical
+                  </button>
+                </div>
+                <div className="vehicle-table-wrap-master-data" style={{ marginTop: 12 }}>
+                  <table className="vehicle-table-master-data">
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Category</th>
+                        <th>Priority</th>
+                        <th>Status</th>
+                        <th />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {chemicals.map((row) => {
+                        const cat = String(row.category || '').toLowerCase();
+                        const catLabel = cat === 'spy' ? 'Spray' : cat === 'spd' ? 'Spread' : row.category || '—';
+                        return (
+                          <tr key={row.id}>
+                            <td>{row.chemical}</td>
+                            <td>{catLabel}</td>
+                            <td>{row.priority ?? 50}</td>
+                            <td>
+                              <span
+                                className={
+                                  Number(row.activated) === 1
+                                    ? 'status-chip-master-data active-master-data'
+                                    : 'status-chip-master-data inactive-master-data'
+                                }
+                              >
+                                {Number(row.activated) === 1 ? 'Active' : 'Inactive'}
+                              </span>
+                            </td>
+                            <td>
+                              <button
+                                type="button"
+                                className="action-btn-master-data neutral-master-data"
+                                onClick={() => openEditModal('chemical', row)}
+                              >
+                                Edit
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {selectedMasterModule === 'workingTimes' && (
+              <div className="vehicle-admin-card-master-data">
+                <div className="master-data-chemicals-head-master-data">
+                  <div className="master-data-chemicals-head-text-master-data">
+                    <h3>Working Times</h3>
+                    <p className="vehicle-master-note-master-data">
+                      Shifts and time-band labels (e.g. morning and evening blocks).
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-submit-master-data master-data-chemicals-add-btn-master-data"
+                    onClick={openAddWorkingTimeModal}
+                  >
+                    Add working time
+                  </button>
+                </div>
+                <div className="vehicle-table-wrap-master-data" style={{ marginTop: 12 }}>
+                  <table className="vehicle-table-master-data">
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Time of day</th>
+                        <th>Status</th>
+                        <th />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {workingTimes.map((row) => (
+                        <tr key={row.id}>
+                          <td>{row.id}</td>
+                          <td>{row.time_of_day}</td>
+                          <td>
+                            <span
+                              className={
+                                Number(row.activated) === 1
+                                  ? 'status-chip-master-data active-master-data'
+                                  : 'status-chip-master-data inactive-master-data'
+                              }
+                            >
+                              {Number(row.activated) === 1 ? 'Active' : 'Inactive'}
+                            </span>
+                          </td>
+                          <td>
+                            <button
+                              type="button"
+                              className="action-btn-master-data neutral-master-data"
+                              onClick={() => openEditModal('workingTime', row)}
+                            >
+                              Edit
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             )}
@@ -1090,8 +1469,17 @@ const MasterData = ({ mode = 'full' }) => {
 
       {editModal && (
         <div className="update-popup-overlay-master-data">
-          <div className="update-popup-card-master-data">
-            <h3>Edit {editModal.type}</h3>
+          <div
+            className={`update-popup-card-master-data${editModal.type === 'chemical' || editModal.type === 'workingTime' ? ' update-popup-card-wide-master-data' : ''}`}
+          >
+            <h3>
+              Edit{' '}
+              {editModal.type === 'chemical'
+                ? 'Chemical'
+                : editModal.type === 'workingTime'
+                  ? 'Working time'
+                  : editModal.type}
+            </h3>
             {editModal.type === 'vehicleCategory' && (
               <input
                 className="master-edit-input-master-data"
@@ -1280,6 +1668,85 @@ const MasterData = ({ mode = 'full' }) => {
                 </select>
               </div>
             )}
+            {editModal.type === 'chemical' && (
+              <div className="master-edit-grid-2col-master-data">
+                <div className="master-edit-field-master-data master-edit-field-span2-master-data">
+                  <label htmlFor="master-edit-chemical-name">Chemical name</label>
+                  <input
+                    id="master-edit-chemical-name"
+                    className="master-edit-input-master-data"
+                    value={modalDraft.chemical || ''}
+                    onChange={(e) => setModalDraft((p) => ({ ...p, chemical: e.target.value }))}
+                    placeholder="e.g. Urea, Coragen"
+                    autoComplete="off"
+                  />
+                </div>
+                <div className="master-edit-field-master-data">
+                  <label htmlFor="master-edit-chemical-category">Category</label>
+                  <select
+                    id="master-edit-chemical-category"
+                    className="master-edit-input-master-data"
+                    value={modalDraft.category || ''}
+                    onChange={(e) => setModalDraft((p) => ({ ...p, category: e.target.value }))}
+                  >
+                    <option value="">None (optional)</option>
+                    <option value="spy">Spray (spy)</option>
+                    <option value="spd">Spread (spd)</option>
+                  </select>
+                </div>
+                <div className="master-edit-field-master-data">
+                  <label htmlFor="master-edit-chemical-priority">Priority</label>
+                  <input
+                    id="master-edit-chemical-priority"
+                    type="number"
+                    className="master-edit-input-master-data"
+                    value={modalDraft.priority || '50'}
+                    onChange={(e) => setModalDraft((p) => ({ ...p, priority: e.target.value }))}
+                    placeholder="50"
+                    min="0"
+                  />
+                </div>
+                <div className="master-edit-field-master-data">
+                  <label htmlFor="master-edit-chemical-status">Status</label>
+                  <select
+                    id="master-edit-chemical-status"
+                    className="master-edit-input-master-data"
+                    value={modalDraft.activated || '1'}
+                    onChange={(e) => setModalDraft((p) => ({ ...p, activated: e.target.value }))}
+                  >
+                    <option value="1">Active</option>
+                    <option value="0">Inactive</option>
+                  </select>
+                </div>
+              </div>
+            )}
+            {editModal.type === 'workingTime' && (
+              <div className="master-edit-grid-2col-master-data">
+                <div className="master-edit-field-master-data master-edit-field-span2-master-data">
+                  <label htmlFor="master-edit-wt-text">Time of day</label>
+                  <input
+                    id="master-edit-wt-text"
+                    className="master-edit-input-master-data"
+                    value={modalDraft.time_of_day || ''}
+                    onChange={(e) => setModalDraft((p) => ({ ...p, time_of_day: e.target.value }))}
+                    placeholder="e.g. 6.30 to 10.30"
+                    autoComplete="off"
+                  />
+                </div>
+                <div className="master-edit-field-master-data">
+                  <label htmlFor="master-edit-wt-status">Status</label>
+                  <select
+                    id="master-edit-wt-status"
+                    className="master-edit-input-master-data"
+                    value={modalDraft.activated || '1'}
+                    onChange={(e) => setModalDraft((p) => ({ ...p, activated: e.target.value }))}
+                  >
+                    <option value="1">Active</option>
+                    <option value="0">Inactive</option>
+                  </select>
+                </div>
+              </div>
+            )}
             {editModal.type === 'deactivateReason' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <input
@@ -1293,6 +1760,274 @@ const MasterData = ({ mode = 'full' }) => {
             <div className="update-popup-actions-master-data">
               <button className="btn-search-master-data" onClick={closeEditModal}>Cancel</button>
               <button className="btn-submit-master-data" onClick={saveEditModal}>Save</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {addChemicalOpen && (
+        <div className="update-popup-overlay-master-data">
+          <div className="update-popup-card-master-data update-popup-card-wide-master-data">
+            <h3>Add chemical</h3>
+            <div className="master-edit-grid-2col-master-data">
+              <div className="master-edit-field-master-data master-edit-field-span2-master-data">
+                <label htmlFor="master-add-chemical-name">Chemical name</label>
+                <input
+                  id="master-add-chemical-name"
+                  className="master-edit-input-master-data"
+                  value={newChemicalName}
+                  onChange={(e) => setNewChemicalName(e.target.value)}
+                  placeholder="e.g. Urea, Coragen"
+                  autoComplete="off"
+                />
+              </div>
+              <div className="master-edit-field-master-data">
+                <label htmlFor="master-add-chemical-category">Category</label>
+                <select
+                  id="master-add-chemical-category"
+                  className="master-edit-input-master-data"
+                  value={newChemicalCategory}
+                  onChange={(e) => setNewChemicalCategory(e.target.value)}
+                >
+                  <option value="">None (optional)</option>
+                  <option value="spy">Spray (spy)</option>
+                  <option value="spd">Spread (spd)</option>
+                </select>
+              </div>
+              <div className="master-edit-field-master-data">
+                <label htmlFor="master-add-chemical-priority">Priority</label>
+                <input
+                  id="master-add-chemical-priority"
+                  type="number"
+                  className="master-edit-input-master-data"
+                  value={newChemicalPriority}
+                  onChange={(e) => setNewChemicalPriority(e.target.value)}
+                  placeholder="50"
+                  min="0"
+                />
+              </div>
+            </div>
+            <div className="update-popup-actions-master-data">
+              <button type="button" className="btn-search-master-data" onClick={closeAddChemicalModal}>
+                Cancel
+              </button>
+              <button type="button" className="btn-submit-master-data" onClick={() => void saveAddChemicalModal()}>
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {addFuelOpen && (
+        <div className="update-popup-overlay-master-data">
+          <div className="update-popup-card-master-data update-popup-card-wide-master-data">
+            <h3>Add fuel type</h3>
+            <div className="master-edit-grid-2col-master-data">
+              <div className="master-edit-field-master-data master-edit-field-span2-master-data">
+                <label htmlFor="master-add-fuel-name">Fuel type name</label>
+                <input
+                  id="master-add-fuel-name"
+                  className="master-edit-input-master-data"
+                  value={newFuelCategory}
+                  onChange={(e) => setNewFuelCategory(e.target.value)}
+                  placeholder="e.g. Diesel"
+                  autoComplete="off"
+                />
+              </div>
+              <div className="master-edit-field-master-data master-edit-field-span2-master-data">
+                <label htmlFor="master-add-fuel-price">Unit price (LKR/L)</label>
+                <input
+                  id="master-add-fuel-price"
+                  type="number"
+                  className="master-edit-input-master-data"
+                  value={newFuelUnitPrice}
+                  onChange={(e) => setNewFuelUnitPrice(e.target.value)}
+                  placeholder="Optional"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+            </div>
+            <div className="update-popup-actions-master-data">
+              <button type="button" className="btn-search-master-data" onClick={closeAddFuelModal}>
+                Cancel
+              </button>
+              <button type="button" className="btn-submit-master-data" onClick={() => void saveAddFuelModal()}>
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {addWingOpen && (
+        <div className="update-popup-overlay-master-data">
+          <div className="update-popup-card-master-data update-popup-card-wide-master-data">
+            <h3>Add wing</h3>
+            <div className="master-edit-grid-2col-master-data">
+              <div className="master-edit-field-master-data">
+                <label htmlFor="master-add-wing-name">Wing name</label>
+                <input
+                  id="master-add-wing-name"
+                  className="master-edit-input-master-data"
+                  value={newWingName}
+                  onChange={(e) => setNewWingName(e.target.value)}
+                  placeholder="Wing name"
+                  autoComplete="off"
+                />
+              </div>
+              <div className="master-edit-field-master-data">
+                <label htmlFor="master-add-wing-code">Wing code</label>
+                <input
+                  id="master-add-wing-code"
+                  className="master-edit-input-master-data"
+                  value={newWingCode}
+                  onChange={(e) => setNewWingCode(e.target.value)}
+                  placeholder="Wing code"
+                  autoComplete="off"
+                />
+              </div>
+              <div className="master-edit-field-master-data master-edit-field-span2-master-data">
+                <label htmlFor="master-add-wing-hod">HOD (Employee)</label>
+                <select
+                  id="master-add-wing-hod"
+                  className="master-edit-input-master-data"
+                  value={newWingHod}
+                  onChange={(e) => setNewWingHod(e.target.value)}
+                >
+                  <option value="">None (optional)</option>
+                  {employees.map((emp) => (
+                    <option key={emp.id} value={emp.id}>
+                      {emp.id} - {emp.employeeName || emp.preferredName || emp.empNo || 'Employee'}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="update-popup-actions-master-data">
+              <button type="button" className="btn-search-master-data" onClick={closeAddWingModal}>
+                Cancel
+              </button>
+              <button type="button" className="btn-submit-master-data" onClick={() => void saveAddWingModal()}>
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {addWorkLocationOpen && (
+        <div className="update-popup-overlay-master-data">
+          <div className="update-popup-card-master-data update-popup-card-wide-master-data">
+            <h3>Add work location</h3>
+            <div className="master-edit-grid-2col-master-data">
+              <div className="master-edit-field-master-data master-edit-field-span2-master-data">
+                <label htmlFor="master-add-wl-name">Location name</label>
+                <input
+                  id="master-add-wl-name"
+                  className="master-edit-input-master-data"
+                  value={newWorkLocationName}
+                  onChange={(e) => setNewWorkLocationName(e.target.value)}
+                  placeholder="Location name"
+                  autoComplete="off"
+                />
+              </div>
+              <div className="master-edit-field-master-data">
+                <label htmlFor="master-add-wl-code">Location code</label>
+                <input
+                  id="master-add-wl-code"
+                  className="master-edit-input-master-data"
+                  value={newWorkLocationCode}
+                  onChange={(e) => setNewWorkLocationCode(e.target.value)}
+                  placeholder="Optional"
+                  autoComplete="off"
+                />
+              </div>
+              <div className="master-edit-field-master-data">
+                <label htmlFor="master-add-wl-map">Google map link</label>
+                <input
+                  id="master-add-wl-map"
+                  className="master-edit-input-master-data"
+                  value={newWorkLocationMapLink}
+                  onChange={(e) => setNewWorkLocationMapLink(e.target.value)}
+                  placeholder="Optional"
+                  autoComplete="off"
+                />
+              </div>
+            </div>
+            <div className="update-popup-actions-master-data">
+              <button type="button" className="btn-search-master-data" onClick={closeAddWorkLocationModal}>
+                Cancel
+              </button>
+              <button type="button" className="btn-submit-master-data" onClick={() => void saveAddWorkLocationModal()}>
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {addMaintenanceCategoryOpen && (
+        <div className="update-popup-overlay-master-data">
+          <div className="update-popup-card-master-data update-popup-card-wide-master-data">
+            <h3>Add maintenance category</h3>
+            <div className="master-edit-grid-2col-master-data">
+              <div className="master-edit-field-master-data master-edit-field-span2-master-data">
+                <label htmlFor="master-add-mc-name">Category name</label>
+                <input
+                  id="master-add-mc-name"
+                  className="master-edit-input-master-data"
+                  value={newMaintenanceCategory}
+                  onChange={(e) => setNewMaintenanceCategory(e.target.value)}
+                  placeholder="New maintenance category"
+                  autoComplete="off"
+                />
+              </div>
+            </div>
+            <div className="update-popup-actions-master-data">
+              <button type="button" className="btn-search-master-data" onClick={closeAddMaintenanceCategoryModal}>
+                Cancel
+              </button>
+              <button type="button" className="btn-submit-master-data" onClick={() => void saveAddMaintenanceCategoryModal()}>
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {addWorkingTimeOpen && (
+        <div className="update-popup-overlay-master-data">
+          <div className="update-popup-card-master-data update-popup-card-wide-master-data">
+            <h3>Add working time</h3>
+            <div className="master-edit-grid-2col-master-data">
+              <div className="master-edit-field-master-data master-edit-field-span2-master-data">
+                <label htmlFor="master-add-wt-text">Time of day</label>
+                <input
+                  id="master-add-wt-text"
+                  className="master-edit-input-master-data"
+                  value={newWorkingTimeText}
+                  onChange={(e) => setNewWorkingTimeText(e.target.value)}
+                  placeholder="e.g. 6.30 to 10.30 or 6.30 to 10.30 - 14.30 to 18.30"
+                  autoComplete="off"
+                />
+              </div>
+              <div className="master-edit-field-master-data">
+                <label htmlFor="master-add-wt-status">Status</label>
+                <select
+                  id="master-add-wt-status"
+                  className="master-edit-input-master-data"
+                  value={newWorkingTimeActivated}
+                  onChange={(e) => setNewWorkingTimeActivated(e.target.value)}
+                >
+                  <option value="1">Active</option>
+                  <option value="0">Inactive</option>
+                </select>
+              </div>
+            </div>
+            <div className="update-popup-actions-master-data">
+              <button type="button" className="btn-search-master-data" onClick={closeAddWorkingTimeModal}>
+                Cancel
+              </button>
+              <button type="button" className="btn-submit-master-data" onClick={() => void saveAddWorkingTimeModal()}>
+                Save
+              </button>
             </div>
           </div>
         </div>

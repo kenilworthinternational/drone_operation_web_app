@@ -86,7 +86,7 @@ export const baseApi = createApi({
     // Task Cancel Status
     'TaskCancelStatus',
     // Others
-    'Calendar', 'Reasons', 'ASC',
+    'Calendar', 'Reasons', 'ASC', 'Chemicals', 'TimeOfDays',
     // HR Leave and Attendance
     'HrLeave', 'HrAttendance', 'HrRoster',
     // Financial cards / fuel approvals

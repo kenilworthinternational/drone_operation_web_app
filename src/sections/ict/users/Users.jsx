@@ -18,6 +18,12 @@ import { useGetWingsQuery } from '../../../api/services/assetsApi';
 import '../../../styles/userRegistration.css';
 
 const DRIVER_JOB_ROLE_CODE = 'dri';
+const isPrimaryDriverJobRole = (code) => {
+  const c = String(code || '').trim().toLowerCase();
+  return c === 'dri' || c === 'driex';
+};
+const isDriverLikeJobRoleForForms = (jobRole, partTimeDriverIsYes) =>
+  isPrimaryDriverJobRole(jobRole) || Boolean(partTimeDriverIsYes);
 const coerceEmbeddedTransportJobRole = (currentRole, partTimeDriverValue) => {
   return Number(partTimeDriverValue || 0) === 1 ? (currentRole || '') : DRIVER_JOB_ROLE_CODE;
 };
@@ -104,7 +110,7 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
     plantation: '',
     region: '',
     estate: '',
-    // Driver fields (only if job_role='dri')
+    // Driver fields (job_role dri / driex, or part-time driver)
     driver_license_no: '',
     driver_license_front_image: null,
     driver_license_back_image: null,
@@ -428,7 +434,7 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
 
       const nextJobRole = name === 'job_role' ? value : next.job_role;
       const nextPartTimeDriver = Number(name === 'part_time_driver' ? value : next.part_time_driver) === 1;
-      if (nextJobRole !== 'dri' && !nextPartTimeDriver) {
+      if (!isDriverLikeJobRoleForForms(nextJobRole, nextPartTimeDriver)) {
         next.card_id = '';
       }
 
@@ -501,7 +507,7 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
       payload.estate = null;
     }
     payload.card_id = payload.card_id || null;
-    if (payload.job_role !== 'dri' && Number(payload.part_time_driver || 0) !== 1) {
+    if (!isDriverLikeJobRoleForForms(payload.job_role, Number(payload.part_time_driver || 0) === 1)) {
       payload.card_id = null;
     }
 
@@ -595,7 +601,7 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
         newData.region = '';
         newData.estate = '';
       }
-      if (nextJobRole !== 'dri' && !nextPartTimeDriver) {
+      if (!isDriverLikeJobRoleForForms(nextJobRole, nextPartTimeDriver)) {
         newData.driver_license_no = '';
         newData.driver_license_front_image = null;
         newData.driver_license_back_image = null;
@@ -730,7 +736,7 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
         if (!submissionData.estate) submissionData.estate = null;
       }
       
-      if (submissionData.job_role !== 'dri' && Number(submissionData.part_time_driver || 0) !== 1) {
+      if (!isDriverLikeJobRoleForForms(submissionData.job_role, Number(submissionData.part_time_driver || 0) === 1)) {
         delete submissionData.driver_license_no;
         delete submissionData.driver_license_front_image;
         delete submissionData.driver_license_back_image;
@@ -1211,8 +1217,8 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
             </div>
           </div>
 
-          {/* Driver Information (only if job_role='dri') */}
-          {(formData.job_role === 'dri' || Number(formData.part_time_driver) === 1 || embeddedTransportDriver) && (
+          {/* Driver Information (internal/external driver role or part-time driver) */}
+          {(isDriverLikeJobRoleForForms(formData.job_role, Number(formData.part_time_driver) === 1) || embeddedTransportDriver) && (
             <div className="form-section">
               <h2 className="section-title">Driver Information</h2>
               
@@ -1790,7 +1796,7 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
               </div>
             </div>
 
-            {(editFormData.job_role === 'dri' || Number(editFormData.part_time_driver) === 1) && (
+            {isDriverLikeJobRoleForForms(editFormData.job_role, Number(editFormData.part_time_driver) === 1) && (
               <div className="form-row">
                 <div className="form-group">
                   <label>Fuel Card</label>

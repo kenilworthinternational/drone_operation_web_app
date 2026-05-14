@@ -251,43 +251,68 @@ const PlantationPlanRequestQueue = () => {
   const handleApprove = async (row) => {
     const id = row.id;
     setBusyId(id);
-    let created = 0;
     const n = parseInt(editablePlanCounts[id] ?? row.plan_count, 10) || 0;
     if (!Number.isFinite(n) || n < 1 || n > 100) {
       toast.error('Plan count must be between 1 and 100.');
       setBusyId(null);
       return;
     }
+    const submissionData = {
+      flag: 'np',
+      missionId: 0,
+      estateId: row.estate_id,
+      groupId: row.group_id,
+      regionId: row.region_id,
+      plantationId: row.plantation_id,
+      missionTypeId: row.mission_type_id,
+      cropTypeId: row.crop_type_id,
+      totalExtent: '0.00',
+      pickedDate: row.picked_date,
+      divisions: [],
+    };
     try {
-      for (let i = 0; i < n; i += 1) {
-        const submissionData = {
-          flag: 'np',
-          missionId: 0,
-          estateId: row.estate_id,
-          groupId: row.group_id,
-          regionId: row.region_id,
-          plantationId: row.plantation_id,
-          missionTypeId: row.mission_type_id,
-          cropTypeId: row.crop_type_id,
-          totalExtent: '0.00',
-          pickedDate: row.picked_date,
-          divisions: [],
-        };
-        const createResult = await dispatch(baseApi.endpoints.createPlan.initiate(submissionData));
-        const result = createResult.data;
-        if (result?.status === 'true' || result?.status === true) {
-          created += 1;
-        } else {
-          toast.error(`Plan ${i + 1} failed to create. Stopped.`);
-          break;
-        }
+      // Parallel create_plan calls (batched) — sequential round-trips were very slow for n > 1.
+      const BATCH = 10;
+      const allSettled = [];
+      let created = 0;
+      for (let start = 0; start < n; start += BATCH) {
+        const size = Math.min(BATCH, n - start);
+        const settled = await Promise.allSettled(
+          Array.from({ length: size }, () =>
+            dispatch(baseApi.endpoints.createPlan.initiate({ ...submissionData })).unwrap()
+          )
+        );
+        allSettled.push(...settled);
+        created += settled.filter(
+          (s) => s.status === 'fulfilled' && (s.value?.status === 'true' || s.value?.status === true)
+        ).length;
       }
+
       if (created === n && n > 0) {
         await markApprovedMutation({ id, planCount: n }).unwrap();
         toast.success(`Approved: ${created} plan(s) created.`);
         refetchAll();
-      } else if (n === 0) {
-        toast.error('Invalid plan count.');
+      } else {
+        const firstBad = allSettled.find(
+          (s) =>
+            s.status === 'rejected' ||
+            (s.status === 'fulfilled' && !(s.value?.status === 'true' || s.value?.status === true))
+        );
+        let detail = '';
+        if (firstBad?.status === 'rejected') {
+          detail =
+            firstBad.reason?.data?.message ||
+            firstBad.reason?.message ||
+            String(firstBad.reason || '');
+        } else if (firstBad?.status === 'fulfilled') {
+          detail = firstBad.value?.message || '';
+        }
+        const suffix = detail ? ` ${detail}` : '';
+        toast.error(
+          created === 0
+            ? `No plans were created.${suffix}`
+            : `Only ${created} of ${n} plan(s) were created. Request not marked approved.${suffix}`
+        );
       }
     } catch (e) {
       toast.error(e?.data?.message || e?.message || 'Approval failed.');

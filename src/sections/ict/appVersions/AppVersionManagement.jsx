@@ -29,6 +29,16 @@ const emptyForm = {
   maintenance_message: '',
 };
 
+/** API / MySQL may send 0/1 as strings; JS treats non-empty strings as truthy — normalize for toggles and badges. */
+function toBit(value, defaultWhenMissing = 0) {
+  if (value === true || value === 1) return 1;
+  if (value === false || value === 0) return 0;
+  if (value === undefined || value === null) return defaultWhenMissing;
+  const s = String(value).trim().toLowerCase();
+  if (s === '1' || s === 'true' || s === 'yes') return 1;
+  return 0;
+}
+
 export default function AppVersionManagement() {
   const routerLocation = useLocation();
   const navigate = useNavigate();
@@ -82,10 +92,10 @@ export default function AppVersionManagement() {
       min_version: row.min_version || '',
       latest_version: row.latest_version || '',
       store_url: row.store_url || '',
-      force_update: row.force_update ?? 1,
+      force_update: toBit(row.force_update, 1),
       update_message: row.update_message || '',
-      is_active: row.is_active ?? 1,
-      maintenance: row.maintenance ?? 0,
+      is_active: toBit(row.is_active, 1),
+      maintenance: toBit(row.maintenance, 0),
       maintenance_message: row.maintenance_message || '',
     });
     setShowModal(true);
@@ -197,18 +207,18 @@ export default function AppVersionManagement() {
                   <td><span className="avm-version">{row.min_version}</span></td>
                   <td><span className="avm-version">{row.latest_version}</span></td>
                   <td>
-                    <span className={`avm-badge ${row.force_update ? 'badge-force' : 'badge-soft'}`}>
-                      {row.force_update ? 'Force' : 'Soft'}
+                    <span className={`avm-badge ${toBit(row.force_update, 1) ? 'badge-force' : 'badge-soft'}`}>
+                      {toBit(row.force_update, 1) ? 'Force' : 'Soft'}
                     </span>
                   </td>
                   <td>
-                    <span className={`avm-badge ${row.maintenance ? 'badge-maintenance' : 'badge-normal'}`}>
-                      {row.maintenance ? 'On' : 'Off'}
+                    <span className={`avm-badge ${toBit(row.maintenance, 0) ? 'badge-maintenance' : 'badge-normal'}`}>
+                      {toBit(row.maintenance, 0) ? 'On' : 'Off'}
                     </span>
                   </td>
                   <td>
-                    <span className={`avm-badge ${row.is_active ? 'badge-active' : 'badge-inactive'}`}>
-                      {row.is_active ? 'Active' : 'Inactive'}
+                    <span className={`avm-badge ${toBit(row.is_active, 1) ? 'badge-active' : 'badge-inactive'}`}>
+                      {toBit(row.is_active, 1) ? 'Active' : 'Inactive'}
                     </span>
                   </td>
                   <td>
@@ -235,8 +245,10 @@ export default function AppVersionManagement() {
       {/* Store URL preview */}
       {filtered.length > 0 && (
         <div className="avm-info-note">
-          <strong>Tip:</strong> When you increase <em>min_version</em> above a user's installed version, the mobile app will
-          freeze on the splash screen and prompt them to update via the Play Store / App Store link.
+          <strong>Tip:</strong> Turning <strong>Maintenance</strong> ON blocks the mobile app for <strong>all users</strong> on
+          every platform until you turn it OFF (message shown is <strong>Maintenance Message</strong>). Raising{' '}
+          <em>min_version</em> above an installed version shows the update screen; the open button uses <strong>Store URL</strong>{' '}
+          if set, otherwise a default listing URL from <strong>App ID</strong>.
         </div>
       )}
 
@@ -299,13 +311,17 @@ export default function AppVersionManagement() {
                   />
                 </div>
                 <div className="avm-field">
-                  <label>Store URL</label>
+                  <label>Store URL (optional)</label>
                   <input
                     type="url"
                     value={form.store_url}
                     onChange={(e) => handleChange('store_url', e.target.value)}
-                    placeholder="https://play.google.com/store/apps/details?id=..."
+                    placeholder="Leave blank to use the default listing for App ID above"
                   />
+                  <p className="avm-field-hint">
+                    If empty, the public version check uses a Play Store listing URL derived from <strong>App ID</strong>.
+                    Set a full <code>https://…</code> link here to override (e.g. App Store or a tracking URL).
+                  </p>
                 </div>
                 <div className="avm-field avm-field-full">
                   <label>Update Message</label>
@@ -321,11 +337,13 @@ export default function AppVersionManagement() {
                   <label className="avm-toggle">
                     <input
                       type="checkbox"
-                      checked={!!form.force_update}
+                      checked={toBit(form.force_update, 1) === 1}
                       onChange={(e) => handleChange('force_update', e.target.checked ? 1 : 0)}
                     />
                     <span className="avm-toggle-slider" />
-                    <span className="avm-toggle-label">{form.force_update ? 'Yes — block app' : 'No — soft prompt'}</span>
+                    <span className="avm-toggle-label">
+                      {toBit(form.force_update, 1) ? 'Yes — block app' : 'No — soft prompt'}
+                    </span>
                   </label>
                 </div>
                 <div className="avm-field avm-field-toggle">
@@ -333,11 +351,11 @@ export default function AppVersionManagement() {
                   <label className="avm-toggle">
                     <input
                       type="checkbox"
-                      checked={!!form.is_active}
+                      checked={toBit(form.is_active, 1) === 1}
                       onChange={(e) => handleChange('is_active', e.target.checked ? 1 : 0)}
                     />
                     <span className="avm-toggle-slider" />
-                    <span className="avm-toggle-label">{form.is_active ? 'Active' : 'Inactive'}</span>
+                    <span className="avm-toggle-label">{toBit(form.is_active, 1) ? 'Active' : 'Inactive'}</span>
                   </label>
                 </div>
 
@@ -350,12 +368,14 @@ export default function AppVersionManagement() {
                   <label className="avm-toggle">
                     <input
                       type="checkbox"
-                      checked={!!form.maintenance}
+                      checked={toBit(form.maintenance, 0) === 1}
                       onChange={(e) => handleChange('maintenance', e.target.checked ? 1 : 0)}
                     />
                     <span className="avm-toggle-slider avm-toggle-slider-orange" />
                     <span className="avm-toggle-label">
-                      {form.maintenance ? 'ON - app blocked for all users' : 'OFF - normal operation'}
+                      {toBit(form.maintenance, 0)
+                        ? 'ON - app blocked for all users'
+                        : 'OFF - normal operation'}
                     </span>
                   </label>
                 </div>

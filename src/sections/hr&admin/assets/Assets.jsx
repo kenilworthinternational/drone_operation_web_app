@@ -330,8 +330,15 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
     } else if (Array.isArray(vehicleDriversResponse?.data)) {
       drivers = vehicleDriversResponse.data;
     }
-    // For rented vehicles: member_type = 'e' (external) AND job_role = 'dri' (driver)
-    return drivers.filter(driver => driver.member_type === 'e' && driver.job_role === 'dri' && driver.activated === 1);
+    // For rented vehicles: external member with dedicated external driver role, or legacy external + dri
+    return drivers.filter((driver) => {
+      const jr = String(driver.job_role || '').trim().toLowerCase();
+      return (
+        driver.member_type === 'e' &&
+        (jr === 'driex' || jr === 'dri') &&
+        driver.activated === 1
+      );
+    });
   }, [vehicleDriversResponse]);
 
   const vehicleCategories = useMemo(() => {
@@ -1356,7 +1363,7 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
                               </option>
                             ))
                           ) : (
-                            // Rented Vehicle - Show External Drivers (member_type = 'e' AND job_role = 'dri')
+                            // Rented Vehicle - external members with driver role (driex preferred; legacy dri)
                             externalDrivers.map((driver) => (
                               <option key={driver.id} value={driver.id}>
                                 {driver.user_name} {driver.user_nic ? `(${driver.user_nic})` : ''}

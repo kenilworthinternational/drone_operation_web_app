@@ -232,12 +232,14 @@ const AssetsRegistration = ({
     }
     // For rented vehicles: member_type = 'e' (external) and must be a driver-like user
     // (either primary driver role or marked as part-time driver).
-    return drivers.filter(
-      (driver) =>
-        driver.member_type === 'e'
-        && (driver.job_role === 'dri' || Number(driver.part_time_driver || 0) === 1)
-        && driver.activated === 1
-    );
+    return drivers.filter((driver) => {
+      const jr = String(driver.job_role || '').trim().toLowerCase();
+      return (
+        driver.member_type === 'e' &&
+        (jr === 'dri' || jr === 'driex' || Number(driver.part_time_driver || 0) === 1) &&
+        driver.activated === 1
+      );
+    });
   }, [vehicleDriversResponse]);
   const vehicleCategories = useMemo(() => {
     if (!vehicleCategoriesResponse) return [];

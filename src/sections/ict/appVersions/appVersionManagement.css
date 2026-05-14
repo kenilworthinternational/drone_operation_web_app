@@ -442,6 +442,21 @@
   min-height: 70px;
 }
 
+.avm-field-hint {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--avm-muted);
+  font-weight: 500;
+}
+
+.avm-field-hint code {
+  font-size: 11px;
+  background: #f1f5f9;
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
 /* Toggle */
 .avm-field-toggle {
   display: flex;
