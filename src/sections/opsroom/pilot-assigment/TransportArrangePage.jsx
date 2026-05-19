@@ -1,15 +1,16 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Bars } from 'react-loader-spinner';
 import {
   useGetTransportArrangementListQuery,
   useGetPilotTransportOptionsQuery,
-  useEstimatePilotTransportDistanceMutation,
   useAssignPilotTransportDetailsMutation,
 } from '../../../api/services NodeJs/allEndpoints';
 import { useGetMyPermissionsQuery } from '../../../api/services NodeJs/featurePermissionsApi';
 import { FEATURE_CODES } from '../../../utils/featurePermissions';
 import { isInternalDeveloper } from '../../../utils/authUtils';
+import TransportAssignmentFields from './TransportAssignmentFields';
+import { formatDriverArrivalTimeForInput } from './transportAssignmentUtils';
 import '../../../styles/pilotAssignment-pilotsassign.css';
 
 /**
@@ -54,7 +55,6 @@ const TransportArrangePage = () => {
     vehicle_id: '',
     driver_arrival_time: '06:00',
   });
-  const [transportEstimate, setTransportEstimate] = useState(null);
   const transportRecommendedAppliedRef = useRef(false);
 
   const { data: transportArrangementListData, isLoading: loadingTransportArrangementList } =
@@ -67,7 +67,6 @@ const TransportArrangePage = () => {
     },
     { skip: !showDetailModal || !transportDetailAssignmentId || !hasArrangeTransportFeature }
   );
-  const [estimateTransportDistance, { isLoading: estimatingTransport }] = useEstimatePilotTransportDistanceMutation();
   const [assignTransportDetails, { isLoading: savingTransport }] = useAssignPilotTransportDetailsMutation();
 
   const transportOptions = transportOptionsData?.data || null;
@@ -77,26 +76,6 @@ const TransportArrangePage = () => {
   const transportArrangementRows = transportArrangementListData?.data || [];
   const transportArrangementToday = transportArrangementRows.filter((r) => r.day_label === 'today');
   const transportArrangementTomorrow = transportArrangementRows.filter((r) => r.day_label === 'tomorrow');
-
-  const recommendedDriverId = useMemo(() => {
-    if (!transportOptions?.recommended_driver_id) return '';
-    return String(transportOptions.recommended_driver_id);
-  }, [transportOptions]);
-
-  const selectedTransportDriver = useMemo(() => {
-    if (!transportForm.driver_id) return null;
-    return transportDrivers.find((d) => String(d.id) === String(transportForm.driver_id)) || null;
-  }, [transportForm.driver_id, transportDrivers]);
-
-  const selectedVehicleDisplay = useMemo(() => {
-    if (!selectedTransportDriver) return '';
-    const parts = [
-      selectedTransportDriver.vehicle_no,
-      selectedTransportDriver.vehicle_make,
-      selectedTransportDriver.vehicle_model,
-    ].filter(Boolean);
-    return parts.length ? parts.join(' · ') : '';
-  }, [selectedTransportDriver]);
 
   useEffect(() => {
     if (!showDetailModal) {
@@ -119,17 +98,8 @@ const TransportArrangePage = () => {
     transportRecommendedAppliedRef.current = true;
   }, [showDetailModal, loadingTransportOptions, transportOptions, transportDrivers]);
 
-  const formatDriverArrivalTimeForInput = (value) => {
-    if (!value) return '06:00';
-    const s = String(value);
-    if (/^\d{2}:\d{2}:\d{2}$/.test(s)) return s.slice(0, 5);
-    if (/^\d{2}:\d{2}$/.test(s)) return s;
-    return '06:00';
-  };
-
   const openTransportDetail = (row) => {
     transportRecommendedAppliedRef.current = false;
-    setTransportEstimate(null);
     setTransportDetailAssignmentId(row.assignment_id);
     setTransportDetailYearMonth(row.assignment_day ? row.assignment_day.slice(0, 7) : '');
     setTransportEditable(!!row.editable_transport);
@@ -145,7 +115,6 @@ const TransportArrangePage = () => {
     setShowDetailModal(false);
     setTransportDetailAssignmentId('');
     setTransportDetailYearMonth('');
-    setTransportEstimate(null);
     transportRecommendedAppliedRef.current = false;
   };
 
@@ -161,33 +130,6 @@ const TransportArrangePage = () => {
       }
       return { ...prev, [field]: value };
     });
-  };
-
-  const onEstimateTransport = async () => {
-    if (!transportDetailAssignmentId) {
-      alert('Assignment id is required.');
-      return;
-    }
-    if (!transportEditable) {
-      alert('This assignment cannot be edited.');
-      return;
-    }
-    if (!transportForm.driver_id) {
-      alert('Select a driver first.');
-      return;
-    }
-    try {
-      const result = await estimateTransportDistance({
-        assignment_id: transportDetailAssignmentId,
-        driver_id: Number(transportForm.driver_id),
-        end_lat: null,
-        end_lng: null,
-      }).unwrap();
-      setTransportEstimate(result?.data || null);
-    } catch (error) {
-      const message = error?.data?.message || error?.message || 'Failed to estimate transport distance.';
-      alert(message);
-    }
   };
 
   const onSaveTransport = async () => {
@@ -248,10 +190,10 @@ const TransportArrangePage = () => {
       ) : null}
 
       {hasArrangeTransportFeature ? (
-      <p className="pilot-assignment-transport-list-intro-pilotsassign" style={{ marginBottom: '16px' }}>
-        Today and tomorrow pilot assignments. Choose <strong>Arrange</strong> or <strong>View</strong> to open driver and vehicle
-        in a popup.
-      </p>
+        <p className="pilot-assignment-transport-list-intro-pilotsassign" style={{ marginBottom: '16px' }}>
+          Today and tomorrow pilot assignments. Choose <strong>Arrange</strong> or <strong>View</strong> to open driver
+          and vehicle in a popup.
+        </p>
       ) : null}
 
       {hasArrangeTransportFeature && loadingTransportArrangementList ? (
@@ -342,126 +284,22 @@ const TransportArrangePage = () => {
             </div>
 
             <div className="pilot-assignment-transport-body-pilotsassign">
-              {loadingTransportOptions ? (
-                <div className="pilot-assignment-teams-loading-pilotsassign">
-                  <Bars height="32" width="32" color="#003057" ariaLabel="bars-loading" visible />
-                  <span>Loading transport options...</span>
-                </div>
-              ) : (
-                <>
-                  <div className="pilot-assignment-transport-list-meta-pilotsassign" style={{ marginBottom: '10px' }}>
-                    <strong>{transportDetailAssignmentId}</strong>
-                  </div>
-                  {!transportEditable ? (
-                    <div className="pilot-assignment-transport-hint-pilotsassign" style={{ marginBottom: '12px' }}>
-                      View only: this assignment cannot be edited (driver started the day in the transport app, or date is outside
-                      today/tomorrow).
-                    </div>
-                  ) : null}
-                  <div className="pilot-assignment-transport-grid-pilotsassign">
-                    {!transportDrivers.length && !loadingTransportOptions ? (
-                      <div className="pilot-assignment-transport-hint-pilotsassign" style={{ gridColumn: '1 / -1' }}>
-                        No drivers with a linked vehicle are available. Link each driver to a vehicle in fleet / transport settings
-                        first.
-                      </div>
-                    ) : null}
-                    <div className="pilot-assignment-transport-field-pilotsassign">
-                      <label>Driver (Monthly KM)</label>
-                      <select
-                        className="pilot-assignment-pilot-select-pilotsassign"
-                        value={transportForm.driver_id}
-                        onChange={(e) => updateTransportField('driver_id', e.target.value)}
-                        disabled={!transportEditable}
-                      >
-                        <option value="">-- Select Driver --</option>
-                        {transportDrivers.map((driver) => (
-                          <option key={driver.id} value={driver.id}>
-                            {driver.driver_name} ({Number(driver.month_km || 0).toFixed(1)} km)
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="pilot-assignment-transport-field-pilotsassign">
-                      <label>Vehicle (from driver)</label>
-                      <input
-                        type="text"
-                        className="pilot-assignment-pilot-select-pilotsassign"
-                        readOnly
-                        value={transportForm.driver_id ? (selectedVehicleDisplay || '—') : '—'}
-                        title="Vehicle is assigned to the selected driver in the fleet"
-                      />
-                    </div>
-
-                    <div className="pilot-assignment-transport-field-pilotsassign">
-                      <label>Driver Arrival Time</label>
-                      <input
-                        type="time"
-                        className="pilot-assignment-date-input-pilotsassign"
-                        value={transportForm.driver_arrival_time}
-                        onChange={(e) => updateTransportField('driver_arrival_time', e.target.value)}
-                        disabled={!transportEditable}
-                      />
-                    </div>
-                  </div>
-
-                  {recommendedDriverId && transportEditable ? (
-                    <div className="pilot-assignment-transport-hint-pilotsassign">
-                      Recommended fairness driver:{' '}
-                      {transportDrivers.find((driver) => String(driver.id) === recommendedDriverId)?.driver_name || '-'} (lowest
-                      monthly KM)
-                    </div>
-                  ) : null}
-
-                  <div className="pilot-assignment-transport-estates-pilotsassign">
-                    <div className="pilot-assignment-transport-subtitle-pilotsassign">Assignment Estates</div>
-                    {(transportEstates || []).length ? (
-                      <ul className="pilot-assignment-transport-estate-list-pilotsassign">
-                        {transportEstates.map((estate) => (
-                          <li key={estate.id}>{estate.estate_name || estate.name}</li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <span>No estates found for this assignment.</span>
-                    )}
-                  </div>
-
-                  <div className="pilot-assignment-transport-actions-pilotsassign">
-                    <button
-                      type="button"
-                      className="pilot-assignment-teams-btn-pilotsassign"
-                      onClick={onEstimateTransport}
-                      disabled={estimatingTransport || !transportForm.driver_id || !transportEditable}
-                    >
-                      {estimatingTransport ? 'Estimating...' : 'Estimate Distance'}
-                    </button>
-                    <button
-                      type="button"
-                      className="pilot-assignment-deploy-btn-pilotsassign"
-                      onClick={onSaveTransport}
-                      disabled={savingTransport || !hasTransportEstates || !transportEditable}
-                    >
-                      {savingTransport ? 'Saving...' : 'Save Driver & Vehicle'}
-                    </button>
-                  </div>
-
-                  {transportEstimate ? (
-                    <div className="pilot-assignment-transport-result-pilotsassign">
-                      <div>
-                        <strong>Total Estimated KM:</strong> {Number(transportEstimate.total_estimated_km || 0).toFixed(3)}
-                      </div>
-                      <div className="pilot-assignment-transport-subtitle-pilotsassign">Leg Breakdown</div>
-                      <ul className="pilot-assignment-transport-estate-list-pilotsassign">
-                        {(transportEstimate.leg_breakdown || []).map((leg) => (
-                          <li key={leg.leg_no}>
-                            {leg.from} -&gt; {leg.to}: {Number(leg.distance_km || 0).toFixed(3)} km
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ) : null}
-                </>
-              )}
+              <TransportAssignmentFields
+                assignmentIdLabel={transportDetailAssignmentId}
+                editable={transportEditable}
+                loading={loadingTransportOptions}
+                transportOptions={transportOptions}
+                form={transportForm}
+                onFieldChange={updateTransportField}
+                showSaveButton
+                savingTransport={savingTransport}
+                onSave={onSaveTransport}
+                viewOnlyHint={
+                  !transportEditable
+                    ? 'View only: this assignment cannot be edited (driver started the day in the transport app, or date is outside today/tomorrow).'
+                    : null
+                }
+              />
             </div>
           </div>
         </div>

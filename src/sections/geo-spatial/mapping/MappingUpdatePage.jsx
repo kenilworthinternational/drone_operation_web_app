@@ -29,10 +29,15 @@ import {
   useToggleMappingRegionActivationMutation,
   useToggleMappingEstateActivationMutation,
   useSetMappingEstateFinalizedMutation,
+  useSetMappingEstatePlanSizesMutation,
   useToggleMappingDivisionActivationMutation,
   useToggleMappingFieldActivationMutation,
   useLazyGetMappingAllFieldsReportQuery,
 } from '../../../api/services NodeJs/mappingHierarchyApi';
+import {
+  useGetMissionPartialReasonsQuery,
+  useSaveMissionPartialReasonMutation,
+} from '../../../api/services NodeJs/reasonsApi';
 
 const HIERARCHY_LEVELS = [
   { key: 'group', label: 'Group', icon: FaLayerGroup, nameField: 'group' },
@@ -64,14 +69,41 @@ const StatusBadge = ({ active, label }) => (
   </span>
 );
 
-const YesNoBadge = ({ value, reason }) => (
-  <span className={`yn-badge-map-update ${value ? 'yn-yes-map-update' : 'yn-no-map-update'}`}>
-    {value ? 'Yes' : 'No'}
-    {!value && reason && (
-      <span className="yn-tooltip-map-update">{reason}</span>
-    )}
-  </span>
-);
+function fieldBlockReasonLabel(field, type, missionReasons) {
+  if (type === 'spread') {
+    if (field.spread_reason_name) return field.spread_reason_name;
+    if (Number(field.can_spread) === 1) return null;
+    const id = field.can_spread_text;
+    return missionReasons.find((r) => String(r.id) === String(id))?.reason || null;
+  }
+  if (field.spray_reason_name) return field.spray_reason_name;
+  if (Number(field.can_spray) === 1) return null;
+  const id = field.can_spray_text;
+  return missionReasons.find((r) => String(r.id) === String(id))?.reason || null;
+}
+
+const AvailabilityCell = ({ field, type, missionReasons, onEdit }) => {
+  const can = type === 'spread' ? Number(field.can_spread) === 1 : Number(field.can_spray) === 1;
+  const reason = fieldBlockReasonLabel(field, type, missionReasons);
+  const hoverTitle = can
+    ? 'Available — click to update'
+    : reason
+      ? reason
+      : 'No block reason set — click to set';
+
+  return (
+    <button
+      type="button"
+      className={`availability-cell-map-update ${!can && !reason ? 'availability-cell--missing-reason-map-update' : ''}`}
+      onClick={() => onEdit(field, type)}
+      title={hoverTitle}
+    >
+      <span className={`yn-badge-map-update ${can ? 'yn-yes-map-update' : 'yn-no-map-update'}`}>
+        {can ? 'Yes' : 'No'}
+      </span>
+    </button>
+  );
+};
 
 const MappingUpdatePage = () => {
   const navigate = useNavigate();
@@ -84,6 +116,12 @@ const MappingUpdatePage = () => {
 
   const [fields, setFields] = useState([]);
   const [editingField, setEditingField] = useState(null);
+  const [availabilityModal, setAvailabilityModal] = useState(null);
+  const [availabilityDraft, setAvailabilityDraft] = useState({ can: 1, reasonId: '' });
+  const [reasonManageOpen, setReasonManageOpen] = useState(false);
+  const [newReasonText, setNewReasonText] = useState('');
+  const [newReasonFlag, setNewReasonFlag] = useState('h');
+  const [editingReasonRow, setEditingReasonRow] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
 
   const [newItem, setNewItem] = useState({});
@@ -91,6 +129,8 @@ const MappingUpdatePage = () => {
   const [estateContextMenu, setEstateContextMenu] = useState(null);
   const [estateMenuPosition, setEstateMenuPosition] = useState({ left: 0, top: 0 });
   const estateMenuRef = useRef(null);
+  const [estatePlanSizeModal, setEstatePlanSizeModal] = useState(null);
+  const [estatePlanSizeSaving, setEstatePlanSizeSaving] = useState(false);
 
   const [expandedLevels, setExpandedLevels] = useState({ group: true });
 
@@ -100,7 +140,11 @@ const MappingUpdatePage = () => {
   const { data: estatesResponse = [], isLoading: estatesLoading } = useGetMappingEstatesByRegionQuery(selectedRegion, { skip: !selectedRegion });
   const { data: divisionsResponse = [], isLoading: divisionsLoading } = useGetMappingDivisionsByEstateQuery(selectedEstate, { skip: !selectedEstate });
   const { data: fieldsResponse = [], isLoading: fieldsLoading, refetch: refetchFields } = useGetMappingFieldsByDivisionQuery(selectedDivision, { skip: !selectedDivision });
-  const { data: missionReasonsResponse = [] } = useGetMappingMissionPartialReasonsQuery();
+  const { data: missionReasonsResponse = [], refetch: refetchMappingReasons } = useGetMappingMissionPartialReasonsQuery();
+  const { data: allReasonsList = [], refetch: refetchAllReasons } = useGetMissionPartialReasonsQuery({
+    include_inactive: true,
+  });
+  const [saveMissionPartialReason, { isLoading: savingReason }] = useSaveMissionPartialReasonMutation();
 
   const groups = groupsResponse?.data || [];
   const plantations = plantationsResponse?.data || [];
@@ -119,6 +163,7 @@ const MappingUpdatePage = () => {
   const [updateField] = useUpdateMappingFieldMutation();
   const [toggleFieldActivation] = useToggleMappingFieldActivationMutation();
   const [setEstateFinalized] = useSetMappingEstateFinalizedMutation();
+  const [setEstatePlanSizes] = useSetMappingEstatePlanSizesMutation();
   const [toggleGroupActivation] = useToggleMappingGroupActivationMutation();
   const [togglePlantationActivation] = useToggleMappingPlantationActivationMutation();
   const [toggleRegionActivation] = useToggleMappingRegionActivationMutation();
@@ -272,8 +317,16 @@ const MappingUpdatePage = () => {
   const handleFieldSave = async () => {
     try {
       const dataToSave = { ...editingField };
-      if (dataToSave.can_spread === 1) dataToSave.can_spread_text = null;
-      if (dataToSave.can_spray === 1) dataToSave.can_spray_text = null;
+      if (Number(dataToSave.can_spread) === 1) dataToSave.can_spread_text = null;
+      else if (!dataToSave.can_spread_text) {
+        toast.error('Select a spread block reason when Can Spread is No');
+        return;
+      }
+      if (Number(dataToSave.can_spray) === 1) dataToSave.can_spray_text = null;
+      else if (!dataToSave.can_spray_text) {
+        toast.error('Select a spray block reason when Can Spray is No');
+        return;
+      }
       const result = await updateField(dataToSave).unwrap();
       if (result.status) {
         toast.success('Field updated successfully');
@@ -408,11 +461,167 @@ const MappingUpdatePage = () => {
     return idx + 1;
   };
 
+  const openAvailabilityModal = (field, type) => {
+    const can = type === 'spread' ? Number(field.can_spread) : Number(field.can_spray);
+    const textCol = type === 'spread' ? field.can_spread_text : field.can_spray_text;
+    setAvailabilityDraft({
+      can: can === 1 ? 1 : 0,
+      reasonId: can === 1 ? '' : String(textCol || ''),
+    });
+    setAvailabilityModal({ field, type });
+  };
+
+  const handleAvailabilitySave = async () => {
+    if (!availabilityModal) return;
+    const { field, type } = availabilityModal;
+    if (availabilityDraft.can === 0 && !availabilityDraft.reasonId) {
+      toast.error('Select a block reason when availability is No');
+      return;
+    }
+    const payload = {
+      id: field.id,
+      can_spread: field.can_spread,
+      can_spread_text: field.can_spread_text,
+      can_spray: field.can_spray,
+      can_spray_text: field.can_spray_text,
+    };
+    if (type === 'spread') {
+      payload.can_spread = availabilityDraft.can;
+      payload.can_spread_text = availabilityDraft.can === 1 ? null : availabilityDraft.reasonId;
+    } else {
+      payload.can_spray = availabilityDraft.can;
+      payload.can_spray_text = availabilityDraft.can === 1 ? null : availabilityDraft.reasonId;
+    }
+    try {
+      const result = await updateField(payload).unwrap();
+      if (result.status) {
+        toast.success(`${type === 'spread' ? 'Spread' : 'Spray'} availability updated`);
+        setAvailabilityModal(null);
+        refetchFields();
+      } else {
+        toast.error(result.message || 'Update failed');
+      }
+    } catch (error) {
+      toast.error(`Update failed: ${error.message}`);
+    }
+  };
+
+  const handleAddReason = async () => {
+    const text = newReasonText.trim();
+    if (!text) {
+      toast.error('Enter reason text');
+      return;
+    }
+    try {
+      const result = await saveMissionPartialReason({
+        reason: text,
+        flag: newReasonFlag,
+        activated: 1,
+      }).unwrap();
+      if (result?.status === false) {
+        toast.error(result.message || 'Failed to add reason');
+        return;
+      }
+      toast.success('Block reason added');
+      setNewReasonText('');
+      refetchMappingReasons();
+      refetchAllReasons();
+      const createdId = result?.data?.id;
+      if (createdId && availabilityModal) {
+        setAvailabilityDraft((d) => ({ ...d, reasonId: String(createdId) }));
+      }
+    } catch (error) {
+      toast.error(error?.data?.message || error?.message || 'Failed to add reason');
+    }
+  };
+
+  const handleSaveReasonRow = async () => {
+    if (!editingReasonRow) return;
+    const text = editingReasonRow.reason?.trim();
+    if (!text) {
+      toast.error('Reason text is required');
+      return;
+    }
+    try {
+      const result = await saveMissionPartialReason({
+        id: editingReasonRow.id,
+        reason: text,
+        flag: editingReasonRow.flag || 'h',
+        activated: editingReasonRow.activated ?? 1,
+      }).unwrap();
+      if (result?.status === false) {
+        toast.error(result.message || 'Failed to update reason');
+        return;
+      }
+      toast.success('Reason updated');
+      setEditingReasonRow(null);
+      refetchMappingReasons();
+      refetchAllReasons();
+    } catch (error) {
+      toast.error(error?.data?.message || error?.message || 'Failed to update reason');
+    }
+  };
+
   const closeModal = () => {
     setActiveCreateLevel(null);
     setNewItem({});
     setEditingField(null);
     setEstateContextMenu(null);
+    setEstatePlanSizeModal(null);
+    setAvailabilityModal(null);
+    setReasonManageOpen(false);
+    setEditingReasonRow(null);
+  };
+
+  const openEstatePlanSizeModal = (estateId) => {
+    const est = estates.find((e) => e.id === estateId);
+    setEstatePlanSizeModal({
+      estateId,
+      estateName: est?.estate || `Estate #${estateId}`,
+      min_plan_size:
+        est?.min_plan_size != null && est?.min_plan_size !== '' ? String(est.min_plan_size) : '',
+      max_plan_size:
+        est?.max_plan_size != null && est?.max_plan_size !== '' ? String(est.max_plan_size) : '',
+    });
+    setEstateContextMenu(null);
+  };
+
+  const handleSaveEstatePlanSizes = async () => {
+    if (!estatePlanSizeModal) return;
+    const minRaw = estatePlanSizeModal.min_plan_size.trim();
+    const maxRaw = estatePlanSizeModal.max_plan_size.trim();
+    const minVal = minRaw === '' ? null : parseFloat(minRaw);
+    const maxVal = maxRaw === '' ? null : parseFloat(maxRaw);
+    if (minRaw !== '' && (!Number.isFinite(minVal) || minVal < 0)) {
+      toast.error('Enter a valid min plan size (Ha)');
+      return;
+    }
+    if (maxRaw !== '' && (!Number.isFinite(maxVal) || maxVal < 0)) {
+      toast.error('Enter a valid max plan size (Ha)');
+      return;
+    }
+    if (minVal != null && maxVal != null && minVal > maxVal) {
+      toast.error('Min plan size cannot exceed max plan size');
+      return;
+    }
+    setEstatePlanSizeSaving(true);
+    try {
+      const result = await setEstatePlanSizes({
+        id: estatePlanSizeModal.estateId,
+        min_plan_size: minVal,
+        max_plan_size: maxVal,
+      }).unwrap();
+      if (result?.status) {
+        toast.success(result.message || 'Plan size limits updated');
+        setEstatePlanSizeModal(null);
+      } else {
+        toast.error(result?.message || 'Failed to update plan size limits');
+      }
+    } catch (error) {
+      toast.error(error?.data?.message || error?.message || 'Failed to update plan size limits');
+    } finally {
+      setEstatePlanSizeSaving(false);
+    }
   };
 
   const handleSetEstateFinalized = async (estateId, finalized) => {
@@ -620,6 +829,15 @@ const MappingUpdatePage = () => {
             style={{ left: estateMenuPosition.left, top: estateMenuPosition.top }}
             onClick={(e) => e.stopPropagation()}
           >
+            <div className="estate-context-menu-title-map-update">Estate options</div>
+            <button
+              type="button"
+              className="estate-context-menu-item-map-update"
+              onClick={() => openEstatePlanSizeModal(estateContextMenu.estateId)}
+            >
+              Update min / max plan size (Ha)
+            </button>
+            <div className="estate-context-menu-divider-map-update" />
             <div className="estate-context-menu-title-map-update">Finalized status</div>
             {estateContextMenu.isFinalized ? (
               <button type="button" className="estate-context-menu-item-map-update" onClick={() => handleSetEstateFinalized(estateContextMenu.estateId, 0)}>
@@ -701,6 +919,14 @@ const MappingUpdatePage = () => {
                 {selectedDivision && (
                   <div className="fields-card-actions-map-update">
                     <button
+                      type="button"
+                      onClick={() => setReasonManageOpen(true)}
+                      className="btn-ghost-sm-map-update"
+                      title="Add or edit block reason catalog"
+                    >
+                      Block reasons
+                    </button>
+                    <button
                       onClick={handleDownloadExcel}
                       className="btn-excel-map-update"
                       title="Download Excel"
@@ -774,15 +1000,19 @@ const MappingUpdatePage = () => {
                           <td><span className="cell-text-map-update">{field.area}</span></td>
                           <td><StatusBadge active={field.activated} /></td>
                           <td>
-                            <YesNoBadge
-                              value={field.can_spread}
-                              reason={field.can_spread === 0 && field.can_spread_text ? missionReasons.find(r => r.id == field.can_spread_text)?.reason : null}
+                            <AvailabilityCell
+                              field={field}
+                              type="spread"
+                              missionReasons={missionReasons}
+                              onEdit={openAvailabilityModal}
                             />
                           </td>
                           <td>
-                            <YesNoBadge
-                              value={field.can_spray}
-                              reason={field.can_spray === 0 && field.can_spray_text ? missionReasons.find(r => r.id == field.can_spray_text)?.reason : null}
+                            <AvailabilityCell
+                              field={field}
+                              type="spray"
+                              missionReasons={missionReasons}
+                              onEdit={openAvailabilityModal}
                             />
                           </td>
                           <td>
@@ -835,6 +1065,37 @@ const MappingUpdatePage = () => {
                   autoFocus
                 />
               </div>
+              {activeCreateLevel === 'estate' && (
+                <>
+                <div className="form-row-two-map-update">
+                  <div className="form-group-map-update">
+                    <label className="label-map-update">Min plan size (Ha)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      className="input-map-update"
+                      placeholder="Optional"
+                      value={newItem.min_plan_size ?? ''}
+                      onChange={(e) => setNewItem({ ...newItem, min_plan_size: e.target.value })}
+                    />
+                  </div>
+                  <div className="form-group-map-update">
+                    <label className="label-map-update">Max plan size (Ha)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      className="input-map-update"
+                      placeholder="Optional"
+                      value={newItem.max_plan_size ?? ''}
+                      onChange={(e) => setNewItem({ ...newItem, max_plan_size: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <p className="form-hint-map-update">Used for estate manager plan approval area limits.</p>
+                </>
+              )}
               {activeCreateLevel === 'field' && (
                 <>
                   <div className="form-group-map-update">
@@ -864,6 +1125,259 @@ const MappingUpdatePage = () => {
               <button onClick={closeModal} className="btn-ghost-map-update">Cancel</button>
               <button onClick={() => handleCreate(activeCreateLevel)} className="btn-primary-map-update">
                 <FaSave /> Create
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== ESTATE PLAN SIZE MODAL ===== */}
+      {estatePlanSizeModal && (
+        <div className="modal-overlay-map-update" onClick={closeModal}>
+          <div className="modal-map-update" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header-map-update">
+              <h3 className="modal-title-map-update">
+                <FaEdit className="modal-title-icon-map-update" />
+                Plan size limits — {estatePlanSizeModal.estateName}
+              </h3>
+              <button type="button" onClick={closeModal} className="modal-close-map-update">
+                <FaTimes />
+              </button>
+            </div>
+            <div className="modal-body-map-update">
+              <div className="form-row-two-map-update">
+                <div className="form-group-map-update">
+                  <label className="label-map-update">Min plan size (Ha)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    className="input-map-update"
+                    placeholder="Leave empty for no minimum"
+                    value={estatePlanSizeModal.min_plan_size}
+                    onChange={(e) =>
+                      setEstatePlanSizeModal({ ...estatePlanSizeModal, min_plan_size: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="form-group-map-update">
+                  <label className="label-map-update">Max plan size (Ha)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    className="input-map-update"
+                    placeholder="Leave empty for no maximum"
+                    value={estatePlanSizeModal.max_plan_size}
+                    onChange={(e) =>
+                      setEstatePlanSizeModal({ ...estatePlanSizeModal, max_plan_size: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+              <p className="form-hint-map-update">
+                Limits apply when estate managers approve plantation plans for this estate.
+              </p>
+            </div>
+            <div className="modal-footer-map-update">
+              <button type="button" onClick={closeModal} className="btn-ghost-map-update">
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveEstatePlanSizes}
+                className="btn-primary-map-update"
+                disabled={estatePlanSizeSaving}
+              >
+                <FaSave /> {estatePlanSizeSaving ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== FIELD AVAILABILITY / REASON MODAL ===== */}
+      {availabilityModal && (
+        <div className="modal-overlay-map-update" onClick={closeModal}>
+          <div className="modal-map-update" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header-map-update">
+              <h3 className="modal-title-map-update">
+                {availabilityModal.type === 'spread' ? 'Can spread' : 'Can spray'} —{' '}
+                {availabilityModal.field.field || availabilityModal.field.short_name}
+              </h3>
+              <button type="button" onClick={closeModal} className="modal-close-map-update">
+                <FaTimes />
+              </button>
+            </div>
+            <div className="modal-body-map-update">
+              <div className="form-group-map-update">
+                <label className="label-map-update">Available for {availabilityModal.type === 'spread' ? 'spread' : 'spray'}?</label>
+                <select
+                  className="input-map-update"
+                  value={availabilityDraft.can}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value, 10);
+                    setAvailabilityDraft({ can: val, reasonId: val === 1 ? '' : availabilityDraft.reasonId });
+                  }}
+                >
+                  <option value={1}>Yes</option>
+                  <option value={0}>No — blocked</option>
+                </select>
+              </div>
+              {availabilityDraft.can === 0 && (
+                <>
+                  <div className="form-group-map-update">
+                    <label className="label-map-update">Block reason</label>
+                    <select
+                      className="input-map-update"
+                      value={availabilityDraft.reasonId}
+                      onChange={(e) => setAvailabilityDraft({ ...availabilityDraft, reasonId: e.target.value })}
+                    >
+                      <option value="">Select reason</option>
+                      {missionReasons.map((reason) => (
+                        <option key={reason.id} value={reason.id}>
+                          {reason.reason}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="reason-add-row-map-update">
+                    <input
+                      type="text"
+                      className="input-map-update"
+                      placeholder="New reason text"
+                      value={newReasonText}
+                      onChange={(e) => setNewReasonText(e.target.value)}
+                    />
+                    <select
+                      className="input-map-update reason-flag-select-map-update"
+                      value={newReasonFlag}
+                      onChange={(e) => setNewReasonFlag(e.target.value)}
+                      title="Reason flag"
+                    >
+                      <option value="h">Partial (h)</option>
+                      <option value="c">Cancel (c)</option>
+                    </select>
+                    <button
+                      type="button"
+                      className="btn-primary-sm-map-update"
+                      onClick={handleAddReason}
+                      disabled={savingReason}
+                    >
+                      Add
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+            <div className="modal-footer-map-update">
+              <button type="button" onClick={closeModal} className="btn-ghost-map-update">
+                Cancel
+              </button>
+              <button type="button" onClick={handleAvailabilitySave} className="btn-primary-map-update">
+                <FaSave /> Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== MANAGE BLOCK REASONS MODAL ===== */}
+      {reasonManageOpen && (
+        <div className="modal-overlay-map-update" onClick={closeModal}>
+          <div className="modal-map-update modal-wide-map-update" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header-map-update">
+              <h3 className="modal-title-map-update">Block reasons catalog</h3>
+              <button type="button" onClick={closeModal} className="modal-close-map-update">
+                <FaTimes />
+              </button>
+            </div>
+            <div className="modal-body-map-update">
+              <div className="reason-add-row-map-update">
+                <input
+                  type="text"
+                  className="input-map-update"
+                  placeholder="New reason description"
+                  value={newReasonText}
+                  onChange={(e) => setNewReasonText(e.target.value)}
+                />
+                <select
+                  className="input-map-update reason-flag-select-map-update"
+                  value={newReasonFlag}
+                  onChange={(e) => setNewReasonFlag(e.target.value)}
+                >
+                  <option value="h">Partial (h)</option>
+                  <option value="c">Cancel (c)</option>
+                </select>
+                <button
+                  type="button"
+                  className="btn-primary-sm-map-update"
+                  onClick={handleAddReason}
+                  disabled={savingReason}
+                >
+                  <FaPlus /> Add reason
+                </button>
+              </div>
+              <div className="reason-list-map-update">
+                {(allReasonsList || []).map((r) => (
+                  <div key={r.id} className="reason-list-row-map-update">
+                    {editingReasonRow?.id === r.id ? (
+                      <>
+                        <input
+                          type="text"
+                          className="input-map-update"
+                          value={editingReasonRow.reason}
+                          onChange={(e) =>
+                            setEditingReasonRow({ ...editingReasonRow, reason: e.target.value })
+                          }
+                        />
+                        <select
+                          className="input-map-update reason-flag-select-map-update"
+                          value={editingReasonRow.flag || 'h'}
+                          onChange={(e) =>
+                            setEditingReasonRow({ ...editingReasonRow, flag: e.target.value })
+                          }
+                        >
+                          <option value="h">Partial (h)</option>
+                          <option value="c">Cancel (c)</option>
+                        </select>
+                        <button type="button" className="btn-primary-sm-map-update" onClick={handleSaveReasonRow} disabled={savingReason}>
+                          Save
+                        </button>
+                        <button type="button" className="btn-ghost-sm-map-update" onClick={() => setEditingReasonRow(null)}>
+                          Cancel
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <span className={`reason-list-text-map-update ${r.activated === 0 ? 'reason-list-text--inactive-map-update' : ''}`}>
+                          {r.reason}
+                          <span className="reason-list-flag-map-update"> ({r.flag})</span>
+                        </span>
+                        <button
+                          type="button"
+                          className="btn-icon-edit-map-update"
+                          title="Edit reason"
+                          onClick={() =>
+                            setEditingReasonRow({
+                              id: r.id,
+                              reason: r.reason,
+                              flag: r.flag,
+                              activated: r.activated,
+                            })
+                          }
+                        >
+                          <FaEdit />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="modal-footer-map-update">
+              <button type="button" onClick={closeModal} className="btn-ghost-map-update">
+                Close
               </button>
             </div>
           </div>

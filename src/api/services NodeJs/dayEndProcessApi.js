@@ -72,10 +72,13 @@ export const dayEndProcessApi = baseApi.injectEndpoints({
     }),
     // Get cancel reasons (mission_partial_reasons)
     getCancelReasons: builder.query({
-      queryFn: async () => {
+      queryFn: async (arg) => {
         try {
+          const reasonFlag = arg?.reasonFlag;
+          const body =
+            reasonFlag === 'c' || reasonFlag === 'h' ? { reasonFlag } : {};
           const result = await nodeBackendBaseQuery(
-            { url: '/api/day-end-process/cancel-reasons', method: 'POST', body: {} },
+            { url: '/api/day-end-process/cancel-reasons', method: 'POST', body },
             {},
             {}
           );
@@ -122,6 +125,24 @@ export const dayEndProcessApi = baseApi.injectEndpoints({
         }
       },
       invalidatesTags: (result, error, { taskId }) => ['DayEndProcess', 'TaskCancelStatus'],
+    }),
+
+    // Remove ops room cancel reason (clear com_naration)
+    clearOpsCancel: builder.mutation({
+      queryFn: async ({ taskId }) => {
+        try {
+          const result = await nodeBackendBaseQuery(
+            { url: '/api/day-end-process/clear-ops-cancel', method: 'POST', body: { taskId } },
+            {},
+            {}
+          );
+          if (result.error) return { error: result.error };
+          return { data: result.data || null };
+        } catch (error) {
+          return { error: { status: 'FETCH_ERROR', error: error.message } };
+        }
+      },
+      invalidatesTags: ['DayEndProcess', 'TaskCancelStatus'],
     }),
 
     // Reset pilot cancel - Reset pilot canceled task to pending
@@ -175,6 +196,7 @@ export const {
   useLazyGetCancelReasonsQuery,
   useGetTasksCancelStatusQuery,
   useCancelTaskMutation,
+  useClearOpsCancelMutation,
   useResetPilotCancelMutation,
   useGetOpsRoomCanceledByDateRangeQuery,
 } = dayEndProcessApi;

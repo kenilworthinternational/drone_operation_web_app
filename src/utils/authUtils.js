@@ -135,7 +135,7 @@ export const getCategoryVisibility = (userData, permissions, categories) => {
 export const getAllowedPaths = (visibility = {}, pathPermissions = {}, userData = null) => {
   // Build allCategoryPaths dynamically from shared navbarCategories config
   const allCategoryPaths = {};
-  const allDevPaths = ['/home/create'];
+  const allDevPaths = ['/home/create', '/home/corporate-customers'];
   navbarCategories.forEach(cat => {
     const paths = [];
     (cat.children || []).forEach(child => {
@@ -162,17 +162,28 @@ export const getAllowedPaths = (visibility = {}, pathPermissions = {}, userData 
 
   const allowedPaths = [];
 
-  // Top-level paths (accessible to all)
+  // Top-level paths (accessible to all authenticated users on wing hub / forecast)
   allowedPaths.push('/home/create');
 
   // Check all paths - if path has explicit permission set to true, allow it
-  // This allows paths to be accessible regardless of category visibility
-  // Path-level permissions take precedence over category-level permissions
   Object.values(allCategoryPaths).flat().forEach(path => {
-    if (pathPermissions[path] === true) {
+    if (pathPermissions[path] === true && !allowedPaths.includes(path)) {
       allowedPaths.push(path);
     }
   });
+
+  // Strategic wing: any granted child (or category visibility) unlocks the full set, including Corporate Customer
+  const strategicTitle = 'Strategic Planning and Monitoring wing';
+  const strategicPaths = allCategoryPaths[strategicTitle] || [];
+  const hasStrategicAccess =
+    visibility[strategicTitle] === true ||
+    strategicPaths.some((p) => pathPermissions[p] === true);
+
+  if (hasStrategicAccess) {
+    strategicPaths.forEach((p) => {
+      if (!allowedPaths.includes(p)) allowedPaths.push(p);
+    });
+  }
 
   return allowedPaths;
 };
@@ -230,13 +241,68 @@ export const getUserData = () => {
  * @param {Object} userData - Typically from getUserData()
  * @returns {boolean}
  */
-export const hasHierarchyForPlantationPlanRequest = (userData) => {
+/** null, 0, and '0' are the same — field not set (estate, region, etc.). */
+const isUnsetHierarchyValue = (v) => {
+  if (v == null || v === '' || v === false) return true;
+  if (v === 0 || v === '0') return true;
+  const s = String(v).trim().toLowerCase();
+  if (s === '' || s === '0' || s === 'null' || s === 'undefined') return true;
+  return false;
+};
+
+const hierarchyFieldSet = (userData, key) => {
+  if (!userData) return false;
+  return !isUnsetHierarchyValue(userData[key]);
+};
+
+/** Deepest hierarchy level on profile (calendar plan scope). */
+export const getPlantationCalendarHierarchyLevel = (userData) => {
+  if (!userData || typeof userData !== 'object') return 'none';
+  if (hierarchyFieldSet(userData, 'estate')) return 'estate';
+  if (hierarchyFieldSet(userData, 'region')) return 'region';
+  if (hierarchyFieldSet(userData, 'plantation')) return 'plantation';
+  if (hierarchyFieldSet(userData, 'group')) return 'group';
+  return 'none';
+};
+
+const parsePositiveHierarchyId = (userData, key) => {
+  if (!hierarchyFieldSet(userData, key)) return null;
+  const n = parseInt(String(userData[key]).trim(), 10);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return n;
+};
+
+/** Group, plantation, region, and estate — each valid id (0/null = not set). */
+export const hasFullPlantationHierarchy = (userData) => {
   if (!userData || typeof userData !== 'object') return false;
-  const set = (key) => {
-    const v = userData[key];
-    return v != null && String(v).trim() !== '';
-  };
-  return set('group') && set('plantation') && set('region') && set('estate');
+  return (
+    parsePositiveHierarchyId(userData, 'group') != null &&
+    parsePositiveHierarchyId(userData, 'plantation') != null &&
+    parsePositiveHierarchyId(userData, 'region') != null &&
+    parsePositiveHierarchyId(userData, 'estate') != null
+  );
+};
+
+export const getPlantationCalendarScopeDescription = (level, userData) => {
+  const canRequest = userData ? hasFullPlantationHierarchy(userData) : false;
+  switch (level) {
+    case 'estate':
+      return canRequest
+        ? 'Showing plans for your estate. You can view plans and submit new plan requests.'
+        : 'Showing plans for your estate.';
+    case 'region':
+      return 'Showing plans for your region.';
+    case 'plantation':
+      return 'Showing plans for your plantation.';
+    case 'group':
+      return 'Showing all plans under your group.';
+    default:
+      return 'Your profile is not linked to a group. Contact admin to view plans on the calendar.';
+  }
+};
+
+export const hasHierarchyForPlantationPlanRequest = (userData) => {
+  return hasFullPlantationHierarchy(userData);
 };
 
 /**

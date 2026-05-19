@@ -394,6 +394,25 @@
   background: var(--mu-gray-100);
 }
 
+.estate-context-menu-divider-map-update {
+  height: 1px;
+  margin: 6px 0;
+  background: var(--mu-gray-200);
+}
+
+.form-row-two-map-update {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.form-hint-map-update {
+  margin: 0 0 4px;
+  font-size: 12px;
+  color: var(--mu-gray-500);
+  line-height: 1.4;
+}
+
 .item-disabled-map-update {
   opacity: 0.65;
 }
@@ -1537,6 +1556,101 @@
   background: var(--mu-gray-100);
   color: var(--mu-gray-400);
   cursor: not-allowed;
+}
+
+.btn-ghost-sm-map-update {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mu-primary);
+  background: #fff;
+  border: 1px solid var(--mu-gray-300);
+  border-radius: var(--mu-radius-sm);
+  cursor: pointer;
+}
+
+.btn-ghost-sm-map-update:hover {
+  background: var(--mu-primary-light);
+  border-color: var(--mu-primary);
+}
+
+.availability-cell-map-update {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 6px;
+  margin: -4px -6px;
+  border: 1px solid transparent;
+  border-radius: var(--mu-radius-sm);
+  background: transparent;
+  cursor: pointer;
+}
+
+.availability-cell-map-update:hover {
+  border-color: var(--mu-gray-300);
+  background: var(--mu-gray-50);
+}
+
+/* No + missing reason: subtle hint that hover/click opens editor */
+.availability-cell--missing-reason-map-update .yn-no-map-update {
+  box-shadow: 0 0 0 1px var(--mu-danger);
+}
+
+.reason-add-row-map-update {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.reason-add-row-map-update .input-map-update {
+  flex: 1;
+  min-width: 140px;
+}
+
+.reason-flag-select-map-update {
+  width: 120px;
+  flex: 0 0 auto;
+}
+
+.reason-list-map-update {
+  margin-top: 16px;
+  max-height: 320px;
+  overflow-y: auto;
+  border: 1px solid var(--mu-gray-200);
+  border-radius: var(--mu-radius-sm);
+}
+
+.reason-list-row-map-update {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--mu-gray-100);
+}
+
+.reason-list-row-map-update:last-child {
+  border-bottom: none;
+}
+
+.reason-list-text-map-update {
+  flex: 1;
+  font-size: 14px;
+  color: var(--mu-gray-800);
+}
+
+.reason-list-text--inactive-map-update {
+  color: var(--mu-gray-400);
+  text-decoration: line-through;
+}
+
+.reason-list-flag-map-update {
+  font-size: 12px;
+  color: var(--mu-gray-500);
 }
 
 @media (max-width: 600px) {

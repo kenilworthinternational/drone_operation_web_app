@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import '../../../styles/dayendprocess.css';
@@ -11,7 +11,7 @@ import { useAppDispatch } from '../../../store/hooks';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useGetUnlinkedDjiImagesQuery, useGetAllDjiImagesQuery, useLinkDjiImageToTaskMutation } from '../../../api/services NodeJs/djiImagesApi';
-import { dayEndProcessApi, useUpdateOpsTaskStatusMutation, useGetPlansWithCompletionStatsQuery, useLazyGetCancelReasonsQuery, useCancelTaskMutation, useGetTasksCancelStatusQuery, useResetPilotCancelMutation } from '../../../api/services NodeJs/dayEndProcessApi';
+import { dayEndProcessApi, useUpdateOpsTaskStatusMutation, useGetPlansWithCompletionStatsQuery, useLazyGetCancelReasonsQuery, useCancelTaskMutation, useClearOpsCancelMutation, useGetTasksCancelStatusQuery, useResetPilotCancelMutation } from '../../../api/services NodeJs/dayEndProcessApi';
 import { useGetMyPermissionsQuery } from '../../../api/services NodeJs/featurePermissionsApi';
 import { FEATURE_CODES } from '../../../utils/featurePermissions';
 import { isInternalDeveloper } from '../../../utils/authUtils';
@@ -33,6 +33,9 @@ const getBackendUrl = () => {
   }
   return 'https://dsms-web-api-dev.kenilworthinternational.com';
 };
+
+/** DJI field area below this ratio of pilot field area requires a partial (flag h) cancel reason. */
+const PARTIAL_DJI_AREA_RATIO = 0.7;
 
 const DayEndProcess = () => {
   const navigate = useNavigate();
@@ -107,8 +110,12 @@ const DayEndProcess = () => {
   // Cancel task state
   const [triggerCancelReasons, { data: cancelReasons = [] }] = useLazyGetCancelReasonsQuery();
   const [cancelTask] = useCancelTaskMutation();
+  const [clearOpsCancel] = useClearOpsCancelMutation();
   const [resetPilotCancel] = useResetPilotCancelMutation();
   const [showCancelPopup, setShowCancelPopup] = useState(false);
+  /** 'direct' = Cancel Task button (flags c + h, filterable); 'partial' = task popup below 70% (flag h only). */
+  const [cancelPopupMode, setCancelPopupMode] = useState('direct');
+  const [cancelReasonFlagFilter, setCancelReasonFlagFilter] = useState('');
   const [cancelTaskId, setCancelTaskId] = useState(null);
   const [cancelFieldId, setCancelFieldId] = useState(null);
   const [selectedCancelReason, setSelectedCancelReason] = useState(null);
@@ -156,16 +163,97 @@ const DayEndProcess = () => {
     }
   };
 
+  const isOpsCancelEditMode = (taskId) => {
+    const id = taskId ?? cancelTaskId;
+    return Number(taskCancelStatusMap[id]?.ops_cancel_id) > 0;
+  };
+
+  const loadCancelReasonsForPopup = useCallback(
+    (mode, flagFilter = '') => {
+      if (mode === 'partial') {
+        triggerCancelReasons({ reasonFlag: 'h' }, false);
+        return;
+      }
+      if (flagFilter === 'c' || flagFilter === 'h') {
+        triggerCancelReasons({ reasonFlag: flagFilter }, false);
+        return;
+      }
+      triggerCancelReasons({}, false);
+    },
+    [triggerCancelReasons]
+  );
+
+  const handleCancelReasonFlagFilterChange = (e) => {
+    const value = e.target.value;
+    setCancelReasonFlagFilter(value);
+    loadCancelReasonsForPopup('direct', value);
+    if (!isOpsCancelEditMode()) {
+      setSelectedCancelReason(null);
+    }
+  };
+
+  const handleCancelReasonSelect = (reasonId) => {
+    const reasonNum = Number(reasonId);
+    if (!Number.isFinite(reasonNum) || reasonNum <= 0) return;
+    if (Number(selectedCancelReason) === reasonNum) {
+      setSelectedCancelReason(null);
+      return;
+    }
+    setSelectedCancelReason(reasonNum);
+  };
+
+  const refreshAfterCancelChange = async () => {
+    if (selectedMission) {
+      await fetchCancelStatus(selectedMission.id);
+    }
+    if (cancelFieldId && selectedMission) {
+      const taskResult = await dispatch(
+        baseApi.endpoints.getTasksByPlanAndField.initiate(
+          { planId: selectedMission.id, fieldId: cancelFieldId },
+          { forceRefetch: true }
+        )
+      );
+      if (taskResult.data) {
+        setFieldTasks((prev) => ({ ...prev, [cancelFieldId]: taskResult.data }));
+      }
+    }
+  };
+
+  const handleRemoveOpsCancel = async () => {
+    if (!cancelTaskId) return;
+    const currentReason =
+      taskCancelStatusMap[cancelTaskId]?.ops_cancel_reason ||
+      getCancelReasonText(taskCancelStatusMap[cancelTaskId]?.ops_cancel_id);
+    const msg = currentReason
+      ? `Remove ops cancel reason?\n\nCurrent: ${currentReason}\n\nThe task will no longer show as ops cancelled.`
+      : 'Remove the ops cancel reason? The task will no longer show as ops cancelled.';
+    if (!window.confirm(msg)) return;
+
+    setCancelSubmitting(true);
+    try {
+      const res = await clearOpsCancel({ taskId: cancelTaskId }).unwrap();
+      toast.success(res?.message || 'Ops cancel reason removed successfully');
+      setShowCancelPopup(false);
+      setSelectedCancelReason(null);
+      await refreshAfterCancelChange();
+    } catch (err) {
+      toast.error(err?.data?.message || 'Failed to remove ops cancel reason');
+    } finally {
+      setCancelSubmitting(false);
+    }
+  };
+
   // Cancel task handlers
   const handleCancelTaskClick = (fieldId, task) => {
-    // Always fetch latest active reasons when opening popup (no cached view)
-    triggerCancelReasons(undefined, false);
+    setCancelPopupMode('direct');
+    setCancelReasonFlagFilter('');
+    loadCancelReasonsForPopup('direct', '');
     setCancelTaskId(task.task_id);
     setCancelFieldId(fieldId);
     // Pre-select existing ops cancel reason if task was already cancelled
     const cancelInfo = taskCancelStatusMap[task.task_id];
-    const existing = cancelInfo ? cancelInfo.ops_cancel_id : null;
-    setSelectedCancelReason(existing && existing !== 0 ? existing : null);
+    const existing = cancelInfo ? Number(cancelInfo.ops_cancel_id) : 0;
+    setSelectedCancelReason(existing > 0 ? existing : null);
     setShowCancelPopup(true);
   };
 
@@ -209,32 +297,18 @@ const DayEndProcess = () => {
   };
 
   const handleCancelTaskSubmit = async () => {
-    if (!cancelTaskId || !selectedCancelReason) {
-      toast.error('Please select a reason');
+    const reasonNum = Number(selectedCancelReason);
+    if (!cancelTaskId || !Number.isFinite(reasonNum) || reasonNum <= 0) {
+      toast.error('Please select a cancellation reason');
       return;
     }
     setCancelSubmitting(true);
     try {
-      const isEdit = taskCancelStatusMap[cancelTaskId]?.ops_cancel_id > 0;
-      await cancelTask({ taskId: cancelTaskId, reasonId: selectedCancelReason }).unwrap();
-      toast.success(isEdit ? 'Cancel reason updated successfully' : 'Task cancelled successfully');
+      const isEdit = isOpsCancelEditMode();
+      const res = await cancelTask({ taskId: cancelTaskId, reasonId: reasonNum }).unwrap();
+      toast.success(res?.message || (isEdit ? 'Cancel reason updated successfully' : 'Task cancelled successfully'));
       setShowCancelPopup(false);
-      // Refresh cancel status map so badge updates immediately
-      if (selectedMission) {
-        fetchCancelStatus(selectedMission.id);
-      }
-      // Refresh field tasks
-      if (cancelFieldId && selectedMission) {
-        const taskResult = await dispatch(
-          baseApi.endpoints.getTasksByPlanAndField.initiate(
-            { planId: selectedMission.id, fieldId: cancelFieldId },
-            { forceRefetch: true }
-          )
-        );
-        if (taskResult.data) {
-          setFieldTasks((prev) => ({ ...prev, [cancelFieldId]: taskResult.data }));
-        }
-      }
+      await refreshAfterCancelChange();
     } catch (err) {
       toast.error(err?.data?.message || 'Failed to cancel task');
     } finally {
@@ -709,7 +783,8 @@ const DayEndProcess = () => {
     };
     const fullFieldArea = parseArea(currentField?.field_area || currentTask?.task_fieldArea || 0);
     const enteredDjiFieldArea = parseArea(djiData?.dji_field_area);
-    const isBelowPartialThreshold = fullFieldArea > 0 && enteredDjiFieldArea < fullFieldArea * 0.7;
+    const isBelowPartialThreshold =
+      fullFieldArea > 0 && enteredDjiFieldArea < fullFieldArea * PARTIAL_DJI_AREA_RATIO;
 
     const hasSubmittedCancelReason = () => {
       const cancelInfo = taskCancelStatusMap[currentTask?.task_id];
@@ -726,11 +801,15 @@ const DayEndProcess = () => {
     }
 
     if (isBelowPartialThreshold && !hasSubmittedCancelReason()) {
+      setCancelPopupMode('partial');
+      setCancelReasonFlagFilter('');
+      loadCancelReasonsForPopup('partial');
       setCancelTaskId(currentTask.task_id);
       setCancelFieldId(currentTask.field_id);
-      setSelectedCancelReason(null);
+      const existingOps = Number(taskCancelStatusMap[currentTask.task_id]?.ops_cancel_id || 0);
+      setSelectedCancelReason(existingOps > 0 ? existingOps : null);
       setShowCancelPopup(true);
-      toast.info('DJI field area is below 70%. Please save a cancel reason before submitting DJI data.');
+      toast.info('DJI field area is below 70%. Please save a partial (h) reason before submitting DJI data.');
       return;
     }
 
@@ -858,6 +937,16 @@ const DayEndProcess = () => {
     }
   };
 
+
+  const taskPopupPartialInfo = useMemo(() => {
+    if (!showTaskPopup || !currentTask) return null;
+    const pilotArea = Number(currentField?.field_area || currentTask.task_fieldArea || 0);
+    const djiArea = Number(String(djiData?.dji_field_area ?? '').replace(/,/g, '')) || 0;
+    if (pilotArea <= 0) return null;
+    const pct = Math.round((djiArea / pilotArea) * 100);
+    const belowThreshold = djiArea < pilotArea * PARTIAL_DJI_AREA_RATIO;
+    return { pilotArea, djiArea, pct, belowThreshold };
+  }, [showTaskPopup, currentTask, currentField, djiData?.dji_field_area]);
 
   useEffect(() => {
     if (showReportPopup && currentTask) {
@@ -1181,10 +1270,12 @@ const DayEndProcess = () => {
                                             {taskLoading === task.task_id ? 'Loading...' : 'Task'}
                                           </button>
                                           <button
-                                            className={`cancel-button-dayend ${taskCancelStatusMap[task.task_id]?.ops_cancel_id > 0 ? 'cancel-button-edit' : ''}`}
+                                            className={`cancel-button-dayend ${Number(taskCancelStatusMap[task.task_id]?.ops_cancel_id) > 0 ? 'cancel-button-edit' : ''}`}
                                             onClick={() => handleCancelTaskClick(field.field_id, task)}
                                           >
-                                            {taskCancelStatusMap[task.task_id]?.ops_cancel_id > 0 ? 'Edit Cancel' : 'Cancel Task'}
+                                            {Number(taskCancelStatusMap[task.task_id]?.ops_cancel_id) > 0
+                                              ? 'Edit Cancel Reason'
+                                              : 'Cancel Task'}
                                           </button>
                                           {taskCancelStatusMap[task.task_id]?.pilot_cancel_id > 0 && (
                                             <button
@@ -1383,6 +1474,16 @@ const DayEndProcess = () => {
                           Cannot exceed field size ({currentField?.field_area || currentTask.task_fieldArea} Ha)
                         </span>
                       )}
+                      {taskPopupPartialInfo?.belowThreshold ? (
+                        <span className="partial-threshold-hint-dayend">
+                          DJI field area is {taskPopupPartialInfo.pct}% of pilot field area (below 70%). Save a
+                          partial (h) cancel reason before submitting DJI data.
+                        </span>
+                      ) : taskPopupPartialInfo && taskPopupPartialInfo.djiArea > 0 ? (
+                        <span className="partial-threshold-ok-dayend">
+                          {taskPopupPartialInfo.pct}% (70% minimum for full completion).
+                        </span>
+                      ) : null}
                     </div>
                   </div>
                   <div className="data-row">
@@ -1683,46 +1784,109 @@ const DayEndProcess = () => {
         <div className="cancel-task-overlay" onClick={() => !cancelSubmitting && setShowCancelPopup(false)}>
           <div className="cancel-task-modal" onClick={(e) => e.stopPropagation()}>
             <div className="cancel-task-header">
-              <h3>{taskCancelStatusMap[cancelTaskId]?.ops_cancel_id > 0 ? 'Edit Cancellation' : 'Cancel Task'}</h3>
+              <h3>
+                {isOpsCancelEditMode()
+                  ? 'Edit ops cancel reason'
+                  : cancelPopupMode === 'partial'
+                    ? 'Partial completion reason'
+                    : 'Cancel Task'}
+              </h3>
               <button className="cancel-task-close" onClick={() => !cancelSubmitting && setShowCancelPopup(false)}>×</button>
             </div>
             <div className="cancel-task-body">
               <p className="cancel-task-label">
-                {taskCancelStatusMap[cancelTaskId]?.ops_cancel_id > 0 ? 'Change the cancellation reason:' : 'Select a reason for cancellation:'}
+                {isOpsCancelEditMode()
+                  ? 'Choose a different reason if needed:'
+                  : cancelPopupMode === 'partial'
+                    ? 'DJI field area is below 70%. Select a partially completed reason (flag h):'
+                    : 'Select a cancellation reason:'}
               </p>
+              {isOpsCancelEditMode() ? (
+                <p className="cancel-task-hint">
+                  Change the reason below, or use <strong>Remove cancellation</strong> if this was added by mistake.
+                  Click a selected reason again to deselect before updating.
+                </p>
+              ) : cancelPopupMode === 'partial' ? (
+                <p className="cancel-task-hint cancel-task-hint-partial">
+                  Only partially completed (h) reasons are listed here. Use Cancel Task on the task row for full
+                  cancel (c) reasons.
+                </p>
+              ) : null}
+              {cancelPopupMode === 'direct' ? (
+                <div className="cancel-reason-flag-filter-wrap">
+                  <label className="cancel-reason-flag-filter-label" htmlFor="cancel-reason-flag-filter">
+                    Reason type
+                  </label>
+                  <select
+                    id="cancel-reason-flag-filter"
+                    className="cancel-reason-flag-filter"
+                    value={cancelReasonFlagFilter}
+                    onChange={handleCancelReasonFlagFilterChange}
+                    disabled={cancelSubmitting}
+                  >
+                    <option value="">All Flags</option>
+                    <option value="h">Partially (h)</option>
+                    <option value="c">Cancel (c)</option>
+                  </select>
+                </div>
+              ) : null}
               <div className="cancel-reasons-list">
                 {cancelReasons.map((r) => (
                   <button
                     key={r.id}
-                    className={`cancel-reason-item ${selectedCancelReason === r.id ? 'selected' : ''}`}
-                    onClick={() => setSelectedCancelReason(r.id)}
+                    type="button"
+                    className={`cancel-reason-item ${Number(selectedCancelReason) === Number(r.id) ? 'selected' : ''}`}
+                    onClick={() => handleCancelReasonSelect(r.id)}
                   >
                     <span className="cancel-reason-radio">
-                      {selectedCancelReason === r.id ? '●' : '○'}
+                      {Number(selectedCancelReason) === Number(r.id) ? '●' : '○'}
                     </span>
-                    <span className="cancel-reason-text">{r.reason}</span>
+                    <span className="cancel-reason-text">
+                      {r.reason}
+                      {r.flag ? (
+                        <span className="cancel-reason-flag-tag"> ({String(r.flag).toLowerCase()})</span>
+                      ) : null}
+                    </span>
                   </button>
                 ))}
                 {cancelReasons.length === 0 && (
-                  <p className="cancel-no-reasons">No reasons available.</p>
+                  <p className="cancel-no-reasons">No reasons available for this filter.</p>
                 )}
               </div>
             </div>
-            <div className="cancel-task-footer">
-              <button
-                className="cancel-task-btn-secondary"
-                onClick={() => setShowCancelPopup(false)}
-                disabled={cancelSubmitting}
-              >
-                Close
-              </button>
-              <button
-                className="cancel-task-btn-danger"
-                onClick={handleCancelTaskSubmit}
-                disabled={!selectedCancelReason || cancelSubmitting}
-              >
-                {cancelSubmitting ? 'Saving...' : (taskCancelStatusMap[cancelTaskId]?.ops_cancel_id > 0 ? 'Update Reason' : 'Confirm Cancel')}
-              </button>
+            <div className={`cancel-task-footer ${isOpsCancelEditMode() ? 'cancel-task-footer-edit' : ''}`}>
+              {isOpsCancelEditMode() ? (
+                <button
+                  type="button"
+                  className="cancel-task-btn-remove"
+                  onClick={handleRemoveOpsCancel}
+                  disabled={cancelSubmitting}
+                >
+                  {cancelSubmitting ? 'Working...' : 'Remove cancellation'}
+                </button>
+              ) : null}
+              <div className="cancel-task-footer-actions">
+                <button
+                  type="button"
+                  className="cancel-task-btn-secondary"
+                  onClick={() => setShowCancelPopup(false)}
+                  disabled={cancelSubmitting}
+                >
+                  Close
+                </button>
+                <button
+                  type="button"
+                  className="cancel-task-btn-danger"
+                  onClick={handleCancelTaskSubmit}
+                  disabled={!Number(selectedCancelReason) || cancelSubmitting}
+                >
+                  {cancelSubmitting
+                    ? 'Saving...'
+                    : isOpsCancelEditMode()
+                      ? 'Update Reason'
+                      : 'Confirm Cancel'}
+                </button>
+              </div>
             </div>
           </div>
         </div>,

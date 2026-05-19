@@ -699,6 +699,22 @@ export const mappingHierarchyApi = baseApi.injectEndpoints({
       invalidatesTags: ['Estates'],
     }),
 
+    setMappingEstatePlanSizes: builder.mutation({
+      queryFn: async ({ id, min_plan_size, max_plan_size }) => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: '/api/mapping-hierarchy/estates/set-plan-sizes',
+            method: 'POST',
+            body: { id, min_plan_size, max_plan_size },
+          },
+          {},
+          {}
+        );
+        return result;
+      },
+      invalidatesTags: ['Estates'],
+    }),
+
     toggleMappingDivisionActivation: builder.mutation({
       queryFn: async (id) => {
         const result = await nodeBackendBaseQuery(
@@ -766,6 +782,7 @@ export const {
   useDeleteMappingEstateMutation,
   useToggleMappingEstateActivationMutation,
   useSetMappingEstateFinalizedMutation,
+  useSetMappingEstatePlanSizesMutation,
   // Divisions
   useGetMappingDivisionsQuery,
   useGetMappingDivisionsByEstateQuery,

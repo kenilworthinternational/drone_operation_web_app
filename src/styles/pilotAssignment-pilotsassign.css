@@ -851,3 +851,28 @@
   min-height: 60vh;
   padding-bottom: 24px;
 }
+
+.pilot-assignment-transport-panel-pilotsassign {
+  margin: 24px 0 0;
+  padding: 20px;
+  border: 1px solid #d8e2ec;
+  border-radius: 8px;
+  background: #f7fafc;
+}
+
+.pilot-assignment-transport-panel-pilotsassign .pilot-assignment-transport-subtitle-pilotsassign {
+  margin-top: 0;
+}
+
+.pilot-assignment-deploy-footer-pilotsassign {
+  margin-top: 24px;
+  padding-top: 8px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.pilot-assignment-deploy-btn-main-pilotsassign {
+  min-width: 220px;
+  padding: 12px 28px;
+  font-size: 1rem;
+}

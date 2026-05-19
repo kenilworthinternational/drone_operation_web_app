@@ -44,6 +44,7 @@ import PlanCalendar from './sections/opsroom/calendar/PlanCalendar';
 import RequestsQueueMain from './sections/opsroom/requests/RequestsQueueMain';
 import RequestProceed from './sections/opsroom/requests/RequestProceed';
 import PlansWithWeather from './sections/opsroom/plans/PlansWithWeather';
+import CorporateCustomers from './sections/strategic/corporateCustomers/CorporateCustomers';
 import PilotAssignment from './sections/opsroom/pilot-assigment/PilotAssignment';
 import TransportArrangePage from './sections/opsroom/pilot-assigment/TransportArrangePage';
 import TodayPlans from './sections/opsroom/today-plans/TodayPlans';
@@ -63,6 +64,7 @@ import FleetUpdate from './sections/fleet/fleet-update/FleetUpdate';
 import DjiMapUpload from './sections/opsroom/dji/DjiMapUpload';
 import ManagerApprovalQueue from './sections/opsroom/manager-approval/ManagerApprovalQueue';
 import PlantationPlanRequestQueue from './sections/opsroom/plantation-plan-requests/PlantationPlanRequestQueue';
+import FieldUnblockRequestQueue from './sections/opsroom/field-unblock/FieldUnblockRequestQueue';
 import PendingPaymentQueue from './sections/opsroom/pending-payment/PendingPaymentQueue';
 import DroneUnlockingQueue from './sections/opsroom/drone-unlocking/DroneUnlockingQueue';
 import Users from './sections/ict/users/Users';
@@ -190,6 +192,14 @@ function App() {
             }
           />
           <Route
+            path="corporate-customers"
+            element={
+              <ProtectedRoute>
+                <CorporateCustomers />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="updateservices"
             element={
               <ProtectedRoute>
@@ -258,6 +268,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <MappingUpdatePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="geo-spatial/field-unblock-requests"
+            element={
+              <ProtectedRoute>
+                <FieldUnblockRequestQueue />
               </ProtectedRoute>
             }
           />

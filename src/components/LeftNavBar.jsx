@@ -19,6 +19,7 @@ import {
   getNavbarColor
 } from '../utils/authUtils';
 import { useNavbarPermissions } from '../hooks/useNavbarPermissions';
+import { useGetFieldUnblockPendingCountQuery } from '../api/services NodeJs/fieldUnblockRequestsApi';
 
 const categories = navbarCategories;
 
@@ -66,6 +67,19 @@ const LeftNavBar = ({ showSidebar = false, onClose = () => { }, onCollapseChange
   const userType = userData.member_type_name || '';
 
   const { categoryVisibility, allowedPaths } = useNavbarPermissions();
+
+  const userId = userData?.id ?? userData?.user_id;
+  const { data: fieldUnblockPendingPayload } = useGetFieldUnblockPendingCountQuery(undefined, {
+    pollingInterval: 120000,
+    skip: !userId,
+  });
+  const fieldUnblockPendingCount = Number(fieldUnblockPendingPayload?.count ?? 0);
+
+  const getNavPendingCount = (item) => {
+    if (item?.pendingCountKey === 'fieldUnblock') return fieldUnblockPendingCount;
+    if (item?.showPendingCount) return pendingCount;
+    return 0;
+  };
 
   useEffect(() => {
     const fetchPendingCount = async () => {
@@ -209,7 +223,15 @@ const LeftNavBar = ({ showSidebar = false, onClose = () => { }, onCollapseChange
           </Link>
         </li>
         {categoriesToShow.map((category) => {
+          const isStrategicWing = category.title === 'Strategic Planning and Monitoring wing';
+          const showAllStrategicChildren =
+            isStrategicWing &&
+            (categoryVisibility[category.title] === true ||
+              category.children.some((c) => allowedPaths.includes(c.path)));
           const visibleChildren = category.children.filter((child) => {
+            if (showAllStrategicChildren) {
+              return true;
+            }
             if (child.subItems && child.subItems.length > 0) {
               return child.subItems.some((sub) => allowedPaths.includes(sub.path));
             }
@@ -366,7 +388,7 @@ const LeftNavBar = ({ showSidebar = false, onClose = () => { }, onCollapseChange
                       );
                     }
                     const activeAliases = {
-                      '/home/workflowDashboard': ['/home/opsroomPlanCalendar', '/home/requestsQueue', '/home/requestProceed', '/home/dayEndProcess', '/home/todayPlans', '/home/emergencyMoving', '/home/fieldHistory', '/home/reports/ops', '/home/fieldSizeAdjustments', '/home/opsAsign'],
+                      '/home/workflowDashboard': ['/home/opsroomPlanCalendar', '/home/requestsQueue', '/home/requestProceed', '/home/dayEndProcess', '/home/todayPlans', '/home/emergencyMoving', '/home/fieldHistory', '/home/reports/ops', '/home/fieldSizeAdjustments', '/home/opsAsign', '/home/plantationPlanRequestQueue'],
                       '/home/monitoringDashboard': [],
                       '/home/dataViewer': ['/home/dataViewer/chart-breakdown'],
                       '/home/ict/development/dev-center': devCenterAliasPaths,
@@ -377,6 +399,7 @@ const LeftNavBar = ({ showSidebar = false, onClose = () => { }, onCollapseChange
                       activeLink.startsWith(item.path + '/') ||
                       aliases.includes(activeLink) ||
                       aliases.some((a) => activeLink.startsWith(a + '/'));
+                    const navPending = getNavPendingCount(item);
                     return (
                       <li key={item.path} className="nav-item">
                         <Link
@@ -386,12 +409,14 @@ const LeftNavBar = ({ showSidebar = false, onClose = () => { }, onCollapseChange
                         >
                           <item.icon className="nav-icon" />
                           <span className="nav-text">{item.label}</span>
-                          {item.showPendingCount && pendingCount > 0 && (
-                            <span className="pending-count">{pendingCount}</span>
-                          )}
+                          {navPending > 0 ? (
+                            <span className="pending-count pending-count--mini" title={`${navPending} pending`}>
+                              {navPending}
+                            </span>
+                          ) : null}
                         </Link>
                       </li>
-                    )
+                    );
                   })}
                 </ul>
               )}

@@ -26,6 +26,7 @@ import {
   FaTruck,
   FaFileInvoice,
   FaMap,
+  FaUnlock,
   FaClock,
   FaCheck,
   FaTachometerAlt,
@@ -37,6 +38,7 @@ const navbarCategories = [
     icon: FaCalendarCheck,
     children: [
       { path: '/home/createBookings', label: 'Booking Creation', icon: FaPlusCircle },
+      { path: '/home/corporate-customers', label: 'Corporate Customer', icon: FaBuilding },
       { path: '/home/reports/corporate', label: 'Reports', icon: FaFileAlt },
     ],
   },
@@ -158,6 +160,12 @@ const navbarCategories = [
     icon: FaMap,
     children: [
       { path: '/home/geo-spatial/mapping-update', label: 'Mapping Update', icon: FaMap },
+      {
+        path: '/home/geo-spatial/field-unblock-requests',
+        label: 'Field Unblock Requests',
+        icon: FaUnlock,
+        pendingCountKey: 'fieldUnblock',
+      },
     ],
   },
 ];

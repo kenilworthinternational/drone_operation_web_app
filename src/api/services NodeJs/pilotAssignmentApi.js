@@ -136,6 +136,27 @@ export const pilotAssignmentApi = baseApi.injectEndpoints({
       invalidatesTags: ['PilotAssignmentPlans', 'PilotAssignmentMissions'],
     }),
 
+    deployPilotAssignmentWithTransport: builder.mutation({
+      queryFn: async (payload) => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: '/api/pilot-assignment/deploy-with-transport',
+            method: 'POST',
+            body: payload,
+          },
+          {},
+          {}
+        );
+        return result;
+      },
+      invalidatesTags: [
+        'PilotAssignmentPlans',
+        'PilotAssignmentMissions',
+        'PilotTransportOptions',
+        'TransportArrangementList',
+      ],
+    }),
+
     // =====================================================
     // GET ASSIGNMENT BY ID
     // =====================================================
@@ -335,6 +356,7 @@ export const {
   useGetPilotAssignmentPilotsQuery,
   useGetPilotAssignmentDroneQuery,
   useCreatePilotAssignmentMutation,
+  useDeployPilotAssignmentWithTransportMutation,
   useGetPilotAssignmentByIdQuery,
   useGetAllTeamsQuery,
   useGetTodayPlansAndMissionsQuery,

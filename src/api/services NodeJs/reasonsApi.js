@@ -33,7 +33,7 @@ export const reasonsApi = baseApi.injectEndpoints({
         );
         return result;
       },
-      invalidatesTags: ['Reasons'],
+      invalidatesTags: ['Reasons', 'MissionPartialReasons'],
     }),
 
     getNotSprayingRecens: builder.query({

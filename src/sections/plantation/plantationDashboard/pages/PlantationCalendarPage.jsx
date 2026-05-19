@@ -11,7 +11,12 @@ import {
 import { useGetMissionTypesQuery, useGetCropTypesQuery } from '../../../../api/services/allEndpoints';
 import { Bars } from 'react-loader-spinner';
 import '../../../../styles/plantationDashboard.css';
-import { getUserData, hasHierarchyForPlantationPlanRequest } from '../../../../utils/authUtils';
+import {
+  getUserData,
+  getPlantationCalendarHierarchyLevel,
+  getPlantationCalendarScopeDescription,
+  hasHierarchyForPlantationPlanRequest,
+} from '../../../../utils/authUtils';
 
 function normalizeDropdownList(raw) {
   if (!raw) return [];
@@ -56,6 +61,8 @@ const PlantationCalendarPage = ({ basePath = '/home/plantation-dashboard' } = {}
     selectedAction === 'Spray' ? 'spy' : selectedAction === 'Spread' ? 'spd' : 'all';
 
   const userData = getUserData();
+  const hierarchyLevel = getPlantationCalendarHierarchyLevel(userData);
+  const calendarScopeDescription = getPlantationCalendarScopeDescription(hierarchyLevel, userData);
   const enablePlanRequestUi =
     basePath === '/home/plantation-dashboard' && hasHierarchyForPlantationPlanRequest(userData);
 
@@ -106,11 +113,16 @@ const PlantationCalendarPage = ({ basePath = '/home/plantation-dashboard' } = {}
       </div>
 
       <div className="plantation-page-content">
-        {basePath === '/home/plantation-dashboard' && !hasHierarchyForPlantationPlanRequest(userData) && (
+        {basePath === '/home/plantation-dashboard' && (
           <p className="plantation-plan-request-hierarchy-hint" role="status">
-            Plan requests (month stats, day markers, and new requests) need your profile to include{' '}
-            <strong>Group</strong>, <strong>Plantation</strong>, <strong>Region</strong>, and{' '}
-            <strong>Estate</strong>. An estate is required — contact admin if any field is missing.
+            {calendarScopeDescription}
+            {!enablePlanRequestUi && hierarchyLevel !== 'none' ? (
+              <>
+                {' '}
+                Plan requests need <strong>Group</strong>, <strong>Plantation</strong>,{' '}
+                <strong>Region</strong>, and <strong>Estate</strong> on your profile.
+              </>
+            ) : null}
           </p>
         )}
         {/* Mission type: all spray plans, all spread plans, or both */}
