@@ -860,6 +860,34 @@
     flex-shrink: 0;
 }
 
+.pending-count--activate {
+    background: #ff3b30;
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+
+.nav-pending-inline {
+    display: none;
+}
+
+.left-nav.collapsed .nav-pending-inline {
+    display: inline;
+    margin-left: 4px;
+    font-size: 10px;
+    font-weight: 800;
+    color: #ff3b30;
+    background: #fff;
+    border-radius: 8px;
+    padding: 0 5px;
+    line-height: 14px;
+    vertical-align: super;
+}
+
+.left-nav.collapsed .pending-count--activate {
+    display: none;
+}
+
 .nav-sublist .nav-link {
     display: flex;
     align-items: center;

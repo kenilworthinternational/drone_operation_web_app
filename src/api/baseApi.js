@@ -76,7 +76,7 @@ export const baseApi = createApi({
     // HR & JD Management
     'UserLevels', 'UserMemberTypes', 'UserJobRoles', 'UserJobDescriptions', 'Departments', 'EmployeeAssignment',
     // Plantation Dashboard
-    'PlantationCalendarPlans', 'PlantationUpcomingPlans', 'PlantationCharts', 'PlantationMissionReports', 'PlantationPlanRequests', 'FieldUnblockRequests',
+    'PlantationCalendarPlans', 'PlantationUpcomingPlans', 'PlantationCharts', 'PlantationMissionReports', 'PlantationPlanRequests', 'FieldUnblockRequests', 'PlanActivateRequests',
     // Field Size Adjustments
     'FieldSizeAdjustments',
     // Field History

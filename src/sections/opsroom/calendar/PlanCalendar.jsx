@@ -1,8 +1,15 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { OD_WING_OPERATION_DIGITALIZATION_TITLE } from '../../../config/odWingShell';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, addMonths } from 'date-fns';
 import { Bars } from 'react-loader-spinner';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { baseApi } from '../../../api/services/allEndpoints';
+import {
+  useLazyGetPlanActivateStatusByPlansQuery,
+  useSubmitPlanActivateRequestMutation,
+} from '../../../api/services NodeJs/planActivateRequestsApi';
 import { useAppDispatch } from '../../../store/hooks';
 import '../../../styles/planCalendar.css';
 
@@ -11,6 +18,16 @@ const PLAN_TYPE_META = [
   { key: 'ap', label: 'AddHoc' },
   { key: 'rp', label: 'Rescheduled' },
 ];
+
+/** Request activation is only for Operation Digitalization (opsroom) wing calendar. */
+function canRequestPlanActivationForWing(wingParam) {
+  if (!wingParam) return false;
+  const w = decodeURIComponent(wingParam).trim();
+  return (
+    w === OD_WING_OPERATION_DIGITALIZATION_TITLE ||
+    w === 'Central Operation Management'
+  );
+}
 
 const PLAN_STATUS_META = [
   { key: 'not_activated', label: 'Not Activated', color: '#BEBEBE' },
@@ -43,7 +60,20 @@ const PlanCalendar = () => {
   const [selectedPlantation, setSelectedPlantation] = useState('');
   const [selectedRegion, setSelectedRegion] = useState('');
   const [selectedEstate, setSelectedEstate] = useState('');
+  const [activateStatus, setActivateStatus] = useState(null);
+  const [activateStatusLoading, setActivateStatusLoading] = useState(false);
+  const [showActivateRequestModal, setShowActivateRequestModal] = useState(false);
+  const [activateRequestNote, setActivateRequestNote] = useState('');
   const navigate = useNavigate();
+  const location = useLocation();
+  const wingParam = new URLSearchParams(location.search).get('wing');
+  const canRequestPlanActivation = canRequestPlanActivationForWing(wingParam);
+
+  const [fetchActivateStatus] = useLazyGetPlanActivateStatusByPlansQuery();
+  const [submitActivateRequest, { isLoading: submittingActivateRequest }] =
+    useSubmitPlanActivateRequestMutation();
+
+  const isPlanDeactivated = (plan) => plan != null && Number(plan.activated) !== 1;
 
   const monthRange = useMemo(() => {
     const start = format(startOfMonth(currentMonth), 'yyyy-MM-dd');
@@ -109,6 +139,47 @@ const PlanCalendar = () => {
     loadEstate();
     return () => { cancelled = true; };
   }, [selectedPlan]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadActivateStatus = async () => {
+      if (!canRequestPlanActivation || !selectedPlan?.id || !isPlanDeactivated(selectedPlan)) {
+        setActivateStatus(null);
+        return;
+      }
+      setActivateStatusLoading(true);
+      try {
+        const result = await fetchActivateStatus({ planIds: [selectedPlan.id] });
+        if (cancelled) return;
+        const map = result.data || {};
+        setActivateStatus(map[selectedPlan.id] || map[String(selectedPlan.id)] || null);
+      } catch {
+        if (!cancelled) setActivateStatus(null);
+      } finally {
+        if (!cancelled) setActivateStatusLoading(false);
+      }
+    };
+    loadActivateStatus();
+    return () => {
+      cancelled = true;
+    };
+  }, [canRequestPlanActivation, selectedPlan?.id, selectedPlan?.activated, fetchActivateStatus]);
+
+  const handleSubmitActivateRequest = async () => {
+    if (!selectedPlan?.id) return;
+    try {
+      await submitActivateRequest({
+        planId: selectedPlan.id,
+        requestMessage: activateRequestNote,
+      }).unwrap();
+      toast.success('Activation request sent to Field Operations');
+      setShowActivateRequestModal(false);
+      setActivateRequestNote('');
+      setActivateStatus({ pending: true });
+    } catch (e) {
+      toast.error(e?.data?.message || e?.message || 'Failed to submit request');
+    }
+  };
 
   const daysInMonth = useMemo(() => {
     return eachDayOfInterval({ start: startOfMonth(currentMonth), end: endOfMonth(currentMonth) });
@@ -331,6 +402,7 @@ const PlanCalendar = () => {
 
   return (
     <div className="wrapper-booking-calendar">
+      <ToastContainer position="top-right" autoClose={4000} />
       <div className="header-booking-calendar">
         <button className="back-btn-booking-calendar" onClick={() => navigate(-1)} aria-label="Back">
           <svg className="back-icon-booking-calendar" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
@@ -513,7 +585,15 @@ const PlanCalendar = () => {
                   {selectedPlan.date} · {selectedPlan.group} · {selectedPlan.plantation} · {selectedPlan.estate}
                 </div>
               </div>
-              <button className="modal-close-booking-calendar" onClick={() => setSelectedPlan(null)} aria-label="Close">
+              <button
+                className="modal-close-booking-calendar"
+                onClick={() => {
+                  setSelectedPlan(null);
+                  setShowActivateRequestModal(false);
+                  setActivateRequestNote('');
+                }}
+                aria-label="Close"
+              >
                 ✕
               </button>
             </div>
@@ -566,6 +646,30 @@ const PlanCalendar = () => {
                   )}
                 </div>
               </div>
+              {isPlanDeactivated(selectedPlan) && (
+                <div className="plan-activate-panel-booking-calendar">
+                  <span className="badge-deactivated-booking-calendar">Deactivated plan</span>
+                  {canRequestPlanActivation && (
+                    <>
+                      {activateStatusLoading ? (
+                        <span className="plan-activate-hint-booking-calendar">Checking request status…</span>
+                      ) : activateStatus?.pending ? (
+                        <span className="plan-activate-pending-booking-calendar">
+                          Activation request pending Field Operations approval
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          className="plan-activate-request-btn-booking-calendar"
+                          onClick={() => setShowActivateRequestModal(true)}
+                        >
+                          Request activation
+                        </button>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
               <div className="summary-row-booking-calendar">
                 <span className="badge-booking-calendar">{selectedPlan.mission_type_name}</span>
                 <span className="badge-booking-calendar">Area: {selectedPlan.area} Ha</span>
@@ -609,6 +713,62 @@ const PlanCalendar = () => {
 
             <div className="modal-footer-booking-calendar">
               <button className="modal-close-btn-booking-calendar" onClick={() => setSelectedPlan(null)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {canRequestPlanActivation && showActivateRequestModal && selectedPlan && (
+        <div className="modal-overlay-booking-calendar" onClick={() => !submittingActivateRequest && setShowActivateRequestModal(false)}>
+          <div className="modal-booking-calendar modal-booking-calendar--compact" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header-booking-calendar">
+              <div className="modal-title-group-booking-calendar">
+                <div className="modal-title-booking-calendar">Request plan activation</div>
+                <div className="modal-subtitle-booking-calendar">
+                  Plan #{selectedPlan.id} · {selectedPlan.estate}
+                </div>
+              </div>
+              <button
+                className="modal-close-booking-calendar"
+                onClick={() => setShowActivateRequestModal(false)}
+                aria-label="Close"
+                disabled={submittingActivateRequest}
+              >
+                ✕
+              </button>
+            </div>
+            <div className="modal-body-booking-calendar">
+              <p className="plan-activate-modal-text-booking-calendar">
+                This sends a request to Field Operations. The plan is not activated until approved.
+              </p>
+              <label className="plan-activate-modal-label-booking-calendar">
+                Note (optional)
+                <textarea
+                  className="plan-activate-modal-textarea-booking-calendar"
+                  rows={3}
+                  value={activateRequestNote}
+                  onChange={(e) => setActivateRequestNote(e.target.value)}
+                  disabled={submittingActivateRequest}
+                />
+              </label>
+            </div>
+            <div className="modal-footer-booking-calendar">
+              <button
+                type="button"
+                className="modal-close-btn-booking-calendar"
+                onClick={() => setShowActivateRequestModal(false)}
+                disabled={submittingActivateRequest}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="plan-activate-request-btn-booking-calendar"
+                onClick={handleSubmitActivateRequest}
+                disabled={submittingActivateRequest}
+              >
+                {submittingActivateRequest ? 'Sending…' : 'Submit request'}
+              </button>
             </div>
           </div>
         </div>

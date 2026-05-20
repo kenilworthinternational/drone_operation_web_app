@@ -4,6 +4,58 @@
   background: #ffffff;
 }
 
+.plans-create-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.plans-create-tab {
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #475569;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.plans-create-tab--active {
+  color: #003057;
+  background: #fff;
+  border-color: #003057;
+  box-shadow: 0 1px 3px rgba(0, 48, 87, 0.12);
+}
+
+.plans-create-tab-badge {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 20px;
+  text-align: center;
+  color: #fff;
+  background: #dc3545;
+  border-radius: 10px;
+}
+
+.plan-activate-queue-intro {
+  margin: 0 0 16px;
+  font-size: 14px;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.plan-activate-request-queue.page-fur-queue {
+  padding: 0;
+}
+
 /* Header */
 /* Header dimensions for background image:
    - Width: 100% of container (container has 20px padding on each side, so actual width = viewport width - 40px)

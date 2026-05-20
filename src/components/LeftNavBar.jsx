@@ -20,6 +20,7 @@ import {
 } from '../utils/authUtils';
 import { useNavbarPermissions } from '../hooks/useNavbarPermissions';
 import { useGetFieldUnblockPendingCountQuery } from '../api/services NodeJs/fieldUnblockRequestsApi';
+import { useGetPlanActivatePendingCountQuery } from '../api/services NodeJs/planActivateRequestsApi';
 
 const categories = navbarCategories;
 
@@ -75,8 +76,17 @@ const LeftNavBar = ({ showSidebar = false, onClose = () => { }, onCollapseChange
   });
   const fieldUnblockPendingCount = Number(fieldUnblockPendingPayload?.count ?? 0);
 
+  const { data: planActivatePendingPayload } = useGetPlanActivatePendingCountQuery(undefined, {
+    pollingInterval: 60000,
+    refetchOnMountOrArgChange: true,
+    refetchOnFocus: true,
+    skip: !userId,
+  });
+  const planActivatePendingCount = Number(planActivatePendingPayload?.count ?? 0);
+
   const getNavPendingCount = (item) => {
     if (item?.pendingCountKey === 'fieldUnblock') return fieldUnblockPendingCount;
+    if (item?.pendingCountKey === 'planActivate') return planActivatePendingCount;
     if (item?.showPendingCount) return pendingCount;
     return 0;
   };
@@ -410,8 +420,12 @@ const LeftNavBar = ({ showSidebar = false, onClose = () => { }, onCollapseChange
                           <item.icon className="nav-icon" />
                           <span className="nav-text">{item.label}</span>
                           {navPending > 0 ? (
-                            <span className="pending-count pending-count--mini" title={`${navPending} pending`}>
-                              {navPending}
+                            <span
+                              className={`pending-count pending-count--mini${item.pendingCountKey === 'planActivate' ? ' pending-count--activate' : ''}`}
+                              title={`${navPending} pending`}
+                              aria-label={`${navPending} pending`}
+                            >
+                              {navPending > 99 ? '99+' : navPending}
                             </span>
                           ) : null}
                         </Link>

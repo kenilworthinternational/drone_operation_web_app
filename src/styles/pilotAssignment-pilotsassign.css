@@ -15,8 +15,8 @@
 }
 
 .pilot-assignment-container-pilotsassign {
-  padding: 20px;
-  background-color: #f5f5f5;
+  padding: 16px 20px 24px;
+  background-color: #ffffff;
   min-height: calc(100vh - 80px);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   width: 100%;
@@ -27,7 +27,7 @@
 .pilot-assignment-header-pilotsassign {
   background-color: #ffffff;
   padding: 15px 20px;
-  margin-bottom: 20px;
+  margin-bottom: 0;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   display: flex;
@@ -325,6 +325,13 @@
   font-size: 11px;
   font-weight: 500;
   color: #28a745;
+  line-height: 1.2;
+}
+
+.pilot-assignment-plan-vehicle-pilotsassign {
+  font-size: 11px;
+  font-weight: 600;
+  color: #0c5460;
   line-height: 1.2;
 }
 
@@ -875,4 +882,349 @@
   min-width: 220px;
   padding: 12px 28px;
   font-size: 1rem;
+}
+
+/* ------------------------------------------------------------------ */
+/* Resource assignment workflow (pilot assignment main page)        */
+/* ------------------------------------------------------------------ */
+
+.pilot-assignment-workflow-wrap-pilotsassign {
+  width: 100%;
+  max-width: none;
+  margin: 16px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+}
+
+.pilot-assignment-workflow-intro-pilotsassign {
+  margin: 0;
+  padding: 14px 18px;
+  background: #eef6ff;
+  border: 1px solid #c5daf5;
+  border-radius: 10px;
+  color: #1e3a5f;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+/* Compact drone line (not a numbered step) — divider inside workflow panel */
+.pilot-assignment-drone-inline-pilotsassign {
+  margin: 0;
+  padding: 10px 22px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #334155;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #fafbfc;
+}
+
+.pilot-assignment-drone-inline-prefix-pilotsassign {
+  font-weight: 600;
+  color: #64748b;
+}
+
+.pilot-assignment-drone-inline-values-pilotsassign {
+  font-weight: 400;
+}
+
+.pilot-assignment-drone-inline-strong-pilotsassign {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.pilot-assignment-drone-inline-temp-pilotsassign {
+  color: #c2410c;
+}
+
+.pilot-assignment-drone-inline-sep-pilotsassign {
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+.pilot-assignment-drone-inline-muted-pilotsassign {
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+.pilot-assignment-step-card-pilotsassign {
+  background: #ffffff;
+  border-radius: 0;
+  border: none;
+  border-bottom: 1px solid #e2e8f0;
+  box-shadow: none;
+  padding: 20px 22px 22px;
+  border-left: 4px solid #003057;
+  margin: 0;
+}
+
+.pilot-assignment-step-card-muted-pilotsassign {
+  border-left-color: #64748b;
+  background: #ffffff;
+}
+
+.pilot-assignment-step-card-transport-pilotsassign {
+  border-left-color: #0d9488;
+}
+
+.pilot-assignment-step-card-head-pilotsassign {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 18px;
+}
+
+.pilot-assignment-step-num-pilotsassign {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: #003057;
+  color: #fff;
+  font-size: 17px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  margin-top: 2px;
+}
+
+.pilot-assignment-step-card-transport-pilotsassign .pilot-assignment-step-num-pilotsassign {
+  background: #0f766e;
+}
+
+.pilot-assignment-step-heading-pilotsassign {
+  margin: 0 0 6px;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.pilot-assignment-step-lead-pilotsassign {
+  margin: 0;
+  font-size: 14px;
+  color: #475569;
+  line-height: 1.5;
+}
+
+.pilot-assignment-step-card-body-pilotsassign {
+  padding-left: 52px;
+}
+
+@media (max-width: 640px) {
+  .pilot-assignment-step-card-body-pilotsassign {
+    padding-left: 0;
+  }
+}
+
+.pilot-assignment-fields-grid-pilotsassign {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px 20px;
+}
+
+@media (max-width: 960px) {
+  .pilot-assignment-fields-grid-pilotsassign {
+    grid-template-columns: 1fr;
+  }
+}
+
+.pilot-assignment-field-stack-pilotsassign {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.pilot-assignment-field-label-pilotsassign {
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.pilot-assignment-field-muted-pilotsassign {
+  font-weight: 500;
+  color: #94a3b8;
+}
+
+.pilot-assignment-drone-chips-pilotsassign {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.pilot-assignment-drone-chip-pilotsassign {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  min-width: 140px;
+}
+
+.pilot-assignment-drone-chip-temp-pilotsassign {
+  background: #fff7ed;
+  border-color: #fed7aa;
+}
+
+.pilot-assignment-drone-chip-label-pilotsassign {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #0369a1;
+}
+
+.pilot-assignment-drone-chip-temp-pilotsassign .pilot-assignment-drone-chip-label-pilotsassign {
+  color: #c2410c;
+}
+
+.pilot-assignment-drone-chip-value-pilotsassign {
+  font-size: 15px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.pilot-assignment-placeholder-pilotsassign {
+  margin: 0;
+  padding: 14px 16px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px dashed #cbd5e1;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.pilot-assignment-tasks-split-pilotsassign {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px 24px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .pilot-assignment-tasks-split-pilotsassign {
+    grid-template-columns: 1fr;
+  }
+}
+
+.pilot-assignment-task-column-pilotsassign {
+  min-width: 0;
+  padding: 14px 16px;
+  background: #f8fafc;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+}
+
+.pilot-assignment-task-column-heading-pilotsassign {
+  margin: 0 0 6px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.pilot-assignment-task-column-hint-pilotsassign {
+  margin: 0 0 14px;
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.45;
+}
+
+.pilot-assignment-plans-grid-compact-pilotsassign {
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+}
+
+.pilot-assignment-info-callout-pilotsassign {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1e40af;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.pilot-assignment-transport-panel-inner-pilotsassign {
+  padding: 0;
+  background: transparent;
+  border: none;
+}
+
+.pilot-assignment-transport-panel-inner-pilotsassign .pilot-assignment-transport-grid-pilotsassign {
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+  .pilot-assignment-transport-panel-inner-pilotsassign .pilot-assignment-transport-grid-pilotsassign {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.pilot-assignment-deploy-bar-pilotsassign {
+  position: sticky;
+  bottom: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 22px;
+  margin-top: 0;
+  background: #f8fafc;
+  border: none;
+  border-top: 1px solid #e2e8f0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* Single divider above deploy bar — avoid double rule with last step card */
+.pilot-assignment-workflow-wrap-pilotsassign > :nth-last-child(2).pilot-assignment-step-card-pilotsassign {
+  border-bottom: none;
+}
+
+.pilot-assignment-deploy-bar-copy-pilotsassign {
+  flex: 1;
+  min-width: 200px;
+}
+
+.pilot-assignment-deploy-bar-title-pilotsassign {
+  display: block;
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 4px;
+}
+
+.pilot-assignment-deploy-bar-hint-pilotsassign {
+  margin: 0;
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.45;
+}
+
+@media (max-width: 640px) {
+  .pilot-assignment-deploy-bar-pilotsassign {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pilot-assignment-deploy-btn-main-pilotsassign {
+    width: 100%;
+    min-width: 0;
+  }
 }

@@ -185,6 +185,18 @@ export const getAllowedPaths = (visibility = {}, pathPermissions = {}, userData 
     });
   }
 
+  const planActivatePath = '/home/planActivateRequests';
+  const fieldOpsApproverRoles = ['md', 'mgr', 'dops'];
+  const jobRole = String(userData?.job_role || '').toLowerCase();
+  const canSeePlanActivateRequests =
+    pathPermissions['/home/deactivatePlan'] === true ||
+    pathPermissions[planActivatePath] === true ||
+    (visibility['Field Operations Wing'] === true && fieldOpsApproverRoles.includes(jobRole));
+
+  if (canSeePlanActivateRequests && !allowedPaths.includes(planActivatePath)) {
+    allowedPaths.push(planActivatePath);
+  }
+
   return allowedPaths;
 };
 

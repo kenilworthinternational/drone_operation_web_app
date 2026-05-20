@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Bars } from 'react-loader-spinner';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import {
   useGetPilotAssignmentPlansQuery,
   useGetPilotAssignmentMissionsQuery,
@@ -12,6 +14,7 @@ import {
   useGetAllTeamsQuery,
 } from '../../../api/services NodeJs/allEndpoints';
 import TransportAssignmentFields from './TransportAssignmentFields';
+import { formatDriverArrivalTimeForInput } from './transportAssignmentUtils';
 // import { isTransportEligibleAssignmentDate } from './transportAssignmentUtils'; // TESTING: re-enable with today/tomorrow check
 import { useGetMyPermissionsQuery } from '../../../api/services NodeJs/featurePermissionsApi';
 import { FEATURE_CODES } from '../../../utils/featurePermissions';
@@ -151,27 +154,64 @@ const PilotAssignment = () => {
   const canEditTransportFields =
     showTransportOnPage && !isRemovalDeploy && validPlanIdsForTransport.length > 0;
 
+  const taskSelectionSummary = useMemo(() => {
+    const p = validPlanIdsForTransport.length;
+    const m = validMissionIdsForDeploy.length;
+    if (p === 0 && m === 0) {
+      return 'No tasks selected — Deploy will clear this team’s assignment for this date (if one exists).';
+    }
+    const parts = [];
+    if (p) parts.push(`${p} plantation`);
+    if (m) parts.push(`${m} non-plantation`);
+    return `${parts.join(' · ')} selected for this deploy.`;
+  }, [validPlanIdsForTransport.length, validMissionIdsForDeploy.length]);
+
+  const transportPrefillKey = `${assignmentId}|${selectedDate}|${selectedTeamId}|${validPlanIdsForTransport.join(',')}`;
+
   useEffect(() => {
+    setTransportForm({
+      driver_id: '',
+      vehicle_id: '',
+      driver_arrival_time: '06:00',
+    });
     transportRecommendedAppliedRef.current = false;
-  }, [selectedDate, selectedTeamId, validPlanIdsForTransport.join(',')]);
+  }, [transportPrefillKey]);
 
   useEffect(() => {
     if (!shouldPreloadTransportOptions) {
-      transportRecommendedAppliedRef.current = false;
       return;
     }
-    if (loadingTransportOptions || !transportOptions || transportRecommendedAppliedRef.current) return;
+    if (loadingTransportOptions || !transportOptions) return;
+    if (transportRecommendedAppliedRef.current) return;
+    if (assignmentId && transportOptions.assignment_id && transportOptions.assignment_id !== assignmentId) {
+      return;
+    }
+
+    const saved = transportOptions.saved_transport;
+    if (saved?.driver_id) {
+      const driver = transportDrivers.find((d) => String(d.id) === String(saved.driver_id));
+      setTransportForm({
+        driver_id: String(saved.driver_id),
+        vehicle_id:
+          saved.vehicle_id != null
+            ? String(saved.vehicle_id)
+            : driver?.vehicle_id != null
+              ? String(driver.vehicle_id)
+              : '',
+        driver_arrival_time: formatDriverArrivalTimeForInput(saved.driver_arrival_time),
+      });
+      transportRecommendedAppliedRef.current = true;
+      return;
+    }
+
     const rid = transportOptions.recommended_driver_id;
     if (!rid) return;
     const driver = transportDrivers.find((d) => String(d.id) === String(rid));
     if (!driver?.vehicle_id) return;
-    setTransportForm((prev) => {
-      if (prev.driver_id) return prev;
-      return {
-        ...prev,
-        driver_id: String(rid),
-        vehicle_id: String(driver.vehicle_id),
-      };
+    setTransportForm({
+      driver_id: String(rid),
+      vehicle_id: String(driver.vehicle_id),
+      driver_arrival_time: '06:00',
     });
     transportRecommendedAppliedRef.current = true;
   }, [
@@ -179,6 +219,7 @@ const PilotAssignment = () => {
     loadingTransportOptions,
     transportOptions,
     transportDrivers,
+    transportPrefillKey,
   ]);
 
   // Refetch all data when component mounts or when navigating to this route
@@ -431,12 +472,12 @@ const PilotAssignment = () => {
 
   const handleDeploy = async () => {
     if (!selectedDate || !selectedPilot || !selectedTeamId) {
-      alert('Please select date and pilot');
+      toast.warning('Please select date and pilot.');
       return;
     }
 
     if (!droneInfo || !droneInfo.drone_id) {
-      alert('No drone available for this team. Please assign a drone to the team first.');
+      toast.warning('No drone available for this team. Assign a drone before deploying.');
       return;
     }
 
@@ -444,7 +485,7 @@ const PilotAssignment = () => {
     const validMissionIds = filterValidMissionIds(selectedMissions);
     const transportError = validateTransportForDeploy();
     if (transportError) {
-      alert(transportError);
+      toast.warning(transportError);
       return;
     }
 
@@ -484,8 +525,9 @@ const PilotAssignment = () => {
             transportError?.data?.message ||
             transportError?.message ||
             'Failed to save driver and vehicle.';
-          alert(
-            `Assignment ${savedAssignmentId} was created, but transport could not be saved:\n${transportMessage}\n\nFix driver/vehicle below and click Deploy again to retry transport only, or change the assignment on this page.`
+          toast.error(
+            `Assignment ${savedAssignmentId} was created, but transport could not be saved: ${transportMessage}. ` +
+              'Update driver and vehicle, then Deploy again.'
           );
           await refetchPlans();
           await refetchMissions();
@@ -493,10 +535,10 @@ const PilotAssignment = () => {
         }
       }
 
-      alert(
+      toast.success(
         requiresTransportOnDeploy
-          ? `Assignment ${savedAssignmentId} created and transport arranged successfully!`
-          : `Assignment ${savedAssignmentId} created successfully!`
+          ? `Assignment ${savedAssignmentId} saved with transport.`
+          : `Assignment ${savedAssignmentId} saved successfully.`
       );
       await refetchPlans();
       await refetchMissions();
@@ -504,7 +546,7 @@ const PilotAssignment = () => {
       console.error('Error deploying assignment:', error);
       const errorMessage =
         error?.data?.error || error?.data?.message || 'Failed to create assignment. Please try again.';
-      alert(`Deploy failed: ${errorMessage}`);
+      toast.error(`Deploy failed: ${errorMessage}`);
     } finally {
       setDeployStep(null);
     }
@@ -554,96 +596,132 @@ const PilotAssignment = () => {
         </div>
       ) : null}
 
-      {/* Top Control Bar */}
       {hasResourceQueueFeature ? (
-      <div className="pilot-assignment-controls-bar-pilotsassign">
-        <div className="pilot-assignment-control-group-pilotsassign">
-          <label className="pilot-assignment-control-label-pilotsassign">Select Date :</label>
-          <input 
-            type="date" 
-            className="pilot-assignment-date-input-pilotsassign"
-            value={selectedDate}
-            onChange={(e) => {
-              setSelectedDate(e.target.value);
-              // Don't clear selections here - let useEffect handle pre-checking assigned plans
-              // setSelectedPlans([]);
-              // setSelectedMissions([]);
-            }}
-          />
-        </div>
-        
-        <div className="pilot-assignment-control-group-pilotsassign">
-          <label className="pilot-assignment-control-label-pilotsassign">Select Pilot :</label>
-          <select 
-            className="pilot-assignment-pilot-select-pilotsassign"
-            value={selectedPilot}
-            onChange={(e) => handlePilotChange(e.target.value)}
-            disabled={loadingPilots}
-          >
-            <option value="">-- Select Pilot --</option>
-            {pilots.map(pilot => (
-              <option key={pilot.pilot_id} value={pilot.pilot_id}>
-                {pilot.pilot_name} - {pilot.team_name}
-              </option>
-            ))}
-          </select>
-        </div>
-        
-        <div className="pilot-assignment-control-group-pilotsassign">
-          <label className="pilot-assignment-control-label-pilotsassign">Assignment ID :</label>
-          <input 
-            type="text" 
-            className="pilot-assignment-assignment-id-pilotsassign"
-            value={assignmentId}
-            readOnly
-            placeholder="Auto-generated"
-          />
-        </div>
-      </div>
-      ) : null}
+      <div className="pilot-assignment-workflow-wrap-pilotsassign">
 
-      {/* Drone Info Display */}
-      {hasResourceQueueFeature && droneInfo && (
-        <div className="pilot-assignment-drone-info-pilotsassign">
-          {/* New format: permanent_drone and temp_drone */}
-          {droneInfo.permanent_drone && (
-            <>
-              <span className="pilot-assignment-drone-label-pilotsassign">Permanent Drone:</span>
-              <span className="pilot-assignment-drone-value-pilotsassign">
-                {droneInfo.permanent_drone.drone_tag || droneInfo.permanent_drone.serial}
-              </span>
-            </>
-          )}
-          {droneInfo.temp_drone && (
-            <>
+        <section className="pilot-assignment-step-card-pilotsassign" aria-labelledby="pa-step1-title">
+          <div className="pilot-assignment-step-card-head-pilotsassign">
+            <span className="pilot-assignment-step-num-pilotsassign" aria-hidden="true">1</span>
+            <div>
+              <h2 id="pa-step1-title" className="pilot-assignment-step-heading-pilotsassign">
+                Date, pilot &amp; assignment ID
+              </h2>
+            </div>
+          </div>
+          <div className="pilot-assignment-step-card-body-pilotsassign">
+          <div className="pilot-assignment-fields-grid-pilotsassign">
+            <div className="pilot-assignment-field-stack-pilotsassign">
+              <label className="pilot-assignment-field-label-pilotsassign" htmlFor="pa-date-input">
+                Assignment date
+              </label>
+              <input
+                id="pa-date-input"
+                type="date"
+                className="pilot-assignment-date-input-pilotsassign"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+              />
+            </div>
+            <div className="pilot-assignment-field-stack-pilotsassign">
+              <label className="pilot-assignment-field-label-pilotsassign" htmlFor="pa-pilot-select">
+                Pilot &amp; team
+              </label>
+              <select
+                id="pa-pilot-select"
+                className="pilot-assignment-pilot-select-pilotsassign"
+                value={selectedPilot}
+                onChange={(e) => handlePilotChange(e.target.value)}
+                disabled={loadingPilots}
+              >
+                <option value="">Choose a pilot…</option>
+                {pilots.map((pilot) => (
+                  <option key={pilot.pilot_id} value={pilot.pilot_id}>
+                    {pilot.pilot_name} — {pilot.team_name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="pilot-assignment-field-stack-pilotsassign">
+              <label className="pilot-assignment-field-label-pilotsassign" htmlFor="pa-assignment-id">
+                Assignment ID <span className="pilot-assignment-field-muted-pilotsassign">(read-only)</span>
+              </label>
+              <input
+                id="pa-assignment-id"
+                type="text"
+                className="pilot-assignment-assignment-id-pilotsassign"
+                value={assignmentId}
+                readOnly
+                placeholder="Select date and pilot"
+              />
+            </div>
+          </div>
+          </div>
+        </section>
+
+        <div className="pilot-assignment-drone-inline-pilotsassign" role="status">
+          <span className="pilot-assignment-drone-inline-prefix-pilotsassign">Drone</span>
+          {droneInfo && (droneInfo.permanent_drone || droneInfo.temp_drone || droneInfo.drone_tag) ? (
+            <span className="pilot-assignment-drone-inline-values-pilotsassign">
               {droneInfo.permanent_drone && (
-                <span className="pilot-assignment-drone-separator-pilotsassign"> | </span>
+                <>
+                  Permanent{' '}
+                  <strong className="pilot-assignment-drone-inline-strong-pilotsassign">
+                    {droneInfo.permanent_drone.drone_tag || droneInfo.permanent_drone.serial}
+                  </strong>
+                </>
               )}
-              <span className="pilot-assignment-drone-label-pilotsassign">Temp Drone:</span>
-              <span className="pilot-assignment-drone-value-pilotsassign pilot-assignment-drone-temp-pilotsassign">
-                {droneInfo.temp_drone.drone_tag || droneInfo.temp_drone.serial}
-              </span>
-            </>
-          )}
-          {/* Backward compatibility: old format with just drone_tag */}
-          {!droneInfo.permanent_drone && !droneInfo.temp_drone && droneInfo.drone_tag && (
-            <>
-              <span className="pilot-assignment-drone-label-pilotsassign">Assigned Drone:</span>
-              <span className={`pilot-assignment-drone-value-pilotsassign ${droneInfo.is_temp ? 'pilot-assignment-drone-temp-pilotsassign' : ''}`}>
-                {droneInfo.drone_tag || droneInfo.serial}
-              </span>
-            </>
+              {droneInfo.temp_drone && (
+                <>
+                  {droneInfo.permanent_drone ? <span className="pilot-assignment-drone-inline-sep-pilotsassign"> · </span> : null}
+                  Temp{' '}
+                  <strong className="pilot-assignment-drone-inline-strong-pilotsassign pilot-assignment-drone-inline-temp-pilotsassign">
+                    {droneInfo.temp_drone.drone_tag || droneInfo.temp_drone.serial}
+                  </strong>
+                </>
+              )}
+              {!droneInfo.permanent_drone && !droneInfo.temp_drone && droneInfo.drone_tag && (
+                <>
+                  {droneInfo.is_temp ? (
+                    <>
+                      Temp{' '}
+                      <strong className="pilot-assignment-drone-inline-strong-pilotsassign pilot-assignment-drone-inline-temp-pilotsassign">
+                        {droneInfo.drone_tag || droneInfo.serial}
+                      </strong>
+                    </>
+                  ) : (
+                    <>
+                      Assigned{' '}
+                      <strong className="pilot-assignment-drone-inline-strong-pilotsassign">
+                        {droneInfo.drone_tag || droneInfo.serial}
+                      </strong>
+                    </>
+                  )}
+                </>
+              )}
+            </span>
+          ) : (
+            <span className="pilot-assignment-drone-inline-muted-pilotsassign">
+              {selectedPilot
+                ? 'None linked for this date — assign a drone to the team before deploying.'
+                : 'Select a pilot above.'}
+            </span>
           )}
         </div>
-      )}
 
+        <section className="pilot-assignment-step-card-pilotsassign" aria-labelledby="pa-step-tasks-title">
+          <div className="pilot-assignment-step-card-head-pilotsassign">
+            <span className="pilot-assignment-step-num-pilotsassign" aria-hidden="true">2</span>
+            <div>
+              <h2 id="pa-step-tasks-title" className="pilot-assignment-step-heading-pilotsassign">
+                Select Plans for Assignment
+              </h2>
+              <p className="pilot-assignment-step-lead-pilotsassign">{taskSelectionSummary}</p>
+            </div>
+          </div>
 
-      {/* Main Content - Plans and Missions Section */}
-      {hasResourceQueueFeature ? (
-      <div className="pilot-assignment-content-pilotsassign">
-        {/* Plans Section */}
-        <div className="pilot-assignment-section-pilotsassign">
-          <h2 className="pilot-assignment-section-title-pilotsassign">Plantation</h2>
+          <div className="pilot-assignment-tasks-split-pilotsassign">
+            <div className="pilot-assignment-task-column-pilotsassign">
+              <h3 className="pilot-assignment-task-column-heading-pilotsassign">Plantation</h3>
           
           {loadingPlans ? (
             <div className="pilot-assignment-loading-pilotsassign">
@@ -651,9 +729,9 @@ const PilotAssignment = () => {
               <span>Loading plans...</span>
             </div>
           ) : (
-            <div className="pilot-assignment-plans-grid-pilotsassign">
+            <div className="pilot-assignment-plans-grid-pilotsassign pilot-assignment-plans-grid-compact-pilotsassign">
               {plans.length === 0 ? (
-                <div className="pilot-assignment-empty-pilotsassign">No Plantation tasks available for this date</div>
+                <div className="pilot-assignment-empty-pilotsassign">No plantation tasks for this date</div>
               ) : (
                 plans.map(plan => {
                   // Check if selected team matches assigned team (for editing)
@@ -676,6 +754,13 @@ const PilotAssignment = () => {
                           {(plan.is_assigned === 1 || plan.is_assigned === true) && plan.assigned_pilot_name && (
                             <span className="pilot-assignment-plan-pilot-pilotsassign">Assigned: {plan.assigned_pilot_name}</span>
                           )}
+                          {(plan.is_assigned === 1 || plan.is_assigned === true) &&
+                            plan.assigned_vehicle_no != null &&
+                            String(plan.assigned_vehicle_no).trim() !== '' && (
+                            <span className="pilot-assignment-plan-vehicle-pilotsassign">
+                              Vehicle: {String(plan.assigned_vehicle_no).trim()}
+                            </span>
+                          )}
                         </div>
                         <div className="pilot-assignment-checkbox-wrapper-pilotsassign">
                           <input
@@ -694,21 +779,21 @@ const PilotAssignment = () => {
               )}
             </div>
           )}
-        </div>
+            </div>
 
-        {/* Missions Section */}
-        <div className="pilot-assignment-section-pilotsassign">
-          <h2 className="pilot-assignment-section-title-pilotsassign">Non Plantation</h2>
-          
+            <div className="pilot-assignment-task-column-pilotsassign">
+              <h3 className="pilot-assignment-task-column-heading-pilotsassign">Non-plantation</h3>
+
+
           {loadingMissions ? (
             <div className="pilot-assignment-loading-pilotsassign">
               <Bars height="30" width="30" color="#003057" ariaLabel="bars-loading" visible={true} />
               <span>Loading missions...</span>
             </div>
           ) : (
-            <div className="pilot-assignment-plans-grid-pilotsassign">
+            <div className="pilot-assignment-plans-grid-pilotsassign pilot-assignment-plans-grid-compact-pilotsassign">
               {missions.length === 0 ? (
-                <div className="pilot-assignment-empty-pilotsassign">Non Plantation tasks available for this date</div>
+                <div className="pilot-assignment-empty-pilotsassign">No non-plantation tasks for this date</div>
               ) : (
                 missions.map(mission => {
                   // Check if selected team matches assigned team (for editing)
@@ -732,8 +817,15 @@ const PilotAssignment = () => {
                                 : (mission.id ? `Mission ${mission.id}` : 'Mission'))
                             }
                           </span>
-                          {mission.is_assigned === 1 && mission.assigned_pilot_name && (
+                          {(mission.is_assigned === 1 || mission.is_assigned === true) && mission.assigned_pilot_name && (
                             <span className="pilot-assignment-plan-pilot-pilotsassign">Assigned: {mission.assigned_pilot_name}</span>
+                          )}
+                          {(mission.is_assigned === 1 || mission.is_assigned === true) &&
+                            mission.assigned_vehicle_no != null &&
+                            String(mission.assigned_vehicle_no).trim() !== '' && (
+                            <span className="pilot-assignment-plan-vehicle-pilotsassign">
+                              Vehicle: {String(mission.assigned_vehicle_no).trim()}
+                            </span>
                           )}
                         </div>
                         <div className="pilot-assignment-checkbox-wrapper-pilotsassign">
@@ -753,22 +845,35 @@ const PilotAssignment = () => {
               )}
             </div>
           )}
-        </div>
+            </div>
+          </div>
+        </section>
 
         {showTransportOnPage ? (
-          <div className="pilot-assignment-transport-panel-pilotsassign">
-            <h2 className="pilot-assignment-section-title-pilotsassign">Driver &amp; vehicle</h2>
-            <p className="pilot-assignment-transport-hint-pilotsassign">
-              Choose driver and arrival time here, then click Deploy below. The assignment is created first, then driver
-              and vehicle are saved immediately—no other page needed.
-            </p>
+          <section
+            className="pilot-assignment-step-card-pilotsassign pilot-assignment-step-card-transport-pilotsassign"
+            aria-labelledby="pa-step-transport-title"
+          >
+            <div className="pilot-assignment-step-card-head-pilotsassign">
+              <span className="pilot-assignment-step-num-pilotsassign" aria-hidden="true">3</span>
+              <div>
+                <h2 id="pa-step-transport-title" className="pilot-assignment-step-heading-pilotsassign">
+                  Driver &amp; vehicle
+                </h2>
+                <p className="pilot-assignment-step-lead-pilotsassign">
+                  Required when you deploy with plantation plans: pick driver and arrival time. Deploy saves assignment
+                  first, then transport.
+                </p>
+              </div>
+            </div>
+            <div className="pilot-assignment-step-card-body-pilotsassign pilot-assignment-transport-panel-inner-pilotsassign">
             {isRemovalDeploy ? (
-              <p className="pilot-assignment-transport-hint-pilotsassign">
-                You are clearing the assignment (no plans or missions selected). Transport is not required.
+              <p className="pilot-assignment-info-callout-pilotsassign">
+                You are clearing the assignment (no tasks selected). Transport is not required for this deploy.
               </p>
             ) : validPlanIdsForTransport.length === 0 ? (
-              <p className="pilot-assignment-transport-hint-pilotsassign">
-                Select at least one plantation plan above to load drivers and assignment estates.
+              <p className="pilot-assignment-info-callout-pilotsassign">
+                Select at least one <strong>plantation</strong> plan in step 2 to load drivers and estates for transport.
               </p>
             ) : (
               <TransportAssignmentFields
@@ -780,10 +885,21 @@ const PilotAssignment = () => {
                 showSaveButton={false}
               />
             )}
-          </div>
+            </div>
+          </section>
         ) : null}
 
-        <div className="pilot-assignment-deploy-footer-pilotsassign">
+        <div className="pilot-assignment-deploy-bar-pilotsassign">
+          <div className="pilot-assignment-deploy-bar-copy-pilotsassign">
+            <span className="pilot-assignment-deploy-bar-title-pilotsassign">Ready to save?</span>
+            <p className="pilot-assignment-deploy-bar-hint-pilotsassign">
+              {requiresTransportOnDeploy
+                ? 'Deploy creates the assignment, then saves driver and vehicle in one flow.'
+                : isRemovalDeploy
+                  ? 'Deploy removes this team’s assignment for the selected date when allowed.'
+                  : 'Deploy saves plantation and non-plantation selections to this team and date.'}
+            </p>
+          </div>
           <button
             type="button"
             className="pilot-assignment-deploy-btn-pilotsassign pilot-assignment-deploy-btn-main-pilotsassign"
@@ -891,6 +1007,7 @@ const PilotAssignment = () => {
           </div>
         </div>
       )}
+      <ToastContainer position="top-right" autoClose={4500} closeOnClick draggable pauseOnHover />
     </div>
   );
 };

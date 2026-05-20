@@ -1,10 +1,15 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { useAppDispatch } from '../../../store/hooks';
 import { baseApi } from '../../../api/services/allEndpoints';
 import { getWeatherForCity } from '../../../api/services/weatherApi';
 import { enrichPlanWithCity } from '../../../utils/estateCityMapping';
 import PlanWeatherCard from './PlanWeatherCard';
+import PlanActivateRequestQueue from '../../management/plans/PlanActivateRequestQueue';
+import { useGetPlanActivatePendingCountQuery } from '../../../api/services NodeJs/planActivateRequestsApi';
 import '../../../styles/plansWithWeather.css';
 
 const extractWeatherForDate = (weatherData, date) => {
@@ -33,8 +38,37 @@ const extractWeatherForDate = (weatherData, date) => {
   };
 };
 
+function isFieldOperationsWing(wingParam) {
+  if (!wingParam) return true;
+  const w = decodeURIComponent(wingParam);
+  return w === 'Field Operations Wing' || w === 'Management';
+}
+
 const PlansWithWeather = () => {
   const dispatch = useAppDispatch();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const searchParams = new URLSearchParams(location.search);
+  const wingParam = searchParams.get('wing');
+  const tabParam = searchParams.get('tab');
+  const showActivateTab = isFieldOperationsWing(wingParam);
+  const [activeTab, setActiveTab] = useState(
+    tabParam === 'activate-requests' ? 'activate-requests' : 'forecast'
+  );
+
+  useEffect(() => {
+    if (tabParam === 'activate-requests' && showActivateTab) {
+      setActiveTab('activate-requests');
+    }
+  }, [tabParam, showActivateTab]);
+
+  const { data: pendingPayload } = useGetPlanActivatePendingCountQuery(undefined, {
+    skip: !showActivateTab,
+    refetchOnMountOrArgChange: true,
+    refetchOnFocus: true,
+    pollingInterval: 60000,
+  });
+  const activatePendingCount = Number(pendingPayload?.count ?? 0);
   
   // Get today's date as default
   const getTodayDate = () => {
@@ -181,6 +215,47 @@ const PlansWithWeather = () => {
 
   return (
     <div className="plans-with-weather-container">
+      <ToastContainer position="top-right" autoClose={4000} />
+      {showActivateTab && (
+        <div className="plans-create-tabs" role="tablist" aria-label="Create page sections">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'forecast'}
+            className={`plans-create-tab ${activeTab === 'forecast' ? 'plans-create-tab--active' : ''}`}
+            onClick={() => {
+              setActiveTab('forecast');
+              const params = new URLSearchParams(location.search);
+              params.delete('tab');
+              navigate({ pathname: '/home/create', search: params.toString() }, { replace: true });
+            }}
+          >
+            Plans forecast
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'activate-requests'}
+            className={`plans-create-tab ${activeTab === 'activate-requests' ? 'plans-create-tab--active' : ''}`}
+            onClick={() => {
+              setActiveTab('activate-requests');
+              const params = new URLSearchParams(location.search);
+              params.set('tab', 'activate-requests');
+              navigate({ pathname: '/home/create', search: params.toString() }, { replace: true });
+            }}
+          >
+            Activate requests
+            {activatePendingCount > 0 && (
+              <span className="plans-create-tab-badge">{activatePendingCount}</span>
+            )}
+          </button>
+        </div>
+      )}
+
+      {showActivateTab && activeTab === 'activate-requests' ? (
+        <PlanActivateRequestQueue />
+      ) : (
+        <>
       {/* Header with Date Picker */}
       {/* Header dimensions: width: 100% (full container width minus 40px padding), height: auto (min ~80px with padding) */}
       <div 
@@ -248,6 +323,8 @@ const PlansWithWeather = () => {
             </div>
           )}
         </div>
+      )}
+        </>
       )}
     </div>
   );

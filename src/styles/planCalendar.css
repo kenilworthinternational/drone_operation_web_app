@@ -284,3 +284,86 @@
 @media (max-width: 600px) {
   .hierarchy-filter-grid-booking-calendar { grid-template-columns: 1fr; }
 }
+
+/* Plan activation request (opsroom calendar only) */
+.plan-activate-panel-booking-calendar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+}
+
+.badge-deactivated-booking-calendar {
+  background: #9ca3af;
+  color: #fff;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.plan-activate-hint-booking-calendar,
+.plan-activate-pending-booking-calendar {
+  font-size: 13px;
+  color: #374151;
+}
+
+.plan-activate-pending-booking-calendar {
+  font-weight: 600;
+  color: #b45309;
+}
+
+.plan-activate-request-btn-booking-calendar {
+  background: #004b71;
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.plan-activate-request-btn-booking-calendar:hover:not(:disabled) {
+  background: #003e5f;
+}
+
+.plan-activate-request-btn-booking-calendar:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.modal-booking-calendar--compact {
+  max-width: 440px;
+}
+
+.plan-activate-modal-text-booking-calendar {
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: #4b5563;
+  line-height: 1.45;
+}
+
+.plan-activate-modal-label-booking-calendar {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.plan-activate-modal-textarea-booking-calendar {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  resize: vertical;
+}

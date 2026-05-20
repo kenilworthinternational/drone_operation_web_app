@@ -50,6 +50,12 @@ const navbarCategories = [
       { path: '/home/earnings', label: 'Pilot Earnings', icon: FaMoneyBill },
       { path: '/home/reportReview', label: 'Review Reports', icon: FaFlag },
       { path: '/home/deactivatePlan', label: 'Deactive Plan', icon: FaPauseCircle },
+      {
+        path: '/home/planActivateRequests',
+        label: 'Activate Requests',
+        icon: FaCheck,
+        pendingCountKey: 'planActivate',
+      },
     ],
   },
   {

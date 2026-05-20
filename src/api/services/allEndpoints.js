@@ -29,6 +29,9 @@ import '../services NodeJs/centralProcurementApi';
 import '../services NodeJs/djiImagesApi';
 import '../services NodeJs/dayEndProcessApi';
 import '../services NodeJs/notificationsApi';
+import '../services NodeJs/planActivateRequestsApi';
+import '../services NodeJs/fieldUnblockRequestsApi';
+import '../services NodeJs/planStatusApi';
 
 // Export the complete API
 export { baseApi };
@@ -55,6 +58,9 @@ export * from '../services NodeJs/centralProcurementApi';
 export * from '../services NodeJs/djiImagesApi';
 export * from '../services NodeJs/dayEndProcessApi';
 export * from '../services NodeJs/notificationsApi';
+export * from '../services NodeJs/planActivateRequestsApi';
+export * from '../services NodeJs/fieldUnblockRequestsApi';
+export * from '../services NodeJs/planStatusApi';
 
 /**
  * Total Endpoint Count: 165+

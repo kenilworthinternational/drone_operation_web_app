@@ -14,6 +14,7 @@ import NonpTeamAllocation from './features/nonp/nonpTeamAllocation';
 import SummeryView from './features/misc/SummeryView';
 import CalenderView from './features/calendar/CalenderView';
 import DeactivatePlan from './features/misc/DeactivatePlan';
+import PlanActivateRequestsPage from './sections/management/plans/PlanActivateRequestsPage';
 import ModernReportSection from './components/ModernReportSection';
 import DayEndProcess from './sections/opsroom/dayend/DayEndProcess';
 import Earnings from './sections/finance/PilotEarnings/Earnings';
@@ -300,6 +301,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <DeactivatePlan />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="planActivateRequests"
+            element={
+              <ProtectedRoute>
+                <PlanActivateRequestsPage />
               </ProtectedRoute>
             }
           />
