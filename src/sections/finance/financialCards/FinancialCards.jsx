@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { FaCreditCard, FaPlus, FaEdit, FaTrash, FaArrowUp, FaArrowDown, FaHistory, FaEye, FaCheckDouble } from 'react-icons/fa';
 import {
   useGetUsersQuery,
+  useGetOwnVehiclesQuery,
   useGetCardsQuery,
   useGetBanksQuery,
   useGetFinanceCategoriesQuery,
@@ -87,10 +88,13 @@ const FinancialCards = () => {
     limitation: '',
     amount: '',
     bank_id: '',
+    user: '',
+    vehicle_id: '',
   });
 
   const { data: cardsData, isLoading: cardsLoading, refetch: refetchCards } = useGetCardsQuery();
   const { data: usersData } = useGetUsersQuery();
+  const { data: ownVehiclesData } = useGetOwnVehiclesQuery();
   const { data: banksData } = useGetBanksQuery();
   const { data: categoriesData } = useGetFinanceCategoriesQuery();
   const { data: allTransactionsData } = useGetTransactionsQuery();
@@ -169,6 +173,7 @@ const FinancialCards = () => {
 
   const banks = banksData || [];
   const categories = categoriesData || [];
+  const ownVehicles = ownVehiclesData || [];
   const allTransactions = allTransactionsData || [];
   const pendingSettlements = pendingSettlementsData || [];
 
@@ -224,6 +229,8 @@ const FinancialCards = () => {
         limitation: numberToAmountString(card.limitation),
         amount: numberToAmountString(card.amount),
         bank_id: card.bank_id ? String(card.bank_id) : '',
+        user: card.user ? String(card.user) : '',
+        vehicle_id: card.vehicle_id ? String(card.vehicle_id) : '',
       });
     } else {
       setEditingCard(null);
@@ -236,6 +243,8 @@ const FinancialCards = () => {
         limitation: '',
         amount: '',
         bank_id: '',
+        user: '',
+        vehicle_id: '',
       });
     }
     setShowCardModal(true);
@@ -244,16 +253,18 @@ const FinancialCards = () => {
   const handleCloseCardModal = () => {
     setShowCardModal(false);
     setEditingCard(null);
-      setCardFormData({
-        no: '',
-        cvc: '',
-        card_holder: '',
-        exp_date: '',
-        category: '',
-        limitation: '',
-        amount: '',
-        bank_id: '',
-      });
+    setCardFormData({
+      no: '',
+      cvc: '',
+      card_holder: '',
+      exp_date: '',
+      category: '',
+      limitation: '',
+      amount: '',
+      bank_id: '',
+      user: '',
+      vehicle_id: '',
+    });
   };
 
   const handleSubmitCard = async (e) => {
@@ -288,12 +299,19 @@ const FinancialCards = () => {
         !editingCard && digitsOnlyNo && !looksMaskedPan ? digitsOnlyNo : null;
       const trimmedCvc = cardFormData.cvc ? cardFormData.cvc.trim() : '';
 
+      const isFuelCategory = String(cardFormData.category) === '1';
       const cardData = {
         ...cardFormData,
         category: cardFormData.category ? parseInt(cardFormData.category) : null,
         limitation: parseAmountField(cardFormData.limitation),
         amount: parseAmountField(cardFormData.amount),
         bank_id: cardFormData.bank_id ? parseInt(cardFormData.bank_id) : null,
+        user: cardFormData.user ? parseInt(cardFormData.user) : null,
+        // Always send vehicle_id so backend can clear vehicles.card_id when unassigned
+        vehicle_id:
+          isFuelCategory && cardFormData.vehicle_id
+            ? parseInt(cardFormData.vehicle_id, 10)
+            : null,
       };
 
       // Partial update: only send PAN/CVC when replacing with a full valid value.
@@ -1062,7 +1080,9 @@ const FinancialCards = () => {
                 <label>Category</label>
                 <select
                   value={cardFormData.category}
-                  onChange={(e) => setCardFormData({ ...cardFormData, category: e.target.value })}
+                  onChange={(e) =>
+                    setCardFormData({ ...cardFormData, category: e.target.value, vehicle_id: '' })
+                  }
                 >
                   <option value="">-- Select Category --</option>
                   {categories.map((category) => (
@@ -1072,6 +1092,42 @@ const FinancialCards = () => {
                   ))}
                 </select>
               </div>
+              <div className="form-group-financial-cards">
+                <label>Card User</label>
+                <select
+                  value={cardFormData.user}
+                  onChange={(e) => setCardFormData({ ...cardFormData, user: e.target.value })}
+                >
+                  <option value="">-- Select User --</option>
+                  {users.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.name || u.user_name || u.email || `User #${u.id}`}
+                      {u.mobile_no ? ` (${u.mobile_no})` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {String(cardFormData.category) === '1' && (
+                <div className="form-group-financial-cards">
+                  <label>Vehicle (Own)</label>
+                  <select
+                    value={cardFormData.vehicle_id}
+                    onChange={(e) =>
+                      setCardFormData({
+                        ...cardFormData,
+                        vehicle_id: e.target.value,
+                      })
+                    }
+                  >
+                    <option value="">-- No vehicle (clear link) --</option>
+                    {ownVehicles.map((v) => (
+                      <option key={v.id} value={v.id}>
+                        {v.vehicle_no}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div className="form-group-financial-cards">
                 <label>Bank</label>
                 <select
@@ -1275,6 +1331,18 @@ const FinancialCards = () => {
                     <label>Category:</label>
                     <span>{selectedCard.category_name || selectedCard.category || 'N/A'}</span>
                   </div>
+                  {Number(selectedCard.category) === 1 && (
+                    <div className="detail-item-financial-cards">
+                      <label>Vehicle (Own):</label>
+                      <span>
+                        {selectedCard.vehicle_no
+                          ? selectedCard.vehicle_no
+                          : selectedCard.vehicle_id
+                            ? `Vehicle #${selectedCard.vehicle_id}`
+                            : 'Not assigned'}
+                      </span>
+                    </div>
+                  )}
                   <div className="detail-item-financial-cards">
                     <label>Bank:</label>
                     <span>{selectedCard.bank_name || 'N/A'}</span>

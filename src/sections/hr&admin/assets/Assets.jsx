@@ -1360,6 +1360,7 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
                             internalDrivers.map((driver) => (
                               <option key={driver.id} value={driver.id}>
                                 {driver.user_name} {driver.user_nic ? `(${driver.user_nic})` : ''}
+                                {Number(driver.assigned_vehicle_count) > 0 ? ` — ${driver.assigned_vehicle_count} vehicle(s)` : ''}
                               </option>
                             ))
                           ) : (
@@ -1367,6 +1368,7 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
                             externalDrivers.map((driver) => (
                               <option key={driver.id} value={driver.id}>
                                 {driver.user_name} {driver.user_nic ? `(${driver.user_nic})` : ''}
+                                {Number(driver.assigned_vehicle_count) > 0 ? ` — ${driver.assigned_vehicle_count} vehicle(s)` : ''}
                               </option>
                             ))
                           )}

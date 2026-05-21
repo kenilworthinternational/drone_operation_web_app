@@ -28,6 +28,31 @@ export const financialCardsApi = baseApi.injectEndpoints({
       providesTags: ['FinancialCards'],
     }),
 
+    // Get company-owned vehicles (for fuel card vehicle dropdown)
+    getOwnVehicles: builder.query({
+      queryFn: async () => {
+        try {
+          const result = await nodeBackendBaseQuery(
+            {
+              url: '/api/financial-cards/own-vehicles',
+              method: 'POST',
+              body: {},
+            },
+            {},
+            {}
+          );
+          if (result.error) {
+            return { error: result.error };
+          }
+          const vehicles = result.data?.data || result.data || [];
+          return { data: vehicles };
+        } catch (error) {
+          return { error: { status: 'FETCH_ERROR', error: error.message } };
+        }
+      },
+      providesTags: ['FinancialCards'],
+    }),
+
     // Get all banks
     getBanks: builder.query({
       queryFn: async () => {
@@ -435,6 +460,7 @@ export const financialCardsApi = baseApi.injectEndpoints({
 
 export const {
   useGetUsersQuery,
+  useGetOwnVehiclesQuery,
   useGetBanksQuery,
   useGetFinanceCategoriesQuery,
   useGetCardsQuery,

@@ -19,7 +19,9 @@ import {
   useGetVehicleAppMaintenanceRequestsQuery,
   useGetVehicleAppVehiclesQuery,
   useHrDecideVehicleMaintenanceRequestMutation,
+  useSaveVehicleAppVehicleMutation,
 } from '../../api/services NodeJs/vehicleAppApi';
+import { useGetDriverFuelCardsQuery } from '../../api/services NodeJs/jdManagementApi';
 import { getNodeBackendUrl } from '../../api/services NodeJs/nodeBackendConfig';
 import {
   useGetAdvanceRequestsForHrQuery,
@@ -171,11 +173,78 @@ function TransportHrDashboard() {
     index: 0,
     failed: false,
   });
+  const [vehicleCardModal, setVehicleCardModal] = useState({ open: false, row: null, cardId: '' });
+  const [vehicleDriverModal, setVehicleDriverModal] = useState({ open: false, row: null, driverId: '' });
   const [fetchLeaveByMonth, leaveByMonthResult] = useLazyGetLeaveDaysForHrByMonthQuery();
   const rollingMonthOptions = useMemo(() => getRollingMonthOptions(24), []);
   const { today, monthKey } = useMemo(() => getTodayInfo(), []);
+
+  const closeVehicleCardModal = () => setVehicleCardModal({ open: false, row: null, cardId: '' });
+  const closeVehicleDriverModal = () => setVehicleDriverModal({ open: false, row: null, driverId: '' });
+
+  const submitVehicleDriver = async () => {
+    const row = vehicleDriverModal.row;
+    if (!row?.id) return;
+    try {
+      await saveVehicleAppVehicle({
+        id: row.id,
+        vehicle_no: row.vehicle_no,
+        make: row.make ?? null,
+        model: row.model ?? null,
+        driver: vehicleDriverModal.driverId ? Number(vehicleDriverModal.driverId) : null,
+        activated: row.activated,
+        vehicle_category_id: row.vehicle_category_id ?? row.normalized_vehicle_category_id ?? null,
+        fuel_category_id: row.fuel_category_id ?? row.normalized_fuel_category_id ?? null,
+        card_id: row.card_id ?? (row.linked_card_id ? Number(row.linked_card_id) : null),
+        ownership: row.ownership === 'r' ? 'r' : 'o',
+        operational_status: row.operational_status || 'o',
+      }).unwrap();
+      refetchVehicles();
+      closeVehicleDriverModal();
+      setHrDecisionNotice({ open: true, title: 'Saved', message: 'Vehicle driver updated.', tone: 'success' });
+    } catch (e) {
+      setHrDecisionNotice({ open: true, title: 'Error', message: e?.data?.message || e?.message || 'Failed to save', tone: 'error' });
+    }
+  };
+
+  const submitVehicleCard = async () => {
+    const row = vehicleCardModal.row;
+    if (!row?.id) return;
+    try {
+      await saveVehicleAppVehicle({
+        id: row.id,
+        vehicle_no: row.vehicle_no,
+        make: row.make ?? null,
+        model: row.model ?? null,
+        driver: row.driver ?? null,
+        activated: row.activated,
+        vehicle_category_id: row.vehicle_category_id ?? row.normalized_vehicle_category_id ?? null,
+        fuel_category_id: row.fuel_category_id ?? row.normalized_fuel_category_id ?? null,
+        card_id: vehicleCardModal.cardId ? Number(vehicleCardModal.cardId) : null,
+        ownership: row.ownership === 'r' ? 'r' : 'o',
+        operational_status: row.operational_status || 'o',
+      }).unwrap();
+      refetchVehicles();
+      closeVehicleCardModal();
+      setHrDecisionNotice({
+        open: true,
+        title: 'Saved',
+        message: 'Vehicle fuel card updated.',
+        tone: 'success',
+      });
+    } catch (e) {
+      setHrDecisionNotice({
+        open: true,
+        title: 'Error',
+        message: e?.data?.message || e?.message || 'Failed to save vehicle fuel card',
+        tone: 'error',
+      });
+    }
+  };
   const { data: vehicles = [], isLoading: loadingVehicles, refetch: refetchVehicles } = useGetVehicleAppVehiclesQuery();
-  const { refetch: refetchDrivers } = useGetVehicleAppDriversQuery();
+  const { data: vehicleDrivers = [], refetch: refetchDrivers } = useGetVehicleAppDriversQuery();
+  const { data: fuelCards = [] } = useGetDriverFuelCardsQuery({});
+  const [saveVehicleAppVehicle, { isLoading: savingVehicleCard }] = useSaveVehicleAppVehicleMutation();
   const { data: maintenanceRequests = [], isLoading: loadingMaintenance } = useGetVehicleAppMaintenanceRequestsQuery(monthKey);
   const [hrDecideMaintenance, { isLoading: savingHrDecision }] = useHrDecideVehicleMaintenanceRequestMutation();
   const { data: leaveRows = [], isLoading: loadingLeaves } = useGetLeaveDaysForHrQuery({ yearMonth: monthKey });
@@ -772,16 +841,21 @@ function TransportHrDashboard() {
     if (detailModule === 'vehicleAdminVehicles') {
       return (
         <div className="details-table-wrap-transport-hr">
+          <p className="quick-add-modal-hint-transport-hr" style={{ marginBottom: 10 }}>
+            Fuel cards are assigned per vehicle (not per driver). Use Assign card to link the vehicle&apos;s fuel card.
+          </p>
           <table className="details-table-transport-hr">
             <thead>
               <tr>
                 <th>Vehicle No</th>
                 <th>Driver</th>
+                <th>Fuel card</th>
                 <th>Ownership</th>
                 <th>Category</th>
                 <th>Make / Model</th>
                 <th>Owner Details</th>
                 <th>Status</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -789,6 +863,7 @@ function TransportHrDashboard() {
                 <tr key={row.id}>
                   <td>{row.vehicle_no || '-'}</td>
                   <td>{row.assigned_driver_name || '-'}</td>
+                  <td>{row.linked_card_no_masked || (row.linked_card_id ? `Card #${row.linked_card_id}` : '—')}</td>
                   <td>{row.ownership === 'r' ? 'Rented' : row.ownership === 'o' ? 'Own' : '-'}</td>
                   <td>{row.vehicle_category_name || '-'}</td>
                   <td>{row.make || '-'} / {row.model || '-'}</td>
@@ -798,11 +873,41 @@ function TransportHrDashboard() {
                       : '-'}
                   </td>
                   <td>{Number(row.activated) === 1 ? 'Active' : 'Inactive'}</td>
+                  <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      className="action-btn-secondary-transport-hr"
+                      onClick={() =>
+                        setVehicleCardModal({
+                          open: true,
+                          row,
+                          cardId: row.card_id != null ? String(row.card_id) : row.linked_card_id != null ? String(row.linked_card_id) : '',
+                        })
+                      }
+                    >
+                      Fuel card
+                    </button>
+                    {row.ownership !== 'r' ? (
+                      <button
+                        type="button"
+                        className="action-btn-secondary-transport-hr"
+                        onClick={() =>
+                          setVehicleDriverModal({
+                            open: true,
+                            row,
+                            driverId: row.driver != null ? String(row.driver) : '',
+                          })
+                        }
+                      >
+                        Set driver
+                      </button>
+                    ) : null}
+                  </td>
                 </tr>
               ))}
               {!vehicles.length ? (
                 <tr>
-                  <td colSpan={7}>No vehicle records found.</td>
+                  <td colSpan={10}>No vehicle records found.</td>
                 </tr>
               ) : null}
             </tbody>
@@ -1475,6 +1580,111 @@ function TransportHrDashboard() {
 
       {renderHrDecisionModal()}
       {renderHrDecisionNoticeModal()}
+
+      {vehicleCardModal.open && vehicleCardModal.row ? (
+        <div
+          role="presentation"
+          className="quick-add-overlay-transport-hr"
+          onClick={closeVehicleCardModal}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="quick-add-modal-transport-hr"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="quick-add-modal-toolbar-transport-hr">
+              <h3 className="quick-add-modal-title-transport-hr">
+                Fuel card — {vehicleCardModal.row.vehicle_no || vehicleCardModal.row.id}
+              </h3>
+              <button type="button" className="action-btn-secondary-transport-hr" onClick={closeVehicleCardModal}>
+                Close
+              </button>
+            </div>
+            <div className="quick-add-modal-body-transport-hr">
+              <label style={{ display: 'grid', gap: 6 }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: '#4b5563' }}>Fuel card</span>
+                <select
+                  value={vehicleCardModal.cardId}
+                  onChange={(e) => setVehicleCardModal((prev) => ({ ...prev, cardId: e.target.value }))}
+                >
+                  <option value="">— None —</option>
+                  {(fuelCards || []).map((card) => (
+                    <option key={card.id} value={String(card.id)}>
+                      {card.label || card.card_no_masked || `Card #${card.id}`}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <div style={{ marginTop: 14, display: 'flex', gap: 8 }}>
+                <button
+                  type="button"
+                  className="action-btn-primary-transport-hr"
+                  disabled={savingVehicleCard}
+                  onClick={submitVehicleCard}
+                >
+                  {savingVehicleCard ? 'Saving…' : 'Save'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {vehicleDriverModal.open && vehicleDriverModal.row ? (
+        <div
+          role="presentation"
+          className="quick-add-overlay-transport-hr"
+          onClick={closeVehicleDriverModal}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="quick-add-modal-transport-hr"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="quick-add-modal-toolbar-transport-hr">
+              <h3 className="quick-add-modal-title-transport-hr">
+                Set driver — {vehicleDriverModal.row.vehicle_no || vehicleDriverModal.row.id}
+              </h3>
+              <button type="button" className="action-btn-secondary-transport-hr" onClick={closeVehicleDriverModal}>
+                Close
+              </button>
+            </div>
+            <div className="quick-add-modal-body-transport-hr">
+              <p className="quick-add-modal-hint-transport-hr" style={{ marginBottom: 10 }}>
+                Assigning the same driver (vehicle_drivers record) to multiple vehicles lets them swap between vehicles in the app.
+              </p>
+              <label style={{ display: 'grid', gap: 6 }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: '#4b5563' }}>Driver</span>
+                <select
+                  value={vehicleDriverModal.driverId}
+                  onChange={(e) => setVehicleDriverModal((prev) => ({ ...prev, driverId: e.target.value }))}
+                >
+                  <option value="">— None / Unassigned —</option>
+                  {(vehicleDrivers || []).map((d) => (
+                    <option key={d.id} value={String(d.id)}>
+                      {d.user_name || d.name || `Driver #${d.id}`}
+                      {d.mobile_no ? ` (${d.mobile_no})` : ''}
+                      {Number(d.assigned_vehicle_count) > 0 ? ` — ${d.assigned_vehicle_count} vehicle(s)` : ''}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <div style={{ marginTop: 14, display: 'flex', gap: 8 }}>
+                <button
+                  type="button"
+                  className="action-btn-primary-transport-hr"
+                  disabled={savingVehicleCard}
+                  onClick={submitVehicleDriver}
+                >
+                  {savingVehicleCard ? 'Saving…' : 'Save'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {addDriverOpen && (
         <div

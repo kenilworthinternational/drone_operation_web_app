@@ -1234,7 +1234,14 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
                   />
                 </div>
                 <div className="form-group">
-                  <label>Fuel Card:</label>
+                  <label>
+                    Fuel Card{embeddedTransportDriver ? ' (optional)' : ''}:
+                  </label>
+                  {embeddedTransportDriver ? (
+                    <p className="form-hint-text" style={{ margin: '0 0 6px', fontSize: 12, color: '#6b7280' }}>
+                      Fuel cards are assigned to vehicles in Transport HR → Vehicle Admin. Driver card is not required for day/fuel operations.
+                    </p>
+                  ) : null}
                   <select
                     name="card_id"
                     value={formData.card_id}
