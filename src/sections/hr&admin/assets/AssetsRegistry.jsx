@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { FaPlane, FaCar, FaBolt, FaBatteryFull, FaGamepad, FaPlus, FaEye } from 'react-icons/fa';
+import { FaPlane, FaBolt, FaBatteryFull, FaGamepad, FaPlus, FaEye } from 'react-icons/fa';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import { fetchAssets, selectAssets, selectLoading, setActiveTab } from '../../../store/slices/assetsSlice';
 import '../../../styles/assetsRegistry.css';
@@ -8,7 +8,6 @@ import Assets from './Assets';
 
 const ASSET_TYPES = [
   { key: 'drones', label: 'Drones', icon: FaPlane },
-  { key: 'vehicles', label: 'Vehicles', icon: FaCar },
   { key: 'generators', label: 'Generators', icon: FaBolt },
   { key: 'batteries', label: 'Batteries', icon: FaBatteryFull },
   { key: 'remoteControls', label: 'Remote Controls', icon: FaGamepad },
@@ -25,14 +24,12 @@ const AssetsRegistry = () => {
 
   // Get asset counts from Redux
   const drones = useAppSelector((state) => selectAssets(state, 'drones'));
-  const vehicles = useAppSelector((state) => selectAssets(state, 'vehicles'));
   const generators = useAppSelector((state) => selectAssets(state, 'generators'));
   const batteries = useAppSelector((state) => selectAssets(state, 'batteries'));
   const remoteControls = useAppSelector((state) => selectAssets(state, 'remoteControls'));
 
   const assetCounts = {
     drones: drones.length,
-    vehicles: vehicles.length,
     generators: generators.length,
     batteries: batteries.length,
     remoteControls: remoteControls.length,

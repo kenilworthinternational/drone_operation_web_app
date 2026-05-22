@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   FaBoxes,
   FaSearch,
@@ -15,7 +15,11 @@ import {
 import '../../../styles/assets.css';
 import '../../../styles/vehicleProfile.css';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
-import { useGetWingsQuery, useGetBatteryTypesQuery, useGetVehicleDriversQuery, useGetVehicleCategoriesQuery, useGetFuelCategoriesQuery } from '../../../api/services/assetsApi';
+import { useGetWingsQuery, useGetBatteryTypesQuery, useGetVehicleDriversQuery, useGetVehicleCategoriesQuery, useGetVehicleMakesQuery, useGetVehicleModelsQuery, useGetFuelCategoriesQuery } from '../../../api/services/assetsApi';
+import VehicleMasterSelectFields, {
+  resolveVehicleMasterIds,
+  vehicleMasterLabelsFromIds,
+} from '../../../components/VehicleMasterSelectFields';
 import {
   fetchInsuranceTypes,
   fetchAssets as fetchAssetsThunk,
@@ -38,15 +42,20 @@ import {
   selectLoading,
   selectError,
 } from '../../../store/slices/assetsSlice';
-import Vehicles from '../../administration/vehicles/Vehicles';
+import VehicleProfile from '../vehicle-profile/VehicleProfile';
 
-const TAB_ORDER = ['drones', 'generators', 'batteries', 'remoteControls'];
+const TAB_ORDER = ['drones', 'vehicles', 'generators', 'batteries', 'remoteControls'];
 
 const TAB_CONFIG = {
   drones: {
     label: 'Drones',
     icon: FaPlane,
     responseKeys: ['drones']
+  },
+  vehicles: {
+    label: 'Vehicles',
+    icon: FaCar,
+    responseKeys: ['vehicles']
   },
   generators: {
     label: 'Generators',
@@ -352,22 +361,13 @@ const formatVehicleNoWithOwnership = (vehicleNo, ownership) => {
   return `${no} (${own})`;
 };
 
-const Assets = ({ singleMode = false, selectedType = null }) => {
-  if (singleMode && selectedType === 'vehicles') {
-    return <Vehicles />;
-  }
-
+const Vehicles = ({ embeddedInVehicleManagement = false }) => {
   const dispatch = useAppDispatch();
-  
-  // Get from Redux
-  const reduxActiveTab = useAppSelector(selectActiveTab);
-  // In single mode, use selectedType; otherwise use Redux activeTab
-  const activeTab = singleMode && selectedType ? selectedType : reduxActiveTab;
-  const assets = useAppSelector((state) => 
-    singleMode && selectedType 
-      ? selectAssets(state, selectedType) 
-      : selectCurrentAssets(state)
-  );
+  const singleMode = true;
+  const selectedType = 'vehicles';
+  const activeTab = 'vehicles';
+
+  const assets = useAppSelector((state) => selectAssets(state, 'vehicles'));
   const insuranceOptions = useAppSelector(selectInsuranceTypes);
   const searchTerm = useAppSelector(selectSearchTerm);
   const statusFilter = useAppSelector(selectStatusFilter);
@@ -381,6 +381,7 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
   const [notification, setNotification] = useState({ type: '', message: '' });
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [profileVehicleId, setProfileVehicleId] = useState(null);
   const [formData, setFormData] = useState(INITIAL_FORM_STATE);
 
   const {
@@ -403,14 +404,37 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
   } = useGetVehicleDriversQuery();
 
   const {
-    data: vehicleCategoriesResponse,
-    isLoading: vehicleCategoriesLoading,
-  } = useGetVehicleCategoriesQuery();
-
-  const {
     data: fuelCategoriesResponse,
     isLoading: fuelCategoriesLoading,
   } = useGetFuelCategoriesQuery();
+
+  const editCategoryId = formData.vehicle_category || '';
+  const editMakeId = formData.make || '';
+
+  const { data: editMakesResponse, isLoading: editMakesLoading } = useGetVehicleMakesQuery(
+    { vehicle_category_id: editCategoryId || null },
+    { skip: !showEditModal || !editCategoryId }
+  );
+  const { data: editModelsResponse, isLoading: editModelsLoading } = useGetVehicleModelsQuery(
+    { vehicle_make_id: editMakeId || null },
+    { skip: !showEditModal || !editMakeId }
+  );
+
+  const editVehicleMakes = useMemo(() => {
+    if (!editMakesResponse) return [];
+    if (Array.isArray(editMakesResponse)) return editMakesResponse;
+    if (Array.isArray(editMakesResponse?.data)) return editMakesResponse.data;
+    return [];
+  }, [editMakesResponse]);
+
+  const editVehicleModels = useMemo(() => {
+    if (!editModelsResponse) return [];
+    if (Array.isArray(editModelsResponse)) return editModelsResponse;
+    if (Array.isArray(editModelsResponse?.data)) return editModelsResponse.data;
+    return [];
+  }, [editModelsResponse]);
+
+  const editMasterResolvedRef = useRef(false);
 
   const wings = useMemo(() => {
     if (!wingsResponse) return [];
@@ -466,14 +490,39 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
     });
   }, [vehicleDriversResponse]);
 
-  const vehicleCategories = useMemo(() => {
-    if (!vehicleCategoriesResponse) return [];
-    // RTK Query returns the data directly from queryFn
-    if (Array.isArray(vehicleCategoriesResponse)) return vehicleCategoriesResponse;
-    // Fallback for nested structures
-    if (Array.isArray(vehicleCategoriesResponse?.data)) return vehicleCategoriesResponse.data;
-    return [];
-  }, [vehicleCategoriesResponse]);
+  useEffect(() => {
+    if (!showEditModal) {
+      editMasterResolvedRef.current = false;
+    }
+  }, [showEditModal]);
+
+  useEffect(() => {
+    if (!showEditModal || !selectedAsset || editMasterResolvedRef.current) return;
+    if (!editCategoryId) return;
+    if (editMakesLoading) return;
+    const partial = resolveVehicleMasterIds(selectedAsset, [], editVehicleMakes, editVehicleModels);
+    if (!partial.make && selectedAsset?.make && editVehicleMakes.length === 0) return;
+    if (partial.make && editMakeId && editModelsLoading) return;
+    if (partial.make && !partial.model && selectedAsset?.model && editVehicleModels.length === 0 && !editModelsLoading) {
+      return;
+    }
+    editMasterResolvedRef.current = true;
+    setFormData((prev) => ({
+      ...prev,
+      vehicle_category: partial.vehicle_category || prev.vehicle_category,
+      make: partial.make || prev.make,
+      model: partial.model || prev.model,
+    }));
+  }, [
+    showEditModal,
+    selectedAsset,
+    editCategoryId,
+    editMakeId,
+    editMakesLoading,
+    editModelsLoading,
+    editVehicleMakes,
+    editVehicleModels,
+  ]);
 
   const fuelCategories = useMemo(() => {
     if (!fuelCategoriesResponse) return [];
@@ -735,6 +784,7 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
 
   const handleEditAsset = (asset, tabKey) => {
     dispatch(setSelectedAssetAction({ asset, assetType: tabKey }));
+    editMasterResolvedRef.current = false;
     setFormData(mapAssetToForm(asset));
     setShowEditModal(true);
   };
@@ -766,6 +816,15 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
 
       if (name === 'have_insurance' && value !== '1') {
         updated.insurance_type = '';
+      }
+
+      if (name === 'vehicle_category') {
+        updated.make = '';
+        updated.model = '';
+        editMasterResolvedRef.current = false;
+      }
+      if (name === 'make') {
+        updated.model = '';
       }
 
       return updated;
@@ -913,14 +972,24 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
           break;
         }
         case 'vehicles': {
+          const { make: makeLabel, model: modelLabel } = vehicleMasterLabelsFromIds(
+            formData.make,
+            formData.model,
+            editVehicleMakes,
+            editVehicleModels
+          );
+          if (!makeLabel || !modelLabel) {
+            setNotification({ type: 'error', message: 'Please select a valid make and model.' });
+            return;
+          }
           const vehiclePayload = {
             id: formData.id,
             ownership: formData.ownership.trim(),
             chassis_no: formData.chassis_no.trim(),
             engine_no: formData.engine_no.trim(),
             vehicle_no: formData.vehicle_no.trim(),
-            make: formData.make.trim(),
-            model: formData.model.trim(),
+            make: makeLabel,
+            model: modelLabel,
             insurance_expire_date: formatDateForApi(formData.insurance_expire_date),
             revenue_license_expire_date: formatDateForApi(formData.revenue_license_expire_date),
             initial_mileage: formData.initial_mileage ? parseFloat(formData.initial_mileage) : 0,
@@ -1026,6 +1095,20 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
       );
     }
 
+    if (activeTab === 'vehicles') {
+      return (
+        <tr>
+          <th>Vehicle No</th>
+          <th>Make / Model</th>
+          <th>Driver</th>
+          <th>Owner(rented)</th>
+          <th>Insurance Expiry</th>
+          <th>Revenue License Expiry</th>
+          <th>Status</th>
+        </tr>
+      );
+    }
+
     if (activeTab === 'generators') {
       return (
         <tr>
@@ -1058,6 +1141,61 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
   };
 
   const renderTableRow = (asset) => {
+    if (activeTab === 'vehicles') {
+      const openVehicleProfile = () => {
+        if (asset?.id) setProfileVehicleId(Number(asset.id));
+      };
+      const vehicleRowInteractive = Boolean(asset?.id);
+      return (
+        <tr
+          key={asset?.id ?? asset?.vehicle_no}
+          className={vehicleRowInteractive ? 'vehicle-table-row-clickable' : undefined}
+          onClick={vehicleRowInteractive ? openVehicleProfile : undefined}
+          onKeyDown={
+            vehicleRowInteractive
+              ? (e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    openVehicleProfile();
+                  }
+                }
+              : undefined
+          }
+          role={vehicleRowInteractive ? 'button' : undefined}
+          tabIndex={vehicleRowInteractive ? 0 : undefined}
+          title={vehicleRowInteractive ? 'Open vehicle profile (view & edit)' : undefined}
+        >
+          <td>
+            <span className="vehicle-profile-link">{asset?.vehicle_no || '-'}</span>
+            {asset?.ownership ? (
+              <span style={{ color: '#64748b', marginLeft: 6, fontSize: '0.9em' }}>
+                ({formatOwnership(asset.ownership)})
+              </span>
+            ) : null}
+          </td>
+          <td>{formatMakeModel(asset?.make, asset?.model)}</td>
+          <td className="vehicle-person-cell-td">
+            {renderVehiclePersonCell(
+              formatVehicleDriverDisplay(asset),
+              asset?.driver_mobile_no
+            )}
+          </td>
+          <td className="vehicle-person-cell-td">
+            {asset?.ownership === 'r'
+              ? renderVehiclePersonCell(asset?.owner_name, asset?.owner_contact_no)
+              : '-'}
+          </td>
+          {renderExpiryDateCell(asset?.insurance_expire_date)}
+          {renderExpiryDateCell(asset?.revenue_license_expire_date)}
+          <td>
+            <span className={`status-badge-assets ${asset?.operational_status === 'y' ? 'status-badge-active-assets' : 'status-badge-inactive-assets'}`}>
+              {formatOperationalStatus(asset?.operational_status)}
+            </span>
+          </td>
+        </tr>
+      );
+    }
+
     const insuranceDisplay = asset?.have_insurance === 1 || String(asset?.have_insurance) === '1'
       ? resolveInsuranceName(insuranceOptions, asset?.insurance_type_id || asset?.insurance_type)
       : 'No';
@@ -1172,8 +1310,41 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
     ));
   };
 
+  const showVehicleProfile =
+    profileVehicleId &&
+    (activeTab === 'vehicles' || (singleMode && selectedAssetType === 'vehicles'));
+
+  if (showVehicleProfile) {
+    const profileContainerClass = [
+      'assets-container-assets',
+      embeddedInVehicleManagement ? 'assets-container-assets--vehicle-profile-scroll' : '',
+    ]
+      .filter(Boolean)
+      .join(' ');
+
+    return (
+      <div className={profileContainerClass}>
+        <VehicleProfile
+          vehicleId={profileVehicleId}
+          onBack={() => setProfileVehicleId(null)}
+          onEditVehicle={(v) => {
+            setProfileVehicleId(null);
+            handleEditAsset(v, 'vehicles');
+          }}
+        />
+      </div>
+    );
+  }
+
+  const containerClassName = [
+    'assets-container-assets',
+    embeddedInVehicleManagement ? 'assets-container-assets--vehicle-mgmt-scroll' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   return (
-    <div className="assets-container-assets">
+    <div className={containerClassName}>
       {/* Header (hidden in single mode) */}
       {!singleMode && (
         <div className="assets-header-assets">
@@ -1347,30 +1518,30 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
                       </div>
                     </div>
 
-                    <div className="form-row-assets">
-                      <div className="form-group-assets">
-                        <label htmlFor="make">Make <span className="required-indicator-assets">*</span></label>
-                        <input
-                          type="text"
-                          id="make"
-                          name="make"
-                          value={formData.make}
-                          onChange={handleFormChange}
-                          required
-                        />
-                      </div>
-                      <div className="form-group-assets">
-                        <label htmlFor="model">Model <span className="required-indicator-assets">*</span></label>
-                        <input
-                          type="text"
-                          id="model"
-                          name="model"
-                          value={formData.model}
-                          onChange={handleFormChange}
-                          required
-                        />
-                      </div>
-                    </div>
+                    <VehicleMasterSelectFields
+                      variant="assets"
+                      required
+                      values={{
+                        vehicle_category: formData.vehicle_category,
+                        make: formData.make,
+                        model: formData.model,
+                      }}
+                      onValuesChange={(patch) => {
+                        setFormData((prev) => {
+                          const next = { ...prev, ...patch };
+                          if (patch.vehicle_category != null && patch.vehicle_category !== prev.vehicle_category) {
+                            next.make = patch.make ?? '';
+                            next.model = patch.model ?? '';
+                            editMasterResolvedRef.current = false;
+                          }
+                          if (patch.make != null && patch.make !== prev.make) {
+                            next.model = patch.model ?? '';
+                          }
+                          return next;
+                        });
+                      }}
+                      onNotify={({ type, message }) => setNotification({ type, message })}
+                    />
 
                     <div className="form-row-assets">
                       <div className="form-group-assets">
@@ -1510,23 +1681,6 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
                         <small className="form-field-helper-assets">
                           Driver license images are reused from User Registration.
                         </small>
-                      </div>
-                      <div className="form-group-assets">
-                        <label htmlFor="vehicle_category">Vehicle Category</label>
-                        <select
-                          id="vehicle_category"
-                          name="vehicle_category"
-                          value={formData.vehicle_category}
-                          onChange={handleFormChange}
-                          disabled={vehicleCategoriesLoading}
-                        >
-                          <option value="">{vehicleCategoriesLoading ? 'Loading...' : 'Select vehicle category'}</option>
-                          {vehicleCategories.map((category) => (
-                            <option key={category.id} value={category.id}>
-                              {category.category}
-                            </option>
-                          ))}
-                        </select>
                       </div>
                     </div>
 
@@ -2138,5 +2292,5 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
   );
 };
 
-export default Assets;
+export default Vehicles;
 

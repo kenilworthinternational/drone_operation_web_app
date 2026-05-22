@@ -133,6 +133,7 @@ const assetsSlice = createSlice({
     activeTab: 'drones',
     searchTerm: '',
     statusFilter: 'all',
+    vehicleOwnershipFilter: 'all',
     selectedAsset: null,
     selectedAssetType: 'drones',
     loading: {
@@ -147,12 +148,16 @@ const assetsSlice = createSlice({
       state.activeTab = action.payload;
       state.searchTerm = '';
       state.statusFilter = 'all';
+      state.vehicleOwnershipFilter = 'all';
     },
     setSearchTerm: (state, action) => {
       state.searchTerm = action.payload;
     },
     setStatusFilter: (state, action) => {
       state.statusFilter = action.payload;
+    },
+    setVehicleOwnershipFilter: (state, action) => {
+      state.vehicleOwnershipFilter = action.payload;
     },
     setSelectedAsset: (state, action) => {
       state.selectedAsset = action.payload.asset;
@@ -213,6 +218,7 @@ export const {
   setActiveTab,
   setSearchTerm,
   setStatusFilter,
+  setVehicleOwnershipFilter,
   setSelectedAsset,
   clearSelectedAsset,
   clearError,
@@ -229,6 +235,7 @@ export const selectCurrentAssets = (state) =>
 export const selectInsuranceTypes = (state) => state.assets.insuranceTypes;
 export const selectSearchTerm = (state) => state.assets.searchTerm;
 export const selectStatusFilter = (state) => state.assets.statusFilter;
+export const selectVehicleOwnershipFilter = (state) => state.assets.vehicleOwnershipFilter;
 export const selectSelectedAsset = (state) => state.assets.selectedAsset;
 export const selectSelectedAssetType = (state) => state.assets.selectedAssetType;
 export const selectLoading = (state) => state.assets.loading;

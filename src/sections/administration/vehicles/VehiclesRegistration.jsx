@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react';
-import { FaClipboardList, FaPlane, FaBolt, FaBatteryFull, FaGamepad } from 'react-icons/fa';
+import { FaClipboardList, FaPlane, FaCar, FaBolt, FaBatteryFull, FaGamepad } from 'react-icons/fa';
 import '../../../styles/assetsRegistration.css';
 import { baseApi } from '../../../api/services/allEndpoints';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
@@ -7,10 +7,16 @@ import {
   fetchInsuranceTypes,
   selectInsuranceTypes,
   selectLoading,
-  selectActiveTab,
 } from '../../../store/slices/assetsSlice';
-import { useGetWingsQuery, useGetBatteryTypesQuery } from '../../../api/services/assetsApi';
-import VehiclesRegistration from '../../administration/vehicles/VehiclesRegistration';
+import {
+  useGetWingsQuery,
+  useGetBatteryTypesQuery,
+  useGetVehicleDriversQuery,
+  useGetFuelCategoriesQuery,
+  useGetVehicleMakesQuery,
+  useGetVehicleModelsQuery,
+} from '../../../api/services/assetsApi';
+import VehicleMasterSelectFields, { vehicleMasterLabelsFromIds } from '../../../components/VehicleMasterSelectFields';
 
 const parsePurchasePrice = (value) => {
   if (value === undefined || value === null) return null;
@@ -133,27 +139,12 @@ const vehicleInitialState = {
   owner_address: '',
 };
 
-const AssetsRegistration = ({
-  singleMode = false,
-  selectedType = null,
+const VehiclesRegistration = ({
   compactHeader = false,
   onVehicleRegisteredSuccess,
 }) => {
-  if (singleMode && selectedType === 'vehicles') {
-    return (
-      <VehiclesRegistration
-        compactHeader={compactHeader}
-        onVehicleRegisteredSuccess={onVehicleRegisteredSuccess}
-      />
-    );
-  }
-
   const dispatch = useAppDispatch();
-  
-  // Get activeTab from Redux (set by AssetsRegistry) or default to 'drones'
-  const reduxActiveTab = useAppSelector(selectActiveTab);
-  const initialTab = singleMode && selectedType ? selectedType : (reduxActiveTab || 'drones');
-  const [activeTab, setActiveTab] = useState(initialTab);
+  const activeTab = 'vehicles';
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState('');
@@ -186,11 +177,6 @@ const AssetsRegistration = ({
     isLoading: vehicleDriversLoading,
     isError: vehicleDriversError,
   } = useGetVehicleDriversQuery();
-
-  const {
-    data: vehicleCategoriesResponse,
-    isLoading: vehicleCategoriesLoading,
-  } = useGetVehicleCategoriesQuery();
 
   const {
     data: fuelCategoriesResponse,
@@ -252,15 +238,6 @@ const AssetsRegistration = ({
       );
     });
   }, [vehicleDriversResponse]);
-  const vehicleCategories = useMemo(() => {
-    if (!vehicleCategoriesResponse) return [];
-    // RTK Query returns the data directly from queryFn
-    if (Array.isArray(vehicleCategoriesResponse)) return vehicleCategoriesResponse;
-    // Fallback for nested structures
-    if (Array.isArray(vehicleCategoriesResponse?.data)) return vehicleCategoriesResponse.data;
-    return [];
-  }, [vehicleCategoriesResponse]);
-
   const fuelCategories = useMemo(() => {
     if (!fuelCategoriesResponse) return [];
     // RTK Query returns the data directly from queryFn
@@ -278,20 +255,6 @@ const AssetsRegistration = ({
     return 'Unable to load wings.';
   }, [wingsError, wingsErrorDetails]);
 
-  // Sync with Redux activeTab when it changes (only if not in single mode)
-  useEffect(() => {
-    if (!singleMode && reduxActiveTab) {
-      setActiveTab(reduxActiveTab);
-    }
-  }, [reduxActiveTab, singleMode]);
-
-  // Set activeTab when selectedType changes in single mode
-  useEffect(() => {
-    if (singleMode && selectedType) {
-      setActiveTab(selectedType);
-    }
-  }, [singleMode, selectedType]);
-
   useEffect(() => {
     if (!message) {
       return undefined;
@@ -304,13 +267,6 @@ const AssetsRegistration = ({
 
     return () => clearTimeout(timeoutId);
   }, [message]);
-
-  const tabs = useMemo(() => ([
-    { key: 'drones', label: 'Drones', icon: FaPlane },
-    { key: 'generators', label: 'Generator', icon: FaBolt },
-    { key: 'batteries', label: 'Battery', icon: FaBatteryFull },
-    { key: 'remoteControls', label: 'Remote', icon: FaGamepad }
-  ]), []);
 
   // Form fields for Drones
   const [droneFormData, setDroneFormData] = useState(() => ({ ...equipmentInitialState }));
@@ -382,10 +338,6 @@ const AssetsRegistration = ({
     if (Array.isArray(vehicleModelsResponse?.data)) return vehicleModelsResponse.data;
     return [];
   }, [vehicleModelsResponse]);
-
-  const handleTabSelection = (tabKey) => {
-    setActiveTab(tabKey);
-  };
 
   const handleInputChange = (e, formType) => {
     const { name, value } = e.target;
@@ -654,10 +606,14 @@ const AssetsRegistration = ({
         formDataToSend.append('chassis_no', formData.chassis_no.trim());
         formDataToSend.append('engine_no', formData.engine_no.trim());
         formDataToSend.append('vehicle_no', formData.vehicle_no.trim());
-        const selectedMake = vehicleMakes.find((row) => String(row.id) === String(formData.make));
-        const selectedModel = vehicleModels.find((row) => String(row.id) === String(formData.model));
-        formDataToSend.append('make', (selectedMake?.make || '').trim());
-        formDataToSend.append('model', (selectedModel?.model || '').trim());
+        const { make: makeLabel, model: modelLabel } = vehicleMasterLabelsFromIds(
+          formData.make,
+          formData.model,
+          vehicleMakes,
+          vehicleModels
+        );
+        formDataToSend.append('make', makeLabel);
+        formDataToSend.append('model', modelLabel);
         formDataToSend.append('purchase_price', normalizedPurchasePrice);
         if (formData.insurance_expire_date) {
           formDataToSend.append('insurance_expire_date', formatDate(formData.insurance_expire_date));
@@ -1089,7 +1045,7 @@ const AssetsRegistration = ({
             required
           >
             <option value="">Select ownership type</option>
-            <option value="o">Own Vehicle</option>
+            <option value="o">KWIL vehicle</option>
             <option value="r">Rented Vehicle</option>
           </select>
         </div>
@@ -1125,75 +1081,24 @@ const AssetsRegistration = ({
         {renderWingField('vehicles', vehicleFormData)}
       </div>
 
-      <div className="form-row-assets-reg">
-        <div className="form-group-assets-reg">
-          <label htmlFor="vehicle_category">Vehicle Category</label>
-          <select
-            id="vehicle_category"
-            name="vehicle_category"
-            value={vehicleFormData.vehicle_category}
-            onChange={(e) => handleInputChange(e, 'vehicles')}
-            disabled={vehicleCategoriesLoading}
-          >
-            <option value="">{vehicleCategoriesLoading ? 'Loading...' : 'Select vehicle category'}</option>
-            {vehicleCategories.map((category) => (
-              <option key={category.id} value={category.id}>
-                {category.category}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="form-group-assets-reg">
-          <label htmlFor="make">Make <span className="required-assets-reg">*</span></label>
-          <select
-            id="make"
-            name="make"
-            value={vehicleFormData.make}
-            onChange={(e) => handleInputChange(e, 'vehicles')}
-            disabled={!vehicleFormData.vehicle_category || vehicleMakesLoading}
-            required
-          >
-            <option value="">
-              {!vehicleFormData.vehicle_category
-                ? 'Select vehicle category first'
-                : vehicleMakesLoading
-                  ? 'Loading makes...'
-                  : 'Select make'}
-            </option>
-            {vehicleMakes.map((makeRow) => (
-              <option key={makeRow.id} value={makeRow.id}>
-                {makeRow.make}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
+      <VehicleMasterSelectFields
+        variant="registration"
+        required
+        values={{
+          vehicle_category: vehicleFormData.vehicle_category,
+          make: vehicleFormData.make,
+          model: vehicleFormData.model,
+        }}
+        onValuesChange={(patch) => {
+          setVehicleFormData((prev) => ({ ...prev, ...patch }));
+        }}
+        onNotify={({ type, message }) => {
+          setMessage(message);
+          setMessageType(type === 'error' ? 'error' : 'success');
+        }}
+      />
 
       <div className="form-row-assets-reg">
-        <div className="form-group-assets-reg">
-          <label htmlFor="model">Model <span className="required-assets-reg">*</span></label>
-          <select
-            id="model"
-            name="model"
-            value={vehicleFormData.model}
-            onChange={(e) => handleInputChange(e, 'vehicles')}
-            disabled={!vehicleFormData.make || vehicleModelsLoading}
-            required
-          >
-            <option value="">
-              {!vehicleFormData.make
-                ? 'Select make first'
-                : vehicleModelsLoading
-                  ? 'Loading models...'
-                  : 'Select model'}
-            </option>
-            {vehicleModels.map((modelRow) => (
-              <option key={modelRow.id} value={modelRow.id}>
-                {modelRow.model}
-              </option>
-            ))}
-          </select>
-        </div>
         <div className="form-group-assets-reg">
           <label htmlFor="chassis_no">Chassis Number <span className="required-assets-reg">*</span></label>
           <input
@@ -2387,30 +2292,7 @@ const AssetsRegistration = ({
       {!compactHeader && (
         <div className="assets-registration-header-assets-reg">
           <FaClipboardList className="header-icon-assets-reg" />
-          <h2>Assets Registration</h2>
-        </div>
-      )}
-
-      {/* Tab Navigation - Small tabs with max 5 per row (hidden in single mode) */}
-      {!singleMode && (
-        <div className="assets-tabs-assets-reg">
-          <div className="tabs-wrapper-assets-reg">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              const isActive = activeTab === tab.key;
-              return (
-                <button
-                  key={tab.key}
-                  type="button"
-                  className={`asset-tab-assets-reg ${isActive ? 'active-assets-reg' : ''}`}
-                  onClick={() => handleTabSelection(tab.key)}
-                >
-                  <Icon className="tab-icon-assets-reg" />
-                  <span className="tab-text-assets-reg">{tab.label}</span>
-                </button>
-              );
-            })}
-          </div>
+          <h2>Vehicle Registration</h2>
         </div>
       )}
 
@@ -2420,17 +2302,12 @@ const AssetsRegistration = ({
         </div>
       )}
 
-      {/* Tab Content */}
       <div className="assets-content-assets-reg">
-        {activeTab === 'drones' && renderDronesForm()}
-        {activeTab === 'vehicles' && renderVehiclesForm()}
-        {activeTab === 'generators' && renderGeneratorsForm()}
-        {activeTab === 'batteries' && renderBatteriesForm()}
-        {activeTab === 'remoteControls' && renderRemoteControlsForm()}
+        {renderVehiclesForm()}
       </div>
     </div>
   );
 };
 
-export default AssetsRegistration;
+export default VehiclesRegistration;
 

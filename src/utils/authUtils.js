@@ -165,9 +165,14 @@ export const getAllowedPaths = (visibility = {}, pathPermissions = {}, userData 
   // Top-level paths (accessible to all authenticated users on wing hub / forecast)
   allowedPaths.push('/home/create');
 
+  const mergedPathPermissions = { ...pathPermissions };
+  if (mergedPathPermissions['/home/fleet-update'] === true) {
+    mergedPathPermissions['/home/transport/hr'] = true;
+  }
+
   // Check all paths - if path has explicit permission set to true, allow it
   Object.values(allCategoryPaths).flat().forEach(path => {
-    if (pathPermissions[path] === true && !allowedPaths.includes(path)) {
+    if (mergedPathPermissions[path] === true && !allowedPaths.includes(path)) {
       allowedPaths.push(path);
     }
   });

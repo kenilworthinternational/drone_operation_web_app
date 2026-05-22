@@ -10,6 +10,15 @@
   gap: 16px;
 }
 
+.dashboard-shell-transport-hr--vehicle-mgmt {
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  gap: 0;
+  padding: 16px 20px 12px;
+  box-sizing: border-box;
+}
+
 .dashboard-loading-overlay-transport-hr {
   min-height: 320px;
   border: 1px solid #d8e2ea;

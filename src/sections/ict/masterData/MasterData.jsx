@@ -1397,7 +1397,9 @@ const MasterData = ({ mode = 'full' }) => {
       {activeTab === 'vehicles' && (
         <div className="vehicle-admin-card-master-data">
           <h3>Vehicle Registry</h3>
-          <p className="vehicle-admin-note-master-data">Vehicle creation and assignment are maintained in Fleet Update.</p>
+          <p className="vehicle-admin-note-master-data">
+            Vehicle registration and fleet edits are in Transport HR → Vehicle Management (Administration Wing → Vehicle Fleet).
+          </p>
 
           <div className="vehicle-table-wrap-master-data">
             <table className="vehicle-table-master-data">

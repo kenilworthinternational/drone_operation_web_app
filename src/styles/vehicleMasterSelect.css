@@ -1,0 +1,118 @@
+.form-row-vehicle-master {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.form-row-vehicle-master--assets-reg {
+  margin-bottom: 0;
+}
+
+.form-group-vehicle-master {
+  flex: 1;
+  min-width: 200px;
+}
+
+.input-with-add-vehicle-master {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.input-with-add-vehicle-master select {
+  flex: 1;
+  min-width: 0;
+}
+
+.btn-add-vehicle-master {
+  padding: 8px 14px;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.25);
+}
+
+.btn-add-vehicle-master:hover:not(:disabled) {
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+}
+
+.btn-add-vehicle-master:disabled {
+  background: #cbd5e1;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.vehicle-master-add-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.vehicle-master-add-dialog {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+}
+
+.vehicle-master-add-dialog h4 {
+  margin: 0 0 12px;
+  font-size: 1.05rem;
+  color: #0f172a;
+}
+
+.vehicle-master-add-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.vehicle-master-add-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.vehicle-master-add-cancel {
+  padding: 8px 16px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.vehicle-master-add-save {
+  padding: 8px 16px;
+  border: none;
+  background: #004b71;
+  color: #fff;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.vehicle-master-add-save:disabled,
+.vehicle-master-add-cancel:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

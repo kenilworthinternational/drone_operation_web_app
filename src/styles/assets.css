@@ -185,6 +185,16 @@
   justify-content: flex-end;
 }
 
+.filter-container-assets--vehicles {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.filter-container-assets--vehicles .filter-select-assets {
+  width: auto;
+  min-width: 150px;
+}
+
 .filter-icon-assets {
   color: #666;
   font-size: 16px;
@@ -205,6 +215,60 @@
   outline: none;
   border-color: #1976d2;
   box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.1);
+}
+
+/* Vehicle Management: toolbar fixed, table area scrolls, header row sticky */
+.assets-container-assets--vehicle-mgmt-scroll {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+  width: 100%;
+  margin: 0;
+}
+
+.assets-container-assets--vehicle-mgmt-scroll .assets-toolbar-assets {
+  flex-shrink: 0;
+  margin-bottom: 10px;
+}
+
+.assets-container-assets--vehicle-mgmt-scroll .assets-notification-assets {
+  flex-shrink: 0;
+}
+
+.assets-container-assets--vehicle-mgmt-scroll .assets-table-container-assets {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.assets-container-assets--vehicle-mgmt-scroll .assets-table-assets thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #f5f5f5;
+  box-shadow: 0 1px 0 #e0e0e0;
+}
+
+.assets-container-assets--vehicle-mgmt-scroll .loading-assets,
+.assets-container-assets--vehicle-mgmt-scroll .no-data-assets {
+  min-height: 120px;
+}
+
+/* Vehicle profile inside Vehicle Management: scroll profile content */
+.assets-container-assets--vehicle-profile-scroll {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 4px 16px;
+  box-sizing: border-box;
 }
 
 .assets-table-container-assets {
@@ -267,6 +331,78 @@
 
 .assets-table-assets tbody tr:hover {
   background-color: #f9f9f9;
+}
+
+.assets-table-assets tbody tr.vehicle-table-row-clickable {
+  cursor: pointer;
+}
+
+.assets-table-assets tbody tr.vehicle-table-row-clickable:focus-visible {
+  outline: 2px solid #004b71;
+  outline-offset: -2px;
+}
+
+.assets-table-assets td.vehicle-person-cell-td {
+  white-space: normal;
+  vertical-align: top;
+}
+
+.vehicle-person-cell__primary {
+  color: #334155;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.vehicle-person-cell__secondary {
+  color: #64748b;
+  font-size: 0.9em;
+  margin-top: 3px;
+  line-height: 1.35;
+}
+
+.assets-table-assets tbody tr:hover td.assets-expiry-cell--expired {
+  background-color: #fecaca;
+}
+
+.assets-table-assets tbody tr:hover td.assets-expiry-cell--soon {
+  background-color: #fed7aa;
+}
+
+.assets-expiry-cell--expired {
+  background-color: #fee2e2 !important;
+  color: #7f1d1d;
+}
+
+.assets-expiry-cell--soon {
+  background-color: #ffedd5 !important;
+  color: #9a3412;
+}
+
+.assets-expiry-date-text {
+  display: inline-block;
+  margin-right: 6px;
+  font-weight: 500;
+}
+
+.assets-expiry-badge {
+  display: inline-block;
+  margin-top: 2px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.3;
+  vertical-align: middle;
+}
+
+.assets-expiry-badge--expired {
+  background: #fecaca;
+  color: #991b1b;
+}
+
+.assets-expiry-badge--soon {
+  background: #fed7aa;
+  color: #c2410c;
 }
 
 .status-badge-assets {
@@ -566,6 +702,7 @@
 .detail-value-assets {
   color: #333;
   flex: 1;
+  white-space: pre-line;
 }
 
 @media (max-width: 768px) {

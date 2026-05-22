@@ -120,7 +120,6 @@ const navbarCategories = [
       { path: '/home/fleet', label: 'Resource Allocation', icon: FaCogs },
       { path: '/home/accident-reports', label: 'Accident Reports', icon: FaFileAlt },
       { path: '/home/maintenance', label: 'Maintenance', icon: FaTools },
-      { path: '/home/fleet-update', label: 'Fleet update', icon: FaStore },
       { path: '/home/stock-assets/supplier-registration', label: 'Supplier Management', icon: FaHandshake },
       { path: '/home/stock-assets/inventory-items-registration', label: 'Inventory Items Registration', icon: FaBoxes },
       {

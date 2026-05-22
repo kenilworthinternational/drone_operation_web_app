@@ -215,6 +215,21 @@ export const assetsApi = baseApi.injectEndpoints({
 
     updateVehicle: builder.mutation({
       queryFn: async (data) => {
+        const isFormData = data instanceof FormData;
+        if (isFormData) {
+          const headers = {};
+          const token = getToken();
+          if (token) headers.Authorization = `Bearer ${token}`;
+          const baseUrl = getNodeBackendUrl();
+          const response = await fetch(`${baseUrl}/api/stock-assets/update_vehicle`, {
+            method: 'POST',
+            headers,
+            body: data,
+          });
+          const result = await response.json();
+          if (!response.ok) return { error: { status: response.status, data: result } };
+          return { data: result };
+        }
         const result = await nodeBackendBaseQuery(
           {
             url: '/api/stock-assets/update_vehicle',
@@ -227,6 +242,23 @@ export const assetsApi = baseApi.injectEndpoints({
         return result;
       },
       invalidatesTags: ['Assets', 'Vehicles'],
+    }),
+
+    getVehicleProfile: builder.query({
+      queryFn: async (vehicleId) => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: '/api/stock-assets/vehicle_profile',
+            method: 'POST',
+            body: { id: vehicleId },
+          },
+          {},
+          {}
+        );
+        if (result.error) return { error: result.error };
+        return { data: result.data?.data || result.data };
+      },
+      providesTags: (_r, _e, id) => [{ type: 'Vehicles', id: String(id) }],
     }),
 
     // Remote Controls
@@ -583,6 +615,7 @@ export const {
   useCreateGeneratorMutation,
   useUpdateGeneratorMutation,
   useGetVehiclesQuery,
+  useGetVehicleProfileQuery,
   useCreateVehicleMutation,
   useUpdateVehicleMutation,
   useGetRemoteControlsQuery,

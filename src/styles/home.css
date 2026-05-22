@@ -70,6 +70,25 @@
     overflow: hidden;
 }
 
+/* Vehicle Management (Transport HR): fixed chrome, scroll table body only */
+.content-dashboard.content-dashboard--vehicle-mgmt {
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    height: 100vh;
+    box-sizing: border-box;
+}
+
+.content-dashboard.content-dashboard--vehicle-mgmt > * {
+    flex: 1 1 0;
+    min-height: 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
 .content-dashboard::-webkit-scrollbar {
     width: 8px;
 }

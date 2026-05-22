@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import { Bars } from 'react-loader-spinner';
 import { FaCalendarAlt, FaCarSide, FaCheckCircle, FaDownload, FaGasPump, FaMoneyBillWave, FaTools, FaChartLine } from 'react-icons/fa';
@@ -35,8 +36,7 @@ import FuelApprovals from '../hr&admin/fuelApprovals/FuelApprovals';
 import { useGetPendingFuelApprovalsQuery } from '../../api/services NodeJs/fuelApprovalsApi';
 import DriverLeaveDatesHr from '../hr&admin/driverLeaveDates/DriverLeaveDatesHr';
 import VehicleRentApprovals from '../hr&admin/vehicleRentApprovals/VehicleRentApprovals';
-import AssetsRegistration from '../hr&admin/assets/AssetsRegistration';
-import Users from '../ict/users/Users';
+import VehicleManagement from '../administration/VehicleManagement';
 import { useGetHrTransportEstimatesQuery } from '../../api/services NodeJs/allEndpoints';
 import '../../styles/transportHrDashboard.css';
 
@@ -140,10 +140,11 @@ const MODULE_META = [
 ];
 const SUMMARY_DETAIL_KEYS = new Set(['availableToday', 'rentApprovals', 'advanceApprovals', 'maintenanceApprovals', 'fuelApprovals', 'leaveDates']);
 
+const VEHICLE_MODULE_PARAM = 'vehicleManagement';
+
 function TransportHrDashboard() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [detailModule, setDetailModule] = useState(null);
-  const [addVehicleOpen, setAddVehicleOpen] = useState(false);
-  const [addDriverOpen, setAddDriverOpen] = useState(false);
   const [leaveHistoryOpen, setLeaveHistoryOpen] = useState(false);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const [leaveMonthFilter, setLeaveMonthFilter] = useState('');
@@ -153,6 +154,27 @@ function TransportHrDashboard() {
   const [maintenanceStatusFilter, setMaintenanceStatusFilter] = useState('all');
   const [maintenanceVehicleFilter, setMaintenanceVehicleFilter] = useState('all');
   const [maintenanceSearch, setMaintenanceSearch] = useState('');
+  useEffect(() => {
+    const moduleParam = searchParams.get('module');
+    if (moduleParam === VEHICLE_MODULE_PARAM || moduleParam === 'vehicles') {
+      setDetailModule('vehicleManagement');
+    }
+  }, [searchParams]);
+
+  const openVehicleManagement = () => {
+    setDetailModule('vehicleManagement');
+    const next = new URLSearchParams(searchParams);
+    next.set('module', VEHICLE_MODULE_PARAM);
+    setSearchParams(next, { replace: true });
+  };
+
+  const closeVehicleManagement = () => {
+    setDetailModule(null);
+    const next = new URLSearchParams(searchParams);
+    next.delete('module');
+    setSearchParams(next, { replace: true });
+  };
+
   const [hrDecisionModal, setHrDecisionModal] = useState({
     open: false,
     row: null,
@@ -1098,6 +1120,20 @@ function TransportHrDashboard() {
     );
   }
 
+  if (detailModule === 'vehicleManagement') {
+    return (
+      <div className="dashboard-shell-transport-hr dashboard-shell-transport-hr--vehicle-mgmt">
+        <VehicleManagement
+          onBack={closeVehicleManagement}
+          onVehiclesChanged={() => {
+            refetchVehicles();
+            refetchDrivers();
+          }}
+        />
+      </div>
+    );
+  }
+
   if (showStandaloneDetail) {
     const ActiveIcon = activeDetailMeta?.icon || FaTools;
     return (
@@ -1126,17 +1162,18 @@ function TransportHrDashboard() {
       <div className="dashboard-header-card-transport-hr">
         <div className="dashboard-header-row-transport-hr">
           <div className="dashboard-header-text-transport-hr">
-            <h3 className="dashboard-title-transport-hr">Transport HR Operations Dashboard</h3>
+            <h3 className="dashboard-title-transport-hr">Transport Operations Dashboard</h3>
             <p className="dashboard-subtitle-transport-hr">
               Professional command center for approvals, leave planning, and daily distance intelligence.
             </p>
           </div>
           <div className="dashboard-header-actions-transport-hr">
-            <button type="button" className="action-btn-outline-transport-hr" onClick={() => setAddDriverOpen(true)}>
-              Add Driver
-            </button>
-            <button type="button" className="action-btn-outline-transport-hr" onClick={() => setAddVehicleOpen(true)}>
-              Add Vehicle
+            <button
+              type="button"
+              className="action-btn-outline-transport-hr"
+              onClick={openVehicleManagement}
+            >
+              Vehicle Management
             </button>
           </div>
         </div>
@@ -1435,7 +1472,7 @@ function TransportHrDashboard() {
           <button
             type="button"
             className="vehicle-admin-stat-card-transport-hr vehicle-admin-stat-card-clickable-transport-hr"
-            onClick={() => setDetailModule('vehicleAdminVehicles')}
+            onClick={openVehicleManagement}
           >
             <div className="vehicle-admin-stat-label-row-transport-hr">
               <FaCarSide size={12} />
@@ -1534,49 +1571,6 @@ function TransportHrDashboard() {
         </div>
 
       </div>
-
-      {addVehicleOpen && (
-        <div
-          role="presentation"
-          className="quick-add-overlay-transport-hr"
-          onClick={() => setAddVehicleOpen(false)}
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="transport-hr-add-vehicle-title"
-            className="quick-add-modal-transport-hr"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="quick-add-modal-toolbar-transport-hr">
-              <h3 id="transport-hr-add-vehicle-title" className="quick-add-modal-title-transport-hr">
-                Add Vehicle
-              </h3>
-              <button
-                type="button"
-                className="action-btn-secondary-transport-hr"
-                onClick={() => setAddVehicleOpen(false)}
-              >
-                Close
-              </button>
-            </div>
-            <p className="quick-add-modal-hint-transport-hr">
-              Same registration form as Fleet Update (vehicles). Driver assignment is optional.
-            </p>
-            <div className="quick-add-modal-body-transport-hr">
-              <AssetsRegistration
-                singleMode
-                selectedType="vehicles"
-                compactHeader
-                onVehicleRegisteredSuccess={() => {
-                  refetchVehicles();
-                  window.setTimeout(() => setAddVehicleOpen(false), 1200);
-                }}
-              />
-            </div>
-          </div>
-        </div>
-      )}
 
       {renderHrDecisionModal()}
       {renderHrDecisionNoticeModal()}
@@ -1685,47 +1679,6 @@ function TransportHrDashboard() {
           </div>
         </div>
       ) : null}
-
-      {addDriverOpen && (
-        <div
-          role="presentation"
-          className="quick-add-overlay-transport-hr"
-          onClick={() => setAddDriverOpen(false)}
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="transport-hr-add-driver-title"
-            className="quick-add-modal-transport-hr quick-add-modal-transport-hr--wide"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="quick-add-modal-toolbar-transport-hr">
-              <h3 id="transport-hr-add-driver-title" className="quick-add-modal-title-transport-hr">
-                Add Driver
-              </h3>
-              <button
-                type="button"
-                className="action-btn-secondary-transport-hr"
-                onClick={() => setAddDriverOpen(false)}
-              >
-                Close
-              </button>
-            </div>
-            <p className="quick-add-modal-hint-transport-hr">
-              Same flow as ICT User Registration. If Part Time Driver is No, job role stays Driver; if Yes, any job role can be selected.
-            </p>
-            <div className="quick-add-modal-body-transport-hr">
-              <Users
-                embeddedTransportDriver
-                onEmbeddedRegisterSuccess={() => {
-                  refetchDrivers();
-                  window.setTimeout(() => setAddDriverOpen(false), 1200);
-                }}
-              />
-            </div>
-          </div>
-        </div>
-      )}
 
       {renderImagePreviewModal()}
 

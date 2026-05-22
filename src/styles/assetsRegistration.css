@@ -361,6 +361,33 @@
   background-color: #e5e7eb;
 }
 
+.vehicle-photo-preview-assets-reg {
+  margin-top: 12px;
+  max-width: 280px;
+  border: 1px solid #dbeafe;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #f8fafc;
+}
+
+.vehicle-photo-preview-assets-reg img {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  display: block;
+}
+
+.vehicle-photo-preview-assets-reg span {
+  display: block;
+  padding: 8px 10px;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.vehicle-photo-upload-group-assets-reg {
+  max-width: 360px;
+}
+
 @media (max-width: 768px) {
   .form-row-assets-reg {
     grid-template-columns: 1fr;

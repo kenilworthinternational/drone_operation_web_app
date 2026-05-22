@@ -12,7 +12,6 @@ import {
   useGetPlantationsQuery,
   useGetRegionsQuery,
   useGetEstatesQuery,
-  useGetDriverFuelCardsQuery,
 } from '../../../api/services NodeJs/jdManagementApi';
 import { useGetWingsQuery } from '../../../api/services/assetsApi';
 import '../../../styles/userRegistration.css';
@@ -62,8 +61,6 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
     if (Array.isArray(wingsResponse?.data)) return wingsResponse.data;
     return [];
   }, [wingsResponse]);
-  const { data: fuelCardsData = [] } = useGetDriverFuelCardsQuery({ user_id: selectedUserId || null });
-
   // Mutations
   const [createUser, { isLoading: isCreating }] = useCreateUserMutation();
   const [updateUser, { isLoading: isUpdating }] = useUpdateUserMutation();
@@ -114,7 +111,6 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
     driver_license_no: '',
     driver_license_front_image: null,
     driver_license_back_image: null,
-    card_id: '',
   });
 
   const [submitMessage, setSubmitMessage] = useState({ type: '', text: '' });
@@ -152,7 +148,6 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
     plantation: '',
     region: '',
     estate: '',
-    card_id: '',
   });
   const activeUserJobRoles = useMemo(
     () => userJobRoles.filter((role) => Number(role?.status) === 1),
@@ -402,7 +397,6 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
       plantation: user?.plantation ? String(user.plantation) : '',
       region: user?.region ? String(user.region) : '',
       estate: user?.estate ? String(user.estate) : '',
-      card_id: user?.card_id ? String(user.card_id) : '',
     });
     setSelectedUserImageUrl(user?.image || '');
     setShowEditPopup(true);
@@ -434,10 +428,6 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
 
       const nextJobRole = name === 'job_role' ? value : next.job_role;
       const nextPartTimeDriver = Number(name === 'part_time_driver' ? value : next.part_time_driver) === 1;
-      if (!isDriverLikeJobRoleForForms(nextJobRole, nextPartTimeDriver)) {
-        next.card_id = '';
-      }
-
       if (name === 'estate' && value) {
         const selectedEstate = estates.find((item) => item.id === parseInt(value));
         if (selectedEstate) {
@@ -506,11 +496,6 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
       payload.region = null;
       payload.estate = null;
     }
-    payload.card_id = payload.card_id || null;
-    if (!isDriverLikeJobRoleForForms(payload.job_role, Number(payload.part_time_driver || 0) === 1)) {
-      payload.card_id = null;
-    }
-
     if (image instanceof File) {
       const formDataToSend = new FormData();
       Object.entries(payload).forEach(([key, val]) => {
@@ -605,7 +590,6 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
         newData.driver_license_no = '';
         newData.driver_license_front_image = null;
         newData.driver_license_back_image = null;
-        newData.card_id = '';
       }
       
       // Handle cascading dropdowns for external user fields - AUTO-POPULATE PARENT FIELDS
@@ -740,10 +724,8 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
         delete submissionData.driver_license_no;
         delete submissionData.driver_license_front_image;
         delete submissionData.driver_license_back_image;
-        submissionData.card_id = null;
-      } else if (!submissionData.card_id) {
-        submissionData.card_id = null;
       }
+      delete submissionData.card_id;
 
       // Use FormData when any file is attached
       let dataToSend;
@@ -808,7 +790,6 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
           driver_license_no: '',
           driver_license_front_image: null,
           driver_license_back_image: null,
-          card_id: '',
         });
         if (!embeddedTransportDriver) {
           setUserType('');
@@ -1232,28 +1213,6 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
                     onChange={handleInputChange}
                     placeholder="Enter driver license number"
                   />
-                </div>
-                <div className="form-group">
-                  <label>
-                    Fuel Card{embeddedTransportDriver ? ' (optional)' : ''}:
-                  </label>
-                  {embeddedTransportDriver ? (
-                    <p className="form-hint-text" style={{ margin: '0 0 6px', fontSize: 12, color: '#6b7280' }}>
-                      Fuel cards are assigned to vehicles in Transport HR → Vehicle Admin. Driver card is not required for day/fuel operations.
-                    </p>
-                  ) : null}
-                  <select
-                    name="card_id"
-                    value={formData.card_id}
-                    onChange={handleInputChange}
-                  >
-                    <option value="">-- Select Fuel Card --</option>
-                    {fuelCardsData.map((card) => (
-                      <option key={card.id} value={card.id}>
-                        {card.label || card.card_no_masked || `Card #${card.id}`}
-                      </option>
-                    ))}
-                  </select>
                 </div>
               </div>
 
@@ -1802,22 +1761,6 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
                 </div>
               </div>
             </div>
-
-            {isDriverLikeJobRoleForForms(editFormData.job_role, Number(editFormData.part_time_driver) === 1) && (
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Fuel Card</label>
-                  <select name="card_id" value={editFormData.card_id} onChange={handleEditInputChange}>
-                    <option value="">-- Select Fuel Card --</option>
-                    {fuelCardsData.map((card) => (
-                      <option key={card.id} value={card.id}>
-                        {card.label || card.card_no_masked || `Card #${card.id}`}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            )}
 
             {editFormData.member_type === 'e' && (
               <>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import WingHubHome from './pages/WingHubHome';
 import CombHubPage from './pages/CombHubPage';
@@ -58,10 +58,9 @@ import EmployeeAssignment from './sections/hr&admin/EmployeeAssignment';
 import MonthlyRoaster from './sections/hr&admin/roaster/MonthlyRoaster';
 import RoasterPlanning from './sections/hr&admin/roaster/RoasterPlanning';
 import LeaveManagement from './sections/hr&admin/leave/LeaveManagement';
-import ResourceAllocation from './sections/fleet/resource-allocation/ResourceAllocation';
-import AccidentReports from './sections/fleet/accident-reports/AccidentReports';
-import Maintenance from './sections/fleet/maintenance/Maintenance';
-import FleetUpdate from './sections/fleet/fleet-update/FleetUpdate';
+import ResourceAllocation from './sections/administration/resource-allocation/ResourceAllocation';
+import AccidentReports from './sections/administration/accident-reports/AccidentReports';
+import Maintenance from './sections/administration/maintenance/Maintenance';
 import DjiMapUpload from './sections/opsroom/dji/DjiMapUpload';
 import ManagerApprovalQueue from './sections/opsroom/manager-approval/ManagerApprovalQueue';
 import PlantationPlanRequestQueue from './sections/opsroom/plantation-plan-requests/PlantationPlanRequestQueue';
@@ -102,6 +101,17 @@ const ProtectedRoute = ({ children }) => {
   return isAuthenticated ? children : <Navigate to="/login" />;
 };
 
+
+/** Legacy `#/home/fleet-update` → Transport HR vehicle management. */
+function FleetUpdateRedirect() {
+  const location = useLocation();
+  const next = new URLSearchParams(location.search);
+  if (!next.get('module')) {
+    next.set('module', 'vehicleManagement');
+  }
+  const search = next.toString();
+  return <Navigate to={`/home/transport/hr${search ? `?${search}` : ''}`} replace />;
+}
 
 function App() {
   return (
@@ -722,11 +732,7 @@ function App() {
           />
           <Route
             path="fleet-update"
-            element={
-              <ProtectedRoute>
-                <FleetUpdate />
-              </ProtectedRoute>
-            }
+            element={<FleetUpdateRedirect />}
           />
           <Route
             path="ict/system-admin/users"
