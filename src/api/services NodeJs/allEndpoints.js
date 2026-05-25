@@ -22,6 +22,7 @@ import './mappingHierarchyApi';
 import './fieldHistoryApi';
 import './vehicleAppApi';
 import './financeReportApi';
+import './plantationInvoiceApi';
 import './chemicalsApi';
 import './timeOfDaysApi';
 
@@ -43,6 +44,7 @@ export * from './mappingHierarchyApi';
 export * from './fieldHistoryApi';
 export * from './vehicleAppApi';
 export * from './financeReportApi';
+export * from './plantationInvoiceApi';
 export * from './chemicalsApi';
 export * from './timeOfDaysApi';
 

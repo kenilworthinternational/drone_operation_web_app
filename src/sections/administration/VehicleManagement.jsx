@@ -20,34 +20,18 @@ export default function VehicleManagement({ onBack, onVehiclesChanged }) {
 
   if (showAddForm) {
     return (
-      <div className="vehicle-mgmt-shell">
-        <header className="vehicle-mgmt-header vehicle-mgmt-header-row">
-          <div className="vehicle-mgmt-header-start vehicle-mgmt-nav-group">
-            {onBack ? (
-              <button type="button" className="vehicle-mgmt-back-btn" onClick={onBack}>
-                ← Vehicle Fleet
-              </button>
-            ) : null}
-            <button
-              type="button"
-              className="vehicle-mgmt-back-btn vehicle-mgmt-back-btn--muted"
-              onClick={() => setShowAddForm(false)}
-            >
-              ← Vehicle list
-            </button>
-          </div>
-          <div className="vehicle-mgmt-intro">
-            <h3 className="vehicle-mgmt-title vehicle-mgmt-title--solo">Add Vehicle</h3>
-          </div>
-          <div className="vehicle-mgmt-header-end" aria-hidden="true" />
-        </header>
-        <VehiclesRegistration
-          compactHeader
-          onVehicleRegisteredSuccess={() => {
-            onVehiclesChanged?.();
-            setShowAddForm(false);
-          }}
-        />
+      <div className="vehicle-mgmt-shell vehicle-mgmt-shell--add">
+        <div className="vehicle-mgmt-body vehicle-mgmt-body--add-flow">
+          <VehiclesRegistration
+            profileLayout
+            fleetNavBack={onBack}
+            onCancel={() => setShowAddForm(false)}
+            onVehicleRegisteredSuccess={() => {
+              onVehiclesChanged?.();
+              setShowAddForm(false);
+            }}
+          />
+        </div>
       </div>
     );
   }

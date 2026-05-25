@@ -455,6 +455,90 @@
   cursor: not-allowed;
 }
 
+.vehicle-profile-btn-secondary {
+  padding: 9px 18px;
+  background: #fff;
+  color: #004b71;
+  border: 1px solid #004b71;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.vehicle-profile-btn-secondary:hover {
+  background: #e8f4fb;
+}
+
+.vehicle-profile-btn-secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.vehicle-registration-profile-flow {
+  padding-bottom: 8px;
+}
+
+.vehicle-add-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.vehicle-reg-header-hint {
+  margin: 10px 0 0;
+  font-size: 0.88rem;
+  color: #64748b;
+  line-height: 1.45;
+}
+
+.vehicle-reg-tabs {
+  margin-top: 4px;
+}
+
+.vehicle-reg-panel--hidden {
+  display: none !important;
+}
+
+.vehicle-reg-section h4 {
+  margin-top: 0;
+}
+
+.vehicle-reg-section--nested {
+  margin-top: 16px;
+}
+
+.vehicle-reg-section-hint {
+  margin: 0 0 14px !important;
+}
+
+.vehicle-reg-message {
+  margin-bottom: 14px;
+}
+
+.vehicle-profile-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 8px;
+  padding: 16px 0 8px;
+  border-top: 1px solid #e2e8f0;
+  position: sticky;
+  bottom: 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.85) 0%, #fff 40%);
+  z-index: 2;
+}
+
+.assets-registration-form-assets-reg--profile {
+  margin-top: 4px;
+}
+
+.vehicle-reg-inner h4 {
+  margin: 0 0 12px;
+  font-size: 1.05rem;
+  color: #0f172a;
+}
+
 .vehicle-profile-link {
   color: #004b71;
   font-weight: 600;

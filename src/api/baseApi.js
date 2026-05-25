@@ -66,7 +66,7 @@ export const baseApi = createApi({
     // Stock and Assets Management
     'Suppliers', 'MainCategories', 'SubCategories', 'InventoryItems',
     // Finance
-    'Brokers', 'PilotRevenue', 'DefaultValues',
+    'Brokers', 'PilotRevenue', 'DefaultValues', 'PlantationInvoices',
     // Dropdowns
     'Sectors', 'Crops', 'MissionTypes', 'TimeSlots', 'ChemicalTypes', 'Stages',
     // Notifications

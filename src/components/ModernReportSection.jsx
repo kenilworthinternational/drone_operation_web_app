@@ -246,14 +246,6 @@ const ModernReportSection = ({ category = null }) => {
       color: '#ffc107',
       reports: [
         {
-          id: 'finance_field_detailed',
-          name: 'Field Wise Financial Report',
-          description: 'Detailed field financial analysis',
-          icon: FaFileInvoiceDollar,
-          component: EstateSprayedAreaReport,
-          metrics: { label: 'Fields', value: 'All' }
-        },
-        {
           id: 'finance_date_plantation',
           name: 'Date Wise by Plantation',
           description: 'Financial timeline by plantation',

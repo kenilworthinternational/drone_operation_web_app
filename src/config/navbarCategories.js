@@ -72,6 +72,7 @@ const navbarCategories = [
       { path: '/home/brokers', label: 'Brokers', icon: FaHandshake },
       { path: '/home/financial-cards', label: 'Financial Cards', icon: FaMoneyBillWave },
       { path: '/home/transport/finance', label: 'Transport Payments', icon: FaTruck },
+      { path: '/home/finance/work-summary', label: 'Work Summary', icon: FaChartBar },
       { path: '/home/reports/finance', label: 'Reports', icon: FaFileAlt },
     ],
   },

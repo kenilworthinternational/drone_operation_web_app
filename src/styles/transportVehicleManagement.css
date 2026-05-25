@@ -17,6 +17,16 @@
   overflow: hidden;
 }
 
+.vehicle-mgmt-shell--add {
+  overflow: hidden;
+}
+
+.vehicle-mgmt-body--add-flow {
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0 2px 16px;
+}
+
 .vehicle-mgmt-header {
   flex-shrink: 0;
   margin-bottom: 12px;

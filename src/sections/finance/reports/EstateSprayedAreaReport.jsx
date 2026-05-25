@@ -8,7 +8,9 @@ import * as XLSX from "xlsx";
 import { jsPDF } from "jspdf";
 import autoTable from 'jspdf-autotable';
 import { Bars } from "react-loader-spinner";
-import { FiRefreshCw, FiDownload, FiPrinter } from "react-icons/fi";
+import { FiRefreshCw, FiDownload, FiPrinter, FiFileText } from "react-icons/fi";
+import CreatePlantationInvoiceModal from './CreatePlantationInvoiceModal';
+import PlantationInvoicePrint from './PlantationInvoicePrint';
 
 /** Same 2dp rounding as the table; avoids false "issue" rows when floats differ only below display precision. */
 const hasFinanceExtentIssue = (row) => {
@@ -33,7 +35,7 @@ const extractListData = (payload) => {
     return [];
 };
 
-const EstateSprayedAreaReport = () => {
+const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
     const [triggerFieldWiseFinanceReport] = useLazyGetFieldWiseFinanceReportQuery();
     const [triggerPlantationsList] = useLazyGetPlantationsListQuery();
     const [triggerEstatesList] = useLazyGetEstatesListQuery();
@@ -53,6 +55,16 @@ const EstateSprayedAreaReport = () => {
     const [reportData, setReportData] = useState([]);
     const processedData = [];
     const [selectedMissionType, setSelectedMissionType] = useState('all');
+    const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+    const [localPreviewInvoice, setLocalPreviewInvoice] = useState(null);
+
+    const showInvoicePreview = (inv) => {
+        if (onInvoicePreview) {
+            onInvoicePreview(inv);
+        } else {
+            setLocalPreviewInvoice(inv);
+        }
+    };
 
     const getFilteredRows = () => {
         const rows = Array.isArray(reportData) ? reportData : [];
@@ -596,6 +608,15 @@ const EstateSprayedAreaReport = () => {
     }, {});
     const issueRows = filteredRows.filter(hasFinanceExtentIssue);
     const hasIssues = issueRows.length > 0;
+    const canCreateInvoice =
+        selectedPlantation &&
+        selectedEstates.length > 0 &&
+        selectedDates[0] &&
+        selectedDates[1] &&
+        filteredRows.length > 0 &&
+        !hasIssues;
+
+    const formatDateParam = (d) => d?.toLocaleDateString?.('en-CA') || '';
 
     return (
         <div className="finance">
@@ -719,6 +740,17 @@ const EstateSprayedAreaReport = () => {
                                 >
                                     <FiPrinter className="mr-2" />
                                     Issues PDF
+                                </button>
+                            )}
+                            {canCreateInvoice && (
+                                <button
+                                    type="button"
+                                    onClick={() => setShowInvoiceModal(true)}
+                                    className="finance-btn-invoice flex items-center"
+                                    title="Create tax invoice from billing Ha"
+                                >
+                                    <FiFileText className="mr-2" />
+                                    Create Invoice
                                 </button>
                             )}
                         </div>
@@ -882,6 +914,30 @@ const EstateSprayedAreaReport = () => {
 
 
 
+            {!onInvoicePreview && localPreviewInvoice ? (
+                <PlantationInvoicePrint
+                    invoice={localPreviewInvoice}
+                    variant="preview"
+                    onClose={() => setLocalPreviewInvoice(null)}
+                />
+            ) : null}
+
+            <CreatePlantationInvoiceModal
+                open={showInvoiceModal}
+                onClose={() => setShowInvoiceModal(false)}
+                onCreated={(inv) => {
+                    setShowInvoiceModal(false);
+                    showInvoicePreview(inv);
+                }}
+                plantationId={selectedPlantation}
+                plantationName={
+                    plantations.find((p) => p.id === selectedPlantation)?.plantation || ''
+                }
+                estateIds={selectedEstates}
+                startDate={formatDateParam(selectedDates[0])}
+                endDate={formatDateParam(selectedDates[1])}
+                missionFilter={selectedMissionType}
+            />
         </div>
     );
 };

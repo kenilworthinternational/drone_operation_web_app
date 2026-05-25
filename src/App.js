@@ -16,6 +16,7 @@ import CalenderView from './features/calendar/CalenderView';
 import DeactivatePlan from './features/misc/DeactivatePlan';
 import PlanActivateRequestsPage from './sections/management/plans/PlanActivateRequestsPage';
 import ModernReportSection from './components/ModernReportSection';
+import WorkSummaryPage from './sections/finance/reports/WorkSummaryPage';
 import DayEndProcess from './sections/opsroom/dayend/DayEndProcess';
 import Earnings from './sections/finance/PilotEarnings/Earnings';
 import DayEndProcessAsc from './sections/opsroom/dayend/DayEndProcessAsc';
@@ -343,6 +344,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <ModernReportSection category="management" />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="finance/work-summary"
+            element={
+              <ProtectedRoute>
+                <WorkSummaryPage />
               </ProtectedRoute>
             }
           />

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { FaClipboardList, FaPlane, FaCar, FaBolt, FaBatteryFull, FaGamepad } from 'react-icons/fa';
 import '../../../styles/assetsRegistration.css';
+import '../../../styles/vehicleProfile.css';
 import { baseApi } from '../../../api/services/allEndpoints';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import {
@@ -139,8 +140,18 @@ const vehicleInitialState = {
   owner_address: '',
 };
 
+const VEHICLE_REG_TABS = [
+  { key: 'basics', label: 'Vehicle details' },
+  { key: 'driver', label: 'Driver & maintenance' },
+  { key: 'documents', label: 'Documents & photo' },
+  { key: 'rental', label: 'Rental & owner' },
+];
+
 const VehiclesRegistration = ({
   compactHeader = false,
+  profileLayout = false,
+  fleetNavBack,
+  onCancel,
   onVehicleRegisteredSuccess,
 }) => {
   const dispatch = useAppDispatch();
@@ -148,6 +159,8 @@ const VehiclesRegistration = ({
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState('');
+  const [vehicleRegTab, setVehicleRegTab] = useState('basics');
+  const [photoPreviewUrl, setPhotoPreviewUrl] = useState(null);
   
   // Refs for file inputs to clear them after successful submission
   const registrationDocRef = useRef(null);
@@ -300,6 +313,47 @@ const VehiclesRegistration = ({
     });
   }, [availableDrivers, driverSearchTerm]);
 
+  useEffect(() => {
+    if (!profileLayout) return undefined;
+    const file = vehicleFormData.vehicle_image;
+    if (!(file instanceof File)) {
+      setPhotoPreviewUrl(null);
+      return undefined;
+    }
+    const url = URL.createObjectURL(file);
+    setPhotoPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [profileLayout, vehicleFormData.vehicle_image]);
+
+  useEffect(() => {
+    if (!profileLayout) return;
+    if (vehicleRegTab === 'rental' && vehicleFormData.ownership !== 'r') {
+      setVehicleRegTab('basics');
+    }
+  }, [profileLayout, vehicleFormData.ownership, vehicleRegTab]);
+
+  const regProfileTitle = useMemo(() => {
+    const no = String(vehicleFormData.vehicle_no || '').trim();
+    if (no) return no;
+    return 'Register new vehicle';
+  }, [vehicleFormData.vehicle_no]);
+
+  const visibleRegTabs = useMemo(
+    () =>
+      VEHICLE_REG_TABS.filter(
+        (t) => t.key !== 'rental' || vehicleFormData.ownership === 'r'
+      ),
+    [vehicleFormData.ownership]
+  );
+
+  const regPanelClass = (tabKey) =>
+    [
+      profileLayout ? 'vehicle-reg-panel' : '',
+      profileLayout && vehicleRegTab !== tabKey ? 'vehicle-reg-panel--hidden' : '',
+    ]
+      .filter(Boolean)
+      .join(' ');
+
   // Form fields for Generators
   const [generatorFormData, setGeneratorFormData] = useState(() => ({ ...equipmentInitialState }));
 
@@ -338,6 +392,23 @@ const VehiclesRegistration = ({
     if (Array.isArray(vehicleModelsResponse?.data)) return vehicleModelsResponse.data;
     return [];
   }, [vehicleModelsResponse]);
+
+  const regProfileSubtitle = useMemo(() => {
+    const ownership =
+      vehicleFormData.ownership === 'o'
+        ? 'KWIL vehicle'
+        : vehicleFormData.ownership === 'r'
+          ? 'Rented vehicle'
+          : 'Select ownership to continue';
+    const { make: makeLabel, model: modelLabel } = vehicleMasterLabelsFromIds(
+      vehicleFormData.make,
+      vehicleFormData.model,
+      vehicleMakes,
+      vehicleModels
+    );
+    const mm = [makeLabel, modelLabel].filter(Boolean).join(' ');
+    return mm ? `${ownership} · ${mm}` : ownership;
+  }, [vehicleFormData, vehicleMakes, vehicleModels]);
 
   const handleInputChange = (e, formType) => {
     const { name, value } = e.target;
@@ -1033,7 +1104,28 @@ const VehiclesRegistration = ({
   );
 
   const renderVehiclesForm = () => (
-    <form onSubmit={(e) => handleSubmit(e, 'vehicles')} className="assets-registration-form-assets-reg">
+    <form
+      onSubmit={(e) => handleSubmit(e, 'vehicles')}
+      className={`assets-registration-form-assets-reg${profileLayout ? ' assets-registration-form-assets-reg--profile' : ''}`}
+    >
+      {profileLayout ? (
+        <div className="vehicle-profile-tabs vehicle-reg-tabs">
+          {visibleRegTabs.map((t) => (
+            <button
+              key={t.key}
+              type="button"
+              className={`vehicle-profile-tab ${vehicleRegTab === t.key ? 'active' : ''}`}
+              onClick={() => setVehicleRegTab(t.key)}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      ) : null}
+
+      <div className={regPanelClass('basics')}>
+        <div className={profileLayout ? 'vehicle-profile-section vehicle-reg-section' : 'vehicle-reg-inner'}>
+        {profileLayout ? <h4>Vehicle details</h4> : null}
       <div className="form-row-assets-reg">
         <div className="form-group-assets-reg">
           <label htmlFor="ownership">Ownership <span className="required-assets-reg">*</span></label>
@@ -1198,11 +1290,18 @@ const VehiclesRegistration = ({
           </select>
         </div>
       </div>
-
-      {/* Driver Information Section */}
-      <div className="form-section-divider-assets-reg">
-        <h4>Driver Information</h4>
+        </div>
       </div>
+
+      <div className={regPanelClass('driver')}>
+        <div className={profileLayout ? 'vehicle-profile-section vehicle-reg-section' : 'vehicle-reg-inner'}>
+      {!profileLayout ? (
+        <div className="form-section-divider-assets-reg">
+          <h4>Driver Information</h4>
+        </div>
+      ) : (
+        <h4>Driver & maintenance</h4>
+      )}
 
       <div className="form-row-assets-reg">
         <div className="form-group-assets-reg">
@@ -1391,11 +1490,23 @@ const VehiclesRegistration = ({
           />
         </div>
       </div>
-
-      {/* Document Uploads Section */}
-      <div className="form-section-divider-assets-reg">
-        <h4>Documents & Images</h4>
+        </div>
       </div>
+
+      <div className={regPanelClass('documents')}>
+        <div className={profileLayout ? 'vehicle-profile-section vehicle-reg-section' : 'vehicle-reg-inner'}>
+      {!profileLayout ? (
+        <div className="form-section-divider-assets-reg">
+          <h4>Documents & Images</h4>
+        </div>
+      ) : (
+        <>
+          <h4>Documents & images</h4>
+          <p className="vehicle-profile-subtitle vehicle-reg-section-hint">
+            Upload the main vehicle photo and compliance documents. The photo appears on the fleet profile.
+          </p>
+        </>
+      )}
 
       <div className="form-row-assets-reg vehicle-photo-upload-row-assets-reg">
         <div className="form-group-assets-reg vehicle-photo-upload-group-assets-reg">
@@ -1498,13 +1609,19 @@ const VehiclesRegistration = ({
           />
         </div>
       </div>
+        </div>
+      </div>
 
-      {/* Rented Vehicle Fields */}
-      {vehicleFormData.ownership === 'r' && (
-        <>
-          <div className="form-section-divider-assets-reg">
-            <h4>Rental Information</h4>
-          </div>
+      {vehicleFormData.ownership === 'r' ? (
+        <div className={regPanelClass('rental')}>
+          <div className={profileLayout ? 'vehicle-profile-section vehicle-reg-section' : 'vehicle-reg-inner'}>
+          {!profileLayout ? (
+            <div className="form-section-divider-assets-reg">
+              <h4>Rental Information</h4>
+            </div>
+          ) : (
+            <h4>Rental & owner</h4>
+          )}
 
           <div className="form-row-assets-reg">
             <div className="form-group-assets-reg">
@@ -1587,9 +1704,15 @@ const VehiclesRegistration = ({
             </div>
           </div>
 
-          <div className="form-section-divider-assets-reg">
-            <h4>Owner Information</h4>
-          </div>
+          {!profileLayout ? (
+            <div className="form-section-divider-assets-reg">
+              <h4>Owner Information</h4>
+            </div>
+          ) : (
+            <div className="vehicle-profile-section vehicle-reg-section vehicle-reg-section--nested">
+              <h4>Owner information</h4>
+            </div>
+          )}
 
           <div className="form-row-assets-reg">
             <div className="form-group-assets-reg">
@@ -1642,16 +1765,36 @@ const VehiclesRegistration = ({
               />
             </div>
           </div>
-        </>
-      )}
+          </div>
+        </div>
+      ) : null}
 
-      <div className="form-actions-assets-reg">
-        <button type="submit" className="submit-btn-assets-reg" disabled={isLoading}>
+      <div className={profileLayout ? 'vehicle-profile-form-actions' : 'form-actions-assets-reg'}>
+        <button
+          type="submit"
+          className={profileLayout ? 'vehicle-profile-btn-primary' : 'submit-btn-assets-reg'}
+          disabled={isLoading}
+        >
           {isLoading ? 'Registering...' : 'Register Vehicle'}
         </button>
-        <button type="button" className="reset-btn-assets-reg" onClick={() => resetForm('vehicles')} disabled={isLoading}>
+        <button
+          type="button"
+          className={profileLayout ? 'vehicle-profile-btn-secondary' : 'reset-btn-assets-reg'}
+          onClick={() => resetForm('vehicles')}
+          disabled={isLoading}
+        >
           Reset
         </button>
+        {profileLayout && onCancel ? (
+          <button
+            type="button"
+            className="vehicle-profile-btn-secondary"
+            onClick={onCancel}
+            disabled={isLoading}
+          >
+            Cancel
+          </button>
+        ) : null}
       </div>
     </form>
   );
@@ -2286,6 +2429,53 @@ const VehiclesRegistration = ({
       </div>
     </form>
   );
+
+  if (profileLayout) {
+    return (
+      <div className="vehicle-profile-wrap vehicle-registration-profile-flow">
+        <div className="vehicle-add-nav">
+          {typeof fleetNavBack === 'function' ? (
+            <button type="button" className="vehicle-profile-back" onClick={fleetNavBack}>
+              ← Vehicle Fleet
+            </button>
+          ) : null}
+          {onCancel ? (
+            <button type="button" className="vehicle-profile-back" onClick={onCancel}>
+              ← Back to fleet list
+            </button>
+          ) : null}
+        </div>
+
+        <div className="vehicle-profile-header vehicle-profile-header-with-photo">
+          <div className="vehicle-profile-header-main">
+            <h2 className="vehicle-profile-title">{regProfileTitle}</h2>
+            <p className="vehicle-profile-subtitle">{regProfileSubtitle}</p>
+            <p className="vehicle-reg-header-hint">
+              Complete each section below, then register to add this vehicle to the fleet.
+            </p>
+          </div>
+          <div className="vehicle-profile-hero-photo">
+            {photoPreviewUrl ? (
+              <img src={photoPreviewUrl} alt="Vehicle preview" />
+            ) : (
+              <div className="vehicle-profile-hero-placeholder">
+                <span>New vehicle</span>
+                <small>Photo uploads in Documents tab</small>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {message ? (
+          <div className={`message-assets-reg ${messageType}-assets-reg vehicle-reg-message`}>
+            {message}
+          </div>
+        ) : null}
+
+        {renderVehiclesForm()}
+      </div>
+    );
+  }
 
   return (
     <div className="assets-registration-container-assets-reg">

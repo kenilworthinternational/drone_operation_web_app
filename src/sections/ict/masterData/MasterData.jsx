@@ -51,6 +51,12 @@ import {
   useUpdateTimeOfDayMutation,
 } from '../../../api/services NodeJs/timeOfDaysApi';
 import { useSendMessageMutation } from '../../../api/services/authApi';
+import {
+  useGetInvoiceOrganizationsQuery,
+  useSaveInvoiceOrganizationMutation,
+  useGetInvoiceTaxTypesQuery,
+  useSaveInvoiceTaxTypeMutation,
+} from '../../../api/services NodeJs/plantationInvoiceApi';
 import '../../../styles/masterdata.css';
 
 const TAB_CONFIG = {
@@ -91,6 +97,14 @@ const MasterData = ({ mode = 'full' }) => {
   );
   const { data: timeOfDaysRaw = [], refetch: refetchTimeOfDays } = useGetTimeOfDaysQuery(
     { include_inactive: true },
+    { skip: activeTab !== 'masters' }
+  );
+  const { data: invoiceOrgsRaw = [], refetch: refetchInvoiceOrgs } = useGetInvoiceOrganizationsQuery(
+    { includeInactive: true },
+    { skip: activeTab !== 'masters' }
+  );
+  const { data: invoiceTaxesRaw = [], refetch: refetchInvoiceTaxes } = useGetInvoiceTaxTypesQuery(
+    { includeInactive: true },
     { skip: activeTab !== 'masters' }
   );
   const wings = useMemo(() => {
@@ -142,6 +156,21 @@ const MasterData = ({ mode = 'full' }) => {
     return [...raw].sort((a, b) => Number(a.id) - Number(b.id));
   }, [timeOfDaysRaw]);
 
+  const invoiceOrganizations = useMemo(() => {
+    const raw = Array.isArray(invoiceOrgsRaw) ? invoiceOrgsRaw : [];
+    return [...raw].sort((a, b) => String(a.org_name || '').localeCompare(String(b.org_name || ''), undefined, { sensitivity: 'base' }));
+  }, [invoiceOrgsRaw]);
+
+  const invoiceTaxTypes = useMemo(() => {
+    const raw = Array.isArray(invoiceTaxesRaw) ? invoiceTaxesRaw : [];
+    return [...raw].sort((a, b) => {
+      const sa = Number(a.sort_order) || 0;
+      const sb = Number(b.sort_order) || 0;
+      if (sa !== sb) return sa - sb;
+      return Number(a.id) - Number(b.id);
+    });
+  }, [invoiceTaxesRaw]);
+
   const [saveVehicleCategory] = useSaveVehicleAppVehicleCategoryMutation();
   const [saveMaintenanceCategory] = useSaveVehicleAppMaintenanceCategoryMutation();
   const [decideMaintenance] = useDecideVehicleAppMaintenanceRequestMutation();
@@ -161,6 +190,8 @@ const MasterData = ({ mode = 'full' }) => {
   const [updateChemical] = useUpdateChemicalMutation();
   const [createTimeOfDay] = useCreateTimeOfDayMutation();
   const [updateTimeOfDay] = useUpdateTimeOfDayMutation();
+  const [saveInvoiceOrganization] = useSaveInvoiceOrganizationMutation();
+  const [saveInvoiceTaxType] = useSaveInvoiceTaxTypeMutation();
 
   const [newMaintenanceCategory, setNewMaintenanceCategory] = useState('');
   const [newChemicalName, setNewChemicalName] = useState('');
@@ -174,6 +205,8 @@ const MasterData = ({ mode = 'full' }) => {
   const [addWorkLocationOpen, setAddWorkLocationOpen] = useState(false);
   const [addMaintenanceCategoryOpen, setAddMaintenanceCategoryOpen] = useState(false);
   const [addWorkingTimeOpen, setAddWorkingTimeOpen] = useState(false);
+  const [addInvoiceOrgOpen, setAddInvoiceOrgOpen] = useState(false);
+  const [addInvoiceTaxOpen, setAddInvoiceTaxOpen] = useState(false);
 
   const [newFuelCategory, setNewFuelCategory] = useState('');
   const [newFuelUnitPrice, setNewFuelUnitPrice] = useState('');
@@ -183,6 +216,18 @@ const MasterData = ({ mode = 'full' }) => {
   const [newWorkLocationName, setNewWorkLocationName] = useState('');
   const [newWorkLocationCode, setNewWorkLocationCode] = useState('');
   const [newWorkLocationMapLink, setNewWorkLocationMapLink] = useState('');
+  const [newOrgName, setNewOrgName] = useState('');
+  const [newOrgCode, setNewOrgCode] = useState('');
+  const [newOrgBr, setNewOrgBr] = useState('');
+  const [newOrgVatNo, setNewOrgVatNo] = useState('');
+  const [newOrgAddress, setNewOrgAddress] = useState('');
+  const [newOrgTelephone, setNewOrgTelephone] = useState('');
+  const [newOrgEmail, setNewOrgEmail] = useState('');
+  const [newOrgLogoPath, setNewOrgLogoPath] = useState('/assets/images/kenilowrthlogoDark.png');
+  const [newTaxName, setNewTaxName] = useState('');
+  const [newTaxRate, setNewTaxRate] = useState('');
+  const [newTaxSortOrder, setNewTaxSortOrder] = useState('0');
+  const [newTaxApplyOn, setNewTaxApplyOn] = useState('running');
   const [reasonAddModalType, setReasonAddModalType] = useState(null);
   const [reasonAddDraft, setReasonAddDraft] = useState({});
   const [addModal, setAddModal] = useState(null);
@@ -429,6 +474,87 @@ const MasterData = ({ mode = 'full' }) => {
     });
   };
 
+  const resetNewOrgFields = () => {
+    setNewOrgName('');
+    setNewOrgCode('');
+    setNewOrgBr('');
+    setNewOrgVatNo('');
+    setNewOrgAddress('');
+    setNewOrgTelephone('');
+    setNewOrgEmail('');
+    setNewOrgLogoPath('/assets/images/kenilowrthlogoDark.png');
+  };
+
+  const openAddInvoiceOrgModal = () => {
+    resetNewOrgFields();
+    setAddInvoiceOrgOpen(true);
+  };
+  const closeAddInvoiceOrgModal = () => {
+    setAddInvoiceOrgOpen(false);
+    resetNewOrgFields();
+  };
+  const saveAddInvoiceOrgModal = async () => {
+    const name = String(newOrgName || '').trim();
+    if (!name) {
+      setQuickMessage({ type: 'error', text: 'Organization name is required.' });
+      return;
+    }
+    await handleQuickSave(async () => {
+      await saveInvoiceOrganization({
+        org_name: name,
+        org_code: newOrgCode || null,
+        br: newOrgBr || null,
+        vat_no: newOrgVatNo || null,
+        address: newOrgAddress || null,
+        telephone: newOrgTelephone || null,
+        email: newOrgEmail || null,
+        logo_path: newOrgLogoPath || '/assets/images/kenilowrthlogoDark.png',
+        activated: 1,
+      }).unwrap();
+      await refetchInvoiceOrgs();
+      closeAddInvoiceOrgModal();
+    });
+  };
+
+  const resetNewTaxFields = () => {
+    setNewTaxName('');
+    setNewTaxRate('');
+    setNewTaxSortOrder('0');
+    setNewTaxApplyOn('running');
+  };
+
+  const openAddInvoiceTaxModal = () => {
+    resetNewTaxFields();
+    setAddInvoiceTaxOpen(true);
+  };
+  const closeAddInvoiceTaxModal = () => {
+    setAddInvoiceTaxOpen(false);
+    resetNewTaxFields();
+  };
+  const saveAddInvoiceTaxModal = async () => {
+    const name = String(newTaxName || '').trim();
+    const rate = Number(newTaxRate);
+    if (!name) {
+      setQuickMessage({ type: 'error', text: 'Tax name is required.' });
+      return;
+    }
+    if (!Number.isFinite(rate) || rate < 0) {
+      setQuickMessage({ type: 'error', text: 'Valid tax rate (%) is required.' });
+      return;
+    }
+    await handleQuickSave(async () => {
+      await saveInvoiceTaxType({
+        tax_name: name,
+        rate_percent: rate,
+        sort_order: parseInt(newTaxSortOrder, 10) || 0,
+        apply_on: newTaxApplyOn === 'subtotal' ? 'subtotal' : 'running',
+        activated: 1,
+      }).unwrap();
+      await refetchInvoiceTaxes();
+      closeAddInvoiceTaxModal();
+    });
+  };
+
   const refreshVehicleMasters = async () => {
     await Promise.all([
       refetchMasterVehicleCategories(),
@@ -473,6 +599,28 @@ const MasterData = ({ mode = 'full' }) => {
     if (type === 'workingTime') {
       setModalDraft({
         time_of_day: item.time_of_day || '',
+        activated: String(Number(item.activated) === 0 ? 0 : 1),
+      });
+    }
+    if (type === 'organization') {
+      setModalDraft({
+        org_name: item.org_name || '',
+        org_code: item.org_code || '',
+        br: item.br || '',
+        vat_no: item.vat_no || '',
+        address: item.address || '',
+        telephone: item.telephone || '',
+        email: item.email || '',
+        logo_path: item.logo_path || '/assets/images/kenilowrthlogoDark.png',
+        activated: String(Number(item.activated) === 0 ? 0 : 1),
+      });
+    }
+    if (type === 'invoiceTax') {
+      setModalDraft({
+        tax_name: item.tax_name || '',
+        rate_percent: item.rate_percent != null ? String(item.rate_percent) : '',
+        sort_order: item.sort_order != null ? String(item.sort_order) : '0',
+        apply_on: item.apply_on === 'subtotal' ? 'subtotal' : 'running',
         activated: String(Number(item.activated) === 0 ? 0 : 1),
       });
     }
@@ -567,6 +715,21 @@ const MasterData = ({ mode = 'full' }) => {
         return;
       }
     }
+    if (editModal.type === 'organization' && !String(modalDraft.org_name || '').trim()) {
+      setQuickMessage({ type: 'error', text: 'Organization name is required.' });
+      return;
+    }
+    if (editModal.type === 'invoiceTax') {
+      const rate = Number(modalDraft.rate_percent);
+      if (!String(modalDraft.tax_name || '').trim()) {
+        setQuickMessage({ type: 'error', text: 'Tax name is required.' });
+        return;
+      }
+      if (!Number.isFinite(rate) || rate < 0) {
+        setQuickMessage({ type: 'error', text: 'Valid tax rate (%) is required.' });
+        return;
+      }
+    }
     await handleQuickSave(async () => {
       if (editModal.type === 'vehicleCategory') {
         await saveMasterVehicleCategory({ id: editModal.item.id, category: modalDraft.category, activated: editModal.item.activated ?? 1 }).unwrap();
@@ -652,6 +815,30 @@ const MasterData = ({ mode = 'full' }) => {
           activated: parseInt(modalDraft.activated, 10) === 0 ? 0 : 1,
         }).unwrap();
         await refetchTimeOfDays();
+      } else if (editModal.type === 'organization') {
+        await saveInvoiceOrganization({
+          id: editModal.item.id,
+          org_name: String(modalDraft.org_name || '').trim(),
+          org_code: modalDraft.org_code || null,
+          br: modalDraft.br || null,
+          vat_no: modalDraft.vat_no || null,
+          address: modalDraft.address || null,
+          telephone: modalDraft.telephone || null,
+          email: modalDraft.email || null,
+          logo_path: modalDraft.logo_path || '/assets/images/kenilowrthlogoDark.png',
+          activated: parseInt(modalDraft.activated, 10) === 0 ? 0 : 1,
+        }).unwrap();
+        await refetchInvoiceOrgs();
+      } else if (editModal.type === 'invoiceTax') {
+        await saveInvoiceTaxType({
+          id: editModal.item.id,
+          tax_name: String(modalDraft.tax_name || '').trim(),
+          rate_percent: Number(modalDraft.rate_percent),
+          sort_order: parseInt(modalDraft.sort_order, 10) || 0,
+          apply_on: modalDraft.apply_on === 'subtotal' ? 'subtotal' : 'running',
+          activated: parseInt(modalDraft.activated, 10) === 0 ? 0 : 1,
+        }).unwrap();
+        await refetchInvoiceTaxes();
       }
       closeEditModal();
     });
@@ -755,6 +942,8 @@ const MasterData = ({ mode = 'full' }) => {
               { key: 'chemicals', label: 'Chemicals' },
               { key: 'workingTimes', label: 'Working Times' },
               { key: 'reasons', label: 'Reasons' },
+              { key: 'invoiceOrganizations', label: 'Invoice Organizations' },
+              { key: 'invoiceTaxes', label: 'Invoice Tax Types' },
               { key: 'securityCodes', label: 'Security Codes' },
             ].map((item) => (
               <button
@@ -1328,6 +1517,131 @@ const MasterData = ({ mode = 'full' }) => {
               </div>
             )}
 
+            {selectedMasterModule === 'invoiceOrganizations' && (
+              <div className="vehicle-admin-card-master-data">
+                <div className="master-data-chemicals-head-master-data">
+                  <div className="master-data-chemicals-head-text-master-data">
+                    <h3>Invoice Organizations</h3>
+                    <p className="vehicle-master-note-master-data">
+                      Billing company details for plantation tax invoices (name, BR, VAT no, address, logo).
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-submit-master-data master-data-chemicals-add-btn-master-data"
+                    onClick={openAddInvoiceOrgModal}
+                  >
+                    Add organization
+                  </button>
+                </div>
+                <div className="master-list-master-data" style={{ marginTop: 12 }}>
+                  {invoiceOrganizations.length === 0 ? (
+                    <div className="master-row-master-data">
+                      <span style={{ color: '#666' }}>No organizations yet. Run plantation invoice SQL migration if tables are missing.</span>
+                    </div>
+                  ) : invoiceOrganizations.map((row) => (
+                    <div key={row.id} className="master-row-master-data">
+                      <div style={{ flex: 1 }}>
+                        <span className="master-label-master-data">{row.org_name}</span>
+                        <span style={{ marginLeft: 8, fontSize: '0.82em', color: '#555' }}>
+                          {row.org_code ? `[${row.org_code}] ` : ''}
+                          VAT: {row.vat_no || '—'} | BR: {row.br || '—'}
+                        </span>
+                      </div>
+                      <div className="master-actions-master-data">
+                        <span
+                          className={
+                            Number(row.activated) === 1
+                              ? 'status-chip-master-data active-master-data'
+                              : 'status-chip-master-data inactive-master-data'
+                          }
+                        >
+                          {Number(row.activated) === 1 ? 'Active' : 'Inactive'}
+                        </span>
+                        <button
+                          type="button"
+                          className="action-btn-master-data neutral-master-data"
+                          onClick={() => openEditModal('organization', row)}
+                        >
+                          Edit
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {selectedMasterModule === 'invoiceTaxes' && (
+              <div className="vehicle-admin-card-master-data">
+                <div className="master-data-chemicals-head-master-data">
+                  <div className="master-data-chemicals-head-text-master-data">
+                    <h3>Invoice Tax Types</h3>
+                    <p className="vehicle-master-note-master-data">
+                      SSCL, VAT, and other line taxes applied when creating plantation invoices.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-submit-master-data master-data-chemicals-add-btn-master-data"
+                    onClick={openAddInvoiceTaxModal}
+                  >
+                    Add tax type
+                  </button>
+                </div>
+                <div className="vehicle-table-wrap-master-data" style={{ marginTop: 12 }}>
+                  <table className="vehicle-table-master-data">
+                    <thead>
+                      <tr>
+                        <th>Order</th>
+                        <th>Tax</th>
+                        <th>Rate %</th>
+                        <th>Apply on</th>
+                        <th>Status</th>
+                        <th />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {invoiceTaxTypes.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} style={{ color: '#666' }}>
+                            No tax types configured.
+                          </td>
+                        </tr>
+                      ) : invoiceTaxTypes.map((row) => (
+                        <tr key={row.id}>
+                          <td>{row.sort_order ?? 0}</td>
+                          <td>{row.tax_name}</td>
+                          <td>{Number(row.rate_percent).toFixed(2)}</td>
+                          <td>{row.apply_on === 'subtotal' ? 'Subtotal only' : 'Subtotal + prior taxes'}</td>
+                          <td>
+                            <span
+                              className={
+                                Number(row.activated) === 1
+                                  ? 'status-chip-master-data active-master-data'
+                                  : 'status-chip-master-data inactive-master-data'
+                              }
+                            >
+                              {Number(row.activated) === 1 ? 'Active' : 'Inactive'}
+                            </span>
+                          </td>
+                          <td>
+                            <button
+                              type="button"
+                              className="action-btn-master-data neutral-master-data"
+                              onClick={() => openEditModal('invoiceTax', row)}
+                            >
+                              Edit
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
             {selectedMasterModule === 'securityCodes' && (
               <div className="vehicle-admin-card-master-data">
                 <h3>Security Codes</h3>
@@ -1472,7 +1786,7 @@ const MasterData = ({ mode = 'full' }) => {
       {editModal && (
         <div className="update-popup-overlay-master-data">
           <div
-            className={`update-popup-card-master-data${editModal.type === 'chemical' || editModal.type === 'workingTime' ? ' update-popup-card-wide-master-data' : ''}`}
+            className={`update-popup-card-master-data${editModal.type === 'chemical' || editModal.type === 'workingTime' || editModal.type === 'organization' || editModal.type === 'invoiceTax' ? ' update-popup-card-wide-master-data' : ''}`}
           >
             <h3>
               Edit{' '}
@@ -1480,7 +1794,11 @@ const MasterData = ({ mode = 'full' }) => {
                 ? 'Chemical'
                 : editModal.type === 'workingTime'
                   ? 'Working time'
-                  : editModal.type}
+                  : editModal.type === 'organization'
+                    ? 'Invoice organization'
+                    : editModal.type === 'invoiceTax'
+                      ? 'Invoice tax type'
+                      : editModal.type}
             </h3>
             {editModal.type === 'vehicleCategory' && (
               <input
@@ -1757,6 +2075,166 @@ const MasterData = ({ mode = 'full' }) => {
                   onChange={(e) => setModalDraft((p) => ({ ...p, reason: e.target.value }))}
                   placeholder="Deactivate reason"
                 />
+              </div>
+            )}
+            {editModal.type === 'organization' && (
+              <div className="master-edit-grid-2col-master-data">
+                <div className="master-edit-field-master-data master-edit-field-span2-master-data">
+                  <label htmlFor="master-edit-org-name">Organization name</label>
+                  <input
+                    id="master-edit-org-name"
+                    className="master-edit-input-master-data"
+                    value={modalDraft.org_name || ''}
+                    onChange={(e) => setModalDraft((p) => ({ ...p, org_name: e.target.value }))}
+                    autoComplete="off"
+                  />
+                </div>
+                <div className="master-edit-field-master-data">
+                  <label htmlFor="master-edit-org-code">Code</label>
+                  <input
+                    id="master-edit-org-code"
+                    className="master-edit-input-master-data"
+                    value={modalDraft.org_code || ''}
+                    onChange={(e) => setModalDraft((p) => ({ ...p, org_code: e.target.value }))}
+                    autoComplete="off"
+                  />
+                </div>
+                <div className="master-edit-field-master-data">
+                  <label htmlFor="master-edit-org-br">BR</label>
+                  <input
+                    id="master-edit-org-br"
+                    className="master-edit-input-master-data"
+                    value={modalDraft.br || ''}
+                    onChange={(e) => setModalDraft((p) => ({ ...p, br: e.target.value }))}
+                    autoComplete="off"
+                  />
+                </div>
+                <div className="master-edit-field-master-data">
+                  <label htmlFor="master-edit-org-vat">VAT registration no</label>
+                  <input
+                    id="master-edit-org-vat"
+                    className="master-edit-input-master-data"
+                    value={modalDraft.vat_no || ''}
+                    onChange={(e) => setModalDraft((p) => ({ ...p, vat_no: e.target.value }))}
+                    autoComplete="off"
+                  />
+                </div>
+                <div className="master-edit-field-master-data master-edit-field-span2-master-data">
+                  <label htmlFor="master-edit-org-address">Address</label>
+                  <textarea
+                    id="master-edit-org-address"
+                    className="master-edit-input-master-data"
+                    rows={3}
+                    value={modalDraft.address || ''}
+                    onChange={(e) => setModalDraft((p) => ({ ...p, address: e.target.value }))}
+                  />
+                </div>
+                <div className="master-edit-field-master-data">
+                  <label htmlFor="master-edit-org-tel">Telephone</label>
+                  <input
+                    id="master-edit-org-tel"
+                    className="master-edit-input-master-data"
+                    value={modalDraft.telephone || ''}
+                    onChange={(e) => setModalDraft((p) => ({ ...p, telephone: e.target.value }))}
+                    autoComplete="off"
+                  />
+                </div>
+                <div className="master-edit-field-master-data">
+                  <label htmlFor="master-edit-org-email">Email</label>
+                  <input
+                    id="master-edit-org-email"
+                    className="master-edit-input-master-data"
+                    value={modalDraft.email || ''}
+                    onChange={(e) => setModalDraft((p) => ({ ...p, email: e.target.value }))}
+                    autoComplete="off"
+                  />
+                </div>
+                <div className="master-edit-field-master-data master-edit-field-span2-master-data">
+                  <label htmlFor="master-edit-org-logo">Logo path (public URL)</label>
+                  <input
+                    id="master-edit-org-logo"
+                    className="master-edit-input-master-data"
+                    value={modalDraft.logo_path || ''}
+                    onChange={(e) => setModalDraft((p) => ({ ...p, logo_path: e.target.value }))}
+                    placeholder="/assets/images/kenilowrthlogoDark.png"
+                    autoComplete="off"
+                  />
+                </div>
+                <div className="master-edit-field-master-data">
+                  <label htmlFor="master-edit-org-status">Status</label>
+                  <select
+                    id="master-edit-org-status"
+                    className="master-edit-input-master-data"
+                    value={modalDraft.activated || '1'}
+                    onChange={(e) => setModalDraft((p) => ({ ...p, activated: e.target.value }))}
+                  >
+                    <option value="1">Active</option>
+                    <option value="0">Inactive</option>
+                  </select>
+                </div>
+              </div>
+            )}
+            {editModal.type === 'invoiceTax' && (
+              <div className="master-edit-grid-2col-master-data">
+                <div className="master-edit-field-master-data master-edit-field-span2-master-data">
+                  <label htmlFor="master-edit-tax-name">Tax name</label>
+                  <input
+                    id="master-edit-tax-name"
+                    className="master-edit-input-master-data"
+                    value={modalDraft.tax_name || ''}
+                    onChange={(e) => setModalDraft((p) => ({ ...p, tax_name: e.target.value }))}
+                    placeholder="e.g. SSCL, VAT"
+                    autoComplete="off"
+                  />
+                </div>
+                <div className="master-edit-field-master-data">
+                  <label htmlFor="master-edit-tax-rate">Rate (%)</label>
+                  <input
+                    id="master-edit-tax-rate"
+                    type="number"
+                    className="master-edit-input-master-data"
+                    value={modalDraft.rate_percent || ''}
+                    onChange={(e) => setModalDraft((p) => ({ ...p, rate_percent: e.target.value }))}
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+                <div className="master-edit-field-master-data">
+                  <label htmlFor="master-edit-tax-order">Sort order</label>
+                  <input
+                    id="master-edit-tax-order"
+                    type="number"
+                    className="master-edit-input-master-data"
+                    value={modalDraft.sort_order ?? '0'}
+                    onChange={(e) => setModalDraft((p) => ({ ...p, sort_order: e.target.value }))}
+                    min="0"
+                    step="1"
+                  />
+                </div>
+                <div className="master-edit-field-master-data master-edit-field-span2-master-data">
+                  <label htmlFor="master-edit-tax-apply">Apply on</label>
+                  <select
+                    id="master-edit-tax-apply"
+                    className="master-edit-input-master-data"
+                    value={modalDraft.apply_on || 'running'}
+                    onChange={(e) => setModalDraft((p) => ({ ...p, apply_on: e.target.value }))}
+                  >
+                    <option value="subtotal">Subtotal only</option>
+                    <option value="running">Subtotal + prior taxes</option>
+                  </select>
+                </div>
+                <div className="master-edit-field-master-data">
+                  <label htmlFor="master-edit-tax-status">Status</label>
+                  <select
+                    id="master-edit-tax-status"
+                    className="master-edit-input-master-data"
+                    value={modalDraft.activated || '1'}
+                    onChange={(e) => setModalDraft((p) => ({ ...p, activated: e.target.value }))}
+                  >
+                    <option value="1">Active</option>
+                    <option value="0">Inactive</option>
+                  </select>
+                </div>
               </div>
             )}
             <div className="update-popup-actions-master-data">
@@ -2171,6 +2649,168 @@ const MasterData = ({ mode = 'full' }) => {
             <div className="update-popup-actions-master-data">
               <button className="btn-search-master-data" onClick={closeReasonAddModal}>Cancel</button>
               <button className="btn-submit-master-data" onClick={saveReasonAddModal}>Save</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {addInvoiceOrgOpen && (
+        <div className="update-popup-overlay-master-data">
+          <div className="update-popup-card-master-data update-popup-card-wide-master-data">
+            <h3>Add invoice organization</h3>
+            <div className="master-edit-grid-2col-master-data">
+              <div className="master-edit-field-master-data master-edit-field-span2-master-data">
+                <label htmlFor="master-add-org-name">Organization name</label>
+                <input
+                  id="master-add-org-name"
+                  className="master-edit-input-master-data"
+                  value={newOrgName}
+                  onChange={(e) => setNewOrgName(e.target.value)}
+                  autoComplete="off"
+                />
+              </div>
+              <div className="master-edit-field-master-data">
+                <label htmlFor="master-add-org-code">Code</label>
+                <input
+                  id="master-add-org-code"
+                  className="master-edit-input-master-data"
+                  value={newOrgCode}
+                  onChange={(e) => setNewOrgCode(e.target.value)}
+                  autoComplete="off"
+                />
+              </div>
+              <div className="master-edit-field-master-data">
+                <label htmlFor="master-add-org-br">BR</label>
+                <input
+                  id="master-add-org-br"
+                  className="master-edit-input-master-data"
+                  value={newOrgBr}
+                  onChange={(e) => setNewOrgBr(e.target.value)}
+                  autoComplete="off"
+                />
+              </div>
+              <div className="master-edit-field-master-data">
+                <label htmlFor="master-add-org-vat">VAT registration no</label>
+                <input
+                  id="master-add-org-vat"
+                  className="master-edit-input-master-data"
+                  value={newOrgVatNo}
+                  onChange={(e) => setNewOrgVatNo(e.target.value)}
+                  autoComplete="off"
+                />
+              </div>
+              <div className="master-edit-field-master-data master-edit-field-span2-master-data">
+                <label htmlFor="master-add-org-address">Address</label>
+                <textarea
+                  id="master-add-org-address"
+                  className="master-edit-input-master-data"
+                  rows={3}
+                  value={newOrgAddress}
+                  onChange={(e) => setNewOrgAddress(e.target.value)}
+                />
+              </div>
+              <div className="master-edit-field-master-data">
+                <label htmlFor="master-add-org-tel">Telephone</label>
+                <input
+                  id="master-add-org-tel"
+                  className="master-edit-input-master-data"
+                  value={newOrgTelephone}
+                  onChange={(e) => setNewOrgTelephone(e.target.value)}
+                  autoComplete="off"
+                />
+              </div>
+              <div className="master-edit-field-master-data">
+                <label htmlFor="master-add-org-email">Email</label>
+                <input
+                  id="master-add-org-email"
+                  className="master-edit-input-master-data"
+                  value={newOrgEmail}
+                  onChange={(e) => setNewOrgEmail(e.target.value)}
+                  autoComplete="off"
+                />
+              </div>
+              <div className="master-edit-field-master-data master-edit-field-span2-master-data">
+                <label htmlFor="master-add-org-logo">Logo path (public URL)</label>
+                <input
+                  id="master-add-org-logo"
+                  className="master-edit-input-master-data"
+                  value={newOrgLogoPath}
+                  onChange={(e) => setNewOrgLogoPath(e.target.value)}
+                  placeholder="/assets/images/kenilowrthlogoDark.png"
+                  autoComplete="off"
+                />
+              </div>
+            </div>
+            <div className="update-popup-actions-master-data">
+              <button type="button" className="btn-search-master-data" onClick={closeAddInvoiceOrgModal}>
+                Cancel
+              </button>
+              <button type="button" className="btn-submit-master-data" onClick={() => void saveAddInvoiceOrgModal()}>
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {addInvoiceTaxOpen && (
+        <div className="update-popup-overlay-master-data">
+          <div className="update-popup-card-master-data update-popup-card-wide-master-data">
+            <h3>Add invoice tax type</h3>
+            <div className="master-edit-grid-2col-master-data">
+              <div className="master-edit-field-master-data master-edit-field-span2-master-data">
+                <label htmlFor="master-add-tax-name">Tax name</label>
+                <input
+                  id="master-add-tax-name"
+                  className="master-edit-input-master-data"
+                  value={newTaxName}
+                  onChange={(e) => setNewTaxName(e.target.value)}
+                  placeholder="e.g. SSCL, VAT"
+                  autoComplete="off"
+                />
+              </div>
+              <div className="master-edit-field-master-data">
+                <label htmlFor="master-add-tax-rate">Rate (%)</label>
+                <input
+                  id="master-add-tax-rate"
+                  type="number"
+                  className="master-edit-input-master-data"
+                  value={newTaxRate}
+                  onChange={(e) => setNewTaxRate(e.target.value)}
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+              <div className="master-edit-field-master-data">
+                <label htmlFor="master-add-tax-order">Sort order</label>
+                <input
+                  id="master-add-tax-order"
+                  type="number"
+                  className="master-edit-input-master-data"
+                  value={newTaxSortOrder}
+                  onChange={(e) => setNewTaxSortOrder(e.target.value)}
+                  min="0"
+                  step="1"
+                />
+              </div>
+              <div className="master-edit-field-master-data master-edit-field-span2-master-data">
+                <label htmlFor="master-add-tax-apply">Apply on</label>
+                <select
+                  id="master-add-tax-apply"
+                  className="master-edit-input-master-data"
+                  value={newTaxApplyOn}
+                  onChange={(e) => setNewTaxApplyOn(e.target.value)}
+                >
+                  <option value="subtotal">Subtotal only</option>
+                  <option value="running">Subtotal + prior taxes</option>
+                </select>
+              </div>
+            </div>
+            <div className="update-popup-actions-master-data">
+              <button type="button" className="btn-search-master-data" onClick={closeAddInvoiceTaxModal}>
+                Cancel
+              </button>
+              <button type="button" className="btn-submit-master-data" onClick={() => void saveAddInvoiceTaxModal()}>
+                Save
+              </button>
             </div>
           </div>
         </div>
