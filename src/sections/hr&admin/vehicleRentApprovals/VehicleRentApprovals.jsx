@@ -34,6 +34,8 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
+  Tabs,
+  Tab,
 } from '@mui/material';
 import { 
   CheckCircle, 
@@ -55,6 +57,32 @@ import '../../../styles/vehicleRentApprovals.css';
 function nonEmptySrc(value) {
   const s = String(value == null ? '' : value).trim();
   return s || undefined;
+}
+
+function toDateOnly(value) {
+  const s = String(value || '').trim();
+  if (!s) return '';
+  return s.length >= 10 ? s.slice(0, 10) : s;
+}
+
+function sriLankaTodayYmd() {
+  const now = new Date();
+  const sl = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Colombo' }));
+  const y = sl.getFullYear();
+  const m = String(sl.getMonth() + 1).padStart(2, '0');
+  const d = String(sl.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function monthEndFromYearMonth(yearMonth) {
+  const m = String(yearMonth || '').trim();
+  if (!/^\d{4}-\d{2}$/.test(m)) return '';
+  const [y, mon] = m.split('-').map(Number);
+  const end = new Date(y, mon, 0);
+  const ey = end.getFullYear();
+  const em = String(end.getMonth() + 1).padStart(2, '0');
+  const ed = String(end.getDate()).padStart(2, '0');
+  return `${ey}-${em}-${ed}`;
 }
 
 /** Stacking above Transport HR detail overlay (z-index 3000) and other app layers */
@@ -146,6 +174,8 @@ const VehicleRentApprovals = ({ embedded = false }) => {
   const [editVerifyReason, setEditVerifyReason] = useState('');
   const [imageDialog, setImageDialog] = useState({ open: false, imageUrl: null, title: '' });
   const [fetchDailyDetails, { isFetching: loadingDailyDetails }] = useLazyGetVehicleRentDailyDetailsQuery();
+  const todayYmd = useMemo(() => sriLankaTodayYmd(), []);
+  const [activeQueueTab, setActiveQueueTab] = useState('daily');
 
   // Vehicle Rent handlers
   const openApproveDialog = (rent) => {
@@ -395,8 +425,11 @@ const VehicleRentApprovals = ({ embedded = false }) => {
   };
 
   const shellSx = embedded
-    ? { p: '6px', m: 0, backgroundColor: 'transparent', minHeight: 'auto' }
-    : { p: { xs: 2, sm: 3 }, backgroundColor: '#f3f7fb', minHeight: '100vh' };
+    ? { backgroundColor: 'transparent', minHeight: 0, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }
+    : { p: 0, backgroundColor: '#f3f7fb', minHeight: 0, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' };
+  const queueTableContainerSx = embedded
+    ? { flex: 1, minHeight: 0, overflow: 'auto' }
+    : { flex: 1, minHeight: 0, overflow: 'auto' };
 
   if (vehicleRentLoading || verificationQueueLoading) {
     return (
@@ -616,19 +649,49 @@ const VehicleRentApprovals = ({ embedded = false }) => {
         </Grid>
       </Card>
 
-      <Alert severity="info" sx={{ mb: 1.5, border: '1px solid #d6e8f4', borderRadius: 2 }}>
-        Base rent is prorated by verified days vs configured working days for each vehicle.
-      </Alert>
+      <Card sx={{ mb: 1.5, boxShadow: 'none', border: '1px solid #000000', borderRadius: 2, backgroundColor: '#ffffff' }}>
+        <Tabs
+          value={activeQueueTab}
+          onChange={(_, value) => setActiveQueueTab(value)}
+          variant="fullWidth"
+          sx={{
+            minHeight: 44,
+            backgroundColor: '#ffffff',
+            '& .MuiTabs-indicator': {
+              display: 'none',
+            },
+            '& .MuiTab-root': {
+              minHeight: 44,
+              textTransform: 'none',
+              fontWeight: 700,
+              textAlign: 'center',
+              color: '#000000',
+              backgroundColor: '#ffffff',
+              borderRight: '1px solid #000000',
+            },
+            '& .MuiTab-root:last-of-type': {
+              borderRight: 'none',
+            },
+            '& .Mui-selected': {
+              color: '#ffffff !important',
+              backgroundColor: '#000000',
+            },
+          }}
+        >
+          <Tab
+            value="daily"
+            label={`Daily Verification Queue (${filteredDailyVerificationRows.length})`}
+          />
+          <Tab
+            value="monthly"
+            label={`Monthly Approval Queue (${filteredVehicleRents.length})`}
+          />
+        </Tabs>
+      </Card>
 
-      <Card sx={{ mb: 2, boxShadow: 'none', border: '1px solid #d9e5ef', borderRadius: 2, overflow: 'hidden' }}>
-        <Box sx={{ p: 2, borderBottom: '1px solid #e5e7eb' }}>
-          <Typography variant="h6" sx={{ fontWeight: 600 }}>
-            Daily Verification Queue
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            HR must verify each day record first. Monthly rent rows are calculated from verified records.
-          </Typography>
-        </Box>
+      {activeQueueTab === 'daily' ? (
+      <Card sx={{ mb: 0, flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', boxShadow: 'none', border: '1px solid #d9e5ef', borderRadius: 2, overflow: 'hidden' }}>
+        
         {filteredDailyVerificationRows.length === 0 ? (
           <Box sx={{ p: 3, textAlign: 'center' }}>
             <Typography variant="body2" color="text.secondary">
@@ -638,8 +701,8 @@ const VehicleRentApprovals = ({ embedded = false }) => {
             </Typography>
           </Box>
         ) : (
-          <TableContainer>
-            <Table size="small">
+          <TableContainer className="vehicle-rent-queue-table-wrap" sx={queueTableContainerSx}>
+            <Table size="small" stickyHeader>
               <TableHead>
                 <TableRow sx={{ backgroundColor: '#f8f9fa' }}>
                   <TableCell sx={{ fontWeight: 600 }}>Date</TableCell>
@@ -648,8 +711,6 @@ const VehicleRentApprovals = ({ embedded = false }) => {
                   <TableCell sx={{ fontWeight: 600 }}>End Meter</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>Start Image</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>End Image</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Reason</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>Actions</TableCell>
                 </TableRow>
               </TableHead>
@@ -687,12 +748,13 @@ const VehicleRentApprovals = ({ embedded = false }) => {
                       ) : '-'}
                     </TableCell>
                     <TableCell>
-                      {Number(row.verified) === 1 ? 'Verified' : Number(row.verified) === 0 ? 'Not Verified' : 'Pending'}
-                    </TableCell>
-                    <TableCell>{row.not_verified_reason || '-'}</TableCell>
-                    <TableCell>
                       {Number(row.verified) === 1 ? (
-                        <Typography variant="body2" color="text.secondary">-</Typography>
+                        <Chip
+                          icon={<Done />}
+                          label="Verified"
+                          color="success"
+                          size="small"
+                        />
                       ) : (
                         <Box sx={{ display: 'flex', gap: 1 }}>
                           <Button
@@ -725,10 +787,11 @@ const VehicleRentApprovals = ({ embedded = false }) => {
           </TableContainer>
         )}
       </Card>
+      ) : null}
 
       {/* Vehicle Rent Table */}
-      {filteredVehicleRents.length === 0 ? (
-        <Card sx={{ p: 4, textAlign: 'center', boxShadow: 'none', border: '1px solid #d9e5ef', borderRadius: 2 }}>
+      {activeQueueTab === 'monthly' && filteredVehicleRents.length === 0 ? (
+        <Card sx={{ p: 4, flex: 1, minHeight: 0, boxShadow: 'none', border: '1px solid #d9e5ef', borderRadius: 2 }}>
           <DirectionsCar sx={{ fontSize: 64, color: '#cbd5e0', mb: 2 }} />
           <Typography variant="h6" color="text.secondary" gutterBottom>
             {statusFilter === 'p' ? 'No pending vehicle rent approvals' : 
@@ -742,10 +805,10 @@ const VehicleRentApprovals = ({ embedded = false }) => {
               : 'Try adjusting your filters'}
           </Typography>
         </Card>
-      ) : (
-        <Card sx={{ boxShadow: 'none', border: '1px solid #d9e5ef', borderRadius: 2, overflow: 'hidden' }}>
-          <TableContainer>
-            <Table>
+      ) : activeQueueTab === 'monthly' ? (
+        <Card sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', boxShadow: 'none', border: '1px solid #d9e5ef', borderRadius: 2, overflow: 'hidden' }}>
+          <TableContainer className="vehicle-rent-queue-table-wrap" sx={queueTableContainerSx}>
+            <Table stickyHeader>
               <TableHead>
                 <TableRow sx={{ backgroundColor: '#f8f9fa' }}>
                   <TableCell sx={{ fontWeight: 600 }}>Month</TableCell>
@@ -763,6 +826,13 @@ const VehicleRentApprovals = ({ embedded = false }) => {
               </TableHead>
               <TableBody>
                 {filteredVehicleRents.map((rent) => (
+                  (() => {
+                    const endYmd = monthEndFromYearMonth(rent?.month_key) || toDateOnly(rent?.end_date);
+                    const canDecideMonthly = Boolean(endYmd) && todayYmd > endYmd;
+                    const monthEndHint = endYmd
+                      ? `Approve/Decline enabled after ${endYmd}.`
+                      : 'Approve/Decline is unavailable until month end.';
+                    return (
                   <TableRow 
                     key={rent.id} 
                     hover
@@ -869,28 +939,36 @@ const VehicleRentApprovals = ({ embedded = false }) => {
                           >
                             View
                           </Button>
-                          <Button
-                            variant="contained"
-                            color="success"
-                            size="small"
-                            startIcon={<CheckCircle />}
-                            onClick={() => openApproveDialog(rent)}
-                            disabled={isApprovingVehicle}
-                            sx={{ textTransform: 'none', fontWeight: 500, width: '100%' }}
-                          >
-                            Approve
-                          </Button>
-                          <Button
-                            variant="outlined"
-                            color="error"
-                            size="small"
-                            startIcon={<Cancel />}
-                            onClick={() => openVehicleRentRejectDialog(rent)}
-                            disabled={isApprovingVehicle}
-                            sx={{ textTransform: 'none', fontWeight: 500, width: '100%' }}
-                          >
-                            Decline
-                          </Button>
+                          {canDecideMonthly ? (
+                            <>
+                              <Button
+                                variant="contained"
+                                color="success"
+                                size="small"
+                                startIcon={<CheckCircle />}
+                                onClick={() => openApproveDialog(rent)}
+                                disabled={isApprovingVehicle}
+                                sx={{ textTransform: 'none', fontWeight: 500, width: '100%' }}
+                              >
+                                Approve
+                              </Button>
+                              <Button
+                                variant="outlined"
+                                color="error"
+                                size="small"
+                                startIcon={<Cancel />}
+                                onClick={() => openVehicleRentRejectDialog(rent)}
+                                disabled={isApprovingVehicle}
+                                sx={{ textTransform: 'none', fontWeight: 500, width: '100%' }}
+                              >
+                                Decline
+                              </Button>
+                            </>
+                          ) : (
+                            <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>
+                              {monthEndHint}
+                            </Typography>
+                          )}
                         </Box>
                       ) : (
                         <Box display="flex" flexDirection="column" gap={1}>
@@ -911,12 +989,14 @@ const VehicleRentApprovals = ({ embedded = false }) => {
                       )}
                     </TableCell>
                   </TableRow>
+                    );
+                  })()
                 ))}
               </TableBody>
             </Table>
           </TableContainer>
         </Card>
-      )}
+      ) : null}
 
       {/* Vehicle Rent Rejection Dialog */}
       <Dialog 

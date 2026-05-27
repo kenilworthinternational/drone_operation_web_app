@@ -1825,8 +1825,8 @@ function TransportHrDashboard() {
                 return (
                   <tr key={row.assignment_id}>
                     <td>{row.assignment_id || '-'}</td>
-                    <td>{estimate?.driver_name || row.driver_id || '-'}</td>
-                    <td>{row.vehicle_id || '-'}</td>
+                    <td>{row.driver_name || estimate?.driver_name || row.driver_id || '-'}</td>
+                    <td>{row.vehicle_no || row.vehicle_id || '-'}</td>
                     <td>{estimate ? Number(estimate.total_estimated_km || 0).toFixed(3) : '-'}</td>
                     <td title={routeSummary}>{routeSummary}</td>
                   </tr>

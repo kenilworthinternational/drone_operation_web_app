@@ -2,7 +2,6 @@
 .vehicle-rent-approvals-container {
   width: 100%;
   height: 100%;
-  padding: 20px;
   box-sizing: border-box;
 }
 
@@ -114,4 +113,16 @@
 
 .vehicle-rent-approvals-container .vehicle-rent-approvals-filter-card .MuiTextField-root:focus-within {
   transform: translateY(-1px);
+}
+
+/* Daily/Monthly queue tables: fixed region with sticky header and scrollable body */
+.vehicle-rent-queue-table-wrap {
+  overflow-y: auto;
+}
+
+.vehicle-rent-queue-table-wrap .MuiTableHead-root .MuiTableCell-root {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #f8f9fa;
 }
