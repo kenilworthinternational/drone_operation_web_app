@@ -368,6 +368,27 @@ export const vehicleRentApi = baseApi.injectEndpoints({
       providesTags: ['VehicleRent'],
     }),
 
+    hrDecideLeaveDay: builder.mutation({
+      queryFn: async ({ id, status, approval_note }) => {
+        try {
+          const result = await nodeBackendBaseQuery(
+            {
+              url: `/api/vehicle-rent/leave-days/hr-decide/${id}`,
+              method: 'POST',
+              body: { status, approval_note },
+            },
+            {},
+            {}
+          );
+          if (result.error) return { error: result.error };
+          return { data: result.data?.data || result.data || null };
+        } catch (error) {
+          return { error: { status: 'FETCH_ERROR', error: error.message } };
+        }
+      },
+      invalidatesTags: ['VehicleRent'],
+    }),
+
     getLeaveDaysForHrByMonth: builder.query({
       queryFn: async (filters = {}) => {
         try {
@@ -435,6 +456,7 @@ export const {
   useGetAdvanceRequestsForFinanceQuery,
   useUpdateAdvanceFinanceStatusMutation,
   useGetLeaveDaysForHrQuery,
+  useHrDecideLeaveDayMutation,
   useLazyGetLeaveDaysForHrByMonthQuery,
   useGetDailyKmSummaryForHrQuery,
 } = vehicleRentApi;

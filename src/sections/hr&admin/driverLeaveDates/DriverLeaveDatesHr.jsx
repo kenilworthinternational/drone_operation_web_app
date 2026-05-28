@@ -18,7 +18,10 @@ import {
   Typography,
 } from '@mui/material';
 import Download from '@mui/icons-material/Download';
-import { useGetLeaveDaysForHrQuery } from '../../../api/services NodeJs/vehicleRentApi';
+import {
+  useGetLeaveDaysForHrQuery,
+  useHrDecideLeaveDayMutation,
+} from '../../../api/services NodeJs/vehicleRentApi';
 
 function getRollingMonthOptions(monthsBack = 24) {
   const now = new Date();
@@ -65,6 +68,7 @@ const DriverLeaveDatesHr = ({ embedded = false }) => {
   const monthOptions = useMemo(() => getRollingMonthOptions(24), []);
 
   const { data: rows = [], isLoading } = useGetLeaveDaysForHrQuery({ yearMonth: selectedMonth });
+  const [decideLeave, { isLoading: decidingLeave }] = useHrDecideLeaveDayMutation();
 
   const selectedMonthLabel =
     monthOptions.find((m) => m.value === selectedMonth)?.label || selectedMonth;
@@ -88,6 +92,9 @@ const DriverLeaveDatesHr = ({ embedded = false }) => {
       Driver: r.requested_by_name || '',
       'Vehicle no': r.vehicle_no || '',
       Reason: r.reason || '',
+      Status: String(r.approval || 'p') === 'a' ? 'Approved' : String(r.approval || 'p') === 'd' ? 'Declined' : 'Pending',
+      'Approval Note': r.approval_note || '',
+      'Approved By': r.approved_by_name || '',
       'Record ID': r.id,
     }));
     const worksheet = XLSX.utils.json_to_sheet(flat);
@@ -100,6 +107,33 @@ const DriverLeaveDatesHr = ({ embedded = false }) => {
   const shellSx = embedded
     ? { p: '5px', m: '5px', backgroundColor: 'transparent', minHeight: 'auto' }
     : { p: 3, backgroundColor: '#f5f7fa', minHeight: '100vh' };
+
+  const statusLabel = (value) => {
+    const v = String(value || 'p').trim().toLowerCase();
+    if (v === 'a') return 'Approved';
+    if (v === 'd') return 'Declined';
+    return 'Pending';
+  };
+
+  const statusColor = (value) => {
+    const v = String(value || 'p').trim().toLowerCase();
+    if (v === 'a') return '#166534';
+    if (v === 'd') return '#b91c1c';
+    return '#92400e';
+  };
+
+  const handleDecide = async (row, status) => {
+    try {
+      await decideLeave({
+        id: row.id,
+        status,
+      }).unwrap();
+    } catch (e) {
+      // keep silent fallback to avoid modal clutter
+      // eslint-disable-next-line no-console
+      console.error('Leave decision failed', e);
+    }
+  };
 
   return (
     <Box sx={shellSx}>
@@ -159,6 +193,9 @@ const DriverLeaveDatesHr = ({ embedded = false }) => {
                   <TableCell sx={{ fontWeight: 700 }}>Driver</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>Vehicle</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>Reason</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>Approved By</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -168,11 +205,41 @@ const DriverLeaveDatesHr = ({ embedded = false }) => {
                     <TableCell>{r.requested_by_name || '-'}</TableCell>
                     <TableCell>{r.vehicle_no || '-'}</TableCell>
                     <TableCell>{r.reason || '-'}</TableCell>
+                    <TableCell sx={{ color: statusColor(r.approval), fontWeight: 600 }}>{statusLabel(r.approval)}</TableCell>
+                    <TableCell>{r.approved_by_name || '-'}</TableCell>
+                    <TableCell>
+                      {String(r.approval || 'p') === 'p' ? (
+                        <Box sx={{ display: 'flex', gap: 1 }}>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            color="success"
+                            disabled={decidingLeave}
+                            onClick={() => handleDecide(r, 'a')}
+                            sx={{ textTransform: 'none' }}
+                          >
+                            Approve
+                          </Button>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            color="error"
+                            disabled={decidingLeave}
+                            onClick={() => handleDecide(r, 'd')}
+                            sx={{ textTransform: 'none' }}
+                          >
+                            Decline
+                          </Button>
+                        </Box>
+                      ) : (
+                        '-'
+                      )}
+                    </TableCell>
                   </TableRow>
                 ))}
                 {!rows.length ? (
                   <TableRow>
-                    <TableCell colSpan={4} align="center">
+                    <TableCell colSpan={7} align="center">
                       No leave dates for {selectedMonthLabel}.
                     </TableCell>
                   </TableRow>

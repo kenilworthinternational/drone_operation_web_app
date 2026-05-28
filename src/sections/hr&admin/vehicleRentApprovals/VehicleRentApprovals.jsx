@@ -709,6 +709,7 @@ const VehicleRentApprovals = ({ embedded = false }) => {
                   <TableCell sx={{ fontWeight: 600 }}>Vehicle</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>Start Meter</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>End Meter</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Trip Distance</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>Start Image</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>End Image</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>Actions</TableCell>
@@ -721,6 +722,7 @@ const VehicleRentApprovals = ({ embedded = false }) => {
                     <TableCell>{row.vehicle_no || row.vehicle || '-'}</TableCell>
                     <TableCell>{row.start_meter || '-'}</TableCell>
                     <TableCell>{row.end_meter || '-'}</TableCell>
+                    <TableCell>{Number(row.trip_distance ?? row.daily_km ?? 0).toFixed(2)}</TableCell>
                     <TableCell>
                       {nonEmptySrc(row.start_image_url) ? (
                         <Button

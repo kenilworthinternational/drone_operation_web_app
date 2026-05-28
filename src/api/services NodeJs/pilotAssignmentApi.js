@@ -268,12 +268,12 @@ export const pilotAssignmentApi = baseApi.injectEndpoints({
     }),
 
     getTransportArrangementList: builder.query({
-      queryFn: async () => {
+      queryFn: async ({ date } = {}) => {
         const result = await nodeBackendBaseQuery(
           {
             url: '/api/pilot-assignment/transport/arrangement-list',
             method: 'POST',
-            body: {},
+            body: { date: date || null },
           },
           {},
           {}

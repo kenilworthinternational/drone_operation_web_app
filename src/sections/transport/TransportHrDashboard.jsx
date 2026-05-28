@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import { Bars } from 'react-loader-spinner';
@@ -38,6 +38,13 @@ import DriverLeaveDatesHr from '../hr&admin/driverLeaveDates/DriverLeaveDatesHr'
 import VehicleRentApprovals from '../hr&admin/vehicleRentApprovals/VehicleRentApprovals';
 import VehicleManagement from '../administration/VehicleManagement';
 import { useGetHrTransportEstimatesQuery } from '../../api/services NodeJs/allEndpoints';
+import {
+  useGetTransportArrangementListQuery,
+  useGetPilotTransportOptionsQuery,
+  useAssignPilotTransportDetailsMutation,
+} from '../../api/services NodeJs/pilotAssignmentApi';
+import TransportAssignmentFields from '../opsroom/pilot-assigment/TransportAssignmentFields';
+import { formatDriverArrivalTimeForInput } from '../opsroom/pilot-assigment/transportAssignmentUtils';
 import '../../styles/transportHrDashboard.css';
 
 function getTodayInfo() {
@@ -49,6 +56,15 @@ function getTodayInfo() {
     today: `${year}-${month}-${day}`,
     monthKey: `${year}-${month}`,
   };
+}
+
+function getTomorrowDate() {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 function toDateOnly(value) {
@@ -154,6 +170,18 @@ function TransportHrDashboard() {
   const [maintenanceStatusFilter, setMaintenanceStatusFilter] = useState('all');
   const [maintenanceVehicleFilter, setMaintenanceVehicleFilter] = useState('all');
   const [maintenanceSearch, setMaintenanceSearch] = useState('');
+  const [availableTodayTab, setAvailableTodayTab] = useState('assignVehicle');
+  const [showTransportDetailModal, setShowTransportDetailModal] = useState(false);
+  const [transportAssignmentDate, setTransportAssignmentDate] = useState(getTomorrowDate());
+  const [transportDetailAssignmentId, setTransportDetailAssignmentId] = useState('');
+  const [transportDetailYearMonth, setTransportDetailYearMonth] = useState('');
+  const [transportEditable, setTransportEditable] = useState(true);
+  const [transportForm, setTransportForm] = useState({
+    driver_id: '',
+    vehicle_id: '',
+    driver_arrival_time: '06:00',
+  });
+  const transportRecommendedAppliedRef = useRef(false);
   useEffect(() => {
     const moduleParam = searchParams.get('module');
     if (moduleParam === VEHICLE_MODULE_PARAM || moduleParam === 'vehicles') {
@@ -297,8 +325,68 @@ function TransportHrDashboard() {
     { assignment_date: today },
     { skip: !today }
   );
+  const { data: transportArrangementListData, isLoading: loadingTransportArrangementList } =
+    useGetTransportArrangementListQuery({ date: transportAssignmentDate || null });
+  const { data: transportOptionsData, isLoading: loadingTransportOptions } = useGetPilotTransportOptionsQuery(
+    {
+      assignment_id: transportDetailAssignmentId || null,
+      yearMonth: transportDetailYearMonth || undefined,
+      plan_ids: [],
+    },
+    { skip: !showTransportDetailModal || !transportDetailAssignmentId }
+  );
+  const [assignTransportDetails, { isLoading: savingTransport }] = useAssignPilotTransportDetailsMutation();
   const isPrimaryLoading = loadingVehicles || loadingMaintenance || loadingLeaves || loadingRent || loadingAdvance;
   const hrTransportEstimates = hrTransportEstimatePayload?.data || [];
+  const transportOptions = transportOptionsData?.data || null;
+  const transportDrivers = transportOptions?.drivers || [];
+  const transportEstates = transportOptions?.estates || [];
+  const hasTransportEstates = transportEstates.length > 0;
+  const transportArrangementRows = transportArrangementListData?.data || [];
+  const transportSelectedDateRows = transportArrangementRows.filter(
+    (r) => !transportAssignmentDate || String(r.assignment_day) === String(transportAssignmentDate)
+  );
+  const pendingVehicleAssignmentCount = useMemo(
+    () => transportSelectedDateRows.filter((row) => !row.driver_id || !row.vehicle_id).length,
+    [transportSelectedDateRows]
+  );
+
+  useEffect(() => {
+    if (!showTransportDetailModal) {
+      transportRecommendedAppliedRef.current = false;
+      return;
+    }
+    if (loadingTransportOptions || !transportOptions || transportRecommendedAppliedRef.current) return;
+    const saved = transportOptions.saved_transport;
+    if (saved?.driver_id) {
+      const driver = transportDrivers.find((d) => String(d.id) === String(saved.driver_id));
+      setTransportForm({
+        driver_id: String(saved.driver_id),
+        vehicle_id:
+          saved.vehicle_id != null
+            ? String(saved.vehicle_id)
+            : driver?.vehicle_id != null
+              ? String(driver.vehicle_id)
+              : '',
+        driver_arrival_time: formatDriverArrivalTimeForInput(saved.driver_arrival_time),
+      });
+      transportRecommendedAppliedRef.current = true;
+      return;
+    }
+    const rid = transportOptions.recommended_driver_id;
+    if (!rid) return;
+    const driver = transportDrivers.find((d) => String(d.id) === String(rid));
+    if (!driver?.vehicle_id) return;
+    setTransportForm((prev) => {
+      if (prev.driver_id) return prev;
+      return {
+        ...prev,
+        driver_id: String(rid),
+        vehicle_id: String(driver.vehicle_id),
+      };
+    });
+    transportRecommendedAppliedRef.current = true;
+  }, [showTransportDetailModal, loadingTransportOptions, transportOptions, transportDrivers]);
 
   const availableVehicles = useMemo(() => {
     const todaysLeaves = (leaveRows || []).filter((row) => toDateOnly(row.leave_date) === today);
@@ -323,6 +411,82 @@ function TransportHrDashboard() {
       return true;
     });
   }, [vehicles, leaveRows, today]);
+
+  const openTransportDetail = (row) => {
+    transportRecommendedAppliedRef.current = false;
+    setTransportDetailAssignmentId(row.assignment_id);
+    setTransportDetailYearMonth(row.assignment_day ? row.assignment_day.slice(0, 7) : '');
+    setTransportEditable(!!row.editable_transport);
+    setTransportForm({
+      driver_id: row.driver_id != null ? String(row.driver_id) : '',
+      vehicle_id: row.vehicle_id != null ? String(row.vehicle_id) : '',
+      driver_arrival_time: formatDriverArrivalTimeForInput(row.driver_arrival_time),
+    });
+    setShowTransportDetailModal(true);
+  };
+
+  const closeTransportDetailModal = () => {
+    setShowTransportDetailModal(false);
+    setTransportDetailAssignmentId('');
+    setTransportDetailYearMonth('');
+    transportRecommendedAppliedRef.current = false;
+  };
+
+  const updateTransportField = (field, value) => {
+    setTransportForm((prev) => {
+      if (field === 'driver_id') {
+        const driver = transportDrivers.find((d) => String(d.id) === String(value));
+        return {
+          ...prev,
+          driver_id: value,
+          vehicle_id: driver?.vehicle_id != null ? String(driver.vehicle_id) : '',
+        };
+      }
+      return { ...prev, [field]: value };
+    });
+  };
+
+  const onSaveTransport = async () => {
+    if (!transportDetailAssignmentId) {
+      setHrDecisionNotice({ open: true, title: 'Error', message: 'Assignment id is required.', tone: 'error' });
+      return;
+    }
+    if (!transportEditable) {
+      setHrDecisionNotice({ open: true, title: 'Error', message: 'This assignment cannot be edited.', tone: 'error' });
+      return;
+    }
+    if (!transportForm.driver_id || !transportForm.vehicle_id || !transportForm.driver_arrival_time) {
+      setHrDecisionNotice({
+        open: true,
+        title: 'Error',
+        message: 'Driver, linked vehicle, and arrival time are required.',
+        tone: 'error',
+      });
+      return;
+    }
+    if (!hasTransportEstates) {
+      setHrDecisionNotice({
+        open: true,
+        title: 'Error',
+        message: 'Cannot save driver/vehicle because Assignment Estates is empty.',
+        tone: 'error',
+      });
+      return;
+    }
+    try {
+      await assignTransportDetails({
+        assignment_id: transportDetailAssignmentId,
+        driver_id: Number(transportForm.driver_id),
+        vehicle_id: Number(transportForm.vehicle_id),
+        driver_arrival_time: transportForm.driver_arrival_time,
+      }).unwrap();
+      setHrDecisionNotice({ open: true, title: 'Saved', message: 'Transport details saved successfully.', tone: 'success' });
+      closeTransportDetailModal();
+    } catch (error) {
+      const message = error?.data?.message || error?.message || 'Failed to save transport details.';
+      setHrDecisionNotice({ open: true, title: 'Error', message, tone: 'error' });
+    }
+  };
 
   const rentStats = useMemo(() => {
     const approved = (rentRows || []).filter((r) => String(r?.approval) === 'a').length;
@@ -828,31 +992,146 @@ function TransportHrDashboard() {
     if (detailModule === 'availableToday') {
       return (
         <div className="details-table-wrap-transport-hr">
-          <table className="details-table-transport-hr">
-            <thead>
-              <tr>
-                <th>Vehicle No</th>
-                <th>Driver</th>
-                <th>Category</th>
-                <th>Make / Model</th>
-              </tr>
-            </thead>
-            <tbody>
-              {availableVehicles.map((vehicle) => (
-                <tr key={vehicle.id}>
-                  <td>{vehicle.vehicle_no}</td>
-                  <td>{vehicle.assigned_driver_name}</td>
-                  <td>{vehicle.vehicle_category_name || '-'}</td>
-                  <td>{vehicle.make || '-'} / {vehicle.model || '-'}</td>
-                </tr>
-              ))}
-              {!availableVehicles.length ? (
+          <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+            <button
+              type="button"
+              className={availableTodayTab === 'assignVehicle' ? 'action-btn-outline-transport-hr' : 'action-btn-secondary-transport-hr'}
+              onClick={() => setAvailableTodayTab('assignVehicle')}
+            >
+              Assign Vehicle
+            </button>
+            <button
+              type="button"
+              className={availableTodayTab === 'availableVehicles' ? 'action-btn-outline-transport-hr' : 'action-btn-secondary-transport-hr'}
+              onClick={() => setAvailableTodayTab('availableVehicles')}
+            >
+              Available Vehicles
+            </button>
+          </div>
+
+          {availableTodayTab === 'assignVehicle' ? (
+            <>
+              <div className="assign-vehicle-toolbar-transport-hr">
+                <label className="assign-vehicle-date-label-transport-hr" htmlFor="assign-vehicle-date-input">
+                  Assignment Date
+                </label>
+                <input
+                  id="assign-vehicle-date-input"
+                  type="date"
+                  value={transportAssignmentDate}
+                  onChange={(e) => setTransportAssignmentDate(e.target.value)}
+                  className="assign-vehicle-date-input-transport-hr"
+                />
+              </div>
+              {loadingTransportArrangementList ? (
+                <div className="pilot-assignment-teams-loading-pilotsassign">
+                  <Bars height="32" width="32" color="#003057" ariaLabel="bars-loading" visible />
+                  <span>Loading assignment list...</span>
+                </div>
+              ) : (
+                <table className="details-table-transport-hr">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Assignment</th>
+                      <th>Pilot Team</th>
+                      <th>Current Transport</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {transportSelectedDateRows.map((row) => (
+                      <tr key={`${row.assignment_id}-${row.day_label}`}>
+                        <td>{row.assignment_day || '-'}</td>
+                        <td>
+                          <div>{row.assignment_id}</div>
+                          <small style={{ color: '#64748b' }}>{row.estate_summary || '-'}</small>
+                        </td>
+                        <td>{row.team_name} {row.pilot_names ? `· ${row.pilot_names}` : ''}</td>
+                        <td>
+                          {row.driver_id
+                            ? `${row.transport_driver_name || row.driver_id} · ${row.transport_vehicle_no || '—'} · ${row.driver_arrival_time || '—'}`
+                            : 'No driver/vehicle assigned'}
+                        </td>
+                        <td>
+                          <button
+                            type="button"
+                            className="action-btn-outline-transport-hr"
+                            onClick={() => openTransportDetail(row)}
+                          >
+                            {row.editable_transport ? 'Arrange' : 'View'}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                    {!transportSelectedDateRows.length ? (
+                      <tr>
+                        <td colSpan={5}>No transport assignments for selected date.</td>
+                      </tr>
+                    ) : null}
+                  </tbody>
+                </table>
+              )}
+            </>
+          ) : (
+            <table className="details-table-transport-hr">
+              <thead>
                 <tr>
-                  <td colSpan={4}>No available vehicle-driver pairs for today.</td>
+                  <th>Vehicle No</th>
+                  <th>Driver</th>
+                  <th>Category</th>
+                  <th>Make / Model</th>
                 </tr>
-              ) : null}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {availableVehicles.map((vehicle) => (
+                  <tr key={vehicle.id}>
+                    <td>{vehicle.vehicle_no}</td>
+                    <td>{vehicle.assigned_driver_name}</td>
+                    <td>{vehicle.vehicle_category_name || '-'}</td>
+                    <td>{vehicle.make || '-'} / {vehicle.model || '-'}</td>
+                  </tr>
+                ))}
+                {!availableVehicles.length ? (
+                  <tr>
+                    <td colSpan={4}>No available vehicle-driver pairs for today.</td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
+          )}
+
+          {showTransportDetailModal ? (
+            <div className="pilot-assignment-teams-modal-overlay-pilotsassign" onClick={closeTransportDetailModal}>
+              <div className="pilot-assignment-transport-modal-pilotsassign" onClick={(e) => e.stopPropagation()}>
+                <div className="pilot-assignment-teams-modal-header-pilotsassign">
+                  <span className="pilot-assignment-transport-back-spacer-pilotsassign" />
+                  <h2 className="pilot-assignment-teams-modal-title-pilotsassign">Driver &amp; vehicle</h2>
+                  <button type="button" className="pilot-assignment-teams-modal-close-pilotsassign" onClick={closeTransportDetailModal}>
+                    ×
+                  </button>
+                </div>
+                <div className="pilot-assignment-transport-body-pilotsassign">
+                  <TransportAssignmentFields
+                    assignmentIdLabel={transportDetailAssignmentId}
+                    editable={transportEditable}
+                    loading={loadingTransportOptions}
+                    transportOptions={transportOptions}
+                    form={transportForm}
+                    onFieldChange={updateTransportField}
+                    showSaveButton
+                    savingTransport={savingTransport}
+                    onSave={onSaveTransport}
+                    viewOnlyHint={
+                      !transportEditable
+                        ? 'View only: assignment is locked (driver started day or date outside edit window).'
+                        : null
+                    }
+                  />
+                </div>
+              </div>
+            </div>
+          ) : null}
         </div>
       );
     }
@@ -1322,7 +1601,7 @@ function TransportHrDashboard() {
 
       <div className="summary-grid-transport-hr">
         <div
-          className="summary-card-transport-hr summary-card-clickable-transport-hr"
+          className="summary-card-transport-hr summary-card-clickable-transport-hr summary-card-transport-hr--compact"
           role="button"
           tabIndex={0}
           onClick={() => setDetailModule('availableToday')}
@@ -1337,8 +1616,18 @@ function TransportHrDashboard() {
             <FaCheckCircle color="#0f766e" />
             <strong>Available Today</strong>
           </div>
-          <div className="summary-value-transport-hr">{loadingVehicles || loadingLeaves ? '-' : availableVehicles.length}</div>
-          <div className="summary-caption-transport-hr">Vehicle-driver pairs available now</div>
+          <div className="metric-chip-row-transport-hr">
+            <span className="metric-chip-transport-hr">
+              Pending assign: {loadingTransportArrangementList ? '-' : pendingVehicleAssignmentCount}
+            </span>
+            <span className="metric-chip-transport-hr">
+              Selected date: {loadingTransportArrangementList ? '-' : transportSelectedDateRows.length}
+            </span>
+            <span className="metric-chip-transport-hr">
+              Available pairs: {loadingVehicles || loadingLeaves ? '-' : availableVehicles.length}
+            </span>
+          </div>
+          <div className="summary-caption-transport-hr">Vehicle assignment queue from resource assignment</div>
         </div>
 
         <div

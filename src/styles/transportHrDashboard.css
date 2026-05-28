@@ -107,6 +107,11 @@
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
+.summary-card-transport-hr--compact {
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
 .highlight-item-transport-hr {
   background: linear-gradient(180deg, #f8f7e2, #bfe4fd);
   border: 1px solid #e6eef5;
@@ -504,6 +509,40 @@
   overflow-x: auto;
   padding: 14px;
   margin: 5px;
+}
+
+.assign-vehicle-toolbar-transport-hr {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  padding: 8px 10px;
+  border: 1px solid #dbe6ef;
+  border-radius: 10px;
+  background: #f8fbff;
+  width: fit-content;
+}
+
+.assign-vehicle-date-label-transport-hr {
+  font-size: 12px;
+  font-weight: 700;
+  color: #334155;
+}
+
+.assign-vehicle-date-input-transport-hr {
+  border: 1px solid #c4d3df;
+  border-radius: 8px;
+  background: #fff;
+  color: #0f172a;
+  padding: 6px 9px;
+  font-size: 12px;
+  min-width: 165px;
+}
+
+.assign-vehicle-date-input-transport-hr:focus {
+  outline: none;
+  border-color: #0b6e9f;
+  box-shadow: 0 0 0 2px rgba(11, 110, 159, 0.15);
 }
 
 .standalone-details-card-transport-hr {
