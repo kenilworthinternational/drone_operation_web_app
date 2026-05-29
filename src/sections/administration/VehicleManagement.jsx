@@ -18,50 +18,81 @@ export default function VehicleManagement({ onBack, onVehiclesChanged }) {
     return () => root?.classList.remove('content-dashboard--vehicle-mgmt');
   }, [showAddForm]);
 
-  if (showAddForm) {
-    return (
-      <div className="vehicle-mgmt-shell vehicle-mgmt-shell--add">
-        <div className="vehicle-mgmt-body vehicle-mgmt-body--add-flow">
-          <VehiclesRegistration
-            profileLayout
-            fleetNavBack={onBack}
-            onCancel={() => setShowAddForm(false)}
-            onVehicleRegisteredSuccess={() => {
-              onVehiclesChanged?.();
-              setShowAddForm(false);
-            }}
-          />
-        </div>
-      </div>
-    );
-  }
+  const closeAddModal = () => setShowAddForm(false);
 
   return (
-    <div className="vehicle-mgmt-shell">
-      <header className="vehicle-mgmt-header vehicle-mgmt-header-row">
-        <div className="vehicle-mgmt-header-start">
-          {onBack ? (
-            <button type="button" className="vehicle-mgmt-back-btn" onClick={onBack}>
-              ← Vehicle Fleet
+    <>
+      <div className="vehicle-mgmt-shell">
+        <header className="vehicle-mgmt-header vehicle-mgmt-header-row">
+          <div className="vehicle-mgmt-header-start">
+            {onBack ? (
+              <button type="button" className="vehicle-mgmt-back-btn" onClick={onBack}>
+                ← T. O. D.
+              </button>
+            ) : null}
+          </div>
+          <div className="vehicle-mgmt-intro">
+            <h3 className="vehicle-mgmt-title">Vehicle Management</h3>
+            <p className="vehicle-mgmt-hint">
+              Click a vehicle row to open its profile. Use filters to find KWIL or rented vehicles.
+            </p>
+          </div>
+          <div className="vehicle-mgmt-header-end">
+            <button
+              type="button"
+              className="vehicle-mgmt-add-btn"
+              onClick={() => setShowAddForm(true)}
+              disabled={showAddForm}
+            >
+              <FaPlus aria-hidden />
+              <span>Add</span>
             </button>
-          ) : null}
+          </div>
+        </header>
+        <div className="vehicle-mgmt-body">
+          <Vehicles embeddedInVehicleManagement />
         </div>
-        <div className="vehicle-mgmt-intro">
-          <h3 className="vehicle-mgmt-title">Vehicle Management</h3>
-          <p className="vehicle-mgmt-hint">
-            Click a vehicle row to open its profile. Use filters to find KWIL or rented vehicles.
-          </p>
-        </div>
-        <div className="vehicle-mgmt-header-end">
-          <button type="button" className="vehicle-mgmt-add-btn" onClick={() => setShowAddForm(true)}>
-            <FaPlus aria-hidden />
-            <span>Add</span>
-          </button>
-        </div>
-      </header>
-      <div className="vehicle-mgmt-body">
-        <Vehicles embeddedInVehicleManagement />
       </div>
-    </div>
+
+      {showAddForm ? (
+        <div
+          className="vehicle-register-modal-overlay"
+          role="presentation"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) closeAddModal();
+          }}
+        >
+          <div
+            className="vehicle-register-modal-card"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="vehicle-register-modal-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="vehicle-register-modal-header">
+              <h3 id="vehicle-register-modal-title">Register new vehicle</h3>
+              <button
+                type="button"
+                className="vehicle-register-modal-close"
+                onClick={closeAddModal}
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </div>
+            <div className="vehicle-register-modal-body">
+              <VehiclesRegistration
+                profileLayout
+                compactHeader
+                onVehicleRegisteredSuccess={() => {
+                  onVehiclesChanged?.();
+                  closeAddModal();
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </>
   );
 }

@@ -22,8 +22,8 @@ const PlanActivateRequestsPage = () => {
       <ToastContainer position="top-right" autoClose={4000} />
       <header className="header-fur-queue">
         <div className="header-start-fur-queue">
-          <button type="button" className="back-btn-fur-queue" onClick={() => go('/home/create')}>
-            <FaArrowLeft /> Back to Forecast
+          <button type="button" className="back-btn-fur-queue" onClick={() => go('/home/createBookings')}>
+            <FaArrowLeft /> Back to Booking Creation
           </button>
           <h1 className="title-fur-queue">
             Activate requests

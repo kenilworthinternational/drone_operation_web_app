@@ -166,6 +166,7 @@ function TransportHrDashboard() {
   const [leaveMonthFilter, setLeaveMonthFilter] = useState('');
   const [chartMonth, setChartMonth] = useState('');
   const [chartVehicleNo, setChartVehicleNo] = useState('');
+  const [chartOwnershipFilter, setChartOwnershipFilter] = useState('all');
   const [chartViewMode, setChartViewMode] = useState('combined');
   const [maintenanceStatusFilter, setMaintenanceStatusFilter] = useState('all');
   const [maintenanceVehicleFilter, setMaintenanceVehicleFilter] = useState('all');
@@ -253,7 +254,12 @@ function TransportHrDashboard() {
       closeVehicleDriverModal();
       setHrDecisionNotice({ open: true, title: 'Saved', message: 'Vehicle driver updated.', tone: 'success' });
     } catch (e) {
-      setHrDecisionNotice({ open: true, title: 'Error', message: e?.data?.message || e?.message || 'Failed to save', tone: 'error' });
+      setHrDecisionNotice({
+        open: true,
+        title: 'Action needed',
+        message: e?.data?.message || e?.message || "We couldn't save your changes. Please try again.",
+        tone: 'error',
+      });
     }
   };
 
@@ -285,8 +291,8 @@ function TransportHrDashboard() {
     } catch (e) {
       setHrDecisionNotice({
         open: true,
-        title: 'Error',
-        message: e?.data?.message || e?.message || 'Failed to save vehicle fuel card',
+        title: 'Action needed',
+        message: e?.data?.message || e?.message || "We couldn't save the vehicle fuel card. Please try again.",
         tone: 'error',
       });
     }
@@ -306,12 +312,15 @@ function TransportHrDashboard() {
     [fuelPendingRows]
   );
   const effectiveChartMonth = chartMonth || monthKey;
+  const chartOwnershipApi =
+    chartOwnershipFilter === 'own' ? 'o' : chartOwnershipFilter === 'rented' ? 'r' : undefined;
   const {
     data: kmChartRows = [],
     isLoading: loadingKmChart,
   } = useGetDailyKmSummaryForHrQuery({
     yearMonth: effectiveChartMonth,
     vehicle_no: chartVehicleNo || undefined,
+    ownership: chartOwnershipApi,
   });
   const {
     data: kmVehicleChartRows = [],
@@ -320,6 +329,7 @@ function TransportHrDashboard() {
     yearMonth: effectiveChartMonth,
     vehicle_no: chartVehicleNo || undefined,
     split_by_vehicle: 1,
+    ownership: chartOwnershipApi,
   });
   const { data: hrTransportEstimatePayload } = useGetHrTransportEstimatesQuery(
     { assignment_date: today },
@@ -448,17 +458,22 @@ function TransportHrDashboard() {
 
   const onSaveTransport = async () => {
     if (!transportDetailAssignmentId) {
-      setHrDecisionNotice({ open: true, title: 'Error', message: 'Assignment id is required.', tone: 'error' });
+      setHrDecisionNotice({ open: true, title: 'Action needed', message: 'Assignment ID is required.', tone: 'error' });
       return;
     }
     if (!transportEditable) {
-      setHrDecisionNotice({ open: true, title: 'Error', message: 'This assignment cannot be edited.', tone: 'error' });
+      setHrDecisionNotice({
+        open: true,
+        title: 'Action needed',
+        message: 'This assignment cannot be changed right now.',
+        tone: 'error',
+      });
       return;
     }
     if (!transportForm.driver_id || !transportForm.vehicle_id || !transportForm.driver_arrival_time) {
       setHrDecisionNotice({
         open: true,
-        title: 'Error',
+        title: 'Action needed',
         message: 'Driver, linked vehicle, and arrival time are required.',
         tone: 'error',
       });
@@ -467,8 +482,8 @@ function TransportHrDashboard() {
     if (!hasTransportEstates) {
       setHrDecisionNotice({
         open: true,
-        title: 'Error',
-        message: 'Cannot save driver/vehicle because Assignment Estates is empty.',
+        title: 'Action needed',
+        message: 'Assignment estates are missing, so we cannot save driver and vehicle details yet.',
         tone: 'error',
       });
       return;
@@ -483,8 +498,11 @@ function TransportHrDashboard() {
       setHrDecisionNotice({ open: true, title: 'Saved', message: 'Transport details saved successfully.', tone: 'success' });
       closeTransportDetailModal();
     } catch (error) {
-      const message = error?.data?.message || error?.message || 'Failed to save transport details.';
-      setHrDecisionNotice({ open: true, title: 'Error', message, tone: 'error' });
+      const message =
+        error?.data?.message ||
+        error?.message ||
+        "We couldn't save transport details. Please try again.";
+      setHrDecisionNotice({ open: true, title: 'Action needed', message, tone: 'error' });
     }
   };
 
@@ -898,12 +916,19 @@ function TransportHrDashboard() {
       </div>
     ) : null
   );
-  const chartVehicleOptions = useMemo(
-    () =>
-      [...new Set((vehicles || []).map((row) => String(row?.vehicle_no || '').trim()).filter(Boolean))]
-        .sort((a, b) => a.localeCompare(b)),
-    [vehicles]
-  );
+  const chartVehicleOptions = useMemo(() => {
+    let rows = vehicles || [];
+    if (chartOwnershipFilter === 'own') {
+      rows = rows.filter((row) => String(row?.ownership || 'o').toLowerCase() !== 'r');
+    } else if (chartOwnershipFilter === 'rented') {
+      rows = rows.filter((row) => String(row?.ownership || '').toLowerCase() === 'r');
+    }
+    return [...new Set(rows.map((row) => String(row?.vehicle_no || '').trim()).filter(Boolean))].sort((a, b) =>
+      a.localeCompare(b)
+    );
+  }, [vehicles, chartOwnershipFilter]);
+  const chartOwnershipLabel =
+    chartOwnershipFilter === 'own' ? 'Own' : chartOwnershipFilter === 'rented' ? 'Rented' : 'All';
   const chartData = useMemo(
     () =>
       (kmChartRows || []).map((row) => ({
@@ -963,6 +988,13 @@ function TransportHrDashboard() {
     }
   }, [chartViewMode, isAllVehiclesView]);
 
+  useEffect(() => {
+    if (!chartVehicleNo) return;
+    if (!chartVehicleOptions.includes(chartVehicleNo)) {
+      setChartVehicleNo('');
+    }
+  }, [chartVehicleNo, chartVehicleOptions]);
+
   const getSeriesColor = (index) => {
     const palette = [
       '#004B71', '#0A9396', '#3A86FF', '#8338EC', '#2A9D8F',
@@ -980,6 +1012,7 @@ function TransportHrDashboard() {
       'Active Vehicles (Date)': Number(row.vehicle_count || 0),
       Month: monthLabelFromYearMonth(effectiveChartMonth),
       Filter: chartVehicleNo || 'All Vehicles',
+      Ownership: chartOwnershipLabel,
     }));
     const worksheet = XLSX.utils.json_to_sheet(rows);
     const workbook = XLSX.utils.book_new();
@@ -1467,6 +1500,7 @@ function TransportHrDashboard() {
               <p>
                 {monthLabelFromYearMonth(effectiveChartMonth)}
                 {chartVehicleNo ? ` • ${chartVehicleNo}` : ' • All vehicles'}
+                {` • ${chartOwnershipLabel}`}
                 {!chartVehicleNo ? ` • ${chartViewMode === 'separate' ? 'All separate' : 'All in one'}` : ''}
               </p>
             </div>
@@ -1491,6 +1525,17 @@ function TransportHrDashboard() {
               </select>
             </label>
             <label>
+              Ownership
+              <select
+                value={chartOwnershipFilter}
+                onChange={(e) => setChartOwnershipFilter(e.target.value)}
+              >
+                <option value="all">All</option>
+                <option value="own">Own</option>
+                <option value="rented">Rented</option>
+              </select>
+            </label>
+            <label>
               Display
               <select
                 value={chartViewMode}
@@ -1498,8 +1543,8 @@ function TransportHrDashboard() {
                 disabled={!isAllVehiclesView}
                 title={isAllVehiclesView ? 'Choose how all-vehicle data should display' : 'Display mode is for All Vehicles only'}
               >
-                <option value="combined">All in One</option>
-                <option value="separate">All Separate</option>
+                <option value="combined">All</option>
+                <option value="separate">Separate</option>
               </select>
             </label>
             <button

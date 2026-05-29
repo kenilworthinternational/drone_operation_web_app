@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Bars } from 'react-loader-spinner';
 import { baseApi } from '../../../api/services/allEndpoints';
 import { useAppDispatch } from '../../../store/hooks';
+import { withCurrentWingSearch } from '../../../config/wingRouteGuard';
 import '../../../styles/requestsQueue.css';
 
 const RequestsQueueMain = () => {
@@ -145,7 +146,11 @@ const RequestsQueueMain = () => {
                     <div 
                       key={request.request_id} 
                       className="request-tile-req-queue"
-                      onClick={() => navigate('/home/requestProceed', { state: { requestId: request.request_id } })}
+                      onClick={() =>
+                        navigate(withCurrentWingSearch('/home/requestProceed', routerLocation.search), {
+                          state: { requestId: request.request_id },
+                        })
+                      }
                       style={{ cursor: 'pointer' }}
                     >
                       <div className="tile-header-req-queue">
@@ -230,12 +235,12 @@ const RequestsQueueMain = () => {
                       className="request-tile-req-queue"
                       onClick={() => {
                         const requestIdentifier = request.request_id ?? request.plan;
-                        navigate('/home/requestProceed', { 
-                          state: { 
-                            requestId: requestIdentifier, 
+                        navigate(withCurrentWingSearch('/home/requestProceed', routerLocation.search), {
+                          state: {
+                            requestId: requestIdentifier,
                             requestType: 'reschedule',
-                            requestData: request
-                          } 
+                            requestData: request,
+                          },
                         });
                       }}
                       style={{ cursor: 'pointer' }}

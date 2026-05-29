@@ -5,7 +5,10 @@ import { useAppDispatch } from '../store/hooks';
 import { baseApi } from '../api/services/allEndpoints';
 import { logout } from '../store/slices/authSlice';
 import { useNavbarPermissions } from '../hooks/useNavbarPermissions';
-import { WING_HUB_META } from '../config/wingHubDisplay';
+import {
+  WING_HUB_META,
+  isForecastAllowedWing,
+} from '../config/wingHubDisplay';
 import { OD_WING_OPERATION_DIGITALIZATION_TITLE } from '../config/odWingShell';
 import { isInternalDeveloper } from '../utils/authUtils';
 import '../styles/wingHub.css';
@@ -26,8 +29,8 @@ function getVisibleNavChildren(category, allowedPaths) {
 }
 
 /**
- * Post-login landing: wing tiles (main nav categories). Click opens Forecast with ?wing=…
- * (except Operation Digitalization wing → Workflow Dashboard with OD shell, no left nav).
+ * Post-login landing: wing tiles (main nav categories).
+ * SPMW / FOW open Forecast; ODDME opens Workflow Dashboard; other wings open first allowed nav item.
  */
 const WingHubHome = () => {
   const navigate = useNavigate();
@@ -71,7 +74,23 @@ const WingHubHome = () => {
       navigate(`/home/workflowDashboard?wing=${q}`);
       return;
     }
-    navigate(`/home/create?wing=${q}`);
+    if (isForecastAllowedWing(title)) {
+      navigate(`/home/create?wing=${q}`);
+      return;
+    }
+    const category = categories.find((c) => c.title === title);
+    const visible = category ? getVisibleNavChildren(category, allowedPaths) : [];
+    const firstChild = visible[0];
+    const firstPath =
+      firstChild?.subItems?.find((sub) => allowedPaths.includes(sub.path))?.path ||
+      (firstChild?.path && allowedPaths.includes(firstChild.path) ? firstChild.path : null) ||
+      firstChild?.subItems?.[0]?.path ||
+      firstChild?.path;
+    if (firstPath) {
+      navigate({ pathname: firstPath, search: `?wing=${q}` });
+      return;
+    }
+    navigate(`/home?wing=${q}`);
   };
 
   return (

@@ -25,6 +25,8 @@ import './financeReportApi';
 import './plantationInvoiceApi';
 import './chemicalsApi';
 import './timeOfDaysApi';
+import './bookingCreationApi';
+import './opsroomPlanCalendarApi';
 
 // Export the complete API
 export { baseApi };
@@ -47,6 +49,8 @@ export * from './financeReportApi';
 export * from './plantationInvoiceApi';
 export * from './chemicalsApi';
 export * from './timeOfDaysApi';
+export * from './bookingCreationApi';
+export * from './opsroomPlanCalendarApi';
 
 /**
  * Node.js Backend Services:

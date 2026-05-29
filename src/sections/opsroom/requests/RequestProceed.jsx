@@ -5,6 +5,7 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval, addMonths } from '
 import { baseApi } from '../../../api/services/allEndpoints';
 import { useAppDispatch } from '../../../store/hooks';
 import { useCreateAdHocNotificationMutation, useCreateRescheduleNotificationMutation, useCreatePlanApprovalNotificationMutation } from '../../../api/services NodeJs/notificationsApi';
+import { withCurrentWingSearch } from '../../../config/wingRouteGuard';
 import '../../../styles/requestProceed.css';
 
 const RequestProceed = () => {
@@ -741,7 +742,7 @@ const RequestProceed = () => {
           onClick={() => {
             if (isNavigating) return;
             setIsNavigating(true);
-            navigate('/home/requestsQueue');
+            navigate(withCurrentWingSearch('/home/requestsQueue', location.search));
           }} 
           disabled={isNavigating}
           aria-label="Back"

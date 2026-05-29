@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   FaCheckCircle,
   FaPlayCircle,
@@ -23,12 +23,14 @@ import { useGetMonitoringDashboardDataQuery } from '../../../api/services NodeJs
 import { useGetPendingAdHocRequestsQuery, useGetPendingRescheduleRequestsByManagerQuery } from '../../../api/services/requestsApi';
 import { getUserData } from '../../../utils/authUtils';
 import { COMPANY } from '../../../config/companyConstants';
+import { withCurrentWingSearch } from '../../../config/wingRouteGuard';
 import '../../../styles/monitoringDashboard.css';
 
 const REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
 const MonitoringDashboard = () => {
   const navigate = useNavigate();
+  const routerLocation = useLocation();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [lastSyncTime, setLastSyncTime] = useState(null);
   const [expandedCard, setExpandedCard] = useState(null);
@@ -422,6 +424,7 @@ const MonitoringDashboard = () => {
             adhocCount={adhocCount}
             rescheduleCount={rescheduleCount}
             navigate={navigate}
+            currentSearch={routerLocation.search}
           />
         </DashboardCard>
 
@@ -766,11 +769,11 @@ const DayEndItem = ({ item }) => (
  * Plan Request card content - shows ad-hoc and reschedule counts
  * Similar to Queue section in WorkflowDashboard
  */
-const PlanRequestCard = ({ adhocCount, rescheduleCount, navigate }) => (
+const PlanRequestCard = ({ adhocCount, rescheduleCount, navigate, currentSearch = '' }) => (
   <div className="monitoring-plan-request-card">
     <div
       className="monitoring-plan-request-row adhoc"
-      onClick={() => navigate('/home/requestsQueue')}
+      onClick={() => navigate(withCurrentWingSearch('/home/requestsQueue', currentSearch))}
     >
       <div className="monitoring-plan-request-left">
         <FaMapMarkerAlt className="monitoring-plan-request-icon" />
@@ -780,7 +783,7 @@ const PlanRequestCard = ({ adhocCount, rescheduleCount, navigate }) => (
     </div>
     <div
       className="monitoring-plan-request-row reschedule"
-      onClick={() => navigate('/home/requestsQueue')}
+      onClick={() => navigate(withCurrentWingSearch('/home/requestsQueue', currentSearch))}
     >
       <div className="monitoring-plan-request-left">
         <FaExclamationTriangle className="monitoring-plan-request-icon" />

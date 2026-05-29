@@ -1508,107 +1508,183 @@ const VehiclesRegistration = ({
         </>
       )}
 
-      <div className="form-row-assets-reg vehicle-photo-upload-row-assets-reg">
-        <div className="form-group-assets-reg vehicle-photo-upload-group-assets-reg">
-          <label htmlFor="vehicle_image">
-            Vehicle photo <span className="required-assets-reg">*</span>
-          </label>
-          <p className="form-field-helper-assets-reg" style={{ marginTop: 0, marginBottom: 8 }}>
-            Main photo shown on the fleet vehicle profile (JPG or PNG).
-          </p>
-          <input
-            type="file"
-            id="vehicle_image"
-            name="vehicle_image"
-            accept="image/jpeg,image/png,image/webp,image/gif"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) {
-                setVehicleFormData((prev) => ({ ...prev, vehicle_image: file }));
-              }
-            }}
-          />
-          {vehicleFormData.vehicle_image instanceof File ? (
-            <div className="vehicle-photo-preview-assets-reg">
-              <img
-                src={URL.createObjectURL(vehicleFormData.vehicle_image)}
-                alt="Vehicle preview"
+      {profileLayout ? (
+        <div className="vehicle-profile-gallery">
+          {[
+            {
+              key: 'vehicle_image',
+              label: 'Vehicle photo *',
+              accept: 'image/jpeg,image/png,image/webp,image/gif',
+              ref: null,
+            },
+            {
+              key: 'copy_of_registration_document',
+              label: 'Copy of Registration Document',
+              accept: 'image/*,.pdf',
+              ref: registrationDocRef,
+            },
+            {
+              key: 'vehicle_revenue_license_image',
+              label: 'Vehicle Revenue License Image',
+              accept: 'image/*,.pdf',
+              ref: revenueLicenseRef,
+            },
+            {
+              key: 'smoke_test_image',
+              label: 'Emission Test Image',
+              accept: 'image/*,.pdf',
+              ref: smokeTestRef,
+            },
+            {
+              key: 'insurance_image',
+              label: 'Insurance Image',
+              accept: 'image/*,.pdf',
+              ref: insuranceRef,
+            },
+          ].map((slot) => {
+            const value = vehicleFormData?.[slot.key];
+            const hasFile = value instanceof File;
+            const previewUrl = hasFile ? URL.createObjectURL(value) : null;
+            const isImage = hasFile && /^image\//i.test(String(value?.type || ''));
+            const inputId = `vr-doc-${slot.key}`;
+
+            return (
+              <div key={slot.key} className="vehicle-profile-gallery-card">
+                <div className="vehicle-profile-gallery-preview">
+                  {hasFile && isImage && previewUrl ? (
+                    <img src={previewUrl} alt={slot.label} />
+                  ) : hasFile ? (
+                    <div className="vehicle-profile-doc-link">{value?.name || 'Selected file'}</div>
+                  ) : (
+                    <div className="vehicle-profile-gallery-empty">No file yet</div>
+                  )}
+                </div>
+                <span className="vehicle-profile-gallery-label">{slot.label}</span>
+                <div className="vehicle-profile-gallery-actions">
+                  <input
+                    ref={slot.ref}
+                    id={inputId}
+                    type="file"
+                    accept={slot.accept}
+                    className="vehicle-profile-gallery-file-input"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setVehicleFormData((prev) => ({ ...prev, [slot.key]: file }));
+                      }
+                      e.target.value = '';
+                    }}
+                  />
+                  <label htmlFor={inputId} className="vehicle-profile-gallery-upload-btn">
+                    {hasFile ? 'Replace' : 'Upload'}
+                  </label>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <>
+          <div className="form-row-assets-reg vehicle-photo-upload-row-assets-reg">
+            <div className="form-group-assets-reg vehicle-photo-upload-group-assets-reg">
+              <label htmlFor="vehicle_image">
+                Vehicle photo <span className="required-assets-reg">*</span>
+              </label>
+              <p className="form-field-helper-assets-reg" style={{ marginTop: 0, marginBottom: 8 }}>
+                Main photo shown on the fleet vehicle profile (JPG or PNG).
+              </p>
+              <input
+                type="file"
+                id="vehicle_image"
+                name="vehicle_image"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    setVehicleFormData((prev) => ({ ...prev, vehicle_image: file }));
+                  }
+                }}
               />
-              <span>{vehicleFormData.vehicle_image.name}</span>
+              {vehicleFormData.vehicle_image instanceof File ? (
+                <div className="vehicle-photo-preview-assets-reg">
+                  <img src={URL.createObjectURL(vehicleFormData.vehicle_image)} alt="Vehicle preview" />
+                  <span>{vehicleFormData.vehicle_image.name}</span>
+                </div>
+              ) : null}
             </div>
-          ) : null}
-        </div>
-      </div>
+          </div>
 
-      <div className="form-row-assets-reg">
-        <div className="form-group-assets-reg">
-          <label htmlFor="copy_of_registration_document">Copy of Registration Document</label>
-          <input
-            ref={registrationDocRef}
-            type="file"
-            id="copy_of_registration_document"
-            name="copy_of_registration_document"
-            accept="image/*,.pdf"
-            onChange={(e) => {
-              const file = e.target.files[0];
-              if (file) {
-                setVehicleFormData(prev => ({ ...prev, copy_of_registration_document: file }));
-              }
-            }}
-          />
-        </div>
-        <div className="form-group-assets-reg">
-          <label htmlFor="vehicle_revenue_license_image">Vehicle Revenue License Image</label>
-          <input
-            ref={revenueLicenseRef}
-            type="file"
-            id="vehicle_revenue_license_image"
-            name="vehicle_revenue_license_image"
-            accept="image/*"
-            onChange={(e) => {
-              const file = e.target.files[0];
-              if (file) {
-                setVehicleFormData(prev => ({ ...prev, vehicle_revenue_license_image: file }));
-              }
-            }}
-          />
-        </div>
-      </div>
+          <div className="form-row-assets-reg">
+            <div className="form-group-assets-reg">
+              <label htmlFor="copy_of_registration_document">Copy of Registration Document</label>
+              <input
+                ref={registrationDocRef}
+                type="file"
+                id="copy_of_registration_document"
+                name="copy_of_registration_document"
+                accept="image/*,.pdf"
+                onChange={(e) => {
+                  const file = e.target.files[0];
+                  if (file) {
+                    setVehicleFormData((prev) => ({ ...prev, copy_of_registration_document: file }));
+                  }
+                }}
+              />
+            </div>
+            <div className="form-group-assets-reg">
+              <label htmlFor="vehicle_revenue_license_image">Vehicle Revenue License Image</label>
+              <input
+                ref={revenueLicenseRef}
+                type="file"
+                id="vehicle_revenue_license_image"
+                name="vehicle_revenue_license_image"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files[0];
+                  if (file) {
+                    setVehicleFormData((prev) => ({ ...prev, vehicle_revenue_license_image: file }));
+                  }
+                }}
+              />
+            </div>
+          </div>
 
-      <div className="form-row-assets-reg">
-        <div className="form-group-assets-reg">
-          <label htmlFor="smoke_test_image">Emission Test Image</label>
-          <input
-            ref={smokeTestRef}
-            type="file"
-            id="smoke_test_image"
-            name="smoke_test_image"
-            accept="image/*"
-            onChange={(e) => {
-              const file = e.target.files[0];
-              if (file) {
-                setVehicleFormData(prev => ({ ...prev, smoke_test_image: file }));
-              }
-            }}
-          />
-        </div>
-        <div className="form-group-assets-reg">
-          <label htmlFor="insurance_image">Insurance Image</label>
-          <input
-            ref={insuranceRef}
-            type="file"
-            id="insurance_image"
-            name="insurance_image"
-            accept="image/*"
-            onChange={(e) => {
-              const file = e.target.files[0];
-              if (file) {
-                setVehicleFormData(prev => ({ ...prev, insurance_image: file }));
-              }
-            }}
-          />
-        </div>
-      </div>
+          <div className="form-row-assets-reg">
+            <div className="form-group-assets-reg">
+              <label htmlFor="smoke_test_image">Emission Test Image</label>
+              <input
+                ref={smokeTestRef}
+                type="file"
+                id="smoke_test_image"
+                name="smoke_test_image"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files[0];
+                  if (file) {
+                    setVehicleFormData((prev) => ({ ...prev, smoke_test_image: file }));
+                  }
+                }}
+              />
+            </div>
+            <div className="form-group-assets-reg">
+              <label htmlFor="insurance_image">Insurance Image</label>
+              <input
+                ref={insuranceRef}
+                type="file"
+                id="insurance_image"
+                name="insurance_image"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files[0];
+                  if (file) {
+                    setVehicleFormData((prev) => ({ ...prev, insurance_image: file }));
+                  }
+                }}
+              />
+            </div>
+          </div>
+        </>
+      )}
         </div>
       </div>
 
@@ -2436,7 +2512,7 @@ const VehiclesRegistration = ({
         <div className="vehicle-add-nav">
           {typeof fleetNavBack === 'function' ? (
             <button type="button" className="vehicle-profile-back" onClick={fleetNavBack}>
-              ← Vehicle Fleet
+              ← T. O. D.
             </button>
           ) : null}
           {onCancel ? (

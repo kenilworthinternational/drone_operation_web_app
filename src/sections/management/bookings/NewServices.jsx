@@ -1,21 +1,29 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import CustomDropdown from '../../../components/CustomDropdown';
 import BookingsCalender from './BookingsCalender';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { Bars } from 'react-loader-spinner';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { baseApi } from '../../../api/services/allEndpoints';
-import { useAppDispatch } from '../../../store/hooks';
+import {
+  useGetBookingCreationEstatesQuery,
+  useGetBookingCreationMissionTypesQuery,
+  useGetBookingCreationCropTypesQuery,
+  useLazyGetBookingCreationDivisionsByEstateQuery,
+  useLazyGetBookingCreationPlansByDateQuery,
+  useLazyGetBookingCreationPlansByDateRangeQuery,
+  useLazyGetBookingCreationAllPlansByDateRangeQuery,
+  useCreateBookingPlanMutation,
+} from '../../../api/services NodeJs/bookingCreationApi';
 import '../../../styles/updateservices.css';
+
+const EMPTY_LIST = [];
+
 const NewServices = () => {
   const [state, setState] = useState({
-    dropdownOptions: [],
     plantationOptions: [],
     regionOptions: [],
     estateOptions: [],
-    missionTypes: [],
-    cropTypes: [],
     divisionOptions: [],
     selectedDate: null,
     selectedMissionType: null,
@@ -24,18 +32,15 @@ const NewServices = () => {
     monthEndDate: "",
     selectedFields: new Set(),
     totalExtent: 0,
-    loading: true,
     isAdHocPlan: false, // Default to false
     update: false,
     missionId: "",
     isSubmitting: false,
-    estates: [],          // Store list of estates
     selectedEstate: null, // Store selected estate object
     selectedGroup: null,
     selectedPlantation: null,
     selectedRegion: null,
     searchTerm: '',
-    filteredEstates: [],
     isDropdownOpen: false,
     originalSelectedFields: new Set(), // Track original fields before Ad-Hoc
     originalTotalExtent: 0, // Track original extent before Ad-Hoc
@@ -53,7 +58,77 @@ const NewServices = () => {
   const [calendarTasks, setCalendarTasks] = useState([]); // Store calendar tasks for display
   const [currentMonth, setCurrentMonth] = useState(new Date()); // Current month for calendar
   const [calendarLoading, setCalendarLoading] = useState(false);
-  const dispatch = useAppDispatch();
+  const [restrictedFieldConfirm, setRestrictedFieldConfirm] = useState(null);
+  const { data: estatesData, isLoading: estatesLoading } = useGetBookingCreationEstatesQuery();
+  const { data: missionTypesData } = useGetBookingCreationMissionTypesQuery();
+  const { data: cropTypesData } = useGetBookingCreationCropTypesQuery();
+
+  const estates = estatesData ?? EMPTY_LIST;
+  const missionTypes = missionTypesData ?? EMPTY_LIST;
+  const cropTypes = cropTypesData ?? EMPTY_LIST;
+
+  const filteredEstates = useMemo(() => {
+    const term = (state.searchTerm || '').trim();
+    if (!term || term.toLowerCase() === '0') return estates;
+    return estates.filter((estate) =>
+      estate.estate.toLowerCase().includes(term.toLowerCase())
+    );
+  }, [estates, state.searchTerm]);
+  const [fetchDivisionsByEstate] = useLazyGetBookingCreationDivisionsByEstateQuery();
+  const [fetchPlansByDate] = useLazyGetBookingCreationPlansByDateQuery();
+  const [fetchPlansByDateRange] = useLazyGetBookingCreationPlansByDateRangeQuery();
+  const [fetchAllPlansByDateRange] = useLazyGetBookingCreationAllPlansByDateRangeQuery();
+  const [createBookingPlan] = useCreateBookingPlanMutation();
+
+  const mapCalendarTasksFromResponse = (response) => {
+    if (response?.status !== 'true') return [];
+    return Object.keys(response)
+      .filter((key) => !isNaN(key))
+      .map((key) => response[key])
+      .map((task) => ({
+        id: task.id,
+        date: task.date,
+        estate: task.estate,
+        estate_id: task.estate_id,
+        area: parseFloat(task.area) || 0,
+        flag: task.flag,
+        mission_id: task.mission_id,
+        completed: task.completed,
+        team_assigned: task.team_assigned,
+        activated: task.activated,
+        manager_approval: task.manager_approval,
+        pilots_assigned: task.pilots_assigned,
+        can_delete: task.can_delete,
+        delete_block_reason: task.delete_block_reason,
+      }));
+  };
+
+  const buildCalendarTaskFromCreate = (planId, submissionData, estate) => ({
+    id: planId,
+    date: submissionData.pickedDate,
+    estate: estate.estate,
+    estate_id: estate.id,
+    area: parseFloat(submissionData.totalExtent) || 0,
+    flag: submissionData.flag,
+    mission_id: 0,
+    completed: 0,
+    team_assigned: 0,
+    activated: 1,
+    manager_approval: 0,
+    pilots_assigned: 0,
+    can_delete: true,
+    delete_block_reason: null,
+  });
+
+  const refreshCalendarForMonth = useCallback(async (month = currentMonth) => {
+    const startDate = format(startOfMonth(month), 'yyyy-MM-dd');
+    const endDate = format(endOfMonth(month), 'yyyy-MM-dd');
+    // preferCacheValue: false — after create, cache may only have the first plan until refetch
+    const summaryResult = await fetchAllPlansByDateRange({ startDate, endDate }, false);
+    if (summaryResult.data) {
+      setCalendarTasks(summaryResult.data);
+    }
+  }, [currentMonth, fetchAllPlansByDateRange]);
 
   // Handle date click from calendar
   const handleDateClick = (date) => {
@@ -95,35 +170,7 @@ const NewServices = () => {
     const fetchCalendarData = async () => {
       try {
         setCalendarLoading(true);
-        const startDate = format(startOfMonth(currentMonth), 'yyyy-MM-dd');
-        const endDate = format(endOfMonth(currentMonth), 'yyyy-MM-dd');
-        const result = await dispatch(
-          baseApi.endpoints.getAllPlansByDateRange.initiate({ startDate, endDate })
-        );
-        const response = result.data;
-        
-        if (response?.status === "true") {
-          const tasks = Object.keys(response)
-            .filter(key => !isNaN(key))
-            .map(key => response[key])
-            .map(task => ({
-              id: task.id,
-              date: task.date,
-              estate: task.estate,
-              estate_id: task.estate_id,
-              area: parseFloat(task.area) || 0,
-              flag: task.flag,
-              mission_id: task.mission_id,
-              completed: task.completed,
-              team_assigned: task.team_assigned,
-              activated: task.activated,
-              manager_approval: task.manager_approval,
-              pilots_assigned: task.pilots_assigned,
-            }));
-          setCalendarTasks(tasks);
-        } else {
-          setCalendarTasks([]);
-        }
+        await refreshCalendarForMonth(currentMonth);
       } catch (error) {
         console.error("Error fetching calendar data:", error);
         setCalendarTasks([]);
@@ -133,54 +180,21 @@ const NewServices = () => {
     };
 
     fetchCalendarData();
-    
-    // Also update monthly plan data when month changes
+
     const startDate = format(startOfMonth(currentMonth), 'yyyy-MM-dd');
     const endDate = format(endOfMonth(currentMonth), 'yyyy-MM-dd');
     fetchMonthlyPlanData(startDate, endDate);
-  }, [currentMonth, dispatch]);
-
-  useEffect(() => {
-    const fetchEstates = async () => {
-      try {
-        const estatesResult = await dispatch(
-          baseApi.endpoints.getAllEstates.initiate()
-        );
-        const response = estatesResult.data;
-        setState(prev => ({
-          ...prev,
-          estates: response || [],
-          filteredEstates: response || [], // Initialize filteredEstates with all estates
-          loading: false
-        }));
-      } catch (error) {
-        console.error("Error fetching estates:", error);
-        setState(prev => ({
-          ...prev,
-          estates: [],
-          filteredEstates: [], // Also reset filteredEstates on error
-          loading: false
-        }));
-      }
-    };
-
-    fetchEstates();
-  }, []);
+  }, [currentMonth, refreshCalendarForMonth]);
 
   const today = new Date();
   const fetchTotalAreaForDate = async (date) => {
     if (date) {
       try {
         const formattedDate = format(date, 'yyyy-MM-dd');
-        const plansResult = await dispatch(
-          baseApi.endpoints.getPlansByDate.initiate(formattedDate)
-        );
+        const plansResult = await fetchPlansByDate(formattedDate, false);
         const response = plansResult.data;
         if (response?.status === "true") {
-          // Filter plans where activated === 1 (same as calendar)
-          const activatedPlans = Object.keys(response)
-            .filter(key => !isNaN(key))
-            .map(key => response[key])
+          const activatedPlans = mapCalendarTasksFromResponse(response)
             .filter(plan => plan.activated === 1);
           
           // Count only activated plans
@@ -222,40 +236,12 @@ const NewServices = () => {
   }, [state.selectedDate, state.monthStartDate, state.monthEndDate]);
 
 
-  useEffect(() => {
-    const fetchInitialData = async () => {
-      try {
-        const [groupsResult, missionsResult, cropsResult] = await Promise.all([
-          dispatch(baseApi.endpoints.getGroups.initiate()),
-          dispatch(baseApi.endpoints.getMissionTypes.initiate()),
-          dispatch(baseApi.endpoints.getCropTypes.initiate()),
-        ]);
-        const groups = groupsResult.data;
-        const missions = missionsResult.data;
-        const crops = cropsResult.data;
-        setState(prev => ({
-          ...prev,
-          dropdownOptions: Array.isArray(groups) ? groups : [],
-          missionTypes: Array.isArray(missions) ? missions : [],
-          cropTypes: Array.isArray(crops) ? crops : [],
-          loading: false
-        }));
-      } catch (error) {
-        console.error('Error fetching initial data:', error);
-      }
-    };
-
-    fetchInitialData();
-  }, []);
-
   const fetchMissionDetails = useCallback(async () => {
     const { selectedEstate } = state;
 
     if (selectedEstate) {
       try {
-        const divisionsResult = await dispatch(
-          baseApi.endpoints.getDivisionsByEstate.initiate(selectedEstate.id)
-        );
+        const divisionsResult = await fetchDivisionsByEstate(selectedEstate.id);
         const divisionsResponse = divisionsResult.data;
         let divisions = [];
         let minimumPlanSize = 0;
@@ -277,7 +263,7 @@ const NewServices = () => {
         console.error('Error fetching divisions:', error);
       }
     }
-  }, [state.selectedEstate, state.selectedDate, state.selectedMissionType, state.selectedCropType]);
+  }, [state.selectedEstate, fetchDivisionsByEstate]);
 
   const handleFieldCheckboxChange = (fieldId, fieldArea, isChecked) => {
     setState((prev) => {
@@ -333,11 +319,9 @@ const NewServices = () => {
   };
 
 
-  const handleSubmit = async () => {
-    // Prevent double submission
+  const executePlanCreate = async () => {
     if (state.isSubmitting) return;
 
-    // Destructure state values
     const {
       selectedEstate,
       selectedMissionType,
@@ -347,61 +331,8 @@ const NewServices = () => {
       selectedFields,
       totalExtent,
       isAdHocPlan,
-      planCount
+      planCount,
     } = state;
-
-    // Validate required fields first
-    if (!selectedEstate || !selectedMissionType || !selectedCropType || !selectedDate) {
-      toast.error("All fields are required. Please fill in all fields.", {
-        position: "top-center",
-        autoClose: 3000,
-      });
-      return;
-    }
-
-    // No field selection validation required
-
-    // Check for restricted fields based on mission type
-    const selectedMissionLabel = (selectedMissionType?.group || selectedMissionType?.id || '').toString().toLowerCase();
-    const isSpray = selectedMissionLabel.includes('spray');
-    const isSpread = selectedMissionLabel.includes('spread');
-    
-    // Only check restrictions based on the selected mission type
-    let restrictedSelections = [];
-    
-    if (isSpray) {
-      // Check can_spread when mission type is spray
-      restrictedSelections = divisionOptions.flatMap(div =>
-        (div.fields || []).filter(f => selectedFields.has(f.field_id)).filter(f =>
-          Number(f.can_spread) === 0
-        ).map(f => ({
-          division: div.division_name,
-          field: f.field_name,
-          reason: f.can_spread_text
-        }))
-      );
-    } else if (isSpread) {
-      // Check can_spray when mission type is spread
-      restrictedSelections = divisionOptions.flatMap(div =>
-        (div.fields || []).filter(f => selectedFields.has(f.field_id)).filter(f =>
-          Number(f.can_spray) === 0
-        ).map(f => ({
-          division: div.division_name, 
-          field: f.field_name,
-          reason: f.can_spray_text
-        }))
-      );
-    }
-
-    if (restrictedSelections.length > 0) {
-      const msg = 'Some selected fields are restricted for this mission type:\n\n' +
-        restrictedSelections.map(r => `- ${r.division}: ${r.field} (${r.reason})`).join('\n') +
-        '\n\nDo you still want to proceed?';
-      const confirmed = window.confirm(msg);
-      if (!confirmed) {
-        return; // Abort submission
-      }
-    }
 
     // Start submission process
     setState(prev => ({ 
@@ -443,12 +374,25 @@ const NewServices = () => {
       // Submit plan multiple times based on planCount
       for (let i = 0; i < planCount; i++) {
         try {
-          const createResult = await dispatch(
-            baseApi.endpoints.createPlan.initiate(submissionData)
-          );
+          const createResult = await createBookingPlan(submissionData);
           const result = createResult.data;
           if (result?.status === "true") {
             successCount++;
+            const planId = result.id ?? result.plan_id;
+            if (planId) {
+              const newTask = buildCalendarTaskFromCreate(planId, submissionData, selectedEstate);
+              setCalendarTasks((prev) => {
+                if (prev.some((t) => Number(t.id) === Number(planId))) return prev;
+                return [...prev, newTask];
+              });
+              setState((prev) => ({
+                ...prev,
+                planCountForDay: prev.planCountForDay + 1,
+                totalAreaForDay: parseFloat(
+                  (prev.totalAreaForDay + (parseFloat(submissionData.totalExtent) || 0)).toFixed(2)
+                ),
+              }));
+            }
           } else {
             failedCount++;
           }
@@ -474,32 +418,12 @@ const NewServices = () => {
           // selectedCropType, selectedMissionType are kept so they don't need to be reselected
         }));
         
-        // Refresh calendar tasks
         const startDate = format(startOfMonth(currentMonth), 'yyyy-MM-dd');
         const endDate = format(endOfMonth(currentMonth), 'yyyy-MM-dd');
-        const summaryResult = await dispatch(
-          baseApi.endpoints.getAllPlansByDateRange.initiate({ startDate, endDate })
-        );
-        const response = summaryResult.data;
-        if (response?.status === "true") {
-          const tasks = Object.keys(response)
-            .filter(key => !isNaN(key))
-            .map(key => response[key])
-            .map(task => ({
-              id: task.id,
-              date: task.date,
-              estate: task.estate,
-              estate_id: task.estate_id,
-              area: parseFloat(task.area) || 0,
-              flag: task.flag,
-              mission_id: task.mission_id,
-              completed: task.completed,
-              team_assigned: task.team_assigned,
-              activated: task.activated,
-              manager_approval: task.manager_approval,
-              pilots_assigned: task.pilots_assigned,
-            }));
-          setCalendarTasks(tasks);
+        await refreshCalendarForMonth(currentMonth);
+        await fetchMonthlyPlanData(startDate, endDate);
+        if (selectedDate) {
+          await fetchTotalAreaForDate(selectedDate);
         }
 
         // Show error only if there were failures
@@ -531,6 +455,66 @@ const NewServices = () => {
     }
   };
 
+  const handleSubmit = async () => {
+    if (state.isSubmitting) return;
+
+    const {
+      selectedEstate,
+      selectedMissionType,
+      selectedCropType,
+      selectedDate,
+      divisionOptions,
+      selectedFields,
+    } = state;
+
+    if (!selectedEstate || !selectedMissionType || !selectedCropType || !selectedDate) {
+      toast.error('All fields are required. Please fill in all fields.', {
+        position: 'top-center',
+        autoClose: 3000,
+      });
+      return;
+    }
+
+    const selectedMissionLabel = (selectedMissionType?.group || selectedMissionType?.id || '')
+      .toString()
+      .toLowerCase();
+    const isSpray = selectedMissionLabel.includes('spray');
+    const isSpread = selectedMissionLabel.includes('spread');
+
+    let restrictedSelections = [];
+
+    if (isSpray) {
+      restrictedSelections = divisionOptions.flatMap((div) =>
+        (div.fields || [])
+          .filter((f) => selectedFields.has(f.field_id))
+          .filter((f) => Number(f.can_spread) === 0)
+          .map((f) => ({
+            division: div.division_name,
+            field: f.field_name,
+            reason: f.can_spread_text,
+          }))
+      );
+    } else if (isSpread) {
+      restrictedSelections = divisionOptions.flatMap((div) =>
+        (div.fields || [])
+          .filter((f) => selectedFields.has(f.field_id))
+          .filter((f) => Number(f.can_spray) === 0)
+          .map((f) => ({
+            division: div.division_name,
+            field: f.field_name,
+            reason: f.can_spray_text,
+          }))
+      );
+    }
+
+    if (restrictedSelections.length > 0) {
+      setRestrictedFieldConfirm(restrictedSelections);
+      return;
+    }
+
+    await executePlanCreate();
+  };
+
 
   const dayClassName = (date) => {
     return "";
@@ -538,9 +522,7 @@ const NewServices = () => {
   const fetchMonthlyPlanData = async (startDate, endDate) => {
     if (startDate && endDate) {
       try {
-        const plansRangeResult = await dispatch(
-          baseApi.endpoints.getPlansByDateRange.initiate({ startDate, endDate })
-        );
+        const plansRangeResult = await fetchPlansByDateRange({ startDate, endDate }, false);
         const response = plansRangeResult.data;
         console.log('fetchMonthlyPlanData response:', response); // Debug log
         if (response?.status === "true") {
@@ -655,7 +637,7 @@ const NewServices = () => {
     fetchMissionDetails();
   }, [fetchMissionDetails]);
 
-  if (state.loading) {
+  if (estatesLoading) {
     return <div>Loading...</div>;
   }
   const handleEstateChange = (estateOrEvent) => {
@@ -665,7 +647,7 @@ const NewServices = () => {
     if (estateOrEvent && estateOrEvent.target) {
       // It's an event
       const estateId = parseInt(estateOrEvent.target.value);
-      estate = state.estates.find(e => e.id === estateId);
+      estate = estates.find(e => e.id === estateId);
     } else {
       // It's an estate object
       estate = estateOrEvent;
@@ -728,22 +710,6 @@ const NewServices = () => {
                         totalExtent: 0
                       }));
                     }
-                    // Special case: show all estates when "0" is entered
-                    if (searchValue.toLowerCase() === '0') {
-                      setState(prev => ({
-                        ...prev,
-                        filteredEstates: prev.estates
-                      }));
-                    } else {
-                      // Normal filtering for other cases
-                      const filtered = state.estates.filter(estate =>
-                        estate.estate.toLowerCase().includes(searchValue.toLowerCase())
-                      );
-                      setState(prev => ({
-                        ...prev,
-                        filteredEstates: filtered
-                      }));
-                    }
                   }}
                   onFocus={() => setState(prev => ({ ...prev, isDropdownOpen: true }))}
                 />
@@ -751,7 +717,7 @@ const NewServices = () => {
 
                 {state.isDropdownOpen && (
                   <div className="estate-suggestions-list">
-                    {state.filteredEstates.map(estate => (
+                    {filteredEstates.map(estate => (
                       <div
                         key={estate.id}
                         className="estate-suggestion-item"
@@ -771,7 +737,7 @@ const NewServices = () => {
                         </span>
                       </div>
                     ))}
-                    {state.filteredEstates.length === 0 && (
+                    {filteredEstates.length === 0 && (
                       <div className="no-estates-found">No matching estates found</div>
                     )}
                   </div>
@@ -783,7 +749,7 @@ const NewServices = () => {
             <div className="mission-type-controls">
               <label htmlFor="crop-select">Select Crop Type</label>
               <CustomDropdown 
-                options={state.cropTypes.map(({ id, crop }) => ({ id, group: crop }))} 
+                options={cropTypes.map(({ id, crop }) => ({ id, group: crop }))} 
                 onSelect={(val) => setState(prev => ({ ...prev, selectedCropType: val }))} 
                 selectedValue={state.selectedCropType} 
               />
@@ -793,7 +759,7 @@ const NewServices = () => {
             <div className="mission-type-controls">
               <label htmlFor="mission-select">Select Mission Type</label>
               <CustomDropdown 
-                options={state.missionTypes.map(({ mission_type_code, mission_type_name }) => ({ id: mission_type_code, group: mission_type_name }))} 
+                options={missionTypes.map(({ mission_type_code, mission_type_name }) => ({ id: mission_type_code, group: mission_type_name }))} 
                 onSelect={(val) => setState(prev => ({ ...prev, selectedMissionType: val }))} 
                 selectedValue={state.selectedMissionType} 
               />
@@ -824,6 +790,7 @@ const NewServices = () => {
             onDateClick={handleDateClick}
             selectedDate={state.selectedDate}
             submittingDate={state.submittingDate}
+            onCalendarChange={() => refreshCalendarForMonth(currentMonth)}
           />
         </div>
 
@@ -898,6 +865,59 @@ const NewServices = () => {
           </div>
         )}
         
+        {restrictedFieldConfirm && (
+          <div className="plan-popup-overlay" onClick={() => setRestrictedFieldConfirm(null)}>
+            <div className="plan-popup-container" onClick={(e) => e.stopPropagation()}>
+              <div className="plan-popup-header">
+                <h3>Restricted fields</h3>
+                <button
+                  type="button"
+                  className="plan-popup-close"
+                  onClick={() => setRestrictedFieldConfirm(null)}
+                  aria-label="Close"
+                >
+                  ×
+                </button>
+              </div>
+              <div className="plan-popup-content">
+                <p className="plan-popup-message">
+                  Some selected fields are restricted for this mission type. Proceed anyway?
+                </p>
+                <ul className="plan-popup-warning-list">
+                  {restrictedFieldConfirm.map((r, idx) => (
+                    <li key={idx}>
+                      {r.division}: {r.field}
+                      {r.reason ? ` (${r.reason})` : ''}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="plan-popup-footer">
+                <div className="plan-popup-actions">
+                  <button
+                    type="button"
+                    className="plan-popup-cancel-btn"
+                    onClick={() => setRestrictedFieldConfirm(null)}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="plan-popup-create-btn"
+                    onClick={async () => {
+                      setRestrictedFieldConfirm(null);
+                      await executePlanCreate();
+                    }}
+                    disabled={state.isSubmitting}
+                  >
+                    Proceed
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Toast Container for notifications */}
         <ToastContainer
           position="top-center"

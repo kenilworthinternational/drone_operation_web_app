@@ -200,6 +200,61 @@
 .modal-close-booking-calendar:hover { color: #111827; }
 .modal-body-booking-calendar { padding: 12px 16px; overflow: auto; }
 .modal-footer-booking-calendar { padding: 12px 16px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 8px; }
+.modal-view-btn-booking-calendar,
+.modal-copy-btn-booking-calendar {
+  background: #fff;
+  color: #004b71;
+  border: 1px solid #004b71;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.modal-view-btn-booking-calendar:hover,
+.modal-copy-btn-booking-calendar:hover { background: #f0f9ff; }
+.modal-view-btn-booking-calendar:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.modal-booking-calendar--estate-fields {
+  max-width: none;
+  width: min(98vw, 1400px);
+  max-height: 90vh;
+}
+.modal-booking-calendar--estate-fields .modal-body-booking-calendar {
+  padding: 8px 12px;
+}
+.modal-booking-calendar--estate-fields .divisions-list-booking-calendar {
+  gap: 8px;
+}
+.modal-booking-calendar--estate-fields .division-header-booking-calendar {
+  padding: 6px 10px;
+}
+.modal-booking-calendar--estate-fields .fields-grid-booking-calendar {
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 6px;
+  padding: 8px;
+}
+.modal-booking-calendar--estate-fields .field-tile-booking-calendar {
+  padding: 5px 7px;
+  border-left-width: 3px;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 2px;
+  min-height: 0;
+}
+.modal-booking-calendar--estate-fields .field-tile-name-booking-calendar {
+  font-size: 11px;
+  line-height: 1.2;
+  width: 100%;
+  white-space: normal;
+  word-break: break-word;
+}
+.modal-booking-calendar--estate-fields .field-tile-area-booking-calendar {
+  font-size: 10px;
+  color: #4b5563;
+}
 .modal-close-btn-booking-calendar { background: #004b71; color: #fff; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; }
 .modal-close-btn-booking-calendar:hover { background: #003e5f; }
 

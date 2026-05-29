@@ -1,16 +1,26 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavbarPermissions } from '../../../hooks/useNavbarPermissions';
+import {
+  CALENDAR_PATH,
+  isCalendarAllowedWing,
+  normalizeWingTitle,
+} from '../../../config/wingHubDisplay';
 import { OD_WING_OPERATION_DIGITALIZATION_TITLE } from '../../../config/odWingShell';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, addMonths } from 'date-fns';
 import { Bars } from 'react-loader-spinner';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { baseApi } from '../../../api/services/allEndpoints';
 import {
   useLazyGetPlanActivateStatusByPlansQuery,
   useSubmitPlanActivateRequestMutation,
 } from '../../../api/services NodeJs/planActivateRequestsApi';
-import { useAppDispatch } from '../../../store/hooks';
+import {
+  useLazyGetOpsroomPlansByDateRangeQuery,
+  useLazyGetOpsroomEstateProfileQuery,
+  useLazyGetOpsroomPlanTeamDroneQuery,
+  useLazyGetOpsroomEstateDivisionsFieldsQuery,
+} from '../../../api/services NodeJs/opsroomPlanCalendarApi';
 import '../../../styles/planCalendar.css';
 
 const PLAN_TYPE_META = [
@@ -37,8 +47,38 @@ const PLAN_STATUS_META = [
   { key: 'completed', label: 'Completed', color: '#22c55e' },
 ];
 
+function formatEstateLabel(estateName) {
+  const name = String(estateName || '').trim();
+  if (!name) return 'Estate';
+  return /estate\s*$/i.test(name) ? name : `${name} Estate`;
+}
+
+function buildPlanCopyText(plan) {
+  if (!plan) return '';
+  const estateLabel = formatEstateLabel(plan.estate);
+  const lines = [`${estateLabel.padEnd(28)}Plan #${plan.id}`];
+  const divisions = plan.diviions || plan.divisions || [];
+
+  divisions.forEach((div, divIndex) => {
+    const fields = div.fields || [];
+    const totalArea = fields.reduce((sum, f) => sum + (Number(f.area) || 0), 0);
+    if (divIndex > 0) lines.push('');
+    lines.push(`${div.division} - ${totalArea.toFixed(2)} Ha`);
+    const maxNameLen = Math.max(
+      8,
+      ...fields.map((f) => String(f.field_short_name || f.field || '').length)
+    );
+    fields.forEach((f) => {
+      const fieldName = String(f.field_short_name || f.field || '-');
+      const areaLabel = `${f.area} Ha`;
+      lines.push(`${fieldName.padEnd(maxNameLen + 4)}${areaLabel}`);
+    });
+  });
+
+  return lines.join('\n');
+}
+
 const PlanCalendar = () => {
-  const dispatch = useAppDispatch();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -53,6 +93,10 @@ const PlanCalendar = () => {
   const [pilotInfo, setPilotInfo] = useState(null);
   const [pilotLoading, setPilotLoading] = useState(false);
   const [pilotError, setPilotError] = useState('');
+  const [showEstateFieldsModal, setShowEstateFieldsModal] = useState(false);
+  const [estateFieldsData, setEstateFieldsData] = useState(null);
+  const [estateFieldsLoading, setEstateFieldsLoading] = useState(false);
+  const [estateFieldsError, setEstateFieldsError] = useState('');
   const [selectedTypes, setSelectedTypes] = useState(new Set(PLAN_TYPE_META.map((item) => item.key)));
   const [selectedStatuses, setSelectedStatuses] = useState(new Set(PLAN_STATUS_META.map((item) => item.key)));
   const [showHierarchyFilter, setShowHierarchyFilter] = useState(false);
@@ -66,12 +110,29 @@ const PlanCalendar = () => {
   const [activateRequestNote, setActivateRequestNote] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
+  const { allowedPaths, loadingPermissions } = useNavbarPermissions();
   const wingParam = new URLSearchParams(location.search).get('wing');
   const canRequestPlanActivation = canRequestPlanActivationForWing(wingParam);
+
+  useEffect(() => {
+    if (loadingPermissions) return;
+    if (!allowedPaths.includes(CALENDAR_PATH)) {
+      navigate('/home', { replace: true });
+      return;
+    }
+    const normalized = normalizeWingTitle(wingParam ? decodeURIComponent(wingParam) : null);
+    if (normalized && !isCalendarAllowedWing(normalized)) {
+      navigate('/home', { replace: true });
+    }
+  }, [wingParam, allowedPaths, loadingPermissions, navigate]);
 
   const [fetchActivateStatus] = useLazyGetPlanActivateStatusByPlansQuery();
   const [submitActivateRequest, { isLoading: submittingActivateRequest }] =
     useSubmitPlanActivateRequestMutation();
+  const [fetchPlansByDateRange] = useLazyGetOpsroomPlansByDateRangeQuery();
+  const [fetchEstateProfile] = useLazyGetOpsroomEstateProfileQuery();
+  const [fetchPlanTeamDrone] = useLazyGetOpsroomPlanTeamDroneQuery();
+  const [fetchEstateDivisionsFields] = useLazyGetOpsroomEstateDivisionsFieldsQuery();
 
   const isPlanDeactivated = (plan) => plan != null && Number(plan.activated) !== 1;
 
@@ -87,10 +148,10 @@ const PlanCalendar = () => {
       setLoading(true);
       setError('');
       try {
-        const result = await dispatch(baseApi.endpoints.getAllPlansByDateRange.initiate({
+        const result = await fetchPlansByDateRange({
           startDate: monthRange.start,
-          endDate: monthRange.end
-        }));
+          endDate: monthRange.end,
+        });
         const data = result.data;
         if (isCancelled) return;
         const grouped = {};
@@ -115,7 +176,7 @@ const PlanCalendar = () => {
     return () => {
       isCancelled = true;
     };
-  }, [monthRange]);
+  }, [monthRange, fetchPlansByDateRange]);
 
   useEffect(() => {
     let cancelled = false;
@@ -127,7 +188,7 @@ const PlanCalendar = () => {
       setEstateLoading(true);
       setEstateError('');
       try {
-        const result = await dispatch(baseApi.endpoints.getEstateDetails.initiate(selectedPlan.estate_id));
+        const result = await fetchEstateProfile(selectedPlan.estate_id);
         const details = result.data;
         if (!cancelled) setEstateInfo(details || null);
       } catch (e) {
@@ -138,7 +199,7 @@ const PlanCalendar = () => {
     };
     loadEstate();
     return () => { cancelled = true; };
-  }, [selectedPlan]);
+  }, [selectedPlan, fetchEstateProfile]);
 
   useEffect(() => {
     let cancelled = false;
@@ -375,6 +436,49 @@ const PlanCalendar = () => {
   const goPrevMonth = () => setCurrentMonth((d) => addMonths(d, -1));
   const goNextMonth = () => setCurrentMonth((d) => addMonths(d, 1));
 
+  const handleCopyPlanDetails = async () => {
+    if (!selectedPlan) return;
+    const text = buildPlanCopyText(selectedPlan);
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.setAttribute('readonly', '');
+        textarea.style.position = 'fixed';
+        textarea.style.left = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+      }
+      toast.success('Plan details copied — paste anywhere you need.');
+    } catch {
+      toast.error('Could not copy plan details.');
+    }
+  };
+
+  const openEstateFieldsView = async () => {
+    if (!selectedPlan?.estate_id) return;
+    setShowEstateFieldsModal(true);
+    setEstateFieldsLoading(true);
+    setEstateFieldsError('');
+    setEstateFieldsData(null);
+    try {
+      const result = await fetchEstateDivisionsFields(selectedPlan.estate_id);
+      if (result.error) {
+        setEstateFieldsError('Failed to load estate fields');
+        return;
+      }
+      setEstateFieldsData(result.data || null);
+    } catch {
+      setEstateFieldsError('Failed to load estate fields');
+    } finally {
+      setEstateFieldsLoading(false);
+    }
+  };
+
   const openPilotModal = async () => {
     if (!selectedPlan) return;
     setShowPilotModal(true);
@@ -382,7 +486,7 @@ const PlanCalendar = () => {
     setPilotError('');
     setPilotInfo(null);
     try {
-      const result = await dispatch(baseApi.endpoints.getPilotDetailsForPlan.initiate(selectedPlan.id));
+      const result = await fetchPlanTeamDrone(selectedPlan.id);
       const res = result.data;
       // Normalize API response: pick first numeric key item if status true
       let normalized = null;
@@ -712,7 +816,95 @@ const PlanCalendar = () => {
             </div>
 
             <div className="modal-footer-booking-calendar">
+              <button
+                type="button"
+                className="modal-view-btn-booking-calendar"
+                onClick={openEstateFieldsView}
+                disabled={!selectedPlan?.estate_id}
+              >
+                View
+              </button>
+              <button
+                type="button"
+                className="modal-copy-btn-booking-calendar"
+                onClick={handleCopyPlanDetails}
+              >
+                Copy
+              </button>
               <button className="modal-close-btn-booking-calendar" onClick={() => setSelectedPlan(null)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showEstateFieldsModal && selectedPlan && (
+        <div className="modal-overlay-booking-calendar" onClick={() => setShowEstateFieldsModal(false)}>
+          <div className="modal-booking-calendar modal-booking-calendar--estate-fields" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header-booking-calendar">
+              <div className="modal-title-group-booking-calendar">
+                <div className="modal-title-booking-calendar">Estate Fields</div>
+                <div className="modal-subtitle-booking-calendar">
+                  {estateFieldsData?.estate_name || selectedPlan.estate} · All divisions
+                </div>
+              </div>
+              <button
+                className="modal-close-booking-calendar"
+                onClick={() => setShowEstateFieldsModal(false)}
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="modal-body-booking-calendar">
+              {estateFieldsLoading && (
+                <div className="contacts-loading-booking-calendar">Loading estate fields...</div>
+              )}
+              {estateFieldsError && (
+                <div className="contacts-error-booking-calendar">{estateFieldsError}</div>
+              )}
+              {!estateFieldsLoading && !estateFieldsError && (
+                <div className="divisions-list-booking-calendar">
+                  {Array.isArray(estateFieldsData?.divisions) && estateFieldsData.divisions.length > 0 ? (
+                    estateFieldsData.divisions.map((div) => (
+                      <div key={div.id} className="division-card-booking-calendar">
+                        <div className="division-header-booking-calendar">
+                          <span className="division-title-booking-calendar">
+                            {div.division} - {(div.total_area ?? 0).toFixed(2)} Ha
+                          </span>
+                          <span className="division-count-booking-calendar">
+                            {(div.fields || []).length} fields
+                          </span>
+                        </div>
+                        <div className="fields-grid-booking-calendar">
+                          {(div.fields || []).map((f) => (
+                            <div
+                              key={f.id}
+                              className="field-tile-booking-calendar field-tile-active-booking-calendar"
+                              title={f.field}
+                            >
+                              <div className="field-tile-name-booking-calendar">
+                                {f.field_short_name || f.field}
+                              </div>
+                              <div className="field-tile-area-booking-calendar">{f.area} Ha</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="contacts-empty-booking-calendar">No fields found for this estate.</div>
+                  )}
+                </div>
+              )}
+            </div>
+            <div className="modal-footer-booking-calendar">
+              <button
+                type="button"
+                className="modal-close-btn-booking-calendar"
+                onClick={() => setShowEstateFieldsModal(false)}
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>

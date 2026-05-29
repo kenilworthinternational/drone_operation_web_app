@@ -10,6 +10,7 @@ import {
 } from '../config/odWingShell';
 import { resolveWingNavTheme } from '../config/wingHubDisplay';
 import { getUserData } from '../utils/authUtils';
+import RequireWingQueryParam from '../components/RequireWingQueryParam';
 import '../styles/home.css';
 
 const COMB_TAB_BASES = ['/home/monitoringDashboard', '/home/dataViewer', '/home/dashboard'];
@@ -90,7 +91,9 @@ const HomePage = () => {
       >
         {showCombChrome && <CombChrome />}
         {showOdWingChrome && <OdWingChrome />}
-        <Outlet />
+        <RequireWingQueryParam>
+          <Outlet />
+        </RequireWingQueryParam>
       </div>
     </div>
   );

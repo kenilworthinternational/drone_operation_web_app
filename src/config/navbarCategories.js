@@ -40,6 +40,12 @@ const navbarCategories = [
       { path: '/home/createBookings', label: 'Booking Creation', icon: FaPlusCircle },
       { path: '/home/corporate-customers', label: 'Corporate Customer', icon: FaBuilding },
       { path: '/home/reports/corporate', label: 'Reports', icon: FaFileAlt },
+      {
+        path: '/home/planActivateRequests',
+        label: 'Activate Requests',
+        icon: FaCheck,
+        pendingCountKey: 'planActivate',
+      },
     ],
   },
   {
@@ -50,12 +56,6 @@ const navbarCategories = [
       { path: '/home/earnings', label: 'Pilot Earnings', icon: FaMoneyBill },
       { path: '/home/reportReview', label: 'Review Reports', icon: FaFlag },
       { path: '/home/deactivatePlan', label: 'Deactive Plan', icon: FaPauseCircle },
-      {
-        path: '/home/planActivateRequests',
-        label: 'Activate Requests',
-        icon: FaCheck,
-        pendingCountKey: 'planActivate',
-      },
     ],
   },
   {
@@ -117,7 +117,7 @@ const navbarCategories = [
     title: 'Administration Wing',
     icon: FaBuilding,
     children: [
-      { path: '/home/transport/hr', label: 'Vehicle Fleet', icon: FaTruck },
+      { path: '/home/transport/hr', label: 'T. O. D.', icon: FaTruck },
       { path: '/home/fleet', label: 'Resource Allocation', icon: FaCogs },
       { path: '/home/accident-reports', label: 'Accident Reports', icon: FaFileAlt },
       { path: '/home/maintenance', label: 'Maintenance', icon: FaTools },

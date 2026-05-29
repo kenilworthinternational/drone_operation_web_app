@@ -1,4 +1,64 @@
 /**
+ * Wings that may use Plans forecast (/home/create) and the Forecast left-nav item.
+ * Must match `title` in navbarCategories.js exactly.
+ */
+export const FORECAST_ALLOWED_WING_TITLES = [
+  'Strategic Planning and Monitoring wing',
+  'Field Operations Wing',
+  'Operation Digitalization & Digital Monitoring & Evaluation Wing',
+];
+
+export const FORECAST_PATH = '/home/create';
+
+export function normalizeWingTitle(wingTitle) {
+  if (wingTitle == null || wingTitle === '') return null;
+  const title = String(wingTitle).trim();
+  return title === 'Management' ? 'Field Operations Wing' : title;
+}
+
+export function isForecastAllowedWing(wingTitle) {
+  const normalized = normalizeWingTitle(wingTitle);
+  if (!normalized) return false;
+  return FORECAST_ALLOWED_WING_TITLES.includes(normalized);
+}
+
+/**
+ * User may open forecast if any of the three wings is visible or has a granted child path.
+ */
+export function hasForecastWingAccess(visibility = {}, pathPermissions = {}, allCategoryPaths = {}) {
+  return FORECAST_ALLOWED_WING_TITLES.some((title) => {
+    if (visibility[title] === true) return true;
+    const paths = allCategoryPaths[title] || [];
+    return paths.some((p) => pathPermissions[p] === true);
+  });
+}
+
+/**
+ * Wings that may use Plan calendar (/home/opsroomPlanCalendar) and the Calendar left-nav item.
+ */
+export const CALENDAR_ALLOWED_WING_TITLES = [
+  ...FORECAST_ALLOWED_WING_TITLES,
+  'Human Resource Management',
+  'Administration Wing',
+];
+
+export const CALENDAR_PATH = '/home/opsroomPlanCalendar';
+
+export function isCalendarAllowedWing(wingTitle) {
+  const normalized = normalizeWingTitle(wingTitle);
+  if (!normalized) return false;
+  return CALENDAR_ALLOWED_WING_TITLES.includes(normalized);
+}
+
+export function hasCalendarWingAccess(visibility = {}, pathPermissions = {}, allCategoryPaths = {}) {
+  return CALENDAR_ALLOWED_WING_TITLES.some((title) => {
+    if (visibility[title] === true) return true;
+    const paths = allCategoryPaths[title] || [];
+    return paths.some((p) => pathPermissions[p] === true);
+  });
+}
+
+/**
  * Display metadata for wing hub cards (matches navbar category titles in navbarCategories.js).
  * Keys must match `title` strings exactly.
  */
@@ -58,7 +118,7 @@ export function resolveWingNavTheme(wingParam) {
   } catch {
     return null;
   }
-  const normalized = title === 'Management' ? 'Field Operations Wing' : title;
+  const normalized = normalizeWingTitle(title);
   const meta = WING_HUB_META[normalized];
   if (!meta?.color) return null;
   return { title: normalized, ...meta };

@@ -5,6 +5,12 @@
  * category visibility, and allowed paths based on user authentication levels.
  */
 import navbarCategories from '../config/navbarCategories';
+import {
+  CALENDAR_PATH,
+  FORECAST_PATH,
+  hasCalendarWingAccess,
+  hasForecastWingAccess,
+} from '../config/wingHubDisplay';
 
 /**
  * Get category visibility based on user data and permissions
@@ -135,7 +141,7 @@ export const getCategoryVisibility = (userData, permissions, categories) => {
 export const getAllowedPaths = (visibility = {}, pathPermissions = {}, userData = null) => {
   // Build allCategoryPaths dynamically from shared navbarCategories config
   const allCategoryPaths = {};
-  const allDevPaths = ['/home/create', '/home/corporate-customers'];
+  const allDevPaths = ['/home/create', '/home/corporate-customers', CALENDAR_PATH];
   navbarCategories.forEach(cat => {
     const paths = [];
     (cat.children || []).forEach(child => {
@@ -162,8 +168,13 @@ export const getAllowedPaths = (visibility = {}, pathPermissions = {}, userData 
 
   const allowedPaths = [];
 
-  // Top-level paths (accessible to all authenticated users on wing hub / forecast)
-  allowedPaths.push('/home/create');
+  if (hasForecastWingAccess(visibility, pathPermissions, allCategoryPaths)) {
+    allowedPaths.push(FORECAST_PATH);
+  }
+
+  if (hasCalendarWingAccess(visibility, pathPermissions, allCategoryPaths)) {
+    allowedPaths.push(CALENDAR_PATH);
+  }
 
   const mergedPathPermissions = { ...pathPermissions };
   if (mergedPathPermissions['/home/fleet-update'] === true) {
@@ -194,12 +205,13 @@ export const getAllowedPaths = (visibility = {}, pathPermissions = {}, userData 
   }
 
   const planActivatePath = '/home/planActivateRequests';
-  const fieldOpsApproverRoles = ['md', 'mgr', 'dops'];
+  const planActivateApproverRoles = ['md', 'mgr', 'dops'];
   const jobRole = String(userData?.job_role || '').toLowerCase();
   const canSeePlanActivateRequests =
     pathPermissions['/home/deactivatePlan'] === true ||
     pathPermissions[planActivatePath] === true ||
-    (visibility['Field Operations Wing'] === true && fieldOpsApproverRoles.includes(jobRole));
+    hasStrategicAccess ||
+    (visibility[strategicTitle] === true && planActivateApproverRoles.includes(jobRole));
 
   if (canSeePlanActivateRequests && !allowedPaths.includes(planActivatePath)) {
     allowedPaths.push(planActivatePath);

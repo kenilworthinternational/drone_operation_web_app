@@ -280,16 +280,6 @@
   background: var(--avm-primary-soft);
 }
 
-.avm-btn-delete {
-  background: #fff1f2;
-  padding: 6px 10px;
-  font-size: 12px;
-}
-
-.avm-btn-delete:hover {
-  background: #ffe4e6;
-}
-
 .avm-btn-cancel {
   background: var(--avm-primary-soft-2);
   color: var(--avm-primary);
@@ -297,15 +287,6 @@
 
 .avm-btn-cancel:hover {
   background: var(--avm-primary-soft);
-}
-
-.avm-btn-danger {
-  background: #dc2626;
-  color: #fff;
-}
-
-.avm-btn-danger:hover:not(:disabled) {
-  background: #b91c1c;
 }
 
 /* Info Note */
@@ -370,10 +351,6 @@
   font-weight: 700;
   color: var(--avm-primary);
   margin: 0;
-}
-
-.avm-modal-header-danger h2 {
-  color: #dc2626;
 }
 
 .avm-modal-close {
@@ -541,40 +518,10 @@
   border-top: 1px solid var(--avm-line-soft);
 }
 
-/* Delete body */
-.avm-delete-body {
-  padding: 24px;
-}
-
-.avm-delete-body p {
-  margin: 0 0 8px;
-  font-size: 14px;
-  color: var(--avm-text);
-}
-
-.avm-delete-sub {
-  font-size: 13px !important;
-  color: var(--avm-muted) !important;
-}
-
-.avm-delete-sub code {
-  background: var(--avm-primary-soft-2);
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 12px;
-}
-
 .avm-btn:focus-visible,
 .avm-modal-close:focus-visible {
   outline: 2px solid var(--avm-primary);
   outline-offset: 2px;
-}
-
-.avm-delete-warn {
-  margin-top: 12px !important;
-  color: #dc2626 !important;
-  font-weight: 500;
-  font-size: 13px !important;
 }
 
 /* Responsive */

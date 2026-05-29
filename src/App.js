@@ -68,7 +68,7 @@ import PlantationPlanRequestQueue from './sections/opsroom/plantation-plan-reque
 import FieldUnblockRequestQueue from './sections/opsroom/field-unblock/FieldUnblockRequestQueue';
 import PendingPaymentQueue from './sections/opsroom/pending-payment/PendingPaymentQueue';
 import DroneUnlockingQueue from './sections/opsroom/drone-unlocking/DroneUnlockingQueue';
-import Users from './sections/ict/users/Users';
+import IctUserManagement from './sections/ict/users/IctUserManagement';
 import AuthControls from './sections/ict/authentication/AuthControls';
 import AppVersionManagement from './sections/ict/appVersions/AppVersionManagement';
 import LogsReportPage from './sections/ict/logsReport/LogsReportPage';
@@ -747,7 +747,7 @@ function App() {
             path="ict/system-admin/users"
             element={
               <ProtectedRoute>
-                <Users />
+                <IctUserManagement />
               </ProtectedRoute>
             }
           />

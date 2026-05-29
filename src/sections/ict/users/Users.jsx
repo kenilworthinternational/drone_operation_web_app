@@ -14,7 +14,10 @@ import {
   useGetEstatesQuery,
 } from '../../../api/services NodeJs/jdManagementApi';
 import { useGetWingsQuery } from '../../../api/services/assetsApi';
+import ProfileImageUploadCard from '../../../components/ProfileImageUploadCard';
 import '../../../styles/userRegistration.css';
+import '../../../styles/userProfile.css';
+import '../../../styles/userManagement.css';
 
 const DRIVER_JOB_ROLE_CODE = 'dri';
 const isPrimaryDriverJobRole = (code) => {
@@ -27,7 +30,21 @@ const coerceEmbeddedTransportJobRole = (currentRole, partTimeDriverValue) => {
   return Number(partTimeDriverValue || 0) === 1 ? (currentRole || '') : DRIVER_JOB_ROLE_CODE;
 };
 
-const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = {}) => {
+export default function UsersDirectory({
+  embeddedTransportDriver = false,
+  onEmbeddedRegisterSuccess,
+  embeddedInUserManagement = false,
+  managementView = 'legacy',
+  registerInModal = false,
+  onRegisterFormReady,
+  onCancelAdd,
+  onUserRegisteredSuccess,
+} = {}) {
+  const [mgmtProfileUserId, setMgmtProfileUserId] = useState(null);
+  const isMgmtList = embeddedInUserManagement && managementView === 'list' && !mgmtProfileUserId;
+  const isMgmtAdd = embeddedInUserManagement && managementView === 'add';
+  const isMgmtProfile = embeddedInUserManagement && Boolean(mgmtProfileUserId);
+  const showLegacyTabs = !embeddedInUserManagement && !embeddedTransportDriver;
   const rootRef = useRef(null);
   const [selectedUserId, setSelectedUserId] = useState(null);
   // Fetch dropdown data
@@ -174,6 +191,11 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
       job_role: coerceEmbeddedTransportJobRole(prev.job_role, prev.part_time_driver),
     }));
   }, [embeddedTransportDriver]);
+
+  useEffect(() => {
+    if (!registerInModal || !onRegisterFormReady) return;
+    onRegisterFormReady();
+  }, [registerInModal, onRegisterFormReady]);
   useEffect(() => {
     if (userType !== effectiveUserType) {
       setUserType(effectiveUserType);
@@ -376,7 +398,7 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
     }
   }, [editFormData.employeeId, availableEmployeeOptionsForEdit, formatEmployeeOptionLabel]);
 
-  const startEditUser = (user) => {
+  const startEditUser = (user, options = {}) => {
     setSelectedUserId(user?.id || null);
     setEditMessage({ type: '', text: '' });
     setEditFormData({
@@ -401,6 +423,29 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
     setSelectedUserImageUrl(user?.image || '');
     setShowEditPopup(true);
   };
+
+  const openMgmtUserProfile = (user) => {
+    if (!user?.id) return;
+    setMgmtProfileUserId(user.id);
+    startEditUser(user);
+  };
+
+  const closeMgmtUserProfile = () => {
+    setMgmtProfileUserId(null);
+    setShowEditPopup(false);
+    setShowUpdatePopup(false);
+    setSelectedUserId(null);
+    setEditMessage({ type: '', text: '' });
+    setSelectedUserImageUrl('');
+  };
+
+  useEffect(() => {
+    if (!isMgmtProfile || !mgmtProfileUserId || loadingUsers) return;
+    const user = allUsers.find((u) => String(u.id) === String(mgmtProfileUserId));
+    if (user && String(selectedUserId) !== String(mgmtProfileUserId)) {
+      startEditUser(user);
+    }
+  }, [isMgmtProfile, mgmtProfileUserId, allUsers, loadingUsers, selectedUserId]);
 
   const handleEditInputChange = (e) => {
     const { name, value, files } = e.target;
@@ -520,6 +565,9 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
       setShowEditPopup(false);
       setShowUpdatePopup(false);
       refetchUsers();
+      if (isMgmtProfile) {
+        closeMgmtUserProfile();
+      }
     } catch (error) {
       setEditMessage({
         type: 'error',
@@ -791,7 +839,9 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
           driver_license_front_image: null,
           driver_license_back_image: null,
         });
-        if (!embeddedTransportDriver) {
+        if (isMgmtAdd) {
+          onUserRegisteredSuccess?.();
+        } else if (!embeddedTransportDriver) {
           setUserType('');
         }
         setSelectedEmployee(null);
@@ -837,34 +887,19 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
   const normalizedTypeFilter = String(userTypeFilter || '').trim().toLowerCase();
   const showExternalColumns = normalizedTypeFilter === 'e' || normalizedTypeFilter === 'external';
   const showInternalColumns = normalizedTypeFilter === 'i' || normalizedTypeFilter === 'internal';
-  const usersTableColSpan = 11 + (showExternalColumns ? 2 : 0) + (showInternalColumns ? 1 : 0);
+  const usersTableColSpan =
+    (isMgmtList ? 10 : 11) + (showExternalColumns ? 2 : 0) + (showInternalColumns ? 1 : 0);
+  const profileUser = allUsers.find(
+    (u) => String(u.id) === String(mgmtProfileUserId || selectedUserId || '')
+  );
+  const profileRoleLabel =
+    jobRoleLabelMap[String(profileUser?.job_role || '').trim()] || profileUser?.job_role || '';
+  const profileTypeLabel =
+    memberTypeLabelMap[String(profileUser?.member_type || '').trim()] || profileUser?.member_type || '';
 
-  return (
-    <div
-      className={`user-registration-container${embeddedTransportDriver ? ' user-registration-embedded-transport-hr' : ''}`}
-      ref={rootRef}
-    >
-      {!embeddedTransportDriver && (
-        <div className="users-top-tabs">
-          <button
-            type="button"
-            className={`users-top-tab ${activeTab === 'register' ? 'active' : ''}`}
-            onClick={() => setActiveTab('register')}
-          >
-            Registration
-          </button>
-          <button
-            type="button"
-            className={`users-top-tab ${activeTab === 'manage' ? 'active' : ''}`}
-            onClick={() => setActiveTab('manage')}
-          >
-            View / Update Users
-          </button>
-        </div>
-      )}
-
-      {(embeddedTransportDriver || activeTab === 'register') && <div className="registration-form-content">
-        <form onSubmit={handleSubmit}>
+  const registerFormContent = (embeddedTransportDriver || activeTab === 'register' || isMgmtAdd) ? (
+    <div className="registration-form-content">
+      <form onSubmit={handleSubmit}>
           {/* User Type Selection */}
           <div className="form-section">
             <h2 className="section-title">User Type</h2>
@@ -1115,47 +1150,20 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
 
             <div className="form-row">
               <div className="form-group full-width">
-                <label>Profile Picture:</label>
-                <input
-                  type="file"
-                  name="image"
-                  accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
-                  onChange={handleInputChange}
-                />
-                {formData.image && (
-                  <div style={{ marginTop: '8px' }}>
-                    <div style={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'space-between',
-                      padding: '6px 10px',
-                      backgroundColor: '#f0f4f8',
-                      borderRadius: '4px',
-                      fontSize: '13px'
-                    }}>
-                      <span style={{ flex: 1, color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {formData.image.name}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={handleRemoveImage}
-                        style={{
-                          marginLeft: '8px',
-                          padding: '2px 8px',
-                          backgroundColor: '#dc3545',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '3px',
-                          cursor: 'pointer',
-                          fontSize: '11px',
-                          fontWeight: '600'
-                        }}
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  </div>
-                )}
+                <label>Profile photo (optional)</label>
+                <p className="user-profile-header-hint" style={{ marginTop: 4, marginBottom: 10 }}>
+                  Same upload style as vehicle photos in fleet management. JPG or PNG recommended.
+                </p>
+                <div className="user-register-photo-row">
+                  <ProfileImageUploadCard
+                    label="Profile photo"
+                    file={formData.image instanceof File ? formData.image : null}
+                    onFileSelect={(picked) => {
+                      setFormData((prev) => ({ ...prev, image: picked }));
+                    }}
+                    onClear={handleRemoveImage}
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -1348,6 +1356,16 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
 
           {/* Submit Button */}
           <div className="form-buttons">
+            {registerInModal ? (
+              <button
+                type="button"
+                className="btn-search"
+                onClick={() => onCancelAdd?.()}
+                disabled={isSubmitting || isCreating}
+              >
+                Cancel
+              </button>
+            ) : null}
             <button
               type="submit"
               disabled={isSubmitting || isCreating}
@@ -1364,55 +1382,145 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
             </div>
           )}
         </form>
-      </div>}
+    </div>
+  ) : null;
 
-      {!embeddedTransportDriver && activeTab === 'manage' && <div className="registration-form-content user-management-content">
-        <div className="users-manage-header-row">
-          <h2 className="section-title">View / Update Users</h2>
-          <div className="users-manage-right-controls">
-            <div className="users-filter-group">
-              <label>Type</label>
-              <select value={userTypeFilter} onChange={(e) => setUserTypeFilter(e.target.value)}>
-                <option value="">All</option>
-                <option value="i">Internal</option>
-                <option value="e">External</option>
-              </select>
-            </div>
-            <div className="users-filter-group">
-              <label>Role</label>
-              <select value={userRoleFilter} onChange={(e) => setUserRoleFilter(e.target.value)}>
-                <option value="">All</option>
-                {userJobRoles
-                  .filter((role) => role.status === 1)
-                  .map((role) => (
-                    <option key={role.id} value={role.jdCode || role.id}>
-                      {role.designation}
-                    </option>
-                  ))}
-              </select>
-            </div>
-            <button
-              type="button"
-              className="btn-search users-download-excel-btn"
-              onClick={handleDownloadFilteredUsersExcel}
-            >
-              Download Excel
+  if (isMgmtAdd && registerInModal) {
+    return (
+      <div className="user-register-modal-form" ref={rootRef}>
+        {registerFormContent}
+      </div>
+    );
+  }
+
+  if (isMgmtAdd) {
+    return (
+      <div className="user-registration-container user-registration-container--mgmt-add" ref={rootRef}>
+        {registerFormContent}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={
+        isMgmtProfile
+          ? 'user-profile-wrap'
+          : `user-registration-container${embeddedTransportDriver ? ' user-registration-embedded-transport-hr' : ''}${isMgmtList ? ' user-registration-container--mgmt-list' : ''}`
+      }
+      ref={rootRef}
+    >
+      {isMgmtProfile && (
+        <>
+          <div className="user-profile-nav">
+            <button type="button" className="user-profile-back" onClick={closeMgmtUserProfile}>
+              ← Users
             </button>
           </div>
+          <div className="user-profile-header">
+            <div className="user-profile-header-main">
+              <h2 className="user-profile-title">{profileUser?.name || 'User profile'}</h2>
+              <p className="user-profile-subtitle">
+                User ID {mgmtProfileUserId}
+                {profileRoleLabel ? ` · ${profileRoleLabel}` : ''}
+                {profileTypeLabel ? ` · ${profileTypeLabel}` : ''}
+              </p>
+              <div className="user-profile-badges">
+                <span
+                  className={`user-profile-badge${
+                    String(profileUser?.activated) !== '1' ? ' user-profile-badge--inactive' : ''
+                  }`}
+                >
+                  {String(profileUser?.activated) === '1' ? 'Active' : 'Inactive'}
+                </span>
+                {Number(profileUser?.part_time_driver || 0) === 1 ? (
+                  <span className="user-profile-badge">Part-time driver</span>
+                ) : null}
+              </div>
+            </div>
+            <div className="user-profile-hero-photo">
+              {selectedUserImageUrl || profileUser?.image ? (
+                <img src={selectedUserImageUrl || profileUser?.image} alt="" />
+              ) : (
+                <div className="user-profile-hero-placeholder">No photo</div>
+              )}
+            </div>
+          </div>
+          {!selectedUserId || loadingUsers ? (
+            <p className="user-profile-subtitle">Loading user profile…</p>
+          ) : null}
+        </>
+      )}
+      {!isMgmtProfile && showLegacyTabs && (
+        <div className="users-top-tabs">
+          <button
+            type="button"
+            className={`users-top-tab ${activeTab === 'register' ? 'active' : ''}`}
+            onClick={() => setActiveTab('register')}
+          >
+            Registration
+          </button>
+          <button
+            type="button"
+            className={`users-top-tab ${activeTab === 'manage' ? 'active' : ''}`}
+            onClick={() => setActiveTab('manage')}
+          >
+            View / Update Users
+          </button>
         </div>
-        <div className="form-row">
-          <div className="form-group full-width">
-            <label>Search Users</label>
+      )}
+
+      {!isMgmtProfile && !isMgmtList && registerFormContent}
+
+      {!isMgmtProfile && (isMgmtList || (!embeddedTransportDriver && activeTab === 'manage')) && (
+        <div className={`registration-form-content user-management-content${isMgmtList ? ' users-mgmt-list-shell' : ''}`}>
+        {!isMgmtList && (
+          <div className="users-manage-header-row">
+            <h2 className="section-title">View / Update Users</h2>
+          </div>
+        )}
+        <div className={isMgmtList ? 'users-mgmt-toolbar' : 'users-manage-right-controls'} style={isMgmtList ? undefined : { marginBottom: 12 }}>
+          <div className="users-filter-group">
+            <label>Type</label>
+            <select value={userTypeFilter} onChange={(e) => setUserTypeFilter(e.target.value)}>
+              <option value="">All</option>
+              <option value="i">Internal</option>
+              <option value="e">External</option>
+            </select>
+          </div>
+          <div className="users-filter-group">
+            <label>Role</label>
+            <select value={userRoleFilter} onChange={(e) => setUserRoleFilter(e.target.value)}>
+              <option value="">All</option>
+              {userJobRoles
+                .filter((role) => role.status === 1)
+                .map((role) => (
+                  <option key={role.id} value={role.jdCode || role.id}>
+                    {role.designation}
+                  </option>
+                ))}
+            </select>
+          </div>
+          <div className={`form-group full-width${isMgmtList ? ' users-search-wrap' : ''}`}>
+            <label>Search</label>
             <input
               type="text"
+              className={isMgmtList ? 'users-search-input' : undefined}
               placeholder="Search by name, NIC, mobile, email or role"
               value={userSearchTerm}
               onChange={(e) => setUserSearchTerm(e.target.value)}
             />
           </div>
+          <button
+            type="button"
+            className="btn-search users-download-excel-btn"
+            onClick={handleDownloadFilteredUsersExcel}
+          >
+            Download Excel
+          </button>
         </div>
 
-        <div className="users-table-wrapper">
+        <div className={`users-table-wrapper${isMgmtList ? ' users-mgmt-table-scroll' : ''}`}>
           <table className="users-table">
             <thead>
               <tr>
@@ -1429,7 +1537,7 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
                 <th>Role</th>
                 <th>Part Time Driver</th>
                 <th>Status</th>
-                <th>Action</th>
+                {!isMgmtList && <th>Action</th>}
               </tr>
             </thead>
             <tbody>
@@ -1443,7 +1551,28 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
                 </tr>
               ) : (
                 filteredUsers.map((user) => (
-                  <tr key={user.id} className={selectedUserId === user.id ? 'selected-row' : ''}>
+                  <tr
+                    key={user.id}
+                    className={[
+                      selectedUserId === user.id ? 'selected-row' : '',
+                      isMgmtList ? 'users-table-row-clickable' : '',
+                    ]
+                      .filter(Boolean)
+                      .join(' ')}
+                    onClick={isMgmtList ? () => openMgmtUserProfile(user) : undefined}
+                    onKeyDown={
+                      isMgmtList
+                        ? (e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              openMgmtUserProfile(user);
+                            }
+                          }
+                        : undefined
+                    }
+                    tabIndex={isMgmtList ? 0 : undefined}
+                    role={isMgmtList ? 'button' : undefined}
+                  >
                     <td>{user.id}</td>
                     <td>{user.employeeId ?? '-'}</td>
                     <td>
@@ -1469,41 +1598,60 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
                     <td>{jobRoleLabelMap[String(user.job_role || '').trim()] || user.job_role || '-'}</td>
                     <td>{Number(user.part_time_driver || 0) === 1 ? 'Yes' : 'No'}</td>
                     <td>{String(user.activated) === '1' ? 'Active' : 'Inactive'}</td>
-                    <td>
-                      <button
-                        type="button"
-                        className="btn-search"
-                        onClick={() => startEditUser(user)}
-                      >
-                        Edit
-                      </button>
-                    </td>
+                    {!isMgmtList && (
+                      <td>
+                        <button
+                          type="button"
+                          className="btn-search"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            startEditUser(user);
+                          }}
+                        >
+                          Edit
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 ))
               )}
             </tbody>
           </table>
         </div>
+        </div>
+      )}
 
-        {showEditPopup && selectedUserId && (
-          <div className="update-popup-overlay edit-user-popup-overlay">
+      {showEditPopup && selectedUserId && (
+          <div
+            className={
+              isMgmtProfile
+                ? 'user-profile-edit-host'
+                : 'update-popup-overlay edit-user-popup-overlay'
+            }
+          >
             <div className="update-popup-card edit-user-popup-card">
-              <div className="edit-user-popup-header">
-                <h3 className="section-title">Edit User #{selectedUserId}</h3>
-                <button
-                  type="button"
-                  className="btn-search"
-                  onClick={() => {
-                    setShowEditPopup(false);
-                    setShowUpdatePopup(false);
-                    setEditMessage({ type: '', text: '' });
-                    setSelectedUserImageUrl('');
-                  }}
-                  disabled={isUpdating}
-                >
-                  Close
-                </button>
-              </div>
+              {!isMgmtProfile ? (
+                <div className="edit-user-popup-header">
+                  <h3 className="section-title">Edit User #{selectedUserId}</h3>
+                  <button
+                    type="button"
+                    className="btn-search"
+                    onClick={() => {
+                      setShowEditPopup(false);
+                      setShowUpdatePopup(false);
+                      setEditMessage({ type: '', text: '' });
+                      setSelectedUserImageUrl('');
+                    }}
+                    disabled={isUpdating}
+                  >
+                    Close
+                  </button>
+                </div>
+              ) : (
+                <p className="user-profile-header-hint" style={{ marginTop: 0 }}>
+                  Update account details below. Leave password blank to keep the current password.
+                </p>
+              )}
               <form onSubmit={handleUpdateUserSubmit} className="edit-user-form">
             <div className="form-row">
               <div className="form-group">
@@ -1738,26 +1886,25 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
             </div>
             <div className="form-row">
               <div className="form-group full-width">
-                <label>Profile Picture (optional)</label>
-                <input
-                  type="file"
-                  name="image"
-                  accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
-                  onChange={handleEditInputChange}
-                />
-                <div className="edit-user-image-preview-row">
-                  {editImagePreviewUrl ? (
-                    <div className="edit-user-image-preview-block">
-                      <span>New Image Preview</span>
-                      <img src={editImagePreviewUrl} alt="New profile preview" className="edit-user-image-preview" />
-                    </div>
-                  ) : null}
-                  {selectedUserImageUrl ? (
-                    <div className="edit-user-image-preview-block">
-                      <span>Current Profile Picture</span>
-                      <img src={selectedUserImageUrl} alt="Current profile" className="edit-user-image-preview" />
-                    </div>
-                  ) : null}
+                <label>Profile photo (optional)</label>
+                <div className="user-register-photo-row">
+                  <ProfileImageUploadCard
+                    label="Profile photo"
+                    file={editFormData.image instanceof File ? editFormData.image : null}
+                    existingUrl={
+                      editFormData.image instanceof File
+                        ? null
+                        : editImagePreviewUrl || selectedUserImageUrl || null
+                    }
+                    disabled={isUpdating}
+                    onFileSelect={(picked) => {
+                      setEditFormData((prev) => ({ ...prev, image: picked }));
+                    }}
+                    onClear={() => {
+                      setEditFormData((prev) => ({ ...prev, image: null }));
+                      setEditImagePreviewUrl('');
+                    }}
+                  />
                 </div>
               </div>
             </div>
@@ -1848,8 +1995,7 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
               </form>
             </div>
           </div>
-        )}
-      </div>}
+      )}
 
       {showUpdatePopup && (
         <div className="update-popup-overlay">
@@ -1879,6 +2025,4 @@ const Users = ({ embeddedTransportDriver = false, onEmbeddedRegisterSuccess } = 
       )}
     </div>
   );
-};
-
-export default Users;
+}

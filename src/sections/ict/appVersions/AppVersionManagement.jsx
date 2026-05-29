@@ -4,7 +4,6 @@ import {
   useGetAppVersionsQuery,
   useCreateAppVersionMutation,
   useUpdateAppVersionMutation,
-  useDeleteAppVersionMutation,
 } from '../../../api/services NodeJs/appVersionsApi';
 import '../../../styles/ictDevelopment.css';
 import './appVersionManagement.css';
@@ -45,13 +44,11 @@ export default function AppVersionManagement() {
   const { data: versions = [], isLoading, refetch } = useGetAppVersionsQuery();
   const [createAppVersion, { isLoading: creating }] = useCreateAppVersionMutation();
   const [updateAppVersion, { isLoading: updating }] = useUpdateAppVersionMutation();
-  const [deleteAppVersion, { isLoading: deleting }] = useDeleteAppVersionMutation();
 
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({ ...emptyForm });
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -119,17 +116,6 @@ export default function AppVersionManagement() {
       refetch();
     } catch (err) {
       flash(err?.data?.message || 'Operation failed.', 'error');
-    }
-  };
-
-  const handleDelete = async (id) => {
-    try {
-      await deleteAppVersion(id).unwrap();
-      flash('App version deleted successfully.');
-      setShowDeleteConfirm(null);
-      refetch();
-    } catch (err) {
-      flash(err?.data?.message || 'Delete failed.', 'error');
     }
   };
 
@@ -225,13 +211,6 @@ export default function AppVersionManagement() {
                     <div className="avm-actions">
                       <button className="avm-btn avm-btn-edit" onClick={() => openEdit(row)} title="Edit">
                         Edit
-                      </button>
-                      <button
-                        className="avm-btn avm-btn-delete"
-                        onClick={() => setShowDeleteConfirm(row)}
-                        title="Delete"
-                      >
-                        Delete
                       </button>
                     </div>
                   </td>
@@ -398,35 +377,6 @@ export default function AppVersionManagement() {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-
-      {/* ─── Delete Confirm Modal ─── */}
-      {showDeleteConfirm && (
-        <div className="avm-modal-overlay" onClick={() => setShowDeleteConfirm(null)}>
-          <div className="avm-modal avm-modal-sm" onClick={(e) => e.stopPropagation()}>
-            <div className="avm-modal-header avm-modal-header-danger">
-              <h2>Delete App Version</h2>
-              <button className="avm-modal-close" onClick={() => setShowDeleteConfirm(null)}>×</button>
-            </div>
-            <div className="avm-delete-body">
-              <p>Are you sure you want to delete <strong>{showDeleteConfirm.app_name}</strong>?</p>
-              <p className="avm-delete-sub">App ID: <code>{showDeleteConfirm.app_id}</code></p>
-              <p className="avm-delete-warn">This action cannot be undone.</p>
-            </div>
-            <div className="avm-form-actions">
-              <button
-                className="avm-btn avm-btn-danger"
-                onClick={() => handleDelete(showDeleteConfirm.id)}
-                disabled={deleting}
-              >
-                {deleting ? 'Deleting...' : 'Delete'}
-              </button>
-              <button className="avm-btn avm-btn-cancel" onClick={() => setShowDeleteConfirm(null)}>
-                Cancel
-              </button>
-            </div>
           </div>
         </div>
       )}

@@ -16,8 +16,13 @@ import { logout } from '../store/slices/authSlice';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   getUserData,
-  getNavbarColor
+  getNavbarColor,
 } from '../utils/authUtils';
+import {
+  isCalendarAllowedWing,
+  isForecastAllowedWing,
+  normalizeWingTitle,
+} from '../config/wingHubDisplay';
 import { useNavbarPermissions } from '../hooks/useNavbarPermissions';
 import { useGetFieldUnblockPendingCountQuery } from '../api/services NodeJs/fieldUnblockRequestsApi';
 import { useGetPlanActivatePendingCountQuery } from '../api/services NodeJs/planActivateRequestsApi';
@@ -32,6 +37,9 @@ const LeftNavBar = ({ showSidebar = false, onClose = () => { }, onCollapseChange
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const wingTitle = searchParams.get('wing') ? decodeURIComponent(searchParams.get('wing')) : null;
+  const normalizedWingTitle = normalizeWingTitle(wingTitle);
+  const showForecastNav = isForecastAllowedWing(normalizedWingTitle);
+  const showCalendarNav = isCalendarAllowedWing(normalizedWingTitle);
   /** Keep ?wing= on every in-app nav link so the sidebar stays filtered to one wing. */
   const withWingSearch = (pathname) => ({ pathname, search: location.search });
   const categoriesToShow = useMemo(() => {
@@ -210,28 +218,30 @@ const LeftNavBar = ({ showSidebar = false, onClose = () => { }, onCollapseChange
         )}
       </div>
       <ul className="nav-list">
-        {/* Top-level menu item - Forecast (accessible to all) */}
-        <li className="nav-item">
-          <Link
-            to={withWingSearch('/home/create')}
-            className={`nav-link ${activeLink === '/home/create' ? 'active' : ''}`}
-            title="Forecast"
-          >
-            <FaCloudSunRain className="nav-icon" />
-            <span className="nav-text">Forecast</span>
-          </Link>
-        </li>
-        {/* Plan calendar (accessible to all, same as Forecast) */}
-        <li className="nav-item">
-          <Link
-            to={withWingSearch('/home/opsroomPlanCalendar')}
-            className={`nav-link ${activeLink === '/home/opsroomPlanCalendar' ? 'active' : ''}`}
-            title="Calendar"
-          >
-            <FaCalendarAlt className="nav-icon" />
-            <span className="nav-text">Calendar</span>
-          </Link>
-        </li>
+        {showForecastNav && (
+          <li className="nav-item">
+            <Link
+              to={withWingSearch('/home/create')}
+              className={`nav-link ${activeLink === '/home/create' ? 'active' : ''}`}
+              title="Forecast"
+            >
+              <FaCloudSunRain className="nav-icon" />
+              <span className="nav-text">Forecast</span>
+            </Link>
+          </li>
+        )}
+        {showCalendarNav && (
+          <li className="nav-item">
+            <Link
+              to={withWingSearch('/home/opsroomPlanCalendar')}
+              className={`nav-link ${activeLink === '/home/opsroomPlanCalendar' ? 'active' : ''}`}
+              title="Calendar"
+            >
+              <FaCalendarAlt className="nav-icon" />
+              <span className="nav-text">Calendar</span>
+            </Link>
+          </li>
+        )}
         {categoriesToShow.map((category) => {
           const isStrategicWing = category.title === 'Strategic Planning and Monitoring wing';
           const showAllStrategicChildren =

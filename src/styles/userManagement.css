@@ -1,0 +1,335 @@
+.user-mgmt-shell {
+  height: 100%;
+  min-height: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0 4px 12px;
+  box-sizing: border-box;
+}
+
+.user-mgmt-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.user-mgmt-shell--add,
+.user-mgmt-shell--profile {
+  overflow: hidden;
+}
+
+.user-mgmt-body--add-flow,
+.user-mgmt-body--profile-flow {
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0 2px 16px;
+}
+
+.user-mgmt-header {
+  flex-shrink: 0;
+  margin-bottom: 12px;
+}
+
+.user-mgmt-header-row {
+  display: grid;
+  grid-template-columns: 1fr minmax(0, 2.2fr) 1fr;
+  align-items: center;
+  gap: 12px 16px;
+}
+
+.user-mgmt-header-start {
+  justify-self: start;
+}
+
+.user-mgmt-header-end {
+  justify-self: end;
+}
+
+.user-mgmt-intro {
+  text-align: center;
+  min-width: 0;
+}
+
+.user-mgmt-title {
+  margin: 0 0 4px;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #004b71;
+}
+
+.user-mgmt-hint {
+  margin: 0;
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.user-mgmt-add-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 8px;
+  background: #004b71;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.2s ease;
+}
+
+.user-mgmt-add-btn:hover:not(:disabled) {
+  background: #006396;
+}
+
+.user-mgmt-add-btn:disabled {
+  opacity: 0.85;
+  cursor: wait;
+}
+
+.user-register-modal-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  min-height: 220px;
+  padding: 24px;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.user-register-modal-loading p {
+  margin: 0;
+}
+
+.user-mgmt-add-btn svg {
+  font-size: 12px;
+}
+
+.users-mgmt-list-shell {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  width: 100%;
+}
+
+.user-registration-container--mgmt-list {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+  width: 100%;
+  min-height: unset;
+}
+
+.users-mgmt-list-shell .users-mgmt-toolbar {
+  flex-shrink: 0;
+}
+
+.users-mgmt-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+
+.users-mgmt-toolbar .users-filter-group label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+
+.users-mgmt-toolbar .users-filter-group select,
+.users-mgmt-toolbar .users-search-input {
+  min-width: 140px;
+  padding: 8px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.users-mgmt-toolbar .users-search-wrap {
+  flex: 1;
+  min-width: 200px;
+}
+
+.users-table-wrapper.users-mgmt-table-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+}
+
+/* Frozen header while tbody scrolls vertically */
+.users-table-wrapper.users-mgmt-table-scroll .users-table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.users-table-wrapper.users-mgmt-table-scroll .users-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: #f7fafc;
+  color: #004b71;
+  box-shadow: 0 1px 0 #e2e8f0;
+}
+
+.users-table tbody tr.users-table-row-clickable {
+  cursor: pointer;
+}
+
+.users-table tbody tr.users-table-row-clickable:hover {
+  background: #f0f7fb;
+}
+
+.users-table tbody tr.users-table-row-clickable.selected-row {
+  background: #e8f4fa;
+}
+
+.user-register-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1200;
+  padding: 16px;
+}
+
+.user-register-modal-card {
+  width: 100%;
+  max-width: 960px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.22);
+  overflow: hidden;
+}
+
+.user-register-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e2e8f0;
+  flex-shrink: 0;
+}
+
+.user-register-modal-header h3 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #004b71;
+}
+
+.user-register-modal-close {
+  border: 1px solid #c4d3df;
+  background: #fff;
+  color: #0b3d5c;
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.user-register-modal-close:hover {
+  background: #e8f4fa;
+  border-color: #004b71;
+}
+
+.user-register-modal-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px 20px 20px;
+  position: relative;
+}
+
+.user-register-modal-form .registration-form-content {
+  padding: 0;
+}
+
+.user-register-modal-form .form-section {
+  margin-bottom: 22px;
+}
+
+.profile-image-upload-gallery {
+  max-width: 200px;
+}
+
+.profile-image-upload-gallery .vehicle-profile-gallery-actions {
+  flex-wrap: wrap;
+}
+
+.profile-image-upload-clear-btn {
+  border: none;
+  background: transparent;
+  color: #b91c1c;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 0;
+  width: 100%;
+  text-align: center;
+}
+
+.profile-image-upload-clear-btn:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.profile-image-upload-clear-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.user-register-photo-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+@media (max-width: 768px) {
+  .user-mgmt-header-row {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    justify-items: center;
+    text-align: center;
+  }
+
+  .user-mgmt-header-start,
+  .user-mgmt-header-end {
+    justify-self: center;
+  }
+}

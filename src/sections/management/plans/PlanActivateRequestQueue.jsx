@@ -162,35 +162,68 @@ const PlanActivateRequestQueue = () => {
       )}
 
       {actionModal && modalRow ? (
-        <div className="modal-overlay-fur-queue" onClick={closeActionModal}>
-          <div className="modal-fur-queue" onClick={(e) => e.stopPropagation()}>
-            <h3 className="modal-title-fur-queue">
-              {isApproveModal ? 'Approve activation' : 'Decline activation'}
-            </h3>
-            <p className="modal-sub-fur-queue">
-              Plan #{modalRow.planId} · {modalRow.estateName || 'Estate'}
-            </p>
-            <label className="modal-label-fur-queue">
-              Review note (optional)
+        <div className="modal-overlay-fur-queue" onClick={closeActionModal} role="presentation">
+          <div
+            className="modal-panel-fur-queue"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="plan-activate-action-modal-title"
+          >
+            <div className="modal-head-fur-queue">
+              <h2 id="plan-activate-action-modal-title" className="modal-title-fur-queue">
+                {isApproveModal ? 'Approve activation' : 'Decline activation'}
+              </h2>
+              <button
+                type="button"
+                className="modal-close-fur-queue"
+                onClick={closeActionModal}
+                disabled={isBusy}
+                aria-label="Close"
+              >
+                <FaTimes />
+              </button>
+            </div>
+            <div className="modal-body-fur-queue">
+              <p className="modal-summary-fur-queue">
+                <strong>Plan #{modalRow.planId}</strong>
+                {modalRow.estateName ? ` · ${modalRow.estateName}` : ''}
+                {modalRow.pickedDate ? ` · ${String(modalRow.pickedDate).slice(0, 10)}` : ''}
+              </p>
+              {modalRow.deactivateReason ? (
+                <p className="modal-hint-fur-queue">
+                  Deactivation reason: {modalRow.deactivateReason}
+                </p>
+              ) : null}
+              <p className="modal-hint-fur-queue">
+                {isApproveModal
+                  ? 'The plan will be set active again and deactivation details will be cleared.'
+                  : 'The activation request will be declined. Add a note if needed (optional).'}
+              </p>
+              <label className="modal-label-fur-queue" htmlFor="plan-activate-review-note">
+                Review note
+              </label>
               <textarea
+                id="plan-activate-review-note"
                 className="modal-textarea-fur-queue"
-                rows={3}
+                rows={4}
+                placeholder={isApproveModal ? 'Optional note for records…' : 'Reason for declining (optional)…'}
                 value={modalNote}
                 onChange={(e) => setModalNote(e.target.value)}
                 disabled={isBusy}
               />
-            </label>
-            <div className="modal-actions-fur-queue">
-              <button type="button" className="btn-secondary-fur-queue" onClick={closeActionModal} disabled={isBusy}>
+            </div>
+            <div className="modal-footer-fur-queue">
+              <button type="button" className="btn-modal-cancel-fur-queue" onClick={closeActionModal} disabled={isBusy}>
                 Cancel
               </button>
               <button
                 type="button"
-                className={isApproveModal ? 'btn-approve-fur-queue' : 'btn-reject-fur-queue'}
+                className={isApproveModal ? 'btn-modal-confirm-fur-queue' : 'btn-modal-reject-fur-queue'}
                 onClick={submitAction}
                 disabled={isBusy}
               >
-                {isApproveModal ? 'Approve' : 'Decline'}
+                {isBusy ? 'Please wait…' : isApproveModal ? 'Approve & activate' : 'Decline request'}
               </button>
             </div>
           </div>
