@@ -1,0 +1,83 @@
+name: Frontend Deploy
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+  workflow_dispatch:
+    inputs:
+      target_branch:
+        description: Branch to deploy (main or dev)
+        required: false
+        default: ""
+
+concurrency:
+  group: frontend-deploy-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    # Prevent collisions with Jenkins unless explicitly enabled.
+    if: ${{ github.event_name == 'workflow_dispatch' || vars.ENABLE_FRONTEND_ACTIONS_DEPLOY == 'true' }}
+    runs-on: [self-hosted, windows]
+    env:
+      PROD_SITE_PATH: C:\inetpub\wwwroot\dsms-prod
+      DEV_SITE_PATH: C:\inetpub\wwwroot\dsms-dev
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.inputs.target_branch || github.ref_name }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        shell: powershell
+        run: npm install --legacy-peer-deps
+
+      - name: Set branch variables
+        id: vars
+        shell: powershell
+        run: |
+          $branch = "${{ github.event.inputs.target_branch || github.ref_name }}"
+          if ($branch -eq "main") {
+            "build_command=build:prod" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+            "target_site=$env:PROD_SITE_PATH" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+            "target_env=prod" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          } else {
+            "build_command=build:dev" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+            "target_site=$env:DEV_SITE_PATH" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+            "target_env=dev" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          }
+
+      - name: Build frontend
+        shell: powershell
+        run: npm run ${{ steps.vars.outputs.build_command }}
+
+      - name: Deploy to IIS folder
+        shell: powershell
+        run: |
+          $target = "${{ steps.vars.outputs.target_site }}"
+          if (!(Test-Path $target)) {
+            New-Item -ItemType Directory -Path $target -Force | Out-Null
+          }
+          Get-ChildItem -Path $target -Force -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+          Copy-Item -Path ".\build\*" -Destination $target -Recurse -Force
+          if (Test-Path ".\deployment\web.config") {
+            Copy-Item -Path ".\deployment\web.config" -Destination (Join-Path $target "web.config") -Force
+          }
+
+      - name: Verify deployment
+        shell: powershell
+        run: |
+          $indexPath = Join-Path "${{ steps.vars.outputs.target_site }}" "index.html"
+          if (!(Test-Path $indexPath)) {
+            throw "Deployment verification failed: index.html missing in target path."
+          }
+          Write-Host "Frontend ${{ steps.vars.outputs.target_env }} deploy successful."
