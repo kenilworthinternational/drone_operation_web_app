@@ -52,6 +52,7 @@ pipeline {
                 echo "Building ${TARGET_ENV} bundle with npm run ${BUILD_COMMAND}"
                 bat """
                     cd /d ${SERVER_PATH}
+                    set "CI=false"
                     call npm run ${BUILD_COMMAND}
                 """
             }
