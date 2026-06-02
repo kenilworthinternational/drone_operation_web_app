@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        SERVER_PATH = 'C:\\Kenilworth\\WebApp\\drone_operation_web_app_frontend'
+        SERVER_PATH = "${env.WORKSPACE}"
         PROD_SITE_PATH = 'C:\\inetpub\\wwwroot\\dsms-prod'
         DEV_SITE_PATH = 'C:\\inetpub\\wwwroot\\dsms-dev'
         IS_PROD = "${env.BRANCH_NAME == 'main'}"
@@ -23,6 +23,10 @@ pipeline {
             steps {
                 bat """
                     cd /d ${SERVER_PATH}
+                    if not exist package.json (
+                        echo package.json not found in workspace path: ${SERVER_PATH}
+                        exit /b 1
+                    )
                     call npm install --legacy-peer-deps
                 """
             }
@@ -42,6 +46,10 @@ pipeline {
             steps {
                 echo "Deploying build output to ${TARGET_SITE_PATH}"
                 bat """
+                    if not exist "${SERVER_PATH}\\build\\index.html" (
+                        echo Build output missing at ${SERVER_PATH}\\build
+                        exit /b 1
+                    )
                     if not exist "${TARGET_SITE_PATH}" mkdir "${TARGET_SITE_PATH}"
                     powershell -NoProfile -ExecutionPolicy Bypass -Command "if (Test-Path '${TARGET_SITE_PATH}') { Get-ChildItem -Path '${TARGET_SITE_PATH}' -Force | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue }"
                     xcopy /E /Y /I "${SERVER_PATH}\\build\\*" "${TARGET_SITE_PATH}\\"
