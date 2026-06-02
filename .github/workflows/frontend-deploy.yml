@@ -58,7 +58,11 @@ jobs:
 
       - name: Build frontend
         shell: powershell
-        run: npm run ${{ steps.vars.outputs.build_command }}
+        run: |
+          $sha = (git rev-parse --short HEAD).Trim()
+          $env:REACT_APP_BUILD_TIME = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
+          $env:REACT_APP_GIT_SHA = $sha
+          npm run ${{ steps.vars.outputs.build_command }}
 
       - name: Deploy to IIS folder
         shell: powershell
