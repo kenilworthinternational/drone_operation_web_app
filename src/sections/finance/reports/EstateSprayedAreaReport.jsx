@@ -1,8 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import PropTypes from 'prop-types';
+import { toast } from 'react-toastify';
 import '../../../styles/finance.css';
 import { useLazyGetFieldWiseFinanceReportQuery } from '../../../api/services NodeJs/financeReportApi';
 import { useLazyGetPlantationsListQuery, useLazyGetEstatesListQuery } from '../../../api/services NodeJs/plantationDashboardApi';
+import {
+    useLazyGetWorkSummaryBillingDraftQuery,
+    useSaveWorkSummaryBillingDraftMutation,
+    useCreateWorkSummaryPdfDocumentMutation,
+} from '../../../api/services NodeJs/financeWorkSummaryBillingApi';
 import DatePicker from 'react-datepicker';
 import * as XLSX from "xlsx";
 import { jsPDF } from "jspdf";
@@ -11,6 +17,11 @@ import { Bars } from "react-loader-spinner";
 import { FiRefreshCw, FiDownload, FiPrinter, FiFileText } from "react-icons/fi";
 import CreatePlantationInvoiceModal from './CreatePlantationInvoiceModal';
 import PlantationInvoicePrint from './PlantationInvoicePrint';
+import {
+    buildWorkSummaryPdfDocument,
+    buildPdfSnapshotLines,
+    getWorkSummaryPdfFileName,
+} from './workSummaryPdfExport';
 
 /** Same 2dp rounding as the table; avoids false "issue" rows when floats differ only below display precision. */
 const hasFinanceExtentIssue = (row) => {
@@ -18,6 +29,25 @@ const hasFinanceExtentIssue = (row) => {
     const land = Number((Number(row.landExtent) || 0).toFixed(2));
     const completed = Number((Number(row.fieldExtent) || 0).toFixed(2));
     return land < completed;
+};
+
+const rowBillingKey = (row) => `${row.planId}:${row.fieldId}`;
+
+const isBillingIncluded = (row, inclusionMap) => {
+    if (!row?.hasChargeableReason) return true;
+    return inclusionMap[rowBillingKey(row)] !== false;
+};
+
+const resolveBillingExtent = (row, inclusionMap) => {
+    if (row.hasChargeableReason) {
+        return isBillingIncluded(row, inclusionMap) ? (Number(row.landExtent) || 0) : 0;
+    }
+    return Number(row.fieldExtent) || 0;
+};
+
+const rowHasReasonText = (row) => {
+    const text = String(row?.comNarration || '').trim();
+    return text !== '' && text !== '-';
 };
 
 const extractListData = (payload) => {
@@ -57,6 +87,12 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
     const [selectedMissionType, setSelectedMissionType] = useState('all');
     const [showInvoiceModal, setShowInvoiceModal] = useState(false);
     const [localPreviewInvoice, setLocalPreviewInvoice] = useState(null);
+    const [billingInclusion, setBillingInclusion] = useState({});
+    const saveDraftTimerRef = useRef(null);
+
+    const [fetchBillingDraft] = useLazyGetWorkSummaryBillingDraftQuery();
+    const [saveBillingDraft] = useSaveWorkSummaryBillingDraftMutation();
+    const [createPdfDocument] = useCreateWorkSummaryPdfDocumentMutation();
 
     const showInvoicePreview = (inv) => {
         if (onInvoicePreview) {
@@ -66,15 +102,98 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
         }
     };
 
+    const getBillingContext = useCallback(() => {
+        if (!selectedPlantation || !selectedDates[0] || !selectedDates[1]) return null;
+        return {
+            plantation_id: selectedPlantation,
+            start_date: selectedDates[0].toLocaleDateString('en-CA'),
+            end_date: selectedDates[1].toLocaleDateString('en-CA'),
+            estates: selectedEstates,
+            mission_filter: selectedMissionType,
+        };
+    }, [selectedPlantation, selectedDates, selectedEstates, selectedMissionType]);
+
+    const buildDraftLines = useCallback((rows, inclusionMap) => {
+        return (rows || [])
+            .filter((r) => r.hasChargeableReason)
+            .map((r) => {
+                const key = rowBillingKey(r);
+                return {
+                    plan_id: r.planId,
+                    field_id: r.fieldId,
+                    estate_id: r.estateId,
+                    field_name: r.fieldName,
+                    pilot_names: r.pilotNames,
+                    plan_date: r.date ? String(r.date).slice(0, 10) : null,
+                    mission_type: r.missionType,
+                    field_ha: r.landExtent,
+                    completed_ha: r.fieldExtent,
+                    covered_percent: r.coveredPercent,
+                    billing_ha_default: r.landExtent,
+                    reason_text: r.comNarration,
+                    has_chargeable_reason: 1,
+                    is_included: inclusionMap[key] !== false,
+                };
+            });
+    }, []);
+
+    const persistBillingDraft = useCallback(async (inclusionMap) => {
+        const ctx = getBillingContext();
+        if (!ctx || !reportData.length) return;
+        try {
+            await saveBillingDraft({
+                ...ctx,
+                lines: buildDraftLines(reportData, inclusionMap),
+            }).unwrap();
+        } catch (e) {
+            console.error('Failed to save billing draft', e);
+        }
+    }, [getBillingContext, reportData, buildDraftLines, saveBillingDraft]);
+
+    const schedulePersistBillingDraft = useCallback((inclusionMap) => {
+        if (saveDraftTimerRef.current) clearTimeout(saveDraftTimerRef.current);
+        saveDraftTimerRef.current = setTimeout(() => {
+            persistBillingDraft(inclusionMap);
+        }, 400);
+    }, [persistBillingDraft]);
+
     const getFilteredRows = () => {
         const rows = Array.isArray(reportData) ? reportData : [];
         return rows
             .filter(row => {
                 const missionMatch = selectedMissionType === 'all' || row.missionType === selectedMissionType;
-                const shouldShowByExtent = row.fieldExtent > 0 || row.hasChargeableReason;
+                const shouldShowByExtent =
+                    row.fieldExtent > 0 || row.hasChargeableReason || rowHasReasonText(row);
                 return missionMatch && shouldShowByExtent;
             })
+            .map((row) => ({
+                ...row,
+                billingExtent: resolveBillingExtent(row, billingInclusion),
+                billingIncluded: isBillingIncluded(row, billingInclusion),
+            }))
             .sort((a, b) => new Date(a.date) - new Date(b.date));
+    };
+
+    const toggleBillingInclusion = (row) => {
+        if (!row?.hasChargeableReason) return;
+        const key = rowBillingKey(row);
+        setBillingInclusion((prev) => {
+            const currentlyIncluded = prev[key] !== false;
+            const next = { ...prev, [key]: !currentlyIncluded };
+            schedulePersistBillingDraft(next);
+            return next;
+        });
+    };
+
+    const openInvoiceModal = async () => {
+        const inclusionMap = {};
+        getFilteredRows().forEach((r) => {
+            if (r.hasChargeableReason) {
+                inclusionMap[rowBillingKey(r)] = r.billingIncluded;
+            }
+        });
+        await persistBillingDraft(inclusionMap);
+        setShowInvoiceModal(true);
     };
 
     useEffect(() => {
@@ -166,9 +285,6 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
                                     ).join(', ');
                                     const hasChargeableReason = (Array.isArray(field.task) ? field.task : [])
                                         .some((t) => Number(t?.com_naration_chargeble) === 1);
-                                    const billingExtent = hasChargeableReason
-                                        ? (Number(field.field_extent) || 0)
-                                        : djiFieldArea;
                                     const landExtent = Number(field.field_extent) || 0;
                                     const coveredPercent = landExtent > 0
                                         ? (djiFieldArea / landExtent) * 100
@@ -176,6 +292,8 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
                                     // Remove the filter: if (djiFieldArea > 0)
                                     processedData.push({
                                         planId: Number(plan.plan_id) || 0,
+                                        fieldId: Number(field.field_id) || 0,
+                                        estateId: Number(estate.estate_id) || 0,
                                         date: plan.plan_date,
                                         fieldName: field.field_short_name || field.field_name || '',
                                         pilotNames: field.pilot_names?.map(p => p.pilot_name).join(', ') || '',
@@ -184,7 +302,6 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
                                         missionType: plan.mission_type_name,
                                         comNarration,
                                         hasChargeableReason,
-                                        billingExtent,
                                         coveredPercent
                                     });
                                 });
@@ -204,9 +321,11 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
                         //
                         // setReportData(uniqueData);
                         setReportData(processedData);
+                        setBillingInclusion({});
                     } else {
                         // If response is not an object or is null/undefined, clear the data
                         setReportData([]);
+                        setBillingInclusion({});
                         setError(null);
                     }
                 } catch (err) {
@@ -219,6 +338,22 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
         };
         fetchReportData();
     }, [selectedEstates, selectedDates, selectedPlantation]);
+
+    useEffect(() => {
+        const loadDraft = async () => {
+            const ctx = getBillingContext();
+            if (!ctx || !reportData.length) return;
+            try {
+                const result = await fetchBillingDraft(ctx);
+                if (result.data?.inclusions && typeof result.data.inclusions === 'object') {
+                    setBillingInclusion(result.data.inclusions);
+                }
+            } catch (e) {
+                console.error('Failed to load billing draft', e);
+            }
+        };
+        loadDraft();
+    }, [reportData, getBillingContext, fetchBillingDraft]);
 
 
     const handlePlantationChange = (event) => {
@@ -326,144 +461,59 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
         XLSX.writeFile(wb, `Finance_Report_${excelEstateNames}_${formatDate(selectedDates[0])}_to_${formatDate(selectedDates[1])}_${selectedMissionType}.xlsx`);
     };
 
-    const exportPdf = () => {
+    const exportPdf = async () => {
         const filteredData = getFilteredRows();
 
         if (filteredData.length === 0) return;
 
-        const doc = new jsPDF('p', 'mm', 'a4');
-        const pageWidth = doc.internal.pageSize.getWidth();
-        const pageHeight = doc.internal.pageSize.getHeight();
-        const marginX = 15;
-
-        // Add Logo
-        const logo = new Image();
-        logo.src = '../../assets/images/kenilowrthlogoDark.png';
-        doc.addImage(logo, 'PNG', 10, 10, 30, 30);
-
-        // Company Info
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(14);
-        doc.text("Kenilworth International Lanka Pvt Ltd", pageWidth / 2, 25, { align: 'center' });
-        doc.setFontSize(10);
-        doc.text("7B , D.W Rupasinghe Mawatha, Nugegoda", pageWidth / 2, 30, { align: 'center' });
-
-        // Plantation Info
-        const selectedPlantationData = (Array.isArray(plantations) ? plantations : []).find(p => p.id === selectedPlantation);
-        const plantation = selectedPlantationData ? selectedPlantationData.plantation : "N/A";
+        const selectedPlantationData = (Array.isArray(plantations) ? plantations : []).find(
+            (p) => p.id === selectedPlantation
+        );
+        const plantation = selectedPlantationData ? selectedPlantationData.plantation : 'N/A';
         const selectedEstateNames = (Array.isArray(estates) ? estates : [])
-            .filter(estate => selectedEstates.includes(estate.id))
-            .map(estate => estate.estate)
-            .join(", ");
-        const monthYear = new Date(selectedDates[0]).toLocaleString('default', { month: 'long' }) + " - " + new Date(selectedDates[0]).getFullYear();
+            .filter((estate) => selectedEstates.includes(estate.id))
+            .map((estate) => estate.estate)
+            .join(', ');
 
-        let currentY = 45;
-        doc.text(`Plantation: ${plantation}`, marginX, currentY);
-        currentY += 5;
-        const estateText = `Estate: ${selectedEstateNames}`;
-        const estateWrapped = doc.splitTextToSize(estateText, pageWidth - marginX * 2);
-        doc.text(estateWrapped, marginX, currentY);
-        currentY += estateWrapped.length * 5;
-        doc.text(`Month: ${monthYear}`, marginX, currentY);
-        currentY += 7;
-        doc.text(`${monthYear} Work Summary`, pageWidth / 2, currentY, { align: 'center' });
-
-        // Table Data with Totals Row
-        const tableData = filteredData.map((row, index) => [
-            `${row.planId}-${row.missionType}\n${row.date ? new Date(row.date).toLocaleDateString() : "Invalid Date"}`,
-            row.fieldName,
-            (row.landExtent || 0).toFixed(2),
-            (row.fieldExtent || 0).toFixed(2),
-            `${(Number(row.coveredPercent) || 0).toFixed(2)}%`,
-            (Number(row.billingExtent) || 0).toFixed(2),
-            row.comNarration || '-'
-        ]);
-
-        // Add Totals Row
-        const totalLandExtent = filteredData.reduce((sum, row) => sum + row.landExtent, 0).toFixed(2);
-        const totalFieldExtent = filteredData.reduce((sum, row) => sum + row.fieldExtent, 0).toFixed(2);
-        const totalBillingExtent = filteredData.reduce((sum, row) => sum + (Number(row.billingExtent) || 0), 0).toFixed(2);
-        tableData.push([
-            'Total',
-            '',
-            totalLandExtent,
-            totalFieldExtent,
-            '',
-            totalBillingExtent,
-            ''
-        ]);
-
-        autoTable(doc, {
-            head: [["Plan / Date", "Field Name", "Field(Ha)", "Completed(Ha)", "Covered %", "Billing(Ha)", "Reason"]],
-            body: tableData,
-            startY: currentY + 5,
-            // Start at currentY on the first page, but keep a small top margin on subsequent pages
-            margin: { top: 20, bottom: 50 },
-            theme: 'grid',
-            styles: { fontSize: 8, cellPadding: 2, overflow: 'linebreak' },
-            columnStyles: {
-                0: { cellWidth: 28 },
-                1: { cellWidth: 24 },
-                2: { cellWidth: 16, halign: 'right' },
-                3: { cellWidth: 20, halign: 'right' },
-                4: { cellWidth: 16, halign: 'right' },
-                5: { cellWidth: 16, halign: 'right' },
-                6: { cellWidth: 66 },
-            },
-            headStyles: {
-                fillColor: [0, 75, 113],
-                textColor: [255, 255, 255],
-                fontStyle: 'bold',
-            },
-            didParseCell: (hookData) => {
-                if (hookData.section === 'body') {
-                    const isLastRow = hookData.row.index === tableData.length - 1;
-                    if (isLastRow) {
-                        hookData.cell.styles.fontStyle = 'bold';
-                    }
+        let savedPdfId = null;
+        const ctx = getBillingContext();
+        if (ctx) {
+            try {
+                await persistBillingDraft(billingInclusion);
+                const docMeta = await createPdfDocument({
+                    ...ctx,
+                    plantation_name: plantation,
+                    estate_names: selectedEstateNames,
+                    pdf_lines: buildPdfSnapshotLines(filteredData),
+                }).unwrap();
+                savedPdfId = docMeta?.pdf_id ?? null;
+                if (savedPdfId) {
+                    toast.info(`Work summary PDF record #${savedPdfId} saved`);
                 }
+            } catch (e) {
+                toast.warn('PDF will download, but billing history was not saved');
+                console.error(e);
             }
+        }
+
+        const doc = buildWorkSummaryPdfDocument({
+            plantation,
+            estateNames: selectedEstateNames,
+            periodStart: selectedDates[0],
+            rows: filteredData,
         });
 
-        // Draw footer ONCE after the table on the final page
-        const tableEndY = (doc.lastAutoTable && doc.lastAutoTable.finalY) ? doc.lastAutoTable.finalY : currentY + 10;
-        let footerStartY = tableEndY + 12;
-        if (footerStartY + 40 > pageHeight - 10) {
-            doc.addPage();
-            footerStartY = 20;
-        }
-        doc.setFontSize(9);
-        // Info line
-        doc.text(
-            "This is a system-generated report. No signature required from KWIL. Contact : 071 617 1177",
-            pageWidth / 2,
-            footerStartY,
-            { align: 'center' }
-        );
-        // Horizontal line
-        doc.setLineWidth(0.5);
-        doc.line(15, footerStartY + 2, pageWidth - 15, footerStartY + 2);
-        // Approval sentence
-        doc.text(
-            "The above work summary is correct and approved for the payments",
-            pageWidth - 100,
-            footerStartY + 10,
-            { align: 'right' }
-        );
-        // Signature fields
-        const sigY = footerStartY + 20;
-        doc.text("Signature:", 16, sigY);
-        doc.text("Name:", 16, sigY + 10);
-        const rightColX = pageWidth - 90;
-        doc.text("Stamp:", rightColX, sigY);
-        doc.text("Date:", rightColX, sigY + 10);
-
-        // Get selected estate names from estates array for PDF
+        const formatDateForPdf = (date) => {
+            if (!date) return '';
+            const d = new Date(date);
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        };
         const pdfEstateNames = (Array.isArray(estates) ? estates : [])
-            .filter(e => selectedEstates.includes(e.id))
-            .map(e => e.estate.replace(/\s+/g, '_'))
+            .filter((e) => selectedEstates.includes(e.id))
+            .map((e) => e.estate.replace(/\s+/g, '_'))
             .join('_') || 'All_Estates';
-        doc.save(`Finance_Report_${pdfEstateNames}_${formatDate(selectedDates[0])}_to_${formatDate(selectedDates[1])}_${selectedMissionType}.pdf`);
+        const fallbackName = `Finance_Report_${pdfEstateNames}_${formatDateForPdf(selectedDates[0])}_to_${formatDateForPdf(selectedDates[1])}_${selectedMissionType}.pdf`;
+        doc.save(savedPdfId ? getWorkSummaryPdfFileName(savedPdfId) : fallbackName);
     };
 
     const exportIssuesPdf = () => {
@@ -726,10 +776,10 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
                                     onClick={hasIssues ? undefined : exportPdf}
                                     disabled={filteredRows.length === 0 || hasIssues}
                                     className="flex items-center bg-red-600 text-white"
-                                    title={hasIssues ? 'Cannot download PDF while there are issue rows' : 'Download PDF'}
+                                    title={hasIssues ? 'Cannot download work summary while there are issue rows' : 'Download work summary'}
                                 >
                                     <FiPrinter className="mr-2" />
-                                    PDF
+                                    Work Summary
                                 </button>
                             )}
                             {filteredRows.length > 0 && hasIssues && (
@@ -745,7 +795,7 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
                             {canCreateInvoice && (
                                 <button
                                     type="button"
-                                    onClick={() => setShowInvoiceModal(true)}
+                                    onClick={openInvoiceModal}
                                     className="finance-btn-invoice flex items-center"
                                     title="Create tax invoice from billing Ha"
                                 >
@@ -827,6 +877,7 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
                                                 <th>Completed(Ha)</th>
                                                 <th>Covered %</th>
                                                 <th>Billing(Ha)</th>
+                                                <th>Bill</th>
                                                 <th>Reason</th>
                                             </tr>
                                         </thead>
@@ -860,8 +911,22 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
                                                             <td>
                                                                 {(Number(row.coveredPercent) || 0).toFixed(2)}%
                                                             </td>
-                                                            <td>
+                                                            <td className={row.hasChargeableReason && !row.billingIncluded ? 'finance-billing-excluded-cell' : ''}>
                                                                 {(row.billingExtent || 0).toFixed(2)}
+                                                            </td>
+                                                            <td>
+                                                                {row.hasChargeableReason ? (
+                                                                    <label className="finance-bill-toggle" title={row.billingIncluded ? 'Included in billing — click to exclude' : 'Excluded from billing — click to include'}>
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            checked={row.billingIncluded}
+                                                                            onChange={() => toggleBillingInclusion(row)}
+                                                                        />
+                                                                        <span>{row.billingIncluded ? 'Yes' : 'No'}</span>
+                                                                    </label>
+                                                                ) : (
+                                                                    '—'
+                                                                )}
                                                             </td>
                                                             <td>{row.comNarration || '-'}</td>
                                                         </tr>
@@ -894,6 +959,7 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
                                                             .toFixed(2)}
                                                     </strong>
                                                 </td>
+                                                <td></td>
                                                 <td></td>
                                             </tr>
                                         </tfoot>

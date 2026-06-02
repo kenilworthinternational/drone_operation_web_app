@@ -12,6 +12,13 @@ const LazyUsersRegisterForm = lazy(() => import('./Users'));
 export default function IctUserManagement() {
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [registerFormLoading, setRegisterFormLoading] = useState(false);
+  const [mgmtProfileActive, setMgmtProfileActive] = useState(false);
+  const profileBackRef = React.useRef(null);
+
+  const handleMgmtProfileChange = (active, onBack) => {
+    setMgmtProfileActive(Boolean(active));
+    profileBackRef.current = typeof onBack === 'function' ? onBack : null;
+  };
 
   useEffect(() => {
     const root = document.querySelector('.content-dashboard');
@@ -33,9 +40,19 @@ export default function IctUserManagement() {
 
   return (
     <>
-      <div className="user-mgmt-shell">
+      <div className={`user-mgmt-shell${mgmtProfileActive ? ' user-mgmt-shell--profile' : ''}`}>
         <header className="user-mgmt-header user-mgmt-header-row">
-          <div className="user-mgmt-header-start" />
+          <div className="user-mgmt-header-start">
+            {mgmtProfileActive ? (
+              <button
+                type="button"
+                className="user-mgmt-back-btn user-mgmt-back-btn--muted"
+                onClick={() => profileBackRef.current?.()}
+              >
+                ← Users
+              </button>
+            ) : null}
+          </div>
           <div className="user-mgmt-intro">
             <h3 className="user-mgmt-title">User Management</h3>
             <p className="user-mgmt-hint">
@@ -64,8 +81,14 @@ export default function IctUserManagement() {
             </button>
           </div>
         </header>
-        <div className="user-mgmt-body">
-          <UsersDirectory embeddedInUserManagement managementView="list" />
+        <div
+          className={`user-mgmt-body${mgmtProfileActive ? ' user-mgmt-body--profile-flow' : ''}`}
+        >
+          <UsersDirectory
+            embeddedInUserManagement
+            managementView="list"
+            onMgmtProfileChange={handleMgmtProfileChange}
+          />
         </div>
       </div>
 

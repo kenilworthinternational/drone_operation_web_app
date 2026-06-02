@@ -325,6 +325,11 @@ const formatMakeModel = (make, model) => {
   return parts.length ? parts.join(' ') : '-';
 };
 
+const isVehicleRecord = (asset) =>
+  asset != null && (asset.vehicle_no != null || asset.ownership != null);
+
+const isMasterRowId = (value) => /^\d+$/.test(String(value ?? '').trim());
+
 const formatVehicleDriverDisplay = (asset) => {
   const name = String(asset?.driver_name || '').trim();
   if (!name) return '-';
@@ -408,17 +413,31 @@ const Vehicles = ({ embeddedInVehicleManagement = false }) => {
     isLoading: fuelCategoriesLoading,
   } = useGetFuelCategoriesQuery();
 
-  const editCategoryId = formData.vehicle_category || '';
-  const editMakeId = formData.make || '';
+  const editCategoryId = formData.vehicle_category ? String(formData.vehicle_category) : '';
+  const editMakeIdForQuery = isMasterRowId(formData.make) ? String(formData.make) : '';
+
+  const isEditingVehicleAsset = selectedAssetType === 'vehicles';
+
+  const { data: editCategoriesResponse, isLoading: editCategoriesLoading } = useGetVehicleCategoriesQuery(
+    undefined,
+    { skip: !showEditModal || !isEditingVehicleAsset }
+  );
 
   const { data: editMakesResponse, isLoading: editMakesLoading } = useGetVehicleMakesQuery(
     { vehicle_category_id: editCategoryId || null },
-    { skip: !showEditModal || !editCategoryId }
+    { skip: !showEditModal || !isEditingVehicleAsset || !editCategoryId }
   );
   const { data: editModelsResponse, isLoading: editModelsLoading } = useGetVehicleModelsQuery(
-    { vehicle_make_id: editMakeId || null },
-    { skip: !showEditModal || !editMakeId }
+    { vehicle_make_id: editMakeIdForQuery || null },
+    { skip: !showEditModal || !isEditingVehicleAsset || !editMakeIdForQuery }
   );
+
+  const editVehicleCategories = useMemo(() => {
+    if (!editCategoriesResponse) return [];
+    if (Array.isArray(editCategoriesResponse)) return editCategoriesResponse;
+    if (Array.isArray(editCategoriesResponse?.data)) return editCategoriesResponse.data;
+    return [];
+  }, [editCategoriesResponse]);
 
   const editVehicleMakes = useMemo(() => {
     if (!editMakesResponse) return [];
@@ -497,29 +516,79 @@ const Vehicles = ({ embeddedInVehicleManagement = false }) => {
   }, [showEditModal]);
 
   useEffect(() => {
-    if (!showEditModal || !selectedAsset || editMasterResolvedRef.current) return;
-    if (!editCategoryId) return;
+    if (!showEditModal || !selectedAsset || !isEditingVehicleAsset || editMasterResolvedRef.current) return;
+    if (editCategoriesLoading) return;
+
+    const categoryId = String(
+      selectedAsset.vehicle_category_id ??
+        (isMasterRowId(selectedAsset.vehicle_category) ? selectedAsset.vehicle_category : '') ??
+        editCategoryId ??
+        ''
+    ).trim();
+
+    if (!categoryId) return;
     if (editMakesLoading) return;
-    const partial = resolveVehicleMasterIds(selectedAsset, [], editVehicleMakes, editVehicleModels);
-    if (!partial.make && selectedAsset?.make && editVehicleMakes.length === 0) return;
-    if (partial.make && editMakeId && editModelsLoading) return;
-    if (partial.make && !partial.model && selectedAsset?.model && editVehicleModels.length === 0 && !editModelsLoading) {
+
+    const makeResolved = resolveVehicleMasterIds(
+      selectedAsset,
+      editVehicleCategories,
+      editVehicleMakes,
+      []
+    );
+
+    if (!makeResolved.make && String(selectedAsset.make || '').trim() && editVehicleMakes.length === 0) {
       return;
     }
+
+    const resolvedMakeId = makeResolved.make || '';
+
+    if (resolvedMakeId && resolvedMakeId !== editMakeIdForQuery) {
+      setFormData((prev) => ({
+        ...prev,
+        vehicle_category: makeResolved.vehicle_category || categoryId,
+        make: resolvedMakeId,
+        model: '',
+      }));
+      return;
+    }
+
+    if (resolvedMakeId && String(selectedAsset.model || '').trim()) {
+      if (editModelsLoading) return;
+      const full = resolveVehicleMasterIds(
+        selectedAsset,
+        editVehicleCategories,
+        editVehicleMakes,
+        editVehicleModels
+      );
+      if (!full.model && editVehicleModels.length === 0) return;
+
+      editMasterResolvedRef.current = true;
+      setFormData((prev) => ({
+        ...prev,
+        vehicle_category: full.vehicle_category || categoryId,
+        make: full.make || resolvedMakeId,
+        model: full.model || '',
+      }));
+      return;
+    }
+
     editMasterResolvedRef.current = true;
     setFormData((prev) => ({
       ...prev,
-      vehicle_category: partial.vehicle_category || prev.vehicle_category,
-      make: partial.make || prev.make,
-      model: partial.model || prev.model,
+      vehicle_category: makeResolved.vehicle_category || categoryId,
+      make: resolvedMakeId,
+      model: '',
     }));
   }, [
     showEditModal,
     selectedAsset,
+    isEditingVehicleAsset,
     editCategoryId,
-    editMakeId,
+    editMakeIdForQuery,
+    editCategoriesLoading,
     editMakesLoading,
     editModelsLoading,
+    editVehicleCategories,
     editVehicleMakes,
     editVehicleModels,
   ]);
@@ -652,8 +721,8 @@ const Vehicles = ({ embeddedInVehicleManagement = false }) => {
       chassis_no: asset?.chassis_no ?? '',
       engine_no: asset?.engine_no ?? '',
       vehicle_no: asset?.vehicle_no ?? '',
-      make: asset?.make ?? '',
-      model: asset?.model ?? '',
+      make: isVehicleRecord(asset) ? '' : (asset?.make ?? ''),
+      model: isVehicleRecord(asset) ? '' : (asset?.model ?? ''),
       purchase_price: asset?.purchase_price != null ? String(asset.purchase_price) : '',
       manufacture_year: formatDateForInput(asset?.manufacture_year),
       depreciation_period: asset?.depreciation_period != null ? String(asset.depreciation_period) : '',
@@ -674,7 +743,9 @@ const Vehicles = ({ embeddedInVehicleManagement = false }) => {
       driver: asset?.driver != null ? String(asset.driver) : '',
       copy_of_registration_document: asset?.copy_of_registration_document ?? '',
       // Vehicle details
-      vehicle_category: asset?.vehicle_category ?? asset?.vehicle_category_id ?? '',
+      vehicle_category: isVehicleRecord(asset)
+        ? String(asset?.vehicle_category_id ?? asset?.vehicle_category ?? '')
+        : (asset?.vehicle_category ?? asset?.vehicle_category_id ?? ''),
       fuel_category: asset?.fuel_category ?? asset?.fuel_category_id ?? '',
       avg_fuel_consumption: asset?.avg_fuel_consumption != null ? String(asset.avg_fuel_consumption) : '',
       tank_capacity_ltr: asset?.tank_capacity_ltr != null ? String(asset.tank_capacity_ltr) : '',

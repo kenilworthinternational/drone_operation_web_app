@@ -5,8 +5,10 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  padding: 0 4px 12px;
+  padding: 0 8px 12px;
   box-sizing: border-box;
+  width: 100%;
+  max-width: none;
 }
 
 .user-mgmt-body {
@@ -24,9 +26,19 @@
 
 .user-mgmt-body--add-flow,
 .user-mgmt-body--profile-flow {
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 0 2px 16px;
+  overflow: hidden;
+  padding: 0;
+}
+
+.user-mgmt-body--profile-flow {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.user-mgmt-body--profile-flow > .user-profile-wrap--mgmt-scroll {
+  flex: 1;
+  min-height: 0;
 }
 
 .user-mgmt-header {
@@ -43,10 +55,44 @@
 
 .user-mgmt-header-start {
   justify-self: start;
+  min-height: 38px;
+  display: flex;
+  align-items: center;
 }
 
 .user-mgmt-header-end {
   justify-self: end;
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+}
+
+.user-mgmt-back-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  box-sizing: border-box;
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.user-mgmt-back-btn--muted {
+  border: 1px solid #c4d3df;
+  background: #fff;
+  color: #0b3d5c;
+}
+
+.user-mgmt-back-btn--muted:hover {
+  background: #e8f4fa;
+  border-color: #004b71;
+  color: #004b71;
 }
 
 .user-mgmt-intro {
@@ -73,7 +119,9 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 8px 14px;
+  box-sizing: border-box;
+  height: 38px;
+  padding: 0 14px;
   border: none;
   border-radius: 8px;
   background: #004b71;

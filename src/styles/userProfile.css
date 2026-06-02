@@ -4,6 +4,29 @@
   margin: 0 auto;
 }
 
+/* ICT User Management: full-width profile with page scroll */
+.user-profile-wrap--mgmt-scroll {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 12px 32px;
+  box-sizing: border-box;
+}
+
+.user-profile-wrap--mgmt-scroll .user-profile-nav,
+.user-profile-wrap--mgmt-scroll .user-profile-header {
+  flex-shrink: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
 .user-profile-nav {
   display: flex;
   flex-wrap: wrap;
@@ -35,8 +58,8 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 20px;
-  padding: 20px 22px;
+  margin-bottom: 16px;
+  padding: 20px 24px;
   background: linear-gradient(135deg, #f0f7fb 0%, #fff 60%);
   border: 1px solid #dbeafe;
   border-radius: 12px;
@@ -84,8 +107,8 @@
 }
 
 .user-profile-hero-photo {
-  width: 120px;
-  height: 120px;
+  width: 100px;
+  height: 100px;
   flex-shrink: 0;
   border-radius: 50%;
   overflow: hidden;
@@ -140,6 +163,13 @@
   background: transparent;
   padding: 0;
   margin-top: 8px;
+  width: 100%;
+}
+
+.user-profile-edit-host--mgmt {
+  flex-shrink: 0;
+  width: 100%;
+  margin-top: 0;
 }
 
 .user-profile-edit-host .update-popup-card {
@@ -151,8 +181,152 @@
   margin: 0;
 }
 
+.user-profile-edit-host--mgmt .user-profile-edit-card {
+  max-width: none !important;
+  width: 100%;
+  max-height: none !important;
+  overflow: visible;
+  padding: 24px 28px 32px;
+  box-sizing: border-box;
+  background: #fff;
+}
+
 .user-registration-profile-flow .user-profile-header-hint {
-  margin: 8px 0 0;
-  font-size: 0.85rem;
-  color: #64748b;
+  margin: 0 0 20px;
+  padding: 12px 14px;
+  font-size: 0.875rem;
+  color: #475569;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  line-height: 1.45;
+}
+
+/* Profile edit form: flat 3-column grid (form-row uses display:contents) */
+.user-profile-edit-host--mgmt .edit-user-form--mgmt-profile {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px 24px;
+  width: 100%;
+  padding-top: 0;
+  box-sizing: border-box;
+}
+
+.user-profile-edit-host--mgmt .edit-user-form--mgmt-profile .form-row {
+  display: contents;
+}
+
+.user-profile-edit-host--mgmt .edit-user-form--mgmt-profile .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0 !important;
+  max-width: none !important;
+  flex: none !important;
+  margin: 0;
+}
+
+.user-profile-edit-host--mgmt .edit-user-form--mgmt-profile .form-group label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+  margin: 0;
+}
+
+.user-profile-edit-host--mgmt .edit-user-form--mgmt-profile .form-group input,
+.user-profile-edit-host--mgmt .edit-user-form--mgmt-profile .form-group select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 14px;
+  line-height: 1.35;
+  background: #fff;
+}
+
+.user-profile-edit-host--mgmt .edit-user-form--mgmt-profile .form-group input:focus,
+.user-profile-edit-host--mgmt .edit-user-form--mgmt-profile .form-group select:focus {
+  outline: none;
+  border-color: #004b71;
+  box-shadow: 0 0 0 2px rgba(0, 75, 113, 0.15);
+}
+
+.user-profile-edit-host--mgmt .edit-user-form--mgmt-profile .employee-link-field-user-reg-ict,
+.user-profile-edit-host--mgmt .edit-user-form--mgmt-profile .form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+.user-profile-edit-host--mgmt .edit-user-form--mgmt-profile .employee-link-input-row-user-reg-ict {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+}
+
+.user-profile-edit-host--mgmt .edit-user-form--mgmt-profile .employee-link-input-row-user-reg-ict > div:first-child {
+  flex: 1;
+  min-width: min(100%, 320px);
+}
+
+.user-profile-edit-host--mgmt .edit-user-form--mgmt-profile .employee-clear-btn-user-reg-ict {
+  flex-shrink: 0;
+  align-self: flex-start;
+  margin-top: 0;
+}
+
+.user-profile-edit-host--mgmt .edit-user-form--mgmt-profile .user-register-photo-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.user-profile-edit-host--mgmt .edit-user-form--mgmt-profile .form-buttons {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+  padding-top: 20px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.user-profile-edit-host--mgmt .edit-user-form--mgmt-profile .message {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.user-profile-edit-host--mgmt .edit-user-form--mgmt-profile .password-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.user-profile-edit-host--mgmt .edit-user-form--mgmt-profile .field-error-emp-reg {
+  font-size: 12px;
+}
+
+@media (max-width: 1100px) {
+  .user-profile-edit-host--mgmt .edit-user-form--mgmt-profile {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .user-profile-wrap--mgmt-scroll {
+    padding: 0 6px 24px;
+  }
+
+  .user-profile-edit-host--mgmt .user-profile-edit-card {
+    padding: 16px 14px 24px;
+  }
+
+  .user-profile-edit-host--mgmt .edit-user-form--mgmt-profile {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
 }

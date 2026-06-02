@@ -58,15 +58,6 @@ function getTodayInfo() {
   };
 }
 
-function getTomorrowDate() {
-  const d = new Date();
-  d.setDate(d.getDate() + 1);
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
 function toDateOnly(value) {
   const text = String(value || '').trim();
   if (!text) return '';
@@ -173,7 +164,7 @@ function TransportHrDashboard() {
   const [maintenanceSearch, setMaintenanceSearch] = useState('');
   const [availableTodayTab, setAvailableTodayTab] = useState('assignVehicle');
   const [showTransportDetailModal, setShowTransportDetailModal] = useState(false);
-  const [transportAssignmentDate, setTransportAssignmentDate] = useState(getTomorrowDate());
+  const [transportAssignmentDate, setTransportAssignmentDate] = useState(() => getTodayInfo().today);
   const [transportDetailAssignmentId, setTransportDetailAssignmentId] = useState('');
   const [transportDetailYearMonth, setTransportDetailYearMonth] = useState('');
   const [transportEditable, setTransportEditable] = useState(true);
@@ -1665,14 +1656,11 @@ function TransportHrDashboard() {
             <span className="metric-chip-transport-hr">
               Pending assign: {loadingTransportArrangementList ? '-' : pendingVehicleAssignmentCount}
             </span>
-            <span className="metric-chip-transport-hr">
-              Selected date: {loadingTransportArrangementList ? '-' : transportSelectedDateRows.length}
-            </span>
+            
             <span className="metric-chip-transport-hr">
               Available pairs: {loadingVehicles || loadingLeaves ? '-' : availableVehicles.length}
             </span>
           </div>
-          <div className="summary-caption-transport-hr">Vehicle assignment queue from resource assignment</div>
         </div>
 
         <div

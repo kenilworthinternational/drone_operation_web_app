@@ -14,26 +14,49 @@ import '../styles/vehicleMasterSelect.css';
 
 const ADD_MODAL_NONE = null;
 
+const normMasterLabel = (value) => String(value ?? '').trim().toLowerCase();
+
+const isNumericId = (value) => /^\d+$/.test(String(value ?? '').trim());
+
 /**
  * Category / make / model selects with inline "Add" actions (inventory-style).
  * Form stores make & model as master row IDs; resolve labels on submit via vehicleMakes/vehicleModels.
  */
 export function resolveVehicleMasterIds(asset, categories = [], makes = [], models = []) {
-  const categoryId =
-    asset?.vehicle_category_id != null
-      ? String(asset.vehicle_category_id)
-      : asset?.vehicle_category != null
-        ? String(asset.vehicle_category)
-        : '';
+  let categoryId = '';
+  if (asset?.vehicle_category_id != null && asset.vehicle_category_id !== '') {
+    categoryId = String(asset.vehicle_category_id);
+  } else if (asset?.vehicle_category != null && isNumericId(asset.vehicle_category)) {
+    categoryId = String(asset.vehicle_category).trim();
+  } else {
+    const categoryLabel = normMasterLabel(
+      asset?.vehicle_category_name || asset?.vehicle_category
+    );
+    if (categoryLabel) {
+      const catRow = categories.find((c) => normMasterLabel(c.category) === categoryLabel);
+      if (catRow?.id != null) categoryId = String(catRow.id);
+    }
+  }
 
-  const makeText = String(asset?.make ?? '').trim().toLowerCase();
-  const modelText = String(asset?.model ?? '').trim().toLowerCase();
+  const makeRaw = asset?.make;
+  let makeId = '';
+  if (makeRaw != null && makeRaw !== '' && makes.some((m) => String(m.id) === String(makeRaw))) {
+    makeId = String(makeRaw);
+  } else {
+    const makeText = normMasterLabel(makeRaw);
+    const makeRow = makes.find((m) => normMasterLabel(m.make) === makeText);
+    makeId = makeRow?.id != null ? String(makeRow.id) : '';
+  }
 
-  const makeRow = makes.find((m) => String(m.make || '').trim().toLowerCase() === makeText);
-  const makeId = makeRow ? String(makeRow.id) : '';
-
-  const modelRow = models.find((m) => String(m.model || '').trim().toLowerCase() === modelText);
-  const modelId = modelRow ? String(modelRow.id) : '';
+  const modelRaw = asset?.model;
+  let modelId = '';
+  if (modelRaw != null && modelRaw !== '' && models.some((m) => String(m.id) === String(modelRaw))) {
+    modelId = String(modelRaw);
+  } else {
+    const modelText = normMasterLabel(modelRaw);
+    const modelRow = models.find((m) => normMasterLabel(m.model) === modelText);
+    modelId = modelRow?.id != null ? String(modelRow.id) : '';
+  }
 
   return {
     vehicle_category: categoryId,
@@ -191,7 +214,7 @@ export default function VehicleMasterSelectFields({
             >
               <option value="">{categoriesLoading ? 'Loading...' : 'Select vehicle category'}</option>
               {vehicleCategories.map((category) => (
-                <option key={category.id} value={category.id}>
+                <option key={category.id} value={String(category.id)}>
                   {category.category}
                 </option>
               ))}
@@ -227,7 +250,7 @@ export default function VehicleMasterSelectFields({
                     : 'Select make'}
               </option>
               {vehicleMakes.map((makeRow) => (
-                <option key={makeRow.id} value={makeRow.id}>
+                <option key={makeRow.id} value={String(makeRow.id)}>
                   {makeRow.make}
                 </option>
               ))}
@@ -263,7 +286,7 @@ export default function VehicleMasterSelectFields({
                 {!makeId ? 'Select make first' : modelsLoading ? 'Loading models...' : 'Select model'}
               </option>
               {vehicleModels.map((modelRow) => (
-                <option key={modelRow.id} value={modelRow.id}>
+                <option key={modelRow.id} value={String(modelRow.id)}>
                   {modelRow.model}
                 </option>
               ))}

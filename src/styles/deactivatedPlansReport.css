@@ -1,0 +1,260 @@
+.deactivated-plans-report {
+  width: 100%;
+  min-width: 0;
+}
+
+.deactivated-plans-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 16px;
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+
+.deactivated-plans-fields {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px 16px;
+  flex: 1 1 auto;
+  min-width: min(100%, 720px);
+}
+
+.deactivated-plans-field {
+  display: grid;
+  grid-template-rows: auto 38px;
+  row-gap: 6px;
+  align-content: end;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.deactivated-plans-field-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+  line-height: 1.25;
+  margin: 0;
+  padding: 0;
+}
+
+.deactivated-plans-field--date {
+  flex: 0 0 152px;
+  width: 152px;
+  flex-shrink: 0;
+}
+
+.deactivated-plans-field--select {
+  flex: 0 0 160px;
+  width: 160px;
+  flex-shrink: 0;
+}
+
+.deactivated-plans-field--reason {
+  flex: 0 0 200px;
+  width: 200px;
+  max-width: 240px;
+}
+
+/* Override global react-datepicker layout inside this report only */
+.deactivated-plans-report .deactivated-plans-datepicker-wrap {
+  display: block !important;
+  flex-grow: 0 !important;
+  width: 100% !important;
+  height: 38px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+}
+
+.deactivated-plans-report .deactivated-plans-datepicker-wrap .react-datepicker__input-container {
+  display: block !important;
+  width: 100% !important;
+  height: 38px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.deactivated-plans-report .deactivated-plans-date-input,
+.deactivated-plans-report .deactivated-plans-datepicker-wrap input,
+.deactivated-plans-report .deactivated-plans-field select {
+  box-sizing: border-box;
+  width: 100% !important;
+  height: 38px !important;
+  min-height: 38px;
+  max-height: 38px;
+  margin: 0 !important;
+  padding: 8px 10px !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 6px !important;
+  background: #fff !important;
+  font-size: 14px !important;
+  font-weight: 400 !important;
+  color: #1e293b !important;
+  line-height: 1.25 !important;
+}
+
+.deactivated-plans-report .deactivated-plans-field select {
+  cursor: pointer;
+  appearance: auto;
+}
+
+.deactivated-plans-report label.deactivated-plans-field {
+  display: grid;
+}
+
+.deactivated-plans-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px;
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+.deactivated-plans-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  box-sizing: border-box;
+  height: 38px;
+  padding: 0 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  color: #1e293b;
+  white-space: nowrap;
+}
+
+.deactivated-plans-btn:hover:not(:disabled) {
+  background: #f1f5f9;
+}
+
+.deactivated-plans-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.deactivated-plans-btn--excel {
+  background: #16a34a;
+  border-color: #16a34a;
+  color: #fff;
+}
+
+.deactivated-plans-btn--pdf {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: #fff;
+}
+
+.deactivated-plans-btn--generate {
+  background: #004b71;
+  border-color: #004b71;
+  color: #fff;
+}
+
+.deactivated-plans-btn--generate:hover:not(:disabled) {
+  background: #003a57;
+  border-color: #003a57;
+}
+
+.manager-approved-canceled-summary {
+  flex-wrap: wrap;
+  gap: 16px 24px;
+}
+
+.manager-approved-canceled-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.manager-approved-canceled-stat--approved svg {
+  color: #16a34a;
+}
+
+.manager-approved-canceled-stat--canceled svg {
+  color: #dc2626;
+}
+
+.manager-approved-canceled-row--approved td {
+  background: #f0fdf4;
+}
+
+.manager-approved-canceled-row--canceled td {
+  background: #fef2f2;
+}
+
+.deactivated-plans-summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  color: #334155;
+}
+
+.deactivated-plans-summary svg {
+  color: #b45309;
+}
+
+.deactivated-plans-loading {
+  display: flex;
+  justify-content: center;
+  padding: 48px;
+}
+
+.deactivated-plans-empty {
+  text-align: center;
+  color: #64748b;
+  padding: 40px 16px;
+}
+
+.deactivated-plans-table-wrap {
+  overflow-x: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+
+.deactivated-plans-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.deactivated-plans-table th,
+.deactivated-plans-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.deactivated-plans-table th {
+  background: #004b71;
+  color: #fff;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.deactivated-plans-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.deactivated-plans-reason-cell {
+  white-space: normal;
+  min-width: 180px;
+  max-width: 320px;
+}

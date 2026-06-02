@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import '../styles/modernreport.css';
-import { FaChartLine, FaChartBar, FaChartPie, FaFileInvoiceDollar, FaPlane, FaUsers, FaTasks, FaCalendarCheck, FaTimesCircle, FaComments, FaSeedling } from 'react-icons/fa';
+import { FaChartLine, FaChartBar, FaChartPie, FaFileInvoiceDollar, FaPlane, FaUsers, FaTasks, FaCalendarCheck, FaTimesCircle, FaComments, FaSeedling, FaCheckCircle } from 'react-icons/fa';
 
 // Import your report components
 import EstateSprayedAreaReport from '../sections/finance/reports/EstateSprayedAreaReport';
@@ -26,6 +26,8 @@ import PilotRevenueDaily from '../sections/corporate/charts/PilotRevenueDaily';
 import PilotSummaryMonthly from '../sections/corporate/charts/PilotSummaryMonthly';
 import IndividualPilotSummary from '../sections/corporate/charts/IndividualPilotSummary';
 import PlanExecutionReasonReport from '../sections/management/reports/PlanExecutionReasonReport';
+import DeactivatedPlansReport from '../sections/corporate/reports/DeactivatedPlansReport';
+import ManagerApprovedCanceledReport from '../sections/corporate/reports/ManagerApprovedCanceledReport';
 
 // Placeholder component for reports under development
 const ComingSoonReport = ({ reportName }) => (
@@ -112,6 +114,14 @@ const ModernReportSection = ({ category = null }) => {
           icon: FaTasks,
           component: PlanExecutionReasonReport,
           metrics: { label: 'Plans', value: 'Date Range' }
+        },
+        {
+          id: 'deactivated_plans_reason',
+          name: 'Deactivated with Reason',
+          description: 'Plans deactivated in the period, with deactivate reason from master data',
+          icon: FaTimesCircle,
+          component: DeactivatedPlansReport,
+          metrics: { label: 'Plans', value: 'Deactivated' }
         }
       ]
     },
@@ -224,6 +234,14 @@ const ModernReportSection = ({ category = null }) => {
           metrics: { label: 'Canceled', value: 'Track' }
         },
         {
+          id: 'deactivated_plans_reason_ops',
+          name: 'Deactivated with Reason',
+          description: 'Plans deactivated in the period, with deactivate reason from master data',
+          icon: FaTimesCircle,
+          component: DeactivatedPlansReport,
+          metrics: { label: 'Plans', value: 'Deactivated' }
+        },
+        {
           id: 'pilot_feedback',
           name: 'Pilot Feedbacks',
           description: 'Pilot feedback and comments',
@@ -298,6 +316,14 @@ const ModernReportSection = ({ category = null }) => {
           icon: FaSeedling,
           component: ChemicalsReport,
           metrics: { label: 'Chemicals', value: 'All' }
+        },
+        {
+          id: 'manager_approved_canceled',
+          name: 'Manager Approved / Canceled',
+          description: 'Plantation manager field approvals and cancel reasons (plan_division_fields)',
+          icon: FaCheckCircle,
+          component: ManagerApprovedCanceledReport,
+          metrics: { label: 'Fields', value: 'Approved & Canceled' }
         }
       ]
     }

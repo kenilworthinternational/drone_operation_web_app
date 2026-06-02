@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import * as XLSX from 'xlsx';
 import { 
   useGetUserMemberTypesQuery, 
@@ -39,12 +39,14 @@ export default function UsersDirectory({
   onRegisterFormReady,
   onCancelAdd,
   onUserRegisteredSuccess,
+  onMgmtProfileChange,
 } = {}) {
   const [mgmtProfileUserId, setMgmtProfileUserId] = useState(null);
   const isMgmtList = embeddedInUserManagement && managementView === 'list' && !mgmtProfileUserId;
   const isMgmtAdd = embeddedInUserManagement && managementView === 'add';
   const isMgmtProfile = embeddedInUserManagement && Boolean(mgmtProfileUserId);
   const showLegacyTabs = !embeddedInUserManagement && !embeddedTransportDriver;
+
   const rootRef = useRef(null);
   const [selectedUserId, setSelectedUserId] = useState(null);
   // Fetch dropdown data
@@ -430,14 +432,19 @@ export default function UsersDirectory({
     startEditUser(user);
   };
 
-  const closeMgmtUserProfile = () => {
+  const closeMgmtUserProfile = useCallback(() => {
     setMgmtProfileUserId(null);
     setShowEditPopup(false);
     setShowUpdatePopup(false);
     setSelectedUserId(null);
     setEditMessage({ type: '', text: '' });
     setSelectedUserImageUrl('');
-  };
+  }, []);
+
+  useEffect(() => {
+    if (!embeddedInUserManagement || typeof onMgmtProfileChange !== 'function') return;
+    onMgmtProfileChange(isMgmtProfile, isMgmtProfile ? closeMgmtUserProfile : null);
+  }, [embeddedInUserManagement, isMgmtProfile, onMgmtProfileChange, closeMgmtUserProfile]);
 
   useEffect(() => {
     if (!isMgmtProfile || !mgmtProfileUserId || loadingUsers) return;
@@ -1405,18 +1412,13 @@ export default function UsersDirectory({
     <div
       className={
         isMgmtProfile
-          ? 'user-profile-wrap'
+          ? 'user-profile-wrap user-profile-wrap--mgmt-scroll user-registration-profile-flow'
           : `user-registration-container${embeddedTransportDriver ? ' user-registration-embedded-transport-hr' : ''}${isMgmtList ? ' user-registration-container--mgmt-list' : ''}`
       }
       ref={rootRef}
     >
       {isMgmtProfile && (
         <>
-          <div className="user-profile-nav">
-            <button type="button" className="user-profile-back" onClick={closeMgmtUserProfile}>
-              ← Users
-            </button>
-          </div>
           <div className="user-profile-header">
             <div className="user-profile-header-main">
               <h2 className="user-profile-title">{profileUser?.name || 'User profile'}</h2>
@@ -1625,11 +1627,17 @@ export default function UsersDirectory({
           <div
             className={
               isMgmtProfile
-                ? 'user-profile-edit-host'
+                ? 'user-profile-edit-host user-profile-edit-host--mgmt'
                 : 'update-popup-overlay edit-user-popup-overlay'
             }
           >
-            <div className="update-popup-card edit-user-popup-card">
+            <div
+              className={
+                isMgmtProfile
+                  ? 'update-popup-card edit-user-popup-card user-profile-edit-card'
+                  : 'update-popup-card edit-user-popup-card'
+              }
+            >
               {!isMgmtProfile ? (
                 <div className="edit-user-popup-header">
                   <h3 className="section-title">Edit User #{selectedUserId}</h3>
@@ -1648,11 +1656,14 @@ export default function UsersDirectory({
                   </button>
                 </div>
               ) : (
-                <p className="user-profile-header-hint" style={{ marginTop: 0 }}>
+                <p className="user-profile-header-hint">
                   Update account details below. Leave password blank to keep the current password.
                 </p>
               )}
-              <form onSubmit={handleUpdateUserSubmit} className="edit-user-form">
+              <form
+                onSubmit={handleUpdateUserSubmit}
+                className={`edit-user-form${isMgmtProfile ? ' edit-user-form--mgmt-profile' : ''}`}
+              >
             <div className="form-row">
               <div className="form-group">
                 <label>Full Name</label>

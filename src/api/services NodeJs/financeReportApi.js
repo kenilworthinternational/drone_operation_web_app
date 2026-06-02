@@ -33,11 +33,43 @@ export const financeReportApi = baseApi.injectEndpoints({
         return { data: result.data?.data || [] };
       },
     }),
+    getDeactivatedPlansReport: builder.query({
+      queryFn: async ({ start_date, end_date, plantation_id, estate_id, deactivate_reason_id }) => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: '/api/finance-report/deactivated-plans',
+            method: 'POST',
+            body: { start_date, end_date, plantation_id, estate_id, deactivate_reason_id },
+          },
+          {},
+          {}
+        );
+        if (result.error) return result;
+        return { data: result.data?.data || { plans: [], total: 0 } };
+      },
+    }),
+    getManagerApprovedCanceledReport: builder.query({
+      queryFn: async ({ start_date, end_date, plantation_id, estate_id, status_filter, reason_id }) => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: '/api/finance-report/manager-approved-canceled',
+            method: 'POST',
+            body: { start_date, end_date, plantation_id, estate_id, status_filter, reason_id },
+          },
+          {},
+          {}
+        );
+        if (result.error) return result;
+        return { data: result.data?.data || { lines: [], total: 0 } };
+      },
+    }),
   }),
 });
 
 export const {
   useLazyGetFieldWiseFinanceReportQuery,
   useLazyGetManagementPlanExecutionReportQuery,
+  useLazyGetDeactivatedPlansReportQuery,
+  useLazyGetManagerApprovedCanceledReportQuery,
 } = financeReportApi;
 
