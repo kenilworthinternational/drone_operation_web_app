@@ -53,6 +53,9 @@ pipeline {
                 bat """
                     cd /d ${SERVER_PATH}
                     set "CI=false"
+                    for /f %%i in ('git rev-parse --short HEAD') do set "GIT_SHA=%%i"
+                    set "REACT_APP_BUILD_TIME=%DATE% %TIME%"
+                    set "REACT_APP_GIT_SHA=%GIT_SHA%"
                     call npm run ${BUILD_COMMAND}
                 """
             }

@@ -68,6 +68,11 @@ const HomePage = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  const buildEnv = process.env.REACT_APP_ENV || 'unknown';
+  const buildTime = process.env.REACT_APP_BUILD_TIME || 'unknown';
+  const buildSha = process.env.REACT_APP_GIT_SHA || 'unknown';
+  const buildLabel = `${buildEnv} | ${buildTime} | ${buildSha}`;
+
   return (
     <div
       className={wingTheme ? 'home-layout-root home-layout-root--wing-theme' : 'home-layout-root'}
@@ -94,6 +99,9 @@ const HomePage = () => {
         <RequireWingQueryParam>
           <Outlet />
         </RequireWingQueryParam>
+      </div>
+      <div className="build-info-footer" title={buildLabel}>
+        Build: {buildLabel}
       </div>
     </div>
   );
