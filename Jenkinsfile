@@ -2,13 +2,8 @@ pipeline {
     agent any
 
     environment {
-        SERVER_PATH = "${env.WORKSPACE}"
         PROD_SITE_PATH = 'C:\\inetpub\\wwwroot\\dsms-prod'
         DEV_SITE_PATH = 'C:\\inetpub\\wwwroot\\dsms-dev'
-        IS_PROD = "${env.BRANCH_NAME == 'main'}"
-        BUILD_COMMAND = "${env.BRANCH_NAME == 'main' ? 'build:prod' : 'build:dev'}"
-        TARGET_SITE_PATH = "${env.BRANCH_NAME == 'main' ? PROD_SITE_PATH : DEV_SITE_PATH}"
-        TARGET_ENV = "${env.BRANCH_NAME == 'main' ? 'prod' : 'dev'}"
     }
 
     stages {
@@ -16,6 +11,26 @@ pipeline {
             steps {
                 echo "Checking out branch: ${env.BRANCH_NAME}"
                 checkout scm
+            }
+        }
+
+        stage('Set Deployment Variables') {
+            steps {
+                script {
+                    env.SERVER_PATH = env.WORKSPACE
+                    if (env.BRANCH_NAME == 'main') {
+                        env.BUILD_COMMAND = 'build:prod'
+                        env.TARGET_SITE_PATH = env.PROD_SITE_PATH
+                        env.TARGET_ENV = 'prod'
+                    } else {
+                        env.BUILD_COMMAND = 'build:dev'
+                        env.TARGET_SITE_PATH = env.DEV_SITE_PATH
+                        env.TARGET_ENV = 'dev'
+                    }
+                    echo "Workspace path: ${env.SERVER_PATH}"
+                    echo "Build command: ${env.BUILD_COMMAND}"
+                    echo "Target path: ${env.TARGET_SITE_PATH}"
+                }
             }
         }
 
