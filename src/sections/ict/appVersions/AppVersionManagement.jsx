@@ -257,9 +257,12 @@ export default function AppVersionManagement() {
                     type="text"
                     value={form.app_id}
                     onChange={(e) => handleChange('app_id', e.target.value)}
-                    placeholder="e.g. com.kenilworthinternational.dsms_plantation"
+                    placeholder="e.g. com.dsms_transport"
                     required
                   />
+                  <span className="avm-field-hint">
+                    Same App ID is allowed for Android and iOS — create one row per platform.
+                  </span>
                 </div>
                 <div className="avm-field">
                   <label>Platform</label>

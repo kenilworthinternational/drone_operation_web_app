@@ -21,6 +21,7 @@ import PilotPerformanceByDateOpsRoom from '../sections/opsroom/reports/PilotPerf
 import PilotPerformanceByDatePilot from '../sections/opsroom/reports/PilotPerformanceByDatePilot';
 import PilotFeedbacks from '../sections/opsroom/reports/PilotFeedbacks';
 import MonthlyPlantationReport from '../sections/opsroom/reports/MonthlyPlantationReport';
+import OpsroomDailyPerformanceSummary from '../sections/opsroom/reports/OpsroomDailyPerformanceSummary';
 import ChemicalsReport from '../features/plantation/ChemicalsReport';
 import PilotRevenueDaily from '../sections/corporate/charts/PilotRevenueDaily';
 import PilotSummaryMonthly from '../sections/corporate/charts/PilotSummaryMonthly';
@@ -256,6 +257,14 @@ const ModernReportSection = ({ category = null }) => {
           icon: FaSeedling,
           component: MonthlyPlantationReport,
           metrics: { label: 'Monthly', value: 'All' }
+        },
+        {
+          id: 'daily_performance_summary',
+          name: 'Daily Performance Summary',
+          description: 'Daily targets, assigned, attended, completed (Ha) — same logic as comb dashboard',
+          icon: FaCalendarCheck,
+          component: OpsroomDailyPerformanceSummary,
+          metrics: { label: 'Months', value: 'Multi' }
         }
       ]
     },

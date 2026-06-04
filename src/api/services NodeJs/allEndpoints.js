@@ -28,6 +28,7 @@ import './timeOfDaysApi';
 import './bookingCreationApi';
 import './opsroomPlanCalendarApi';
 import './financeWorkSummaryBillingApi';
+import './opsroomPerformanceSummaryApi';
 
 // Export the complete API
 export { baseApi };
@@ -53,6 +54,7 @@ export * from './timeOfDaysApi';
 export * from './bookingCreationApi';
 export * from './opsroomPlanCalendarApi';
 export * from './financeWorkSummaryBillingApi';
+export * from './opsroomPerformanceSummaryApi';
 
 /**
  * Node.js Backend Services:
