@@ -1,0 +1,506 @@
+import React, { useMemo, useRef, useState } from 'react';
+import { Bars } from 'react-loader-spinner';
+import { FiDownload, FiRefreshCw } from 'react-icons/fi';
+import * as XLSX from 'xlsx';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { useLazyGetOpsroomPilotDailyPerformanceSummaryQuery } from '../../../api/services NodeJs/opsroomPerformanceSummaryApi';
+import { useGetReportPlantationsQuery } from '../../../api/services NodeJs/monthlyPlantationReportApi';
+import '../../../styles/opsroomPerformanceSummary.css';
+
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
+
+const formatMonthLabel = (ym) => {
+  const [y, m] = ym.split('-');
+  return `${MONTH_NAMES[parseInt(m, 10) - 1]} ${y}`;
+};
+
+const getCurrentYearMonth = () => {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+};
+
+const MISSION_OPTIONS = [
+  { value: 'all', label: 'All' },
+  { value: 'spy', label: 'Spray' },
+  { value: 'spd', label: 'Spread' },
+];
+
+const missionLabel = (code) => MISSION_OPTIONS.find((o) => o.value === code)?.label ?? 'All';
+
+const COLUMNS = [
+  { key: 'date_display', label: 'Date' },
+  { key: 'daily_operational_target_ha', label: 'Daily operational target (Ha)' },
+  { key: 'total_extent_assigned_ha', label: 'Total extent assigned (Ha)' },
+  { key: 'total_extent_attended_ha', label: 'Total extent attended (Ha)' },
+  { key: 'total_extent_completed_ha', label: 'Total extent completed (Ha)' },
+  { key: 'pct_achievement_monthly', label: 'Percentage achievement against daily target %' },
+];
+
+const formatCell = (key, value) => {
+  if (key === 'pct_achievement_monthly') return `${value ?? 0}%`;
+  return value ?? '';
+};
+
+const OpsroomPilotDailyPerformanceSummary = () => {
+  const [selectedMonths, setSelectedMonths] = useState([getCurrentYearMonth()]);
+  const [selectedPlantations, setSelectedPlantations] = useState([]);
+  const [missionType, setMissionType] = useState('all');
+  const [selectedPilotId, setSelectedPilotId] = useState('');
+  const { data: plantations = [], isLoading: loadingPlantations } = useGetReportPlantationsQuery();
+  const [trigger, { data: report, isFetching, error }] =
+    useLazyGetOpsroomPilotDailyPerformanceSummaryQuery();
+
+  const monthOptions = useMemo(() => {
+    const opts = [];
+    const now = new Date();
+    for (let i = 0; i < 24; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      opts.push({ value: ym, label: formatMonthLabel(ym) });
+    }
+    return opts;
+  }, []);
+
+  const toggleMonth = (ym) => {
+    setSelectedMonths((prev) => {
+      if (prev.includes(ym)) {
+        const next = prev.filter((m) => m !== ym);
+        return next.length > 0 ? next : prev;
+      }
+      return [...prev, ym].sort();
+    });
+  };
+
+  const selectAllMonths = () => setSelectedMonths(monthOptions.map((o) => o.value).sort());
+  const clearAllMonths = () => setSelectedMonths([]);
+
+  const togglePlantation = (id) => {
+    setSelectedPlantations((prev) => {
+      if (prev.includes(id)) {
+        const next = prev.filter((p) => p !== id);
+        return next.length > 0 ? next : prev;
+      }
+      return [...prev, id];
+    });
+  };
+
+  const selectAllPlantations = () => setSelectedPlantations(plantations.map((p) => p.id));
+  const clearAllPlantations = () => setSelectedPlantations([]);
+
+  const plantationsInitialized = useRef(false);
+
+  const loadReport = () => {
+    if (selectedMonths.length === 0 || selectedPlantations.length === 0) return;
+    setMissionType('all');
+    setSelectedPilotId('');
+    trigger({
+      months: [...selectedMonths].sort(),
+      missionType: 'all',
+      completedPlansOnly: false,
+      plantationIds: selectedPlantations,
+    });
+  };
+
+  React.useEffect(() => {
+    if (plantations.length > 0 && !plantationsInitialized.current) {
+      setSelectedPlantations(plantations.map((p) => p.id));
+      plantationsInitialized.current = true;
+    }
+  }, [plantations]);
+
+  const pilotOptions = useMemo(() => {
+    const byId = new Map();
+    (report?.pilots || []).forEach((p) => {
+      if (!byId.has(p.pilot_id)) {
+        byId.set(p.pilot_id, p.pilot_name || `Pilot #${p.pilot_id}`);
+      }
+    });
+    return [...byId.entries()]
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [report]);
+
+  const filteredPilots = useMemo(() => {
+    let list = report?.pilots || [];
+    if (missionType !== 'all') {
+      list = list.filter((p) => p.mission_type === missionType);
+    }
+    if (selectedPilotId) {
+      list = list.filter((p) => String(p.pilot_id) === String(selectedPilotId));
+    }
+    return list;
+  }, [report, missionType, selectedPilotId]);
+
+  const filteredFlatRows = useMemo(
+    () =>
+      filteredPilots.flatMap((p) =>
+        p.rows.map((r) => ({
+          ...r,
+          pilot_id: p.pilot_id,
+          pilot_name: p.pilot_name,
+          mission_type: p.mission_type,
+        })),
+      ),
+    [filteredPilots],
+  );
+
+  const sortedSelected = [...selectedMonths].sort();
+  const exportFileSuffix = sortedSelected.join('_') || 'report';
+  const hasReport = Boolean(report && !isFetching);
+
+  const exportFilterSlug = useMemo(() => {
+    const missionPart = missionType === 'all' ? 'all_missions' : missionType;
+    const pilotPart = selectedPilotId
+      ? String(pilotOptions.find((p) => String(p.id) === String(selectedPilotId))?.name || selectedPilotId)
+          .replace(/[^\w.-]+/g, '_')
+          .slice(0, 40)
+      : 'all_pilots';
+    return `${missionPart}_${pilotPart}`;
+  }, [missionType, selectedPilotId, pilotOptions]);
+
+  const exportExcel = () => {
+    if (!filteredPilots.length) return;
+
+    const tableHeader = ['Pilot', 'Mission', 'Month', ...COLUMNS.map((c) => c.label)];
+    const aoa = [
+      ['Pilot Daily Performance Summary'],
+      ['Months', report?.months?.map(formatMonthLabel).join(', ') || ''],
+      ['Mission filter', missionLabel(missionType)],
+      [
+        'Pilot filter',
+        selectedPilotId
+          ? pilotOptions.find((p) => String(p.id) === String(selectedPilotId))?.name || selectedPilotId
+          : 'All',
+      ],
+      [],
+      tableHeader,
+    ];
+
+    filteredPilots.forEach((pilot, idx) => {
+      pilot.rows.forEach((r) => {
+        aoa.push([
+          pilot.pilot_name,
+          missionLabel(pilot.mission_type),
+          formatMonthLabel(pilot.year_month),
+          ...COLUMNS.map((c) => {
+            if (c.key === 'pct_achievement_monthly') return r[c.key] ?? 0;
+            return r[c.key] ?? '';
+          }),
+        ]);
+      });
+      aoa.push([
+        pilot.pilot_name,
+        missionLabel(pilot.mission_type),
+        formatMonthLabel(pilot.year_month),
+        'Total',
+        pilot.totals.daily_operational_target_ha,
+        pilot.totals.total_extent_assigned_ha,
+        pilot.totals.total_extent_attended_ha,
+        pilot.totals.total_extent_completed_ha,
+        pilot.totals.pct_achievement_monthly ?? 0,
+      ]);
+      if (idx < filteredPilots.length - 1) aoa.push([]);
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Pilot Performance');
+    XLSX.writeFile(wb, `Pilot_Performance_${exportFileSuffix}_${exportFilterSlug}.xlsx`);
+  };
+
+  const exportPdf = () => {
+    if (!filteredPilots.length) return;
+    const doc = new jsPDF({ orientation: 'landscape' });
+    let y = 14;
+    doc.setFontSize(12);
+    doc.text('Pilot Daily Performance Summary', 14, y);
+    y += 8;
+    doc.setFontSize(8);
+    doc.text(
+      `Months: ${report?.months?.map(formatMonthLabel).join(', ') || ''} · View: ${missionLabel(missionType)} · ${selectedPilotId ? pilotOptions.find((p) => String(p.id) === String(selectedPilotId))?.name : 'All pilots'}`,
+      14,
+      y,
+    );
+    y += 10;
+
+    filteredPilots.forEach((pilot, idx) => {
+      if (y > 170) {
+        doc.addPage();
+        y = 14;
+      }
+      doc.setFontSize(10);
+      doc.text(
+        `${pilot.pilot_name} — ${formatMonthLabel(pilot.year_month)} — ${missionLabel(pilot.mission_type)}`,
+        14,
+        y,
+      );
+      y += 4;
+      autoTable(doc, {
+        startY: y,
+        head: [COLUMNS.map((c) => c.label)],
+        body: pilot.rows.map((r) => COLUMNS.map((c) => formatCell(c.key, r[c.key]))),
+        foot: [
+          COLUMNS.map((c) => {
+            if (c.key === 'date_display') return 'Total';
+            if (c.key === 'pct_achievement_monthly') {
+              return `${pilot.totals.pct_achievement_monthly ?? 0}%`;
+            }
+            return String(pilot.totals[c.key] ?? '');
+          }),
+        ],
+        styles: { fontSize: 6 },
+        headStyles: { fillColor: [0, 75, 113] },
+        margin: { left: 14, right: 14 },
+      });
+      y = (doc.lastAutoTable?.finalY || y) + 12;
+      if (idx < filteredPilots.length - 1 && y > 175) {
+        doc.addPage();
+        y = 14;
+      }
+    });
+    doc.save(`Pilot_Performance_${exportFileSuffix}_${exportFilterSlug}.pdf`);
+  };
+
+  const renderPilotTable = (pilot) => (
+    <div
+      key={`${pilot.pilot_id}-${pilot.mission_type}-${pilot.year_month}`}
+      className="ops-perf-summary__pilot-block"
+    >
+      <h3 className="ops-perf-summary__pilot-title">
+        {pilot.pilot_name} — {formatMonthLabel(pilot.year_month)} — {missionLabel(pilot.mission_type)}
+        <span className="ops-perf-summary__hint-inline" style={{ marginLeft: 8, fontWeight: 500 }}>
+          ({pilot.month_plan_count} plans · target {pilot.monthly_target_ha} Ha)
+        </span>
+      </h3>
+      <table className="ops-perf-summary__table">
+        <thead>
+          <tr>
+            {COLUMNS.map((c) => (
+              <th key={c.key}>{c.label}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {pilot.rows.map((row) => (
+            <tr key={`${pilot.pilot_id}-${pilot.mission_type}-${row.date}`}>
+              {COLUMNS.map((c) => (
+                <td key={c.key}>{formatCell(c.key, row[c.key])}</td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td>Total</td>
+            <td>{pilot.totals.daily_operational_target_ha}</td>
+            <td>{pilot.totals.total_extent_assigned_ha}</td>
+            <td>{pilot.totals.total_extent_attended_ha}</td>
+            <td>{pilot.totals.total_extent_completed_ha}</td>
+            <td>{pilot.totals.pct_achievement_monthly}%</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  );
+
+  return (
+    <div className="ops-perf-summary">
+      <div className="ops-perf-summary__toolbar">
+        <div className="ops-perf-summary__filters-row">
+          <div className="ops-perf-summary__panel ops-perf-summary__panel--left">
+            <div className="ops-perf-summary__panel-head">
+              <label>Plantations (select one or more)</label>
+              <div className="ops-perf-summary__panel-actions">
+                <button
+                  type="button"
+                  className="ops-perf-summary__link-btn"
+                  onClick={selectAllPlantations}
+                  disabled={loadingPlantations || plantations.length === 0}
+                >
+                  Select all
+                </button>
+                <button
+                  type="button"
+                  className="ops-perf-summary__link-btn"
+                  onClick={clearAllPlantations}
+                  disabled={loadingPlantations || selectedPlantations.length === 0}
+                >
+                  Clear all
+                </button>
+              </div>
+            </div>
+            <div className="ops-perf-summary__chip-panel">
+              {loadingPlantations ? (
+                <span className="ops-perf-summary__hint-inline">Loading plantations…</span>
+              ) : (
+                plantations.map((pl) => {
+                  const on = selectedPlantations.includes(pl.id);
+                  return (
+                    <button
+                      key={pl.id}
+                      type="button"
+                      className={`ops-perf-summary__chip${on ? ' ops-perf-summary__chip--on' : ''}`}
+                      onClick={() => togglePlantation(pl.id)}
+                      disabled={isFetching}
+                    >
+                      {pl.name}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
+          <div className="ops-perf-summary__panel ops-perf-summary__panel--right">
+            <div className="ops-perf-summary__panel-head">
+              <label>Months (select one or more)</label>
+              <div className="ops-perf-summary__panel-actions">
+                <button type="button" className="ops-perf-summary__link-btn" onClick={selectAllMonths}>
+                  Select all
+                </button>
+                <button
+                  type="button"
+                  className="ops-perf-summary__link-btn"
+                  onClick={clearAllMonths}
+                  disabled={selectedMonths.length === 0}
+                >
+                  Clear all
+                </button>
+              </div>
+            </div>
+            <div className="ops-perf-summary__chip-panel">
+              {monthOptions.map((o) => {
+                const on = selectedMonths.includes(o.value);
+                return (
+                  <button
+                    key={o.value}
+                    type="button"
+                    className={`ops-perf-summary__chip${on ? ' ops-perf-summary__chip--on' : ''}`}
+                    onClick={() => toggleMonth(o.value)}
+                    disabled={isFetching}
+                  >
+                    {o.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        <div className="ops-perf-summary__actions-row">
+          <button
+            type="button"
+            className="ops-perf-summary__btn ops-perf-summary__btn--primary"
+            onClick={loadReport}
+            disabled={isFetching || selectedMonths.length === 0 || selectedPlantations.length === 0}
+          >
+            <FiRefreshCw /> Generate
+          </button>
+          {hasReport && (
+            <>
+              <button
+                type="button"
+                className="ops-perf-summary__btn"
+                onClick={exportExcel}
+                disabled={!filteredFlatRows.length}
+              >
+                <FiDownload /> Excel
+              </button>
+              <button
+                type="button"
+                className="ops-perf-summary__btn"
+                onClick={exportPdf}
+                disabled={!filteredPilots.length}
+              >
+                <FiDownload /> PDF
+              </button>
+            </>
+          )}
+        </div>
+
+        {hasReport && (
+          <div className="ops-perf-summary__actions-row ops-perf-summary__client-filters">
+            <div className="ops-perf-summary__field">
+              <label htmlFor="ops-pilot-perf-mission">Mission (filter view)</label>
+              <select
+                id="ops-pilot-perf-mission"
+                value={missionType}
+                onChange={(e) => setMissionType(e.target.value)}
+              >
+                {MISSION_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="ops-perf-summary__field">
+              <label htmlFor="ops-pilot-perf-pilot">Pilot (filter view)</label>
+              <select
+                id="ops-pilot-perf-pilot"
+                value={selectedPilotId}
+                onChange={(e) => setSelectedPilotId(e.target.value)}
+              >
+                <option value="">All</option>
+                {pilotOptions.map((p) => (
+                  <option key={p.id} value={String(p.id)}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {error && (
+        <p className="ops-perf-summary__error">Failed to load report. Check API connection and try again.</p>
+      )}
+
+      {selectedPlantations.length === 0 && !loadingPlantations && !hasReport && (
+        <p className="ops-perf-summary__error">Select at least one plantation, then click Generate.</p>
+      )}
+
+      {hasReport && (
+        <p className="ops-perf-summary__meta">
+          Showing <strong>{filteredPilots.length}</strong> of <strong>{report.pilot_count ?? 0}</strong> tables
+          · Mission: <strong>{missionLabel(missionType)}</strong>
+          · Pilot: <strong>{selectedPilotId ? pilotOptions.find((p) => String(p.id) === String(selectedPilotId))?.name : 'All'}</strong>.
+          Filters apply instantly — click <strong>Generate</strong> again to change plantations or months.
+        </p>
+      )}
+
+      {isFetching ? (
+        <div className="ops-perf-summary__loading">
+          <Bars height="48" width="48" color="#004B71" visible />
+          <span>Loading…</span>
+        </div>
+      ) : hasReport ? (
+        <div className="ops-perf-summary__table-wrap">
+          <h2 className="ops-perf-summary__title">Pilot Daily Performance Summary</h2>
+          {report.pilots?.length === 0 ? (
+            <p className="ops-perf-summary__meta" style={{ padding: 16 }}>
+              No pilot activity for the selected plantations and months.
+            </p>
+          ) : filteredPilots.length === 0 ? (
+            <p className="ops-perf-summary__meta" style={{ padding: 16 }}>
+              No data for the current Mission / Pilot filter. Try All for both.
+            </p>
+          ) : (
+            filteredPilots.map(renderPilotTable)
+          )}
+        </div>
+      ) : (
+        <p className="ops-perf-summary__meta" style={{ padding: 16 }}>
+          Select plantations and months, then click <strong>Generate</strong> to load the report.
+        </p>
+      )}
+    </div>
+  );
+};
+
+export default OpsroomPilotDailyPerformanceSummary;

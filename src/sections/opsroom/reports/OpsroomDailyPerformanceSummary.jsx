@@ -1,10 +1,11 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { Bars } from 'react-loader-spinner';
 import { FiDownload, FiRefreshCw } from 'react-icons/fi';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { useLazyGetOpsroomDailyPerformanceSummaryQuery } from '../../../api/services NodeJs/opsroomPerformanceSummaryApi';
+import { useGetReportPlantationsQuery } from '../../../api/services NodeJs/monthlyPlantationReportApi';
 import '../../../styles/opsroomPerformanceSummary.css';
 
 const MONTH_NAMES = [
@@ -22,6 +23,14 @@ const getCurrentYearMonth = () => {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 };
 
+const MISSION_OPTIONS = [
+  { value: 'spy', label: 'Spray' },
+  { value: 'spd', label: 'Spread' },
+  { value: 'all', label: 'All' },
+];
+
+const missionLabel = (code) => MISSION_OPTIONS.find((o) => o.value === code)?.label ?? 'Spray';
+
 const COLUMNS = [
   { key: 'date_display', label: 'Date' },
   { key: 'daily_operational_target_ha', label: 'Daily operational target (Ha)' },
@@ -35,7 +44,9 @@ const COLUMNS = [
 
 const OpsroomDailyPerformanceSummary = () => {
   const [selectedMonths, setSelectedMonths] = useState([getCurrentYearMonth()]);
-  const [missionType, setMissionType] = useState('spy');
+  const [selectedPlantations, setSelectedPlantations] = useState([]);
+  const [missionType, setMissionType] = useState('all');
+  const { data: plantations = [], isLoading: loadingPlantations } = useGetReportPlantationsQuery();
   const [trigger, { data: report, isFetching, error }] = useLazyGetOpsroomDailyPerformanceSummaryQuery();
 
   const monthOptions = useMemo(() => {
@@ -60,22 +71,49 @@ const OpsroomDailyPerformanceSummary = () => {
   };
 
   const selectAllMonths = () => {
-    if (selectedMonths.length === monthOptions.length) {
-      setSelectedMonths([getCurrentYearMonth()]);
-    } else {
-      setSelectedMonths(monthOptions.map((o) => o.value).sort());
-    }
+    setSelectedMonths(monthOptions.map((o) => o.value).sort());
   };
+
+  const clearAllMonths = () => {
+    setSelectedMonths([]);
+  };
+
+  const togglePlantation = (id) => {
+    setSelectedPlantations((prev) => {
+      if (prev.includes(id)) {
+        const next = prev.filter((p) => p !== id);
+        return next.length > 0 ? next : prev;
+      }
+      return [...prev, id];
+    });
+  };
+
+  const selectAllPlantations = () => {
+    setSelectedPlantations(plantations.map((p) => p.id));
+  };
+
+  const clearAllPlantations = () => {
+    setSelectedPlantations([]);
+  };
+
+  const plantationsInitialized = useRef(false);
 
   const loadReport = () => {
     if (selectedMonths.length === 0) return;
-    trigger({ months: [...selectedMonths].sort(), missionType, completedPlansOnly: false });
+    trigger({
+      months: [...selectedMonths].sort(),
+      missionType,
+      completedPlansOnly: false,
+      plantationIds: selectedPlantations.length > 0 ? selectedPlantations : undefined,
+    });
   };
 
   React.useEffect(() => {
-    loadReport();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (plantations.length > 0 && !plantationsInitialized.current) {
+      setSelectedPlantations(plantations.map((p) => p.id));
+      plantationsInitialized.current = true;
+    }
+  }, [plantations]);
 
   const rows = report?.rows || [];
   const totals = report?.totals || {};
@@ -122,7 +160,7 @@ const OpsroomDailyPerformanceSummary = () => {
     doc.text(title, 14, 14);
     doc.setFontSize(8);
     doc.text(
-      `Combined monthly target: ${report?.monthly_target_ha ?? 0} Ha (${report?.month_plan_count ?? 0} plans × ${report?.ha_per_plan ?? 15} Ha) · Mission: ${missionType === 'spy' ? 'Spray' : 'Spread'}`,
+      `Combined monthly target: ${report?.monthly_target_ha ?? 0} Ha (${report?.month_plan_count ?? 0} plans × ${report?.ha_per_plan ?? 15} Ha) · Mission: ${missionLabel(missionType)}`,
       14,
       20,
     );
@@ -154,67 +192,135 @@ const OpsroomDailyPerformanceSummary = () => {
   return (
     <div className="ops-perf-summary">
       <div className="ops-perf-summary__toolbar">
-        <div className="ops-perf-summary__field ops-perf-summary__field--months">
-          <div className="ops-perf-summary__months-head">
-            <label>Months (select one or more)</label>
-            <button type="button" className="ops-perf-summary__link-btn" onClick={selectAllMonths}>
-              {selectedMonths.length === monthOptions.length ? 'Clear to current' : 'Select all'}
-            </button>
-          </div>
-          <div className="ops-perf-summary__month-chips">
-            {monthOptions.map((o) => {
-              const on = selectedMonths.includes(o.value);
-              return (
+        <div className="ops-perf-summary__filters-row">
+          <div className="ops-perf-summary__panel ops-perf-summary__panel--left">
+            <div className="ops-perf-summary__panel-head">
+              <label>Plantations (select one or more)</label>
+              <div className="ops-perf-summary__panel-actions">
                 <button
-                  key={o.value}
                   type="button"
-                  className={`ops-perf-summary__chip${on ? ' ops-perf-summary__chip--on' : ''}`}
-                  onClick={() => toggleMonth(o.value)}
-                  disabled={isFetching}
+                  className="ops-perf-summary__link-btn"
+                  onClick={selectAllPlantations}
+                  disabled={loadingPlantations || plantations.length === 0}
                 >
-                  {o.label}
+                  Select all
                 </button>
-              );
-            })}
+                <button
+                  type="button"
+                  className="ops-perf-summary__link-btn"
+                  onClick={clearAllPlantations}
+                  disabled={loadingPlantations || selectedPlantations.length === 0}
+                >
+                  Clear all
+                </button>
+              </div>
+            </div>
+            <div className="ops-perf-summary__chip-panel">
+              {loadingPlantations ? (
+                <span className="ops-perf-summary__hint-inline">Loading plantations…</span>
+              ) : (
+                plantations.map((pl) => {
+                  const on = selectedPlantations.includes(pl.id);
+                  return (
+                    <button
+                      key={pl.id}
+                      type="button"
+                      className={`ops-perf-summary__chip${on ? ' ops-perf-summary__chip--on' : ''}`}
+                      onClick={() => togglePlantation(pl.id)}
+                      disabled={isFetching}
+                    >
+                      {pl.name}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
+          <div className="ops-perf-summary__panel ops-perf-summary__panel--right">
+            <div className="ops-perf-summary__panel-head">
+              <label>Months (select one or more)</label>
+              <div className="ops-perf-summary__panel-actions">
+                <button type="button" className="ops-perf-summary__link-btn" onClick={selectAllMonths}>
+                  Select all
+                </button>
+                <button
+                  type="button"
+                  className="ops-perf-summary__link-btn"
+                  onClick={clearAllMonths}
+                  disabled={selectedMonths.length === 0}
+                >
+                  Clear all
+                </button>
+              </div>
+            </div>
+            <div className="ops-perf-summary__chip-panel">
+              {monthOptions.map((o) => {
+                const on = selectedMonths.includes(o.value);
+                return (
+                  <button
+                    key={o.value}
+                    type="button"
+                    className={`ops-perf-summary__chip${on ? ' ops-perf-summary__chip--on' : ''}`}
+                    onClick={() => toggleMonth(o.value)}
+                    disabled={isFetching}
+                  >
+                    {o.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
-        <div className="ops-perf-summary__field">
-          <label htmlFor="ops-perf-mission">Mission</label>
-          <select
-            id="ops-perf-mission"
-            value={missionType}
-            onChange={(e) => setMissionType(e.target.value)}
-            disabled={isFetching}
+
+        <div className="ops-perf-summary__actions-row">
+          <div className="ops-perf-summary__field">
+            <label htmlFor="ops-perf-mission">Mission</label>
+            <select
+              id="ops-perf-mission"
+              value={missionType}
+              onChange={(e) => setMissionType(e.target.value)}
+              disabled={isFetching}
+            >
+              {MISSION_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <button
+            type="button"
+            className="ops-perf-summary__btn ops-perf-summary__btn--primary"
+            onClick={loadReport}
+            disabled={isFetching || selectedMonths.length === 0 || selectedPlantations.length === 0}
           >
-            <option value="spy">Spray</option>
-            <option value="spd">Spread</option>
-          </select>
+            <FiRefreshCw /> Generate
+          </button>
+          <button type="button" className="ops-perf-summary__btn" onClick={exportExcel} disabled={!rows.length || isFetching}>
+            <FiDownload /> Excel
+          </button>
+          <button type="button" className="ops-perf-summary__btn" onClick={exportPdf} disabled={!rows.length || isFetching}>
+            <FiDownload /> PDF
+          </button>
         </div>
-        <button
-          type="button"
-          className="ops-perf-summary__btn ops-perf-summary__btn--primary"
-          onClick={loadReport}
-          disabled={isFetching || selectedMonths.length === 0}
-        >
-          <FiRefreshCw /> Generate
-        </button>
-        <button type="button" className="ops-perf-summary__btn" onClick={exportExcel} disabled={!rows.length || isFetching}>
-          <FiDownload /> Excel
-        </button>
-        <button type="button" className="ops-perf-summary__btn" onClick={exportPdf} disabled={!rows.length || isFetching}>
-          <FiDownload /> PDF
-        </button>
       </div>
 
       {error && (
         <p className="ops-perf-summary__error">Failed to load report. Check API connection and try again.</p>
       )}
 
-      {report && (
+      {selectedPlantations.length === 0 && !loadingPlantations && (
+        <p className="ops-perf-summary__error">Select at least one plantation, then click Generate.</p>
+      )}
+
+      {report && !isFetching && (
         <p className="ops-perf-summary__meta">
-          Selected: <strong>{report.months?.map(formatMonthLabel).join(', ')}</strong>.
+          Months: <strong>{report.months?.map(formatMonthLabel).join(', ')}</strong>.
+          Mission: <strong>{missionLabel(report.mission_type ?? missionType)}</strong>.
           Combined target: <strong>{report.monthly_target_ha} Ha</strong> ({report.month_plan_count} plans × {report.ha_per_plan} Ha).
-          % achievement resets within each calendar month (cumulative day-by-day).
+          Assigned = pilot-assigned field Ha; Attended = executed field Ha (DJI started); Completed = DJI sprayed Ha.
+          Each row % = that day&apos;s completed Ha ÷ month target.
         </p>
       )}
 
@@ -223,7 +329,7 @@ const OpsroomDailyPerformanceSummary = () => {
           <Bars height="48" width="48" color="#004B71" visible />
           <span>Loading…</span>
         </div>
-      ) : (
+      ) : report ? (
         <div className="ops-perf-summary__table-wrap">
           <h2 className="ops-perf-summary__title">{title}</h2>
           <table className="ops-perf-summary__table">
@@ -261,6 +367,10 @@ const OpsroomDailyPerformanceSummary = () => {
             )}
           </table>
         </div>
+      ) : (
+        <p className="ops-perf-summary__meta" style={{ padding: 16 }}>
+          Select plantations and months, then click <strong>Generate</strong> to load the report.
+        </p>
       )}
     </div>
   );

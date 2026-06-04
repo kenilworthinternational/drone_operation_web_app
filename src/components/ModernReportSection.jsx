@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import '../styles/modernreport.css';
-import { FaChartLine, FaChartBar, FaChartPie, FaFileInvoiceDollar, FaPlane, FaUsers, FaTasks, FaCalendarCheck, FaTimesCircle, FaComments, FaSeedling, FaCheckCircle } from 'react-icons/fa';
+import { FaChartLine, FaChartBar, FaChartPie, FaFileInvoiceDollar, FaPlane, FaUsers, FaTasks, FaCalendarCheck, FaTimesCircle, FaComments, FaSeedling, FaCheckCircle, FaUserFriends } from 'react-icons/fa';
 
 // Import your report components
 import EstateSprayedAreaReport from '../sections/finance/reports/EstateSprayedAreaReport';
@@ -22,6 +22,7 @@ import PilotPerformanceByDatePilot from '../sections/opsroom/reports/PilotPerfor
 import PilotFeedbacks from '../sections/opsroom/reports/PilotFeedbacks';
 import MonthlyPlantationReport from '../sections/opsroom/reports/MonthlyPlantationReport';
 import OpsroomDailyPerformanceSummary from '../sections/opsroom/reports/OpsroomDailyPerformanceSummary';
+import OpsroomPilotDailyPerformanceSummary from '../sections/opsroom/reports/OpsroomPilotDailyPerformanceSummary';
 import ChemicalsReport from '../features/plantation/ChemicalsReport';
 import PilotRevenueDaily from '../sections/corporate/charts/PilotRevenueDaily';
 import PilotSummaryMonthly from '../sections/corporate/charts/PilotSummaryMonthly';
@@ -265,6 +266,14 @@ const ModernReportSection = ({ category = null }) => {
           icon: FaCalendarCheck,
           component: OpsroomDailyPerformanceSummary,
           metrics: { label: 'Months', value: 'Multi' }
+        },
+        {
+          id: 'pilot_daily_performance_summary',
+          name: 'Pilot Daily Performance Summary',
+          description: 'Same daily metrics as company summary, broken down pilot by pilot',
+          icon: FaUserFriends,
+          component: OpsroomPilotDailyPerformanceSummary,
+          metrics: { label: 'Pilots', value: 'Daily' }
         }
       ]
     },

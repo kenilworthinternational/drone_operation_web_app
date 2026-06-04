@@ -6,45 +6,6 @@
     overflow: auto;
 }
 
-.top-finance-part {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    background: #ffffff;
-    padding: 3px;
-    border-radius: 4px;
-    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
-}
-
-.finance-filters-row {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: nowrap;
-    gap: 8px;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.finance-left-column {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    flex: 0 0 50%;
-    max-width: 50%;
-    min-width: 0;
-}
-
-.finance-right-column {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    align-items: center;
-    justify-content: center;
-    flex: 0 0 50%;
-    max-width: 50%;
-    min-width: 0;
-}
-
 .plantationpicker-finance {
     display: flex;
     flex-direction: column;
@@ -80,20 +41,6 @@
 .search-input::placeholder {
     color: #94a3b8;
 }
-.bottom-finance-part {
-    display: flex;
-    width: 100%;
-    gap: 20px;
-}
-
-.bottom-finance-part-left {
-    width: 35%;
-    background-color: #f8f9fa;
-    padding: 15px;
-    border-radius: 8px;
-    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-}
-
 .finance-input-container {
     position: relative;
     width: 100%;
@@ -145,25 +92,11 @@
     margin-bottom: 10px;
 }
 
-.select-all-container input[type="checkbox"],
-.estate-item-fin input[type="checkbox"] {
+.select-all-container input[type="checkbox"] {
     width: 14px;
     height: 14px;
 }
 
-.finance-estates-list {
-    max-height: max-content;
-    overflow-y: auto;
-}
-
-.estate-item-fin {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 5px 0;
-    flex-direction: row;
-    justify-content: flex-start;
-}
 .daterangepicker-finance {
     position: relative;
     width: 100%;
@@ -181,11 +114,7 @@
 }
 
 
-/* Add this to prevent layout shift when calendar opens */
-.top-finance-part {
-    position: relative;
-    min-height: 80px; /* Adjust based on your needs */
-}
+/* Work Summary top bar: top-finance-part-work-summary in workSummary.css */
 
 .date-range {
     cursor: pointer;
@@ -434,7 +363,10 @@
 }
 
 .work-summary-tab-panel {
+    display: flex;
+    flex-direction: column;
     min-width: 0;
+    min-height: calc(100vh - 160px);
 }
 
 .plantation-invoice-history {
@@ -514,20 +446,12 @@
 }
 
 @media (max-width: 900px) {
-  .finance-filters-row {
-    flex-direction: column;
-  }
-  
   .finance-left-column,
   .finance-right-column {
     width: 100%;
     align-items: flex-start;
   }
-  
-  .download-buttons {
-    justify-content: flex-start;
-  }
-  
+
   .finance-date-actions {
     align-items: flex-start;
   }

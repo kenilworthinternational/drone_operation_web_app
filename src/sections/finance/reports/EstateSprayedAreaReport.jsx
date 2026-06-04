@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import PropTypes from 'prop-types';
 import { toast } from 'react-toastify';
 import '../../../styles/finance.css';
+import '../../../styles/workSummary.css';
 import { useLazyGetFieldWiseFinanceReportQuery } from '../../../api/services NodeJs/financeReportApi';
 import { useLazyGetPlantationsListQuery, useLazyGetEstatesListQuery } from '../../../api/services NodeJs/plantationDashboardApi';
 import {
@@ -9,7 +10,6 @@ import {
     useSaveWorkSummaryBillingDraftMutation,
     useCreateWorkSummaryPdfDocumentMutation,
 } from '../../../api/services NodeJs/financeWorkSummaryBillingApi';
-import DatePicker from 'react-datepicker';
 import * as XLSX from "xlsx";
 import { jsPDF } from "jspdf";
 import autoTable from 'jspdf-autotable';
@@ -39,10 +39,10 @@ const isBillingIncluded = (row, inclusionMap) => {
 };
 
 const resolveBillingExtent = (row, inclusionMap) => {
-    if (row.hasChargeableReason) {
-        return isBillingIncluded(row, inclusionMap) ? (Number(row.landExtent) || 0) : 0;
-    }
-    return Number(row.fieldExtent) || 0;
+    const completed = Number(row.fieldExtent) || 0;
+    if (!row.hasChargeableReason) return completed;
+    const fullField = Number(row.landExtent) || 0;
+    return isBillingIncluded(row, inclusionMap) ? fullField : completed;
 };
 
 const rowHasReasonText = (row) => {
@@ -65,6 +65,20 @@ const extractListData = (payload) => {
     return [];
 };
 
+const currentMonthValue = () => {
+    const t = new Date();
+    return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}`;
+};
+
+const monthToRange = (monthValue) => {
+    const [y, m] = String(monthValue || '').split('-').map(Number);
+    if (!y || !m) return { start: null, end: null };
+    return {
+        start: new Date(y, m - 1, 1),
+        end: new Date(y, m, 0),
+    };
+};
+
 const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
     const [triggerFieldWiseFinanceReport] = useLazyGetFieldWiseFinanceReportQuery();
     const [triggerPlantationsList] = useLazyGetPlantationsListQuery();
@@ -73,22 +87,43 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
     const [selectedPlantation, setSelectedPlantation] = useState(null);
     const [estates, setEstates] = useState([]);
     const [selectedEstates, setSelectedEstates] = useState([]);
-    const today = new Date();
-    const [searchTerm, setSearchTerm] = useState("");
-    const [dropdownOpen, setDropdownOpen] = useState(false);
-    const [loading, setLoading] = useState(false);
+    const [selectedMonth, setSelectedMonth] = useState(currentMonthValue);
+    const [listLoading, setListLoading] = useState(false);
+    const [reportLoading, setReportLoading] = useState(false);
     const [error, setError] = useState(null);
-    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
-    const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-    const [selectedDates, setSelectedDates] = useState([firstDayOfMonth, today]);
+    const { start: periodStart, end: periodEnd } = useMemo(
+        () => monthToRange(selectedMonth),
+        [selectedMonth]
+    );
+    const estatesKey = useMemo(
+        () => [...selectedEstates].sort((a, b) => a - b).join(','),
+        [selectedEstates]
+    );
     const [reportData, setReportData] = useState([]);
+    const [reportTick, setReportTick] = useState(0);
     const processedData = [];
     const [selectedMissionType, setSelectedMissionType] = useState('all');
     const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+    const [invoiceWorkSummaryRows, setInvoiceWorkSummaryRows] = useState([]);
     const [localPreviewInvoice, setLocalPreviewInvoice] = useState(null);
     const [billingInclusion, setBillingInclusion] = useState({});
     const saveDraftTimerRef = useRef(null);
+    const monthInputRef = useRef(null);
+
+    const openMonthPicker = () => {
+        const el = monthInputRef.current;
+        if (!el) return;
+        try {
+            if (typeof el.showPicker === 'function') {
+                el.showPicker();
+            } else {
+                el.focus();
+            }
+        } catch {
+            el.focus();
+        }
+    };
 
     const [fetchBillingDraft] = useLazyGetWorkSummaryBillingDraftQuery();
     const [saveBillingDraft] = useSaveWorkSummaryBillingDraftMutation();
@@ -103,15 +138,15 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
     };
 
     const getBillingContext = useCallback(() => {
-        if (!selectedPlantation || !selectedDates[0] || !selectedDates[1]) return null;
+        if (!selectedPlantation || !periodStart || !periodEnd) return null;
         return {
             plantation_id: selectedPlantation,
-            start_date: selectedDates[0].toLocaleDateString('en-CA'),
-            end_date: selectedDates[1].toLocaleDateString('en-CA'),
+            start_date: periodStart.toLocaleDateString('en-CA'),
+            end_date: periodEnd.toLocaleDateString('en-CA'),
             estates: selectedEstates,
             mission_filter: selectedMissionType,
         };
-    }, [selectedPlantation, selectedDates, selectedEstates, selectedMissionType]);
+    }, [selectedPlantation, selectedMonth, selectedEstates, selectedMissionType, periodStart, periodEnd]);
 
     const buildDraftLines = useCallback((rows, inclusionMap) => {
         return (rows || [])
@@ -186,20 +221,22 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
     };
 
     const openInvoiceModal = async () => {
+        const rowsForInvoice = getFilteredRows();
         const inclusionMap = {};
-        getFilteredRows().forEach((r) => {
+        rowsForInvoice.forEach((r) => {
             if (r.hasChargeableReason) {
                 inclusionMap[rowBillingKey(r)] = r.billingIncluded;
             }
         });
         await persistBillingDraft(inclusionMap);
+        setInvoiceWorkSummaryRows(rowsForInvoice);
         setShowInvoiceModal(true);
     };
 
     useEffect(() => {
         const fetchPlantations = async () => {
             try {
-                setLoading(true);
+                setListLoading(true);
                 const result = await triggerPlantationsList(undefined, true);
                 const data = extractListData(result?.data);
                 setPlantations(data);
@@ -208,7 +245,7 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
                 setError("Failed to load plantations");
                 console.error(err);
             } finally {
-                setLoading(false);
+                setListLoading(false);
             }
         };
         fetchPlantations();
@@ -217,7 +254,7 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
         const fetchEstates = async () => {
             if (selectedPlantation) {
                 try {
-                    setLoading(true);
+                    setListLoading(true);
                     const result = await triggerEstatesList(selectedPlantation, true);
                     const data = extractListData(result?.data);
                     setEstates(data);
@@ -228,121 +265,130 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
                     setError("Failed to load estates");
                     console.error(err);
                 } finally {
-                    setLoading(false);
+                    setListLoading(false);
                 }
             }
         };
         fetchEstates();
     }, [selectedPlantation, triggerEstatesList]); // This effect runs when selectedPlantation changes
 
-
-    // Add this useEffect for fetching financial reports
     useEffect(() => {
+        if (selectedPlantation && selectedEstates.length > 0) return;
+        setReportData((prev) => (prev.length === 0 ? prev : []));
+        setBillingInclusion((prev) => (Object.keys(prev).length === 0 ? prev : {}));
+    }, [selectedPlantation, selectedEstates.length]);
+
+    useEffect(() => {
+        if (!selectedPlantation || !estatesKey) return undefined;
+
+        const { start, end } = monthToRange(selectedMonth);
+        if (!start || !end) return undefined;
+
+        const estateIds = estatesKey.split(',').map((id) => Number(id));
+        let cancelled = false;
+
         const fetchReportData = async () => {
-            if (selectedPlantation && selectedEstates.length > 0 && selectedDates[0] && selectedDates[1]) {
-                try {
-                    setLoading(true);
-                    const startDate = selectedDates[0].toLocaleDateString('en-CA');
-                    const endDate = selectedDates[1].toLocaleDateString('en-CA');
+            try {
+                setReportLoading(true);
+                setBillingInclusion((prev) => (Object.keys(prev).length === 0 ? prev : {}));
+                const startDate = start.toLocaleDateString('en-CA');
+                const endDate = end.toLocaleDateString('en-CA');
 
-                    const result = await triggerFieldWiseFinanceReport(
-                        {
-                            start_date: startDate,
-                            end_date: endDate,
-                            estates: selectedEstates
-                        },
-                        true
-                    );
-                    const response = result.data;
+                const result = await triggerFieldWiseFinanceReport(
+                    {
+                        start_date: startDate,
+                        end_date: endDate,
+                        estates: estateIds,
+                    },
+                    true
+                );
+                if (cancelled) return;
 
-                    if (response && typeof response === 'object') {
-                        // Check if response has status field and it's false
-                        if (response.status === false || response.status === "false") {
-                            setReportData([]);
-                            setError(null);
-                            return;
-                        }
+                const response = result.data;
 
-                        // Convert response object to array and filter out non-estate entries (like 'total')
-                        const estatesData = Object.values(response).filter(item => item.estate_id);
+                if (response && typeof response === 'object') {
+                    if (response.status === false || response.status === 'false') {
+                        setReportData((prev) => (prev.length === 0 ? prev : []));
+                        setError(null);
+                        setReportTick((t) => t + 1);
+                        return;
+                    }
 
-                        const processedData = [];
+                    const estatesData = Object.values(response).filter((item) => item.estate_id);
+                    const nextRows = [];
 
-                        estatesData.forEach(estate => {
-                            (estate.plans || []).forEach(plan => {
-                                (plan.fields || []).forEach(field => {
-                                    // Sum dji_field_area from all tasks in the field
-                                    let djiFieldArea = 0;
-                                    if (Array.isArray(field.task) && field.task.length > 0) {
-                                        djiFieldArea = field.task.reduce((sum, t) => sum + (Number(t.dji_field_area) || 0), 0);
-                                    }
-                                    const comNarration = Array.from(
-                                        new Set(
-                                            (Array.isArray(field.task) ? field.task : [])
-                                                .map((t) => t?.com_naration_reason)
-                                                .filter((v) => v && String(v).trim() !== '')
-                                        )
-                                    ).join(', ');
-                                    const hasChargeableReason = (Array.isArray(field.task) ? field.task : [])
-                                        .some((t) => Number(t?.com_naration_chargeble) === 1);
-                                    const landExtent = Number(field.field_extent) || 0;
-                                    const coveredPercent = landExtent > 0
-                                        ? (djiFieldArea / landExtent) * 100
-                                        : 0;
-                                    // Remove the filter: if (djiFieldArea > 0)
-                                    processedData.push({
-                                        planId: Number(plan.plan_id) || 0,
-                                        fieldId: Number(field.field_id) || 0,
-                                        estateId: Number(estate.estate_id) || 0,
-                                        date: plan.plan_date,
-                                        fieldName: field.field_short_name || field.field_name || '',
-                                        pilotNames: field.pilot_names?.map(p => p.pilot_name).join(', ') || '',
-                                        landExtent,
-                                        fieldExtent: djiFieldArea,
-                                        missionType: plan.mission_type_name,
-                                        comNarration,
-                                        hasChargeableReason,
-                                        coveredPercent
-                                    });
+                    estatesData.forEach((estate) => {
+                        (estate.plans || []).forEach((plan) => {
+                            (plan.fields || []).forEach((field) => {
+                                let djiFieldArea = 0;
+                                if (Array.isArray(field.task) && field.task.length > 0) {
+                                    djiFieldArea = field.task.reduce(
+                                        (sum, t) => sum + (Number(t.dji_field_area) || 0),
+                                        0
+                                    );
+                                }
+                                const comNarration = Array.from(
+                                    new Set(
+                                        (Array.isArray(field.task) ? field.task : [])
+                                            .map((t) => t?.com_naration_reason)
+                                            .filter((v) => v && String(v).trim() !== '')
+                                    )
+                                ).join(', ');
+                                const hasChargeableReason = (Array.isArray(field.task) ? field.task : [])
+                                    .some((t) => Number(t?.com_naration_chargeble) === 1);
+                                const landExtent = Number(field.field_extent) || 0;
+                                const coveredPercent = landExtent > 0
+                                    ? (djiFieldArea / landExtent) * 100
+                                    : 0;
+                                nextRows.push({
+                                    planId: Number(plan.plan_id) || 0,
+                                    fieldId: Number(field.field_id) || 0,
+                                    estateId: Number(estate.estate_id) || 0,
+                                    date: plan.plan_date,
+                                    fieldName: field.field_short_name || field.field_name || '',
+                                    pilotNames: field.pilot_names?.map((p) => p.pilot_name).join(', ') || '',
+                                    landExtent,
+                                    fieldExtent: djiFieldArea,
+                                    missionType: plan.mission_type_name,
+                                    comNarration,
+                                    hasChargeableReason,
+                                    coveredPercent,
                                 });
                             });
                         });
+                    });
 
-                        // Remove duplicates based on fieldName, date, and pilotNames
-                        // const uniqueData = processedData.filter(
-                        //     (row, index, self) =>
-                        //         index ===
-                        //         self.findIndex(
-                        //             (t) => t.date === row.date && t.fieldName === row.fieldName && t.pilotNames === row.pilotNames
-                        //         )
-                        // );
-                        //
-                        // uniqueData.sort((a, b) => new Date(a.date) - new Date(b.date));
-                        //
-                        // setReportData(uniqueData);
-                        setReportData(processedData);
-                        setBillingInclusion({});
-                    } else {
-                        // If response is not an object or is null/undefined, clear the data
-                        setReportData([]);
-                        setBillingInclusion({});
-                        setError(null);
-                    }
-                } catch (err) {
-                    setError("Failed to load report data");
-                    console.error(err);
-                } finally {
-                    setLoading(false);
+                    setReportData(nextRows);
+                    setReportTick((t) => t + 1);
+                    setError(null);
+                } else {
+                    setReportData((prev) => (prev.length === 0 ? prev : []));
+                    setReportTick((t) => t + 1);
+                    setError(null);
                 }
+            } catch (err) {
+                if (!cancelled) {
+                    setError('Failed to load report data');
+                    console.error(err);
+                }
+            } finally {
+                if (!cancelled) setReportLoading(false);
             }
         };
+
         fetchReportData();
-    }, [selectedEstates, selectedDates, selectedPlantation]);
+        return () => {
+            cancelled = true;
+        };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- RTK lazy trigger is unstable
+    }, [selectedPlantation, selectedMonth, estatesKey]);
 
     useEffect(() => {
+        if (reportLoading || !reportData.length) return;
+
         const loadDraft = async () => {
             const ctx = getBillingContext();
-            if (!ctx || !reportData.length) return;
+            if (!ctx) return;
             try {
                 const result = await fetchBillingDraft(ctx);
                 if (result.data?.inclusions && typeof result.data.inclusions === 'object') {
@@ -352,29 +398,32 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
                 console.error('Failed to load billing draft', e);
             }
         };
+
         loadDraft();
-    }, [reportData, getBillingContext, fetchBillingDraft]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- RTK lazy trigger is unstable
+    }, [reportTick, reportLoading, reportData.length, getBillingContext]);
 
-
-    const handlePlantationChange = (event) => {
-        setSearchTerm(event.target.value);
-        setDropdownOpen(true);
-    };
 
     const handlePlantationSelect = (id) => {
-        const selected = (Array.isArray(plantations) ? plantations : []).find(p => p.id === id);
-        if (!selected) return;
-
-        setSelectedPlantation(id);
-        setSearchTerm(selected.plantation);
-        setDropdownOpen(false);
+        const nextId = Number(id) || null;
+        if (!nextId || selectedPlantation === nextId) return;
+        setSelectedPlantation(nextId);
+        setSelectedEstates([]);
+        setReportData([]);
+        setBillingInclusion({});
     };
 
-    const handleClearSelection = () => {
-        setSelectedPlantation(null);
-        setSearchTerm("");
-        setEstates([]);
-        setSelectedEstates([]); // This will trigger the selection useEffect
+    const handlePlantationDropdownChange = (e) => {
+        const value = e.target.value;
+        if (!value) {
+            setSelectedPlantation(null);
+            setEstates([]);
+            setSelectedEstates([]);
+            setReportData([]);
+            setBillingInclusion({});
+            return;
+        }
+        handlePlantationSelect(Number(value));
     };
 
     const handleCheckboxChange = (estateId) => {
@@ -394,16 +443,10 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
         );
     };
 
-    const filteredPlantations = (Array.isArray(plantations) ? plantations : []).filter(p =>
-        p.plantation.toLowerCase().includes(searchTerm.toLowerCase())
+    const plantationList = [...(Array.isArray(plantations) ? plantations : [])].sort((a, b) =>
+        String(a.plantation || '').localeCompare(String(b.plantation || ''))
     );
     const safeEstates = Array.isArray(estates) ? estates : [];
-    const handleDateChange = (dates) => {
-        setSelectedDates(dates);
-        if (dates[0] && dates[1]) {
-            setIsCalendarOpen(false);
-        }
-    };
 
     const exportToExcel = () => {
         if (!Array.isArray(reportData) || reportData.length === 0) return;
@@ -458,7 +501,7 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
             .filter(e => selectedEstates.includes(e.id))
             .map(e => e.estate.replace(/\s+/g, '_'))
             .join('_') || 'All_Estates';
-        XLSX.writeFile(wb, `Finance_Report_${excelEstateNames}_${formatDate(selectedDates[0])}_to_${formatDate(selectedDates[1])}_${selectedMissionType}.xlsx`);
+        XLSX.writeFile(wb, `Finance_Report_${excelEstateNames}_${selectedMonth}_${selectedMissionType}.xlsx`);
     };
 
     const exportPdf = async () => {
@@ -499,7 +542,7 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
         const doc = buildWorkSummaryPdfDocument({
             plantation,
             estateNames: selectedEstateNames,
-            periodStart: selectedDates[0],
+            periodStart,
             rows: filteredData,
         });
 
@@ -512,7 +555,7 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
             .filter((e) => selectedEstates.includes(e.id))
             .map((e) => e.estate.replace(/\s+/g, '_'))
             .join('_') || 'All_Estates';
-        const fallbackName = `Finance_Report_${pdfEstateNames}_${formatDateForPdf(selectedDates[0])}_to_${formatDateForPdf(selectedDates[1])}_${selectedMissionType}.pdf`;
+        const fallbackName = `Finance_Report_${pdfEstateNames}_${selectedMonth}_${selectedMissionType}.pdf`;
         doc.save(savedPdfId ? getWorkSummaryPdfFileName(savedPdfId) : fallbackName);
     };
 
@@ -542,7 +585,9 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
             .filter(estate => selectedEstates.includes(estate.id))
             .map(estate => estate.estate)
             .join(", ");
-        const monthYear = new Date(selectedDates[0]).toLocaleString('default', { month: 'long' }) + " - " + new Date(selectedDates[0]).getFullYear();
+        const monthYear = periodStart
+            ? periodStart.toLocaleString('default', { month: 'long', year: 'numeric' })
+            : selectedMonth;
 
         let currentY = 45;
         doc.text(`Plantation: ${plantation}`, marginX, currentY);
@@ -636,7 +681,7 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
             .filter(e => selectedEstates.includes(e.id))
             .map(e => e.estate.replace(/\s+/g, '_'))
             .join('_') || 'All_Estates';
-        doc.save(`Finance_Report_Issues_${pdfEstateNames}_${formatDate(selectedDates[0])}_to_${formatDate(selectedDates[1])}_${selectedMissionType}.pdf`);
+        doc.save(`Finance_Report_Issues_${pdfEstateNames}_${selectedMonth}_${selectedMissionType}.pdf`);
     };
 
     // Helper to format date as YYYY-MM-DD (move above both exportToExcel and exportPdf)
@@ -661,71 +706,46 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
     const canCreateInvoice =
         selectedPlantation &&
         selectedEstates.length > 0 &&
-        selectedDates[0] &&
-        selectedDates[1] &&
+        periodStart &&
+        periodEnd &&
         filteredRows.length > 0 &&
         !hasIssues;
 
     const formatDateParam = (d) => d?.toLocaleDateString?.('en-CA') || '';
 
     return (
-        <div className="finance">
-            <div className="top-finance-part">
-                <div className="finance-filters-row">
-                    <div className="finance-left-column">
-                        <div className="plantationpicker-finance">
-                            <label htmlFor="finance-plantation-search">Select Plantation:</label>
-                            <div className="finance-input-container">
+        <div className="finance finance-work-summary">
+            <div className="top-finance-part-work-summary">
+                <div className="finance-filters-row-work-summary">
+                    <div className="finance-toolbar-filters-work-summary">
+                        <div className="finance-month-filter-work-summary">
+                            <label htmlFor="finance-month-select">Month</label>
+                            <div className="finance-month-input-wrap-work-summary">
                                 <input
-                                    id="plantation-search"
-                                    type="text"
-                                    value={searchTerm}
-                                    onChange={handlePlantationChange}
-                                    placeholder="Type to search plantation..."
-                                    onFocus={() => setDropdownOpen(true)}
-                                    onBlur={() => setTimeout(() => setDropdownOpen(false), 200)}
-                                    className="search-input"
-                                    aria-expanded={dropdownOpen}
-                                    aria-haspopup="listbox"
+                                    ref={monthInputRef}
+                                    id="finance-month-select"
+                                    className="finance-month-input-work-summary"
+                                    type="month"
+                                    value={selectedMonth}
+                                    onClick={openMonthPicker}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' || e.key === ' ') {
+                                            e.preventDefault();
+                                            openMonthPicker();
+                                        }
+                                    }}
+                                    onChange={(e) => {
+                                        const next = e.target.value;
+                                        if (!next) return;
+                                        setSelectedMonth(next);
+                                        setBillingInclusion({});
+                                    }}
+                                    title="Choose month"
                                 />
-                                {searchTerm && (
-                                    <button
-                                        className="finance-clear-button"
-                                        onClick={handleClearSelection}
-                                        aria-label="Clear selection"
-                                    >
-                                        ×
-                                    </button>
-                                )}
                             </div>
-
-                            {dropdownOpen && (
-                                <div
-                                    className="finance-dropdown-list"
-                                    role="listbox"
-                                    aria-labelledby="plantation-search"
-                                >
-                                    {filteredPlantations.length === 0 ? (
-                                        <div className="finance-no-results">No matching plantations found</div>
-                                    ) : (
-                                        filteredPlantations.map((p) => (
-                                            <div
-                                                key={p.id}
-                                                role="option"
-                                                aria-selected={selectedPlantation === p.id}
-                                                onClick={() => handlePlantationSelect(p.id)}
-                                                onMouseDown={(e) => e.preventDefault()}
-                                                className="dropdown-item"
-                                            >
-                                                {p.plantation}
-                                            </div>
-                                        ))
-                                    )}
-                                </div>
-                            )}
                         </div>
-                        <div className="mission-filter-container">
-                            <label htmlFor="mission-type-filter">Mission Type:</label>
+                        <div className="mission-filter-container-work-summary">
+                            <label htmlFor="mission-type-filter">Mission Type</label>
                             <select
                                 id="mission-type-filter"
                                 value={selectedMissionType}
@@ -737,30 +757,8 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
                             </select>
                         </div>
                     </div>
-                    <div className="finance-right-column">
-                        <div className="daterangepicker-finance">
-                            <p className="select-date-text text-finance" onClick={() => setIsCalendarOpen(!isCalendarOpen)}>
-                                Select Date
-                            </p>
-                            <p className="date-range" onClick={() => setIsCalendarOpen(!isCalendarOpen)}>
-                                {selectedDates[0].toLocaleDateString()} - {selectedDates[1]?.toLocaleDateString()}
-                            </p>
-                            {isCalendarOpen && (
-                                <div className="react-date-picker-finance">
-                                    <DatePicker
-                                        selected={selectedDates[0]}
-                                        onChange={handleDateChange}
-                                        startDate={selectedDates[0]}
-                                        endDate={selectedDates[1]}
-                                        selectsRange
-                                        inline
-                                        disabled={loading}
-                                    />
-                                </div>
-                            )}
-                        </div>
-                        <div className="download-buttons">
-                            {filteredRows.length > 0 && (
+                    <div className="download-buttons-work-summary">
+                        {filteredRows.length > 0 && (
                                 <button
                                     onClick={hasIssues ? undefined : exportToExcel}
                                     disabled={filteredRows.length === 0 || hasIssues}
@@ -796,64 +794,83 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
                                 <button
                                     type="button"
                                     onClick={openInvoiceModal}
-                                    className="finance-btn-invoice flex items-center"
+                                    className="finance-btn-invoice-work-summary flex items-center"
                                     title="Create tax invoice from billing Ha"
                                 >
                                     <FiFileText className="mr-2" />
                                     Create Invoice
                                 </button>
-                            )}
-                        </div>
+                        )}
                     </div>
                 </div>
             </div>
             {hasIssues && (
-                <div className="finance-issues-warning">
+                <div className="finance-issues-warning-work-summary">
                     These rows have Field Extent less than Completed Extent. Please download the issues-only PDF and contact Ops room.
                 </div>
             )}
 
 
-            {selectedDates[0] && selectedDates[1] && selectedPlantation && (
-                <div className="bottom-finance-part">
-                    <div className="bottom-finance-part-left">
+            <div className="bottom-finance-part-work-summary">
+                <div className="bottom-finance-part-left-work-summary">
+                    <label htmlFor="finance-plantation-select">Select Plantation</label>
+                    <select
+                        id="finance-plantation-select"
+                        className="finance-field-select-work-summary"
+                        value={selectedPlantation ?? ''}
+                        onChange={handlePlantationDropdownChange}
+                        disabled={listLoading && plantationList.length === 0}
+                    >
+                        <option value="">Choose plantation…</option>
+                        {plantationList.map((p) => (
+                            <option key={p.id} value={p.id}>
+                                {p.plantation}
+                            </option>
+                        ))}
+                    </select>
 
-                        {safeEstates.length > 0 && (
-                            <div className="finance-checkbox-group" role="group" aria-labelledby="estate-selection">
-                                <div className="select-all-container">
+                    {selectedPlantation && safeEstates.length > 0 ? (
+                        <div className="finance-estates-panel-work-summary" role="group" aria-labelledby="estate-selection">
+                            <div className="finance-estates-panel-header-work-summary">
+                                <span id="estate-selection" className="finance-estates-panel-title-work-summary">
+                                    Estates
+                                </span>
+                                <label className="finance-select-all-inline-work-summary" htmlFor="select-all">
                                     <input
                                         type="checkbox"
                                         id="select-all"
-                                        checked={selectedEstates.length === safeEstates.length}
+                                        checked={
+                                            safeEstates.length > 0 &&
+                                            selectedEstates.length === safeEstates.length
+                                        }
                                         onChange={handleSelectAll}
-                                        aria-label={selectedEstates.length === safeEstates.length ?
-                                            "Unselect all estates" : "Select all estates"}
                                     />
-                                    <label htmlFor="select-all">Select All</label>
-                                </div>
-
-                                <div className="finance-estates-list">
-                                    {safeEstates.map((estate) => (
-                                        <div key={estate.id} className="estate-item-fin">
-                                            <input
-                                                type="checkbox"
-                                                id={`estate-${estate.id}`}
-                                                checked={selectedEstates.includes(estate.id)}
-                                                onChange={() => handleCheckboxChange(estate.id)}
-                                            />
-                                            <label htmlFor={`estate-${estate.id}`}>
-                                                {estate.estate}
-                                            </label>
-                                        </div>
-                                    ))}
-                                </div>
+                                    Select all
+                                </label>
                             </div>
-                        )}
-                    </div>
+                            <div className="finance-estates-list-work-summary">
+                                {safeEstates.map((estate) => (
+                                    <div key={estate.id} className="estate-item-fin-work-summary">
+                                        <input
+                                            type="checkbox"
+                                            id={`estate-${estate.id}`}
+                                            checked={selectedEstates.includes(estate.id)}
+                                            onChange={() => handleCheckboxChange(estate.id)}
+                                        />
+                                        <label htmlFor={`estate-${estate.id}`}>{estate.estate}</label>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    ) : selectedPlantation ? (
+                        <p className="finance-panel-hint-work-summary">No estates for this plantation</p>
+                    ) : (
+                        <p className="finance-panel-hint-work-summary">Choose a plantation to see estates</p>
+                    )}
+                </div>
 
-
-                    <div className="bottom-finance-part-right">
-                        {loading && <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}>
+                <div className="bottom-finance-part-right-work-summary">
+                        {reportLoading && <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}>
                             <Bars
                                 height="80"
                                 width="80"
@@ -864,7 +881,13 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
                         </div>}
                         {error && <div className="error-message">{error}</div>}
 
-                        {!loading && !error && (
+                        {!selectedPlantation || selectedEstates.length === 0 ? (
+                            <div className="finance-report-placeholder-work-summary">
+                                {!selectedPlantation
+                                    ? 'Select a plantation and estate(s) to view the report'
+                                    : 'Select at least one estate to load the report'}
+                            </div>
+                        ) : !reportLoading && !error && (
                             filteredRows.length > 0 ? (
                                 <div className="finance-table-container">
                                     <table className="finance-report-table">
@@ -916,7 +939,7 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
                                                             </td>
                                                             <td>
                                                                 {row.hasChargeableReason ? (
-                                                                    <label className="finance-bill-toggle" title={row.billingIncluded ? 'Included in billing — click to exclude' : 'Excluded from billing — click to include'}>
+                                                                    <label className="finance-bill-toggle" title={row.billingIncluded ? 'Bill full field (Ha) — click to bill completed only' : 'Bill completed (Ha) only — click to bill full field'}>
                                                                         <input
                                                                             type="checkbox"
                                                                             checked={row.billingIncluded}
@@ -974,11 +997,7 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
                         )}
 
                     </div>
-
-                </div>
-            )}
-
-
+            </div>
 
             {!onInvoicePreview && localPreviewInvoice ? (
                 <PlantationInvoicePrint
@@ -1000,8 +1019,12 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
                     plantations.find((p) => p.id === selectedPlantation)?.plantation || ''
                 }
                 estateIds={selectedEstates}
-                startDate={formatDateParam(selectedDates[0])}
-                endDate={formatDateParam(selectedDates[1])}
+                estateMeta={(Array.isArray(estates) ? estates : []).filter((e) =>
+                    selectedEstates.includes(e.id)
+                )}
+                workSummaryRows={invoiceWorkSummaryRows}
+                startDate={formatDateParam(periodStart)}
+                endDate={formatDateParam(periodEnd)}
                 missionFilter={selectedMissionType}
             />
         </div>

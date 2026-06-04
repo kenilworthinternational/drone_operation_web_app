@@ -140,7 +140,7 @@ export function downloadPlantationInvoicePdf(invoice) {
   const [lineW0, lineW1, lineW2, lineW3] = splitTableWidths(tableWidth, [0.52, 0.16, 0.16, 0.16]);
 
   autoTable(doc, {
-    head: [['ACTIVITY', 'QTY', 'RATE', 'AMOUNT']],
+    head: [['ACTIVITY', 'QTY', 'Rate (per Ha)', 'AMOUNT']],
     body: lineRows,
     startY: y,
     tableWidth,

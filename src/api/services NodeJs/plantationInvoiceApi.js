@@ -53,6 +53,32 @@ export const plantationInvoiceApi = baseApi.injectEndpoints({
       },
       invalidatesTags: ['PlantationInvoices'],
     }),
+    getInvoiceMonthlyFuelPrice: builder.query({
+      queryFn: async ({ billing_month, period_end } = {}) => {
+        const qs = new URLSearchParams();
+        if (billing_month) qs.set('billing_month', String(billing_month));
+        if (period_end) qs.set('period_end', String(period_end));
+        const suffix = qs.toString() ? `?${qs.toString()}` : '';
+        const result = await nodeBackendBaseQuery(
+          { url: `/api/plantation-invoices/fuel-price${suffix}`, method: 'GET' },
+          {},
+          {}
+        );
+        if (result.error) return result;
+        return { data: result.data?.data || null };
+      },
+    }),
+    saveInvoiceMonthlyFuelPrice: builder.mutation({
+      queryFn: async (body) => {
+        const result = await nodeBackendBaseQuery(
+          { url: '/api/plantation-invoices/fuel-price/save', method: 'POST', body },
+          {},
+          {}
+        );
+        if (result.error) return result;
+        return { data: result.data?.data || null };
+      },
+    }),
     getPlantationInvoiceDraft: builder.mutation({
       queryFn: async (body) => {
         const result = await nodeBackendBaseQuery(
@@ -112,6 +138,8 @@ export const {
   useSaveInvoiceOrganizationMutation,
   useGetInvoiceTaxTypesQuery,
   useSaveInvoiceTaxTypeMutation,
+  useLazyGetInvoiceMonthlyFuelPriceQuery,
+  useSaveInvoiceMonthlyFuelPriceMutation,
   useGetPlantationInvoiceDraftMutation,
   useCreatePlantationInvoiceMutation,
   useListPlantationInvoicesQuery,

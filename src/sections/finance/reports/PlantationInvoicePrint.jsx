@@ -157,7 +157,7 @@ export default function PlantationInvoicePrint({ invoice, onClose, onBack, varia
             <tr>
               <th>ACTIVITY</th>
               <th>QTY</th>
-              <th>RATE</th>
+              <th>Rate (per Ha)</th>
               <th>AMOUNT</th>
             </tr>
           </thead>
