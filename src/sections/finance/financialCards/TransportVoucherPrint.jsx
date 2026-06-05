@@ -1,110 +1,229 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
+import { toast } from 'react-toastify';
+import '../../../styles/plantationInvoice.css';
+import { downloadTransportVoucherPdf } from './transportVoucherPdfExport';
+import { formatFuelMoney, getFuelLineDisplayParts } from './fuelVoucherDescription';
+import {
+  formatVoucherDisplayDate,
+  hasVoucherApprovalInfo,
+  resolveVoucherApprovalType,
+  resolveVoucherApprovedBy,
+  resolveVoucherDriverName,
+} from './transportVoucherPrintUtils';
 
-const formatDate = (value) => {
-  if (!value) return '-';
-  const d = new Date(String(value).includes('T') ? value : `${value}T00:00:00`);
-  if (Number.isNaN(d.getTime())) return String(value);
-  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+const VOUCHER_ORG = {
+  org_name: 'Kenilworth International Lanka (Pvt) Ltd',
+  email: 'finance@kenilworthinternational.com',
 };
 
-const formatLkr = (value) =>
-  `LKR ${(Number(value) || 0).toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-
 const TransportVoucherPrint = ({ voucher, onClose, onPrint }) => {
-  const linesByCard = useMemo(() => {
-    const map = new Map();
-    (voucher?.lines || []).forEach((line) => {
-      const key = line.card_holder || `Card #${line.card_id}`;
-      if (!map.has(key)) {
-        map.set(key, { card_holder: key, card_no: line.card_no_encrypted || '****', lines: [] });
-      }
-      map.get(key).lines.push(line);
-    });
-    return Array.from(map.values());
-  }, [voucher]);
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const lines = useMemo(() => voucher?.lines || [], [voucher?.lines]);
+  const txCount = voucher?.transaction_count || lines.length || 0;
+  const approvedBy = resolveVoucherApprovedBy(voucher);
+  const approvalType = resolveVoucherApprovalType(voucher);
+  const isDeclined = voucher?.status === 'declined';
+  const showApproval = hasVoucherApprovalInfo(voucher);
+  const checkedBy = voucher?.checked_by_name || voucher?.created_by_name || 'Finance';
+  const logoSrc = `${process.env.PUBLIC_URL || ''}/assets/images/kenilowrthlogoDark.png`;
 
-  const approvedBy =
-    voucher?.approval_mode === 'print'
-      ? voucher?.physical_approved_by_name
-      : voucher?.approved_by_display || voucher?.approved_by_name;
+  const handleDownloadPdf = async () => {
+    if (!voucher) return;
+    setPdfLoading(true);
+    try {
+      downloadTransportVoucherPdf(voucher);
+      toast.success('PDF downloaded');
+    } catch (error) {
+      console.error(error);
+      toast.error('Failed to download PDF');
+    } finally {
+      setPdfLoading(false);
+    }
+  };
+
+  const handlePrint = () => {
+    if (typeof onPrint === 'function') {
+      onPrint();
+      return;
+    }
+    window.print();
+  };
 
   return (
-    <div className="transport-voucher-print-overlay">
-      <div className="transport-voucher-print-sheet">
-        <div className="transport-voucher-print-header">
-          <div>
-            <h2>Fuel Transport Voucher</h2>
-            <p className="transport-voucher-print-subtitle">DSMS Finance Settlement Document</p>
-          </div>
-          <div className="transport-voucher-print-meta">
-            <div><strong>Voucher No:</strong> {voucher?.voucher_no || '-'}</div>
-            <div><strong>Date:</strong> {formatDate(voucher?.created_at)}</div>
-            <div><strong>Status:</strong> {voucher?.status || 'pending'}</div>
+    <div
+      className="plantation-invoice-print-overlay plantation-invoice-preview-popup fuel-transport-voucher-print-overlay"
+      role="presentation"
+      onClick={onClose}
+    >
+      <div
+        className="plantation-invoice-preview-shell"
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Fuel transport voucher preview"
+      >
+        <div className="plantation-invoice-print-toolbar">
+          <button type="button" className="plantation-invoice-btn plantation-invoice-btn-secondary" onClick={onClose}>
+            Back
+          </button>
+          <div className="plantation-invoice-print-toolbar-actions">
+            <button
+              type="button"
+              className="plantation-invoice-btn plantation-invoice-btn-secondary"
+              disabled={pdfLoading}
+              onClick={() => void handleDownloadPdf()}
+            >
+              {pdfLoading ? 'Creating PDF…' : 'Create PDF'}
+            </button>
+            <button
+              type="button"
+              className="plantation-invoice-btn plantation-invoice-btn-primary"
+              onClick={handlePrint}
+            >
+              Print
+            </button>
+            <button type="button" className="plantation-invoice-btn plantation-invoice-btn-secondary" onClick={onClose}>
+              Close
+            </button>
           </div>
         </div>
 
-        <table className="transport-voucher-print-table">
-          <thead>
-            <tr>
-              <th>Card Holder</th>
-              <th>Date</th>
-              <th>Time</th>
-              <th>Description</th>
-              <th>HR Approver</th>
-              <th>Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            {linesByCard.map((group) =>
-              group.lines.map((line, idx) => (
-                <tr key={line.line_id || `${group.card_holder}-${idx}`}>
-                  {idx === 0 ? (
-                    <td rowSpan={group.lines.length} className="transport-voucher-card-cell">
-                      <strong>{group.card_holder}</strong>
-                    </td>
-                  ) : null}
-                  <td>{formatDate(line.date)}</td>
-                  <td>{line.time || '-'}</td>
-                  <td>{line.description || '-'}</td>
-                  <td>{line.approved_by_name || '-'}</td>
-                  <td className="transport-voucher-amount-cell">{formatLkr(line.amount)}</td>
+        <article className="plantation-invoice-document fuel-transport-voucher-document">
+          <div className="plantation-invoice-doc-main">
+            <header className="plantation-invoice-doc-header">
+              <div className="plantation-invoice-doc-logo">
+                <img src={logoSrc} alt="Kenilworth International" />
+              </div>
+              <div className="plantation-invoice-doc-org">
+                <strong>{VOUCHER_ORG.org_name}</strong>
+                {VOUCHER_ORG.email ? (
+                  <span className="address-line">{VOUCHER_ORG.email}</span>
+                ) : null}
+              </div>
+            </header>
+
+            <h1 className="plantation-invoice-doc-title fuel-transport-voucher-doc-title">
+              Fuel Transport Voucher
+            </h1>
+
+            <div className="plantation-invoice-doc-parties fuel-transport-voucher-doc-parties">
+              <div>
+                <h5>Prepared By</h5>
+                <span className="plantation-invoice-party-name">{checkedBy}</span>
+                <span className="address-line">Finance Settlement</span>
+              </div>
+              <div>
+                {showApproval ? (
+                  <>
+                    <h5>Approval</h5>
+                    {approvalType ? (
+                      <span className="plantation-invoice-party-name">{approvalType}</span>
+                    ) : null}
+                    {approvedBy ? <span className="address-line">{approvedBy}</span> : null}
+                    {isDeclined && voucher?.decline_reason ? (
+                      <span className="address-line fuel-transport-voucher-decline-reason">
+                        Reason: {voucher.decline_reason}
+                      </span>
+                    ) : null}
+                  </>
+                ) : null}
+              </div>
+              <div className="plantation-invoice-doc-meta fuel-transport-voucher-doc-meta">
+                <div className="plantation-invoice-meta-row">
+                  <span className="plantation-invoice-meta-label">VOUCHER</span>
+                  <span className="plantation-invoice-meta-value">{voucher?.voucher_no || '—'}</span>
+                </div>
+                <div className="plantation-invoice-meta-row">
+                  <span className="plantation-invoice-meta-label">DATE</span>
+                  <span className="plantation-invoice-meta-value">
+                    {formatVoucherDisplayDate(voucher?.created_at)}
+                  </span>
+                </div>
+                <div className="plantation-invoice-meta-row">
+                  <span className="plantation-invoice-meta-label">TXNS</span>
+                  <span className="plantation-invoice-meta-value">{txCount}</span>
+                </div>
+              </div>
+            </div>
+
+            <table className="plantation-invoice-doc-table fuel-transport-voucher-doc-table">
+              <thead>
+                <tr>
+                  <th>DRIVER</th>
+                  <th>FUEL DATE</th>
+                  <th>LITERS</th>
+                  <th>AMOUNT</th>
+                  <th>ADMIN APPROVER</th>
                 </tr>
-              ))
-            )}
-          </tbody>
-          <tfoot>
-            <tr>
-              <td colSpan={5} className="transport-voucher-total-label">Total ({voucher?.transaction_count || 0} transactions)</td>
-              <td className="transport-voucher-amount-cell">{formatLkr(voucher?.total_amount)}</td>
-            </tr>
-          </tfoot>
-        </table>
+              </thead>
+              <tbody>
+                {lines.map((line) => {
+                  const parts = getFuelLineDisplayParts(line);
+                  return (
+                    <tr key={line.line_id || line.transaction_id}>
+                      <td>
+                        <div className="activity-name">{resolveVoucherDriverName(line)}</div>
+                      </td>
+                      <td>{parts.fuelDate}</td>
+                      <td>{parts.liters}</td>
+                      <td>{parts.amount}</td>
+                      <td>{line.approved_by_name || '—'}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
 
-        <div className="transport-voucher-print-footer">
-          <div>
-            <span className="transport-voucher-footer-label">Checked by:</span>{' '}
-            {voucher?.checked_by_name || voucher?.created_by_name || 'Finance'}
-          </div>
-          <div>
-            <span className="transport-voucher-footer-label">Approved by:</span>{' '}
-            {approvedBy || '________________________'}
-          </div>
-        </div>
+            <div className="plantation-invoice-doc-bottom">
+              <div className="plantation-invoice-doc-bottom-row">
+                <div className="plantation-invoice-payment-notice">
+                  <p>
+                    This fuel transport voucher authorizes finance settlement for admin-approved driver
+                    fuel transactions. Upload settlement proof when the voucher is marked as settled.
+                    Fuel dates shown are driver fuel entry dates, not the voucher issue date.
+                  </p>
+                </div>
+                <div className="plantation-invoice-doc-summary-box">
+                  <div>
+                    <span>TRANSACTIONS</span>
+                    <span>{txCount}</span>
+                  </div>
+                  <div className="total-line">
+                    <span>TOTAL AMOUNT</span>
+                    <span className="balance-due-amount">
+                      LKR {formatFuelMoney(voucher?.total_amount)}
+                    </span>
+                  </div>
+                </div>
+              </div>
 
-        {voucher?.notes ? (
-          <div className="transport-voucher-print-notes">
-            <strong>Notes:</strong> {voucher.notes}
+              <section className="fuel-transport-voucher-signatures">
+                <div className="fuel-transport-voucher-signature-block">
+                  <span className="fuel-transport-voucher-signature-label">Checked By</span>
+                  <span className="fuel-transport-voucher-signature-name">{checkedBy}</span>
+                  <span className="fuel-transport-voucher-signature-line" />
+                </div>
+                <div className="fuel-transport-voucher-signature-block">
+                  <span className="fuel-transport-voucher-signature-label">
+                    {isDeclined ? 'Declined By' : 'Approved By'}
+                  </span>
+                  <span className="fuel-transport-voucher-signature-name">{approvedBy || ''}</span>
+                  <span className="fuel-transport-voucher-signature-line" />
+                </div>
+              </section>
+            </div>
           </div>
-        ) : null}
 
-        <div className="transport-voucher-print-actions no-print">
-          <button type="button" className="btn-secondary-voucher-print" onClick={onClose}>
-            Close
-          </button>
-          <button type="button" className="btn-primary-voucher-print" onClick={onPrint}>
-            Print
-          </button>
-        </div>
+          {voucher?.notes ? (
+            <div className="fuel-transport-voucher-notes">
+              <strong>Notes:</strong> {voucher.notes}
+            </div>
+          ) : null}
+
+          <footer className="plantation-invoice-doc-footer">
+            DSMS Finance Settlement Document
+          </footer>
+        </article>
       </div>
     </div>
   );

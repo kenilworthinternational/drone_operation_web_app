@@ -59,13 +59,14 @@
     "xlsx-js-style": "^1.2.0"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "start:dev": "cross-env REACT_APP_ENV=development GENERATE_SOURCEMAP=false react-scripts start",
-    "start:prod": "cross-env REACT_APP_ENV=production GENERATE_SOURCEMAP=false react-scripts start",
+    "copy:privacy-policies": "node scripts/copy-privacy-policies.js",
+    "start": "npm run copy:privacy-policies && react-scripts start",
+    "start:dev": "npm run copy:privacy-policies && cross-env REACT_APP_ENV=development GENERATE_SOURCEMAP=false react-scripts start",
+    "start:prod": "npm run copy:privacy-policies && cross-env REACT_APP_ENV=production GENERATE_SOURCEMAP=false react-scripts start",
     "server": "node server.js",
-    "build": "react-scripts build",
-    "build:dev": "cross-env REACT_APP_ENV=development GENERATE_SOURCEMAP=false react-scripts build",
-    "build:prod": "cross-env REACT_APP_ENV=production GENERATE_SOURCEMAP=false react-scripts build",
+    "build": "npm run copy:privacy-policies && react-scripts build",
+    "build:dev": "npm run copy:privacy-policies && cross-env REACT_APP_ENV=development GENERATE_SOURCEMAP=false react-scripts build",
+    "build:prod": "npm run copy:privacy-policies && cross-env REACT_APP_ENV=production GENERATE_SOURCEMAP=false react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },

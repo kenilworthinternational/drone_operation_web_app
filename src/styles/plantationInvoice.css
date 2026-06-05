@@ -765,3 +765,93 @@
     padding-top: 10px;
   }
 }
+
+/* Fuel transport voucher — reuses plantation invoice document layout */
+.fuel-transport-voucher-print-overlay {
+  z-index: 10250;
+}
+
+.fuel-transport-voucher-doc-title {
+  font-size: 24px;
+}
+
+.fuel-transport-voucher-doc-meta {
+  margin-left: auto;
+  margin-right: 0;
+}
+
+.fuel-transport-voucher-doc-meta .plantation-invoice-meta-row {
+  grid-template-columns: 58px minmax(120px, max-content);
+  column-gap: 22px;
+}
+
+.fuel-transport-voucher-doc-meta .plantation-invoice-meta-value {
+  font-weight: 600;
+  color: #1e293b;
+  white-space: nowrap;
+}
+
+.fuel-transport-voucher-doc-table th:nth-child(3),
+.fuel-transport-voucher-doc-table th:nth-child(4),
+.fuel-transport-voucher-doc-table td:nth-child(3),
+.fuel-transport-voucher-doc-table td:nth-child(4) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.fuel-transport-voucher-doc-table td:nth-child(5) {
+  text-align: left;
+}
+
+.fuel-transport-voucher-subtext {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+.fuel-transport-voucher-signatures {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+  margin-top: 8px;
+}
+
+.fuel-transport-voucher-signature-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fuel-transport-voucher-signature-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.fuel-transport-voucher-signature-name {
+  min-height: 18px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.fuel-transport-voucher-signature-line {
+  display: block;
+  border-top: 1px solid #94a3b8;
+  margin-top: 18px;
+}
+
+.fuel-transport-voucher-notes {
+  margin-top: 12px;
+  font-size: 12px;
+  color: #475569;
+  line-height: 1.5;
+}
+
+@media print {
+  .fuel-transport-voucher-print-overlay {
+    z-index: auto;
+  }
+}

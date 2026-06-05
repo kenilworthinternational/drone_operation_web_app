@@ -111,6 +111,27 @@ export const fuelTransportVoucherApi = baseApi.injectEndpoints({
       invalidatesTags: ['FuelTransportVouchers', 'FinancialCards', 'Transactions'],
     }),
 
+    declineFuelTransportVoucherByFinance: builder.mutation({
+      queryFn: async ({ transaction_ids: transactionIds, reason }) => {
+        try {
+          const result = await nodeBackendBaseQuery(
+            {
+              url: '/api/fuel-transport-vouchers/finance-decline',
+              method: 'POST',
+              body: { transaction_ids: transactionIds, reason },
+            },
+            {},
+            {}
+          );
+          if (result.error) return { error: result.error };
+          return { data: result.data?.data || result.data };
+        } catch (error) {
+          return { error: { status: 'FETCH_ERROR', error: error.message } };
+        }
+      },
+      invalidatesTags: ['FuelTransportVouchers', 'FinancialCards', 'Transactions'],
+    }),
+
     recordFuelTransportPhysicalApproval: builder.mutation({
       queryFn: async ({ id, ...body }) => {
         try {
@@ -154,6 +175,7 @@ export const {
   useGetFuelTransportVoucherByIdQuery,
   useApproveFuelTransportVoucherMutation,
   useDeclineFuelTransportVoucherMutation,
+  useDeclineFuelTransportVoucherByFinanceMutation,
   useRecordFuelTransportPhysicalApprovalMutation,
   useSettleFuelTransportVoucherMutation,
 } = fuelTransportVoucherApi;
