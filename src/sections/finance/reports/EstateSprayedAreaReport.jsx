@@ -39,6 +39,7 @@ const isBillingIncluded = (row, inclusionMap) => {
 };
 
 const resolveBillingExtent = (row, inclusionMap) => {
+    if (row?.isManagerCanceled) return 0;
     const completed = Number(row.fieldExtent) || 0;
     if (!row.hasChargeableReason) return completed;
     const fullField = Number(row.landExtent) || 0;
@@ -49,6 +50,16 @@ const rowHasReasonText = (row) => {
     const text = String(row?.comNarration || '').trim();
     return text !== '' && text !== '-';
 };
+
+const MANAGER_CANCEL_EMPTY = '—';
+
+const formatMetricCell = (row, value, { percent = false } = {}) => {
+    if (row?.isManagerCanceled) return MANAGER_CANCEL_EMPTY;
+    const num = Number(value) || 0;
+    return percent ? `${num.toFixed(2)}%` : num.toFixed(2);
+};
+
+const billableRows = (rows) => (rows || []).filter((row) => !row?.isManagerCanceled);
 
 const extractListData = (payload) => {
     if (Array.isArray(payload)) return payload;
@@ -150,7 +161,7 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
 
     const buildDraftLines = useCallback((rows, inclusionMap) => {
         return (rows || [])
-            .filter((r) => r.hasChargeableReason)
+            .filter((r) => r.hasChargeableReason && !r.isManagerCanceled)
             .map((r) => {
                 const key = rowBillingKey(r);
                 return {
@@ -198,7 +209,11 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
             .filter(row => {
                 const missionMatch = selectedMissionType === 'all' || row.missionType === selectedMissionType;
                 const shouldShowByExtent =
-                    row.fieldExtent > 0 || row.hasChargeableReason || rowHasReasonText(row);
+                    row.isManagerCanceled ||
+                    row.hasFieldManagerCancel ||
+                    row.fieldExtent > 0 ||
+                    row.hasChargeableReason ||
+                    rowHasReasonText(row);
                 return missionMatch && shouldShowByExtent;
             })
             .map((row) => ({
@@ -210,7 +225,7 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
     };
 
     const toggleBillingInclusion = (row) => {
-        if (!row?.hasChargeableReason) return;
+        if (!row?.hasChargeableReason || row?.isManagerCanceled) return;
         const key = rowBillingKey(row);
         setBillingInclusion((prev) => {
             const currentlyIncluded = prev[key] !== false;
@@ -340,18 +355,47 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
                                 const coveredPercent = landExtent > 0
                                     ? (djiFieldArea / landExtent) * 100
                                     : 0;
+                                const fieldCancelReasonId = Number(field.field_cancel_reason_id || 0);
+                                const hasFieldManagerCancel = fieldCancelReasonId > 0;
+                                const fieldCancelText = String(
+                                    field.field_cancel_reason_text || ''
+                                ).trim();
+                                const managerCancelReasonId = Number(plan.manager_cancel_reason || 0);
+                                const isPlanManagerCanceled = managerCancelReasonId > 0;
+                                const managerCancelText = String(
+                                    plan.manager_cancel_reason_text || ''
+                                ).trim();
+                                const isFullyManagerCanceledPlan =
+                                    isPlanManagerCanceled &&
+                                    !hasChargeableReason &&
+                                    !hasFieldManagerCancel;
+                                let displayReason = comNarration;
+                                if (hasChargeableReason && comNarration) {
+                                    displayReason = comNarration;
+                                } else if (hasFieldManagerCancel) {
+                                    displayReason = fieldCancelText;
+                                } else if (isPlanManagerCanceled) {
+                                    displayReason = managerCancelText;
+                                }
                                 nextRows.push({
                                     planId: Number(plan.plan_id) || 0,
                                     fieldId: Number(field.field_id) || 0,
                                     estateId: Number(estate.estate_id) || 0,
+                                    estateName: estate.estate_name || '',
                                     date: plan.plan_date,
                                     fieldName: field.field_short_name || field.field_name || '',
                                     pilotNames: field.pilot_names?.map((p) => p.pilot_name).join(', ') || '',
                                     landExtent,
                                     fieldExtent: djiFieldArea,
                                     missionType: plan.mission_type_name,
-                                    comNarration,
-                                    hasChargeableReason,
+                                    comNarration: displayReason,
+                                    hasChargeableReason: isFullyManagerCanceledPlan
+                                        ? false
+                                        : hasChargeableReason,
+                                    hasFieldManagerCancel,
+                                    isManagerCanceled: isFullyManagerCanceledPlan,
+                                    isPlanManagerCanceled,
+                                    managerCancelReasonId,
                                     coveredPercent,
                                 });
                             });
@@ -457,25 +501,31 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
         if (filteredData.length === 0) return;
 
         // Calculate totals
-        const totalLandExtent = filteredData.reduce((sum, row) => sum + row.landExtent, 0).toFixed(2);
-        const totalFieldExtent = filteredData.reduce((sum, row) => sum + row.fieldExtent, 0).toFixed(2);
-        const totalBillingExtent = filteredData.reduce((sum, row) => sum + (Number(row.billingExtent) || 0), 0).toFixed(2);
+        const billable = billableRows(filteredData);
+        const totalLandExtent = billable.reduce((sum, row) => sum + row.landExtent, 0).toFixed(2);
+        const totalFieldExtent = billable.reduce((sum, row) => sum + row.fieldExtent, 0).toFixed(2);
+        const totalBillingExtent = billable.reduce((sum, row) => sum + (Number(row.billingExtent) || 0), 0).toFixed(2);
 
-        const formattedData = filteredData.map((row) => ({
-            Plan: `${row.planId}-${row.missionType}`,
-            Date: row.date ? new Date(row.date).toLocaleDateString() : "Invalid Date",
+        const formattedData = filteredData.map((row) => {
+            const planCol = formatPlanColumn(row);
+            return {
+            Plan: planCol.planLabel,
+            Date: planCol.dateText,
+            Estate: planCol.estateText,
             "Field Name": row.fieldName,
-            "Field(Ha)": row.landExtent.toFixed(2),
-            "Completed(Ha)": row.fieldExtent.toFixed(2),
-            "Covered %": `${(Number(row.coveredPercent) || 0).toFixed(2)}%`,
-            "Billing(Ha)": (Number(row.billingExtent) || 0).toFixed(2),
+            "Field(Ha)": formatMetricCell(row, row.landExtent),
+            "Completed(Ha)": formatMetricCell(row, row.fieldExtent),
+            "Covered %": formatMetricCell(row, row.coveredPercent, { percent: true }),
+            "Billing(Ha)": formatMetricCell(row, row.billingExtent),
             "Reason": row.comNarration || '-',
-        }));
+        };
+        });
 
         // Add totals as the last row
         formattedData.push({
             Plan: "Total",
             Date: "",
+            Estate: "",
             "Field Name": "",
             "Field(Ha)": totalLandExtent,
             "Completed(Ha)": totalFieldExtent,
@@ -600,15 +650,21 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
         currentY += 7;
         doc.text(`Field Wise Financial Report - Issues Only`, pageWidth / 2, currentY, { align: 'center' });
 
-        const tableData = issueRows.map((row, index) => [
-            `${row.planId}-${row.missionType}\n${row.date ? new Date(row.date).toLocaleDateString() : "Invalid Date"}`,
+        const tableData = issueRows.map((row) => {
+            const planCol = formatPlanColumn(row);
+            const planCell = [planCol.planLabel, planCol.dateText, planCol.estateText]
+                .filter(Boolean)
+                .join('\n');
+            return [
+            planCell,
             row.fieldName,
             row.landExtent.toFixed(2),
             row.fieldExtent.toFixed(2),
             `${(Number(row.coveredPercent) || 0).toFixed(2)}%`,
             (Number(row.billingExtent) || 0).toFixed(2),
-            row.comNarration || '-'
-        ]);
+            row.comNarration || '-',
+        ];
+        });
 
         const totalLandExtent = issueRows.reduce((sum, row) => sum + row.landExtent, 0).toFixed(2);
         const totalFieldExtent = issueRows.reduce((sum, row) => sum + row.fieldExtent, 0).toFixed(2);
@@ -695,8 +751,27 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
     };
 
     const filteredRows = getFilteredRows();
+    const resolveEstateName = (row) => {
+        if (row.estateName) return row.estateName;
+        const match = (Array.isArray(estates) ? estates : []).find((e) => e.id === row.estateId);
+        return match?.estate || '';
+    };
+
+    const formatPlanColumn = (row) => {
+        const safeDate = row?.date ? new Date(row.date) : null;
+        const dateText =
+            safeDate && !Number.isNaN(safeDate.getTime())
+                ? safeDate.toLocaleDateString()
+                : 'Invalid Date';
+        return {
+            planLabel: `${row.planId}-${row.missionType}`,
+            dateText,
+            estateText: resolveEstateName(row),
+        };
+    };
+
     const groupedRows = filteredRows.reduce((acc, row) => {
-        const key = `${row.planId}__${row.date}__${row.missionType}`;
+        const key = `${row.planId}__${row.date}__${row.missionType}__${row.estateId}`;
         if (!acc[key]) acc[key] = [];
         acc[key].push(row);
         return acc;
@@ -907,38 +982,42 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
                                         <tbody>
                                             {Object.entries(groupedRows).flatMap(([key, rows]) => {
                                                 const firstRow = rows[0];
-                                                const safeDate = firstRow?.date ? new Date(firstRow.date) : null;
+                                                const planCol = formatPlanColumn(firstRow);
 
                                                 return rows.map((row, idx) => {
-                                                    const isIssue = hasFinanceExtentIssue(row);
+                                                    const isIssue = !row.isManagerCanceled && hasFinanceExtentIssue(row);
                                                     return (
-                                                        <tr key={`${key}-${idx}`}>
+                                                        <tr
+                                                            key={`${key}-${idx}`}
+                                                            className={row.isManagerCanceled ? 'finance-manager-cancel-row' : undefined}
+                                                        >
                                                             {idx === 0 && (
                                                                 <td rowSpan={rows.length}>
-                                                                    <div><strong>{`${row.planId}-${row.missionType}`}</strong></div>
-                                                                    <div>
-                                                                        {safeDate && !isNaN(safeDate)
-                                                                            ? safeDate.toLocaleDateString()
-                                                                            : 'Invalid Date'}
-                                                                    </div>
+                                                                    <div><strong>{planCol.planLabel}</strong></div>
+                                                                    <div>{planCol.dateText}</div>
+                                                                    {planCol.estateText ? (
+                                                                        <div>{planCol.estateText}</div>
+                                                                    ) : null}
                                                                 </td>
                                                             )}
                                                             <td>{row.fieldName}</td>
                                                             <td>{row.pilotNames}</td>
                                                             <td className={isIssue ? 'finance-issue-cell' : ''}>
-                                                                {(row.landExtent || 0).toFixed(2)}
+                                                                {formatMetricCell(row, row.landExtent)}
                                                             </td>
                                                             <td className={isIssue ? 'finance-issue-cell' : ''}>
-                                                                {(row.fieldExtent || 0).toFixed(2)}
+                                                                {formatMetricCell(row, row.fieldExtent)}
                                                             </td>
                                                             <td>
-                                                                {(Number(row.coveredPercent) || 0).toFixed(2)}%
+                                                                {formatMetricCell(row, row.coveredPercent, { percent: true })}
                                                             </td>
                                                             <td className={row.hasChargeableReason && !row.billingIncluded ? 'finance-billing-excluded-cell' : ''}>
-                                                                {(row.billingExtent || 0).toFixed(2)}
+                                                                {formatMetricCell(row, row.billingExtent)}
                                                             </td>
                                                             <td>
-                                                                {row.hasChargeableReason ? (
+                                                                {row.isManagerCanceled ? (
+                                                                    '—'
+                                                                ) : row.hasChargeableReason ? (
                                                                     <label className="finance-bill-toggle" title={row.billingIncluded ? 'Bill full field (Ha) — click to bill completed only' : 'Bill completed (Ha) only — click to bill full field'}>
                                                                         <input
                                                                             type="checkbox"
@@ -962,14 +1041,14 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
                                                 <td colSpan="3"><strong>Total</strong></td>
                                                 <td>
                                                     <strong>
-                                                        {filteredRows
+                                                        {billableRows(filteredRows)
                                                             .reduce((sum, row) => sum + row.landExtent, 0)
                                                             .toFixed(2)}
                                                     </strong>
                                                 </td>
                                                 <td>
                                                     <strong>
-                                                        {filteredRows
+                                                        {billableRows(filteredRows)
                                                             .reduce((sum, row) => sum + row.fieldExtent, 0)
                                                             .toFixed(2)}
                                                     </strong>
@@ -977,7 +1056,7 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
                                                 <td></td>
                                                 <td>
                                                     <strong>
-                                                        {filteredRows
+                                                        {billableRows(filteredRows)
                                                             .reduce((sum, row) => sum + (Number(row.billingExtent) || 0), 0)
                                                             .toFixed(2)}
                                                     </strong>

@@ -23,6 +23,7 @@ import PilotFeedbacks from '../sections/opsroom/reports/PilotFeedbacks';
 import MonthlyPlantationReport from '../sections/opsroom/reports/MonthlyPlantationReport';
 import OpsroomDailyPerformanceSummary from '../sections/opsroom/reports/OpsroomDailyPerformanceSummary';
 import OpsroomPilotDailyPerformanceSummary from '../sections/opsroom/reports/OpsroomPilotDailyPerformanceSummary';
+import OpsroomMonthlyAchievementSummary from '../sections/opsroom/reports/OpsroomMonthlyAchievementSummary';
 import ChemicalsReport from '../features/plantation/ChemicalsReport';
 import PilotRevenueDaily from '../sections/corporate/charts/PilotRevenueDaily';
 import PilotSummaryMonthly from '../sections/corporate/charts/PilotSummaryMonthly';
@@ -274,6 +275,14 @@ const ModernReportSection = ({ category = null }) => {
           icon: FaUserFriends,
           component: OpsroomPilotDailyPerformanceSummary,
           metrics: { label: 'Pilots', value: 'Daily' }
+        },
+        {
+          id: 'monthly_achievement_summary',
+          name: 'Monthly Achievement Data',
+          description: 'Month-wise operational target, assigned, attended, completed (ops & pilot), and achievement %',
+          icon: FaChartBar,
+          component: OpsroomMonthlyAchievementSummary,
+          metrics: { label: 'Year', value: 'Monthly' }
         }
       ]
     },

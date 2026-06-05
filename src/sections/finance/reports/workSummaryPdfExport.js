@@ -3,6 +3,14 @@ import autoTable from 'jspdf-autotable';
 
 const format2 = (n) => Number(n || 0).toFixed(2);
 
+const MANAGER_CANCEL_EMPTY = '—';
+
+const formatPdfMetric = (row, value, { percent = false } = {}) => {
+  if (row?.isManagerCanceled) return MANAGER_CANCEL_EMPTY;
+  const num = Number(value) || 0;
+  return percent ? `${format2(num)}%` : format2(num);
+};
+
 /** Parse API YYYY-MM-DD (or ISO) for display without UTC day rollback. */
 function parsePeriodDate(val) {
   if (val == null) return null;
@@ -61,24 +69,28 @@ export function normalizeRowForPdf(row) {
       planId: row.planId,
       missionType: row.missionType,
       planDate: row.date,
+      estateName: row.estateName,
       fieldName: row.fieldName,
       fieldHa: row.landExtent,
       completedHa: row.fieldExtent,
       coveredPercent: row.coveredPercent,
       billingHa: row.billingExtent,
       reason: row.comNarration,
+      isManagerCanceled: Boolean(row.isManagerCanceled),
     };
   }
   return {
     planId: row.plan_id,
     missionType: row.mission_type,
     planDate: row.plan_date,
+    estateName: row.estate_name,
     fieldName: row.field_name,
     fieldHa: row.field_ha,
     completedHa: row.completed_ha,
     coveredPercent: row.covered_percent,
     billingHa: row.billing_ha_applied,
     reason: row.reason_text,
+    isManagerCanceled: false,
   };
 }
 
@@ -140,19 +152,27 @@ export function buildWorkSummaryPdfDocument({
   currentY += 7;
   doc.text(`${monthYear} Work Summary`, pageWidth / 2, currentY, { align: 'center' });
 
-  const tableData = normalized.map((row) => [
-    `${row.planId}-${row.missionType || ''}\n${formatPlanDateDisplay(row.planDate)}`,
+  const tableData = normalized.map((row) => {
+    const planLines = [
+      `${row.planId}-${row.missionType || ''}`,
+      formatPlanDateDisplay(row.planDate),
+      row.estateName || '',
+    ].filter(Boolean);
+    return [
+    planLines.join('\n'),
     row.fieldName || '—',
-    format2(row.fieldHa),
-    format2(row.completedHa),
-    `${format2(row.coveredPercent)}%`,
-    format2(row.billingHa),
+    formatPdfMetric(row, row.fieldHa),
+    formatPdfMetric(row, row.completedHa),
+    formatPdfMetric(row, row.coveredPercent, { percent: true }),
+    formatPdfMetric(row, row.billingHa),
     row.reason || '-',
-  ]);
+  ];
+  });
 
-  const totalFieldHa = normalized.reduce((s, r) => s + Number(r.fieldHa || 0), 0);
-  const totalCompleted = normalized.reduce((s, r) => s + Number(r.completedHa || 0), 0);
-  const totalBilling = normalized.reduce((s, r) => s + Number(r.billingHa || 0), 0);
+  const billable = normalized.filter((r) => !r.isManagerCanceled);
+  const totalFieldHa = billable.reduce((s, r) => s + Number(r.fieldHa || 0), 0);
+  const totalCompleted = billable.reduce((s, r) => s + Number(r.completedHa || 0), 0);
+  const totalBilling = billable.reduce((s, r) => s + Number(r.billingHa || 0), 0);
   tableData.push(['Total', '', format2(totalFieldHa), format2(totalCompleted), '', format2(totalBilling), '']);
 
   autoTable(doc, {

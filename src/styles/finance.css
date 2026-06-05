@@ -319,6 +319,11 @@
     cursor: pointer;
 }
 
+.finance-manager-cancel-row td {
+  background-color: #f8f4f4;
+  color: #5c4a4a;
+}
+
 .finance-billing-excluded-cell {
     color: #9ca3af;
     text-decoration: line-through;
