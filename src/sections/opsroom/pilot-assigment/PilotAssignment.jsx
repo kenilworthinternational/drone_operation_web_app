@@ -9,8 +9,12 @@ import {
   useGetPilotAssignmentPilotsQuery,
   useGetPilotAssignmentDroneQuery,
   useCreatePilotAssignmentMutation,
+  useGetPilotTransportOptionsQuery,
+  useAssignPilotTransportDetailsMutation,
   useGetAllTeamsQuery,
 } from '../../../api/services NodeJs/allEndpoints';
+import TransportAssignmentFields from './TransportAssignmentFields';
+import { formatDriverArrivalTimeForInput } from './transportAssignmentUtils';
 import { useGetMyPermissionsQuery } from '../../../api/services NodeJs/featurePermissionsApi';
 import { FEATURE_CODES } from '../../../utils/featurePermissions';
 import { isInternalDeveloper } from '../../../utils/authUtils';
@@ -77,7 +81,14 @@ const PilotAssignment = () => {
     { skip: !selectedTeamId || !selectedDate || !hasResourceQueueFeature }
   );
   const [createAssignment, { isLoading: creatingAssignment }] = useCreatePilotAssignmentMutation();
+  const [assignTransportDetails, { isLoading: savingTransport }] = useAssignPilotTransportDetailsMutation();
   const [deployStep, setDeployStep] = useState(null);
+  const [transportForm, setTransportForm] = useState({
+    driver_id: '',
+    vehicle_id: '',
+    driver_arrival_time: '06:00',
+  });
+  const transportRecommendedAppliedRef = useRef(false);
   const { data: teamsData, isLoading: loadingTeams } = useGetAllTeamsQuery(selectedDate, {
     skip: !selectedDate || !showTeamsModal || !hasResourceQueueFeature,
   });
@@ -119,7 +130,24 @@ const PilotAssignment = () => {
 
   const isRemovalDeploy =
     validPlanIdsForDeploy.length === 0 && validMissionIdsForDeploy.length === 0;
-  const isDeploying = creatingAssignment;
+  const requiresTransportOnDeploy =
+    hasArrangeTransportFeature && validPlanIdsForDeploy.length > 0;
+  const isDeploying = creatingAssignment || savingTransport;
+
+  const { data: transportOptionsData, isLoading: loadingTransportOptions } = useGetPilotTransportOptionsQuery(
+    {
+      assignment_id: assignmentId || null,
+      yearMonth: selectedDate ? selectedDate.slice(0, 7) : undefined,
+      plan_ids: validPlanIdsForDeploy,
+    },
+    {
+      skip: !requiresTransportOnDeploy || !selectedDate,
+    }
+  );
+  const transportOptions = transportOptionsData?.data || null;
+  const transportDrivers = transportOptions?.drivers || [];
+  const transportEstates = transportOptions?.estates || [];
+  const hasTransportEstates = transportEstates.length > 0;
 
   const taskSelectionSummary = useMemo(() => {
     const p = validPlanIdsForDeploy.length;
@@ -180,6 +208,68 @@ const PilotAssignment = () => {
       setDroneInfo(null);
     }
   }, [selectedPilot, pilots]);
+
+  useEffect(() => {
+    if (!requiresTransportOnDeploy) {
+      transportRecommendedAppliedRef.current = false;
+      return;
+    }
+    if (loadingTransportOptions || !transportOptions) return;
+
+    const saved = transportOptions.saved_transport;
+    if (saved?.driver_id && !transportRecommendedAppliedRef.current) {
+      const driver = transportDrivers.find((d) => String(d.id) === String(saved.driver_id));
+      setTransportForm({
+        driver_id: String(saved.driver_id),
+        vehicle_id:
+          saved.vehicle_id != null
+            ? String(saved.vehicle_id)
+            : driver?.vehicle_id != null
+              ? String(driver.vehicle_id)
+              : '',
+        driver_arrival_time: formatDriverArrivalTimeForInput(saved.driver_arrival_time),
+      });
+      transportRecommendedAppliedRef.current = true;
+      return;
+    }
+
+    const rid = transportOptions.recommended_driver_id;
+    if (!rid || transportRecommendedAppliedRef.current) return;
+    const driver = transportDrivers.find((d) => String(d.id) === String(rid));
+    if (!driver?.vehicle_id) return;
+    setTransportForm((prev) => {
+      if (prev.driver_id) return prev;
+      return {
+        ...prev,
+        driver_id: String(rid),
+        vehicle_id: String(driver.vehicle_id),
+      };
+    });
+    transportRecommendedAppliedRef.current = true;
+  }, [
+    requiresTransportOnDeploy,
+    loadingTransportOptions,
+    transportOptions,
+    transportDrivers,
+  ]);
+
+  useEffect(() => {
+    transportRecommendedAppliedRef.current = false;
+  }, [selectedDate, selectedTeamId, validPlanIdsForDeploy.join(',')]);
+
+  const updateTransportField = (field, value) => {
+    setTransportForm((prev) => {
+      if (field === 'driver_id') {
+        const driver = transportDrivers.find((d) => String(d.id) === String(value));
+        return {
+          ...prev,
+          driver_id: value,
+          vehicle_id: driver?.vehicle_id != null ? String(driver.vehicle_id) : '',
+        };
+      }
+      return { ...prev, [field]: value };
+    });
+  };
 
   // Compute assigned plan IDs based on current plans and team
   const assignedPlanIds = useMemo(() => {
@@ -356,6 +446,18 @@ const PilotAssignment = () => {
 
     const validPlanIds = filterValidPlanIds(selectedPlans);
     const validMissionIds = filterValidMissionIds(selectedMissions);
+    const needsTransport = hasArrangeTransportFeature && validPlanIds.length > 0;
+
+    if (needsTransport) {
+      if (!transportForm.driver_id || !transportForm.vehicle_id || !transportForm.driver_arrival_time) {
+        toast.warning('Driver, linked vehicle, and arrival time are required when deploying with plantation plans.');
+        return;
+      }
+      if (!hasTransportEstates) {
+        toast.warning('Assignment estates are missing. Select plantation plans with estates before deploying.');
+        return;
+      }
+    }
 
     const assignmentData = {
       team_id: selectedTeamId,
@@ -371,6 +473,7 @@ const PilotAssignment = () => {
     };
 
     let savedAssignmentId = null;
+    let deployPhase = 'assignment';
     try {
       setDeployStep('assignment');
       const result = await createAssignment(assignmentData).unwrap();
@@ -379,21 +482,42 @@ const PilotAssignment = () => {
       }
       savedAssignmentId = result.data?.assignment_id || assignmentId;
 
-      toast.success(`Assignment ${savedAssignmentId} saved successfully.`);
+      if (needsTransport && savedAssignmentId) {
+        deployPhase = 'transport';
+        setDeployStep('transport');
+        await assignTransportDetails({
+          assignment_id: savedAssignmentId,
+          driver_id: Number(transportForm.driver_id),
+          vehicle_id: Number(transportForm.vehicle_id),
+          driver_arrival_time: transportForm.driver_arrival_time,
+        }).unwrap();
+        toast.success(`Assignment ${savedAssignmentId} saved with driver and vehicle.`);
+      } else {
+        toast.success(`Assignment ${savedAssignmentId} saved successfully.`);
+      }
       await refetchPlans();
       await refetchMissions();
     } catch (error) {
       console.error('Error deploying assignment:', error);
       const errorMessage =
-        error?.data?.error || error?.data?.message || 'Failed to create assignment. Please try again.';
-      toast.error(`Deploy failed: ${errorMessage}`);
+        error?.data?.error || error?.data?.message || 'Failed to deploy. Please try again.';
+      if (deployPhase === 'transport') {
+        toast.error(
+          savedAssignmentId
+            ? `Assignment ${savedAssignmentId} saved, but vehicle assignment failed: ${errorMessage}`
+            : `Vehicle assignment failed: ${errorMessage}`
+        );
+      } else {
+        toast.error(`Deploy failed: ${errorMessage}`);
+      }
     } finally {
       setDeployStep(null);
     }
   };
 
   const deployButtonLabel = () => {
-    if (deployStep === 'assignment') return 'Creating assignment...';
+    if (deployStep === 'assignment') return 'Saving pilot & drone...';
+    if (deployStep === 'transport') return 'Assigning vehicle...';
     if (isDeploying) return 'Deploying...';
     return 'Deploy';
   };
@@ -687,20 +811,64 @@ const PilotAssignment = () => {
           </div>
         </section>
 
+        {hasArrangeTransportFeature ? (
+          <section className="pilot-assignment-step-card-pilotsassign" aria-labelledby="pa-step-transport-title">
+            <div className="pilot-assignment-step-card-head-pilotsassign">
+              <span className="pilot-assignment-step-num-pilotsassign" aria-hidden="true">3</span>
+              <div>
+                <h2 id="pa-step-transport-title" className="pilot-assignment-step-heading-pilotsassign">
+                  Driver &amp; vehicle
+                </h2>
+                <p className="pilot-assignment-step-lead-pilotsassign">
+                  Required when you deploy with plantation plans: pick driver and arrival time. Deploy saves
+                  assignment first, then transport.
+                </p>
+              </div>
+            </div>
+            <div className="pilot-assignment-step-card-body-pilotsassign">
+              {!requiresTransportOnDeploy ? (
+                <p className="pilot-assignment-transport-hint-pilotsassign">
+                  Select at least one plantation plan to arrange driver and vehicle here, or assign later from
+                  Transport HR → Assign Vehicle.
+                </p>
+              ) : (
+                <TransportAssignmentFields
+                  editable
+                  loading={loadingTransportOptions}
+                  transportOptions={transportOptions}
+                  form={transportForm}
+                  onFieldChange={updateTransportField}
+                />
+              )}
+            </div>
+          </section>
+        ) : null}
+
         <div className="pilot-assignment-deploy-bar-pilotsassign">
           <div className="pilot-assignment-deploy-bar-copy-pilotsassign">
             <span className="pilot-assignment-deploy-bar-title-pilotsassign">Ready to save?</span>
             <p className="pilot-assignment-deploy-bar-hint-pilotsassign">
               {isRemovalDeploy
                 ? 'Deploy removes this team’s assignment for the selected date when allowed.'
-                : 'Deploy saves plantation and non-plantation selections to this team and date.'}
+                : requiresTransportOnDeploy
+                  ? 'Deploy saves pilot, drone, and plans first, then driver and vehicle in one flow.'
+                  : 'Deploy saves plantation and non-plantation selections to this team and date.'}
             </p>
           </div>
           <button
             type="button"
             className="pilot-assignment-deploy-btn-pilotsassign pilot-assignment-deploy-btn-main-pilotsassign"
             onClick={handleDeploy}
-            disabled={!selectedDate || !selectedPilot || isDeploying}
+            disabled={
+              !selectedDate ||
+              !selectedPilot ||
+              isDeploying ||
+              (requiresTransportOnDeploy &&
+                (!transportForm.driver_id ||
+                  !transportForm.vehicle_id ||
+                  !transportForm.driver_arrival_time ||
+                  !hasTransportEstates))
+            }
           >
             {deployButtonLabel()}
           </button>
