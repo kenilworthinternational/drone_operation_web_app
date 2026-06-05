@@ -37,7 +37,7 @@ const COLUMNS = [
   { key: 'total_extent_assigned_ha', label: 'Total extent assigned (Ha)' },
   { key: 'total_extent_attended_ha', label: 'Total extent attended (Ha)' },
   { key: 'total_extent_completed_ha', label: 'Total extent completed (Ha)' },
-  { key: 'pct_achievement_monthly', label: 'Percentage achievement against monthly target %' },
+  { key: 'pct_achievement_monthly', label: 'Achievement against daily target %' },
   { key: 'active_pilots', label: 'Number of active pilots' },
   { key: 'active_drones', label: 'Number of active drones' },
 ];
@@ -320,7 +320,7 @@ const OpsroomDailyPerformanceSummary = () => {
           Mission: <strong>{missionLabel(report.mission_type ?? missionType)}</strong>.
           Combined target: <strong>{report.monthly_target_ha} Ha</strong> ({report.month_plan_count} plans × {report.ha_per_plan} Ha).
           Assigned = pilot-assigned field Ha; Attended = executed field Ha (DJI started); Completed = DJI sprayed Ha.
-          Each row % = that day&apos;s completed Ha ÷ month target.
+          Each row % = that day&apos;s completed Ha ÷ daily operational target (or assigned Ha if no plans that day).
         </p>
       )}
 
