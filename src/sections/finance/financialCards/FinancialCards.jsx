@@ -1204,7 +1204,7 @@ const FinancialCards = () => {
                           />
                         </th>
                         <th>Date</th>
-                        <th>Time</th>
+                        <th>Images</th>
                         <th>Amount</th>
                         <th>Fuel Details</th>
                         <th>Admin Approver</th>
@@ -1265,7 +1265,26 @@ const FinancialCards = () => {
                                   />
                                 </td>
                                 <td>{new Date(transaction.date).toLocaleDateString()}</td>
-                                <td>{transaction.time || 'N/A'}</td>
+                                <td className="fuel-settlement-images-cell-financial-cards">
+                                  <div className="fuel-settlement-image-actions-financial-cards">
+                                    <button
+                                      type="button"
+                                      className="fuel-settlement-image-btn-financial-cards"
+                                      disabled={!transaction.bill_image_url}
+                                      onClick={() => openSettlementProof(transaction.bill_image_url)}
+                                    >
+                                      Bill
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="fuel-settlement-image-btn-financial-cards"
+                                      disabled={!transaction.bank_slip_image_url}
+                                      onClick={() => openSettlementProof(transaction.bank_slip_image_url)}
+                                    >
+                                      Slip
+                                    </button>
+                                  </div>
+                                </td>
                                 <td className="amount-cell-financial-cards">
                                   LKR {parseFloat(transaction.amount || 0).toFixed(2)}
                                 </td>

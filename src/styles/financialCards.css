@@ -1241,6 +1241,39 @@
 .voucher-status-pill-financial-cards.declined { background: #fdeff1; color: #a63640; }
 .voucher-status-pill-financial-cards.finance_declined { background: #f3e8ff; color: #6b21a8; }
 
+.fuel-settlement-images-cell-financial-cards {
+  white-space: nowrap;
+}
+
+.fuel-settlement-image-actions-financial-cards {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.fuel-settlement-image-btn-financial-cards {
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #004B71;
+  border-radius: 6px;
+  padding: 0.28rem 0.55rem;
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.fuel-settlement-image-btn-financial-cards:hover:not(:disabled) {
+  background: #eff6ff;
+  border-color: #93c5fd;
+}
+
+.fuel-settlement-image-btn-financial-cards:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  color: #94a3b8;
+}
+
 .btn-decline-voucher-financial-cards {
   background: #fff;
   color: #a63640;

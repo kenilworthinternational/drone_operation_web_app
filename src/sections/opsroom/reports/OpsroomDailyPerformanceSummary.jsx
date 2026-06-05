@@ -37,9 +37,9 @@ const COLUMNS = [
   { key: 'total_extent_assigned_ha', label: 'Total extent assigned (Ha)' },
   { key: 'total_extent_attended_ha', label: 'Total extent attended (Ha)' },
   { key: 'total_extent_completed_ha', label: 'Total extent completed (Ha)' },
-  { key: 'pct_achievement_monthly', label: 'Achievement against daily target %' },
-  { key: 'active_pilots', label: 'Number of active pilots' },
-  { key: 'active_drones', label: 'Number of active drones' },
+  { key: 'pct_achievement_monthly', label: 'Achievement vs daily target %' },
+  { key: 'active_pilots', label: 'Number of assigned pilots' },
+  { key: 'active_drones', label: 'Number of assigned drones' },
 ];
 
 const OpsroomDailyPerformanceSummary = () => {
