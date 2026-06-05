@@ -47,6 +47,7 @@ import RequestsQueueMain from './sections/opsroom/requests/RequestsQueueMain';
 import RequestProceed from './sections/opsroom/requests/RequestProceed';
 import PlansWithWeather from './sections/opsroom/plans/PlansWithWeather';
 import CorporateCustomers from './sections/strategic/corporateCustomers/CorporateCustomers';
+import StrategicFinanceApprovals from './sections/strategic/StrategicFinanceApprovals';
 import PilotAssignment from './sections/opsroom/pilot-assigment/PilotAssignment';
 import TransportArrangePage from './sections/opsroom/pilot-assigment/TransportArrangePage';
 import TodayPlans from './sections/opsroom/today-plans/TodayPlans';
@@ -208,6 +209,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <CorporateCustomers />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="strategic/finance-approvals"
+            element={
+              <ProtectedRoute>
+                <StrategicFinanceApprovals />
               </ProtectedRoute>
             }
           />

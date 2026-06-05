@@ -90,7 +90,7 @@ export const baseApi = createApi({
     // HR Leave and Attendance
     'HrLeave', 'HrAttendance', 'HrRoster',
     // Financial cards / fuel approvals
-    'FinancialCards', 'FinancialCardTransactions', 'Transactions', 'FuelApprovals'
+    'FinancialCards', 'FinancialCardTransactions', 'Transactions', 'FuelApprovals', 'FuelTransportVouchers'
   ],
   endpoints: () => ({}),
 });

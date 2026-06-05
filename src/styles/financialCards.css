@@ -1179,14 +1179,218 @@
 }
 
 .settlements-header-financial-cards {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr minmax(260px, 420px) auto;
   align-items: center;
+  gap: 1rem;
   margin-bottom: 1.5rem;
   padding-bottom: 1rem;
   border-bottom: 2px solid #e0e0e0;
+}
+
+.settlements-header-actions-financial-cards {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
   flex-wrap: wrap;
+}
+
+.settlements-subtabs-financial-cards {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.settlements-subtab-financial-cards {
+  border: 1px solid #d0dbe4;
+  background: #f8fafc;
+  color: #334155;
+  padding: 0.45rem 0.9rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.settlements-subtab-financial-cards.active {
+  background: linear-gradient(135deg, #004B71 0%, #0066a1 100%);
+  color: #fff;
+  border-color: transparent;
+}
+
+.voucher-status-pill-financial-cards {
+  display: inline-block;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.voucher-status-pill-financial-cards.not_create { background: #eef2f7; color: #475569; }
+.voucher-status-pill-financial-cards.pending { background: #fff7e8; color: #9a6700; }
+.voucher-status-pill-financial-cards.approved { background: #eaf8ef; color: #1f7a44; }
+.voucher-status-pill-financial-cards.declined { background: #fdeff1; color: #a63640; }
+
+.voucher-history-table-financial-cards {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+}
+
+.voucher-history-table-financial-cards th,
+.voucher-history-table-financial-cards td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #edf2f7;
+  font-size: 0.9rem;
+}
+
+.voucher-history-table-financial-cards thead {
+  background: #f8fafc;
+}
+
+.transport-voucher-print-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  z-index: 12000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.transport-voucher-print-sheet {
+  background: #fff;
+  width: min(900px, 100%);
+  max-height: 92vh;
+  overflow: auto;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+}
+
+.transport-voucher-print-header {
+  display: flex;
+  justify-content: space-between;
   gap: 1rem;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+}
+
+.transport-voucher-print-header h2 {
+  margin: 0;
+  color: #004B71;
+}
+
+.transport-voucher-print-subtitle {
+  margin: 0.25rem 0 0;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.transport-voucher-print-meta {
+  text-align: right;
+  font-size: 0.9rem;
+  color: #334155;
+}
+
+.transport-voucher-print-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1rem;
+}
+
+.transport-voucher-print-table th,
+.transport-voucher-print-table td {
+  border: 1px solid #e2e8f0;
+  padding: 0.5rem 0.65rem;
+  font-size: 0.85rem;
+}
+
+.transport-voucher-print-table thead {
+  background: #f1f5f9;
+}
+
+.transport-voucher-card-cell {
+  background: #f8fafc;
+  font-weight: 600;
+}
+
+.transport-voucher-amount-cell {
+  text-align: right;
+  font-weight: 600;
+}
+
+.transport-voucher-total-label {
+  text-align: right;
+  font-weight: 700;
+}
+
+.transport-voucher-print-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px dashed #cbd5e1;
+  font-size: 0.95rem;
+}
+
+.transport-voucher-footer-label {
+  font-weight: 700;
+  color: #334155;
+}
+
+.transport-voucher-print-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.btn-primary-voucher-print,
+.btn-secondary-voucher-print {
+  border: none;
+  border-radius: 8px;
+  padding: 0.55rem 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-primary-voucher-print {
+  background: linear-gradient(135deg, #004B71 0%, #0066a1 100%);
+  color: #fff;
+}
+
+.btn-secondary-voucher-print {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .transport-voucher-print-overlay,
+  .transport-voucher-print-overlay * {
+    visibility: visible;
+  }
+  .transport-voucher-print-overlay {
+    position: absolute;
+    inset: 0;
+    background: #fff;
+    padding: 0;
+  }
+  .transport-voucher-print-sheet {
+    box-shadow: none;
+    max-height: none;
+    width: 100%;
+  }
+  .no-print {
+    display: none !important;
+  }
 }
 
 .settlements-title-financial-cards {
@@ -1338,8 +1542,11 @@
 
 @media (max-width: 768px) {
   .settlements-header-financial-cards {
-    flex-direction: column;
-    align-items: stretch;
+    grid-template-columns: 1fr;
+  }
+
+  .settlements-header-actions-financial-cards {
+    justify-content: stretch;
   }
   
   .settlement-search-input-financial-cards {

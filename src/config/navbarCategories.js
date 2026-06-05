@@ -46,6 +46,7 @@ const navbarCategories = [
         icon: FaCheck,
         pendingCountKey: 'planActivate',
       },
+      { path: '/home/strategic/finance-approvals', label: 'Finance Approvals', icon: FaMoneyBillWave },
     ],
   },
   {
