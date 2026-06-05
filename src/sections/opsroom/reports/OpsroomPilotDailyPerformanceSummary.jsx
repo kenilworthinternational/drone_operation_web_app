@@ -36,8 +36,9 @@ const COLUMNS = [
   { key: 'daily_operational_target_ha', label: 'Daily operational target (Ha)' },
   { key: 'total_extent_assigned_ha', label: 'Total extent assigned (Ha)' },
   { key: 'total_extent_attended_ha', label: 'Total extent attended (Ha)' },
-  { key: 'total_extent_completed_ha', label: 'Total extent completed (Ha)' },
-  { key: 'pct_achievement_monthly', label: 'Percentage achievement against daily target %' },
+  { key: 'total_extent_completed_ops_ha', label: 'Completed (ops) (Ha)' },
+  { key: 'total_extent_completed_pilot_ha', label: 'Completed (pilot) (Ha)' },
+  { key: 'pct_achievement_monthly', label: 'Achievement vs daily target %' },
 ];
 
 const formatCell = (key, value) => {
@@ -200,7 +201,8 @@ const OpsroomPilotDailyPerformanceSummary = () => {
         pilot.totals.daily_operational_target_ha,
         pilot.totals.total_extent_assigned_ha,
         pilot.totals.total_extent_attended_ha,
-        pilot.totals.total_extent_completed_ha,
+        pilot.totals.total_extent_completed_ops_ha,
+        pilot.totals.total_extent_completed_pilot_ha,
         pilot.totals.pct_achievement_monthly ?? 0,
       ]);
       if (idx < filteredPilots.length - 1) aoa.push([]);
@@ -299,7 +301,8 @@ const OpsroomPilotDailyPerformanceSummary = () => {
             <td>{pilot.totals.daily_operational_target_ha}</td>
             <td>{pilot.totals.total_extent_assigned_ha}</td>
             <td>{pilot.totals.total_extent_attended_ha}</td>
-            <td>{pilot.totals.total_extent_completed_ha}</td>
+            <td>{pilot.totals.total_extent_completed_ops_ha}</td>
+            <td>{pilot.totals.total_extent_completed_pilot_ha}</td>
             <td>{pilot.totals.pct_achievement_monthly}%</td>
           </tr>
         </tfoot>

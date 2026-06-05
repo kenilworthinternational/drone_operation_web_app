@@ -36,7 +36,8 @@ const COLUMNS = [
   { key: 'daily_operational_target_ha', label: 'Daily operational target (Ha)' },
   { key: 'total_extent_assigned_ha', label: 'Total extent assigned (Ha)' },
   { key: 'total_extent_attended_ha', label: 'Total extent attended (Ha)' },
-  { key: 'total_extent_completed_ha', label: 'Total extent completed (Ha)' },
+  { key: 'total_extent_completed_ops_ha', label: 'Completed (ops) (Ha)' },
+  { key: 'total_extent_completed_pilot_ha', label: 'Completed (pilot) (Ha)' },
   { key: 'pct_achievement_monthly', label: 'Achievement vs daily target %' },
   { key: 'active_pilots', label: 'Number of assigned pilots' },
   { key: 'active_drones', label: 'Number of assigned drones' },
@@ -319,8 +320,8 @@ const OpsroomDailyPerformanceSummary = () => {
           Months: <strong>{report.months?.map(formatMonthLabel).join(', ')}</strong>.
           Mission: <strong>{missionLabel(report.mission_type ?? missionType)}</strong>.
           Combined target: <strong>{report.monthly_target_ha} Ha</strong> ({report.month_plan_count} plans × {report.ha_per_plan} Ha).
-          Assigned = pilot-assigned field Ha; Attended = executed field Ha (DJI started); Completed = DJI sprayed Ha.
-          Each row % = that day&apos;s completed Ha ÷ daily operational target (or assigned Ha if no plans that day).
+          Assigned = pilot-assigned field Ha; Attended = field Ha when DJI started; Completed (ops) = DJI field area;
+          Completed (pilot) = pilot sub-task field area. Achievement % uses Completed (ops).
         </p>
       )}
 
@@ -358,7 +359,8 @@ const OpsroomDailyPerformanceSummary = () => {
                   <td>{totals.daily_operational_target_ha}</td>
                   <td>{totals.total_extent_assigned_ha}</td>
                   <td>{totals.total_extent_attended_ha}</td>
-                  <td>{totals.total_extent_completed_ha}</td>
+                  <td>{totals.total_extent_completed_ops_ha}</td>
+                  <td>{totals.total_extent_completed_pilot_ha}</td>
                   <td>{totals.pct_achievement_monthly}%</td>
                   <td>—</td>
                   <td>—</td>
