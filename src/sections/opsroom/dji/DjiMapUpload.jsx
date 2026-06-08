@@ -25,6 +25,18 @@ const CustomDateInput = React.forwardRef(({ value, onClick }, ref) => (
 ));
 
 // Helper function to get backend URL based on environment
+const slugifyForAutoId = (value) => {
+  if (value == null || value === '') return '';
+  return String(value)
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/[/\\:*?"<>|]/g, '-')
+    .replace(/[()]/g, '')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '');
+};
+
 const getBackendUrl = () => {
   const hostname = window.location.hostname;
   if (hostname.includes('test')) {
@@ -120,11 +132,11 @@ const DjiMapUpload = () => {
       if (!selectedDateStr || !plantationForm.estateId || !plantationForm.fieldId) {
         return '';
       }
-      const estateSlug = plantationForm.estateName 
-        ? plantationForm.estateName.replace(/\s+/g, '-').toLowerCase() 
+      const estateSlug = plantationForm.estateName
+        ? slugifyForAutoId(plantationForm.estateName)
         : `estate-${plantationForm.estateId}`;
-      const fieldSlug = plantationForm.fieldName 
-        ? plantationForm.fieldName.replace(/\s+/g, '-').toLowerCase() 
+      const fieldSlug = plantationForm.fieldName
+        ? slugifyForAutoId(plantationForm.fieldName)
         : `field-${plantationForm.fieldId}`;
       return `${selectedDateStr}-${estateSlug}-${fieldSlug}-01`;
     } else {
@@ -386,11 +398,11 @@ const DjiMapUpload = () => {
       if (!editForm.date || !editForm.estateId || !editForm.fieldId) {
         return '';
       }
-      const estateSlug = editForm.estateName 
-        ? editForm.estateName.replace(/\s+/g, '-').toLowerCase() 
+      const estateSlug = editForm.estateName
+        ? slugifyForAutoId(editForm.estateName)
         : `estate-${editForm.estateId}`;
-      const fieldSlug = editForm.fieldName 
-        ? editForm.fieldName.replace(/\s+/g, '-').toLowerCase() 
+      const fieldSlug = editForm.fieldName
+        ? slugifyForAutoId(editForm.fieldName)
         : `field-${editForm.fieldId}`;
       return `${editForm.date}-${estateSlug}-${fieldSlug}-01`;
     } else {
