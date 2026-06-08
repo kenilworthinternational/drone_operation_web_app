@@ -28,9 +28,9 @@ export const buildPilotTotalRow = (columns, totals) =>
     return totals[c.key] ?? '';
   });
 
-export const buildMonthlyTotalRow = (columns, totals) =>
+export const buildMonthlyTotalRow = (columns, totals, totalLabel = 'Year total') =>
   columns.map((c) => {
-    if (c.key === 'month_display') return 'Year total';
+    if (c.key === 'month_display') return totalLabel;
     if (PCT_KEYS.has(c.key)) return `${totals[c.key] ?? 0}%`;
     return totals[c.key] ?? '';
   });

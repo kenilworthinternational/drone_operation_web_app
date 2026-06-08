@@ -74,6 +74,7 @@ export const opsroomPerformanceSummaryApi = baseApi.injectEndpoints({
     getOpsroomMonthlyAchievementSummary: builder.query({
       queryFn: async ({
         year,
+        months = null,
         missionType = 'spy',
         completedPlansOnly = false,
         plantationIds = null,
@@ -84,6 +85,9 @@ export const opsroomPerformanceSummaryApi = baseApi.injectEndpoints({
             mission_type: missionType,
             completed_plans_only: completedPlansOnly,
           };
+          if (Array.isArray(months) && months.length > 0) {
+            body.months = months;
+          }
           if (Array.isArray(plantationIds) && plantationIds.length > 0) {
             body.plantation_ids = plantationIds;
           }
