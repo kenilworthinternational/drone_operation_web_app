@@ -71,6 +71,59 @@
   background: #f8fafc;
 }
 
+.ops-perf-summary__month-grid-panel {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.ops-perf-summary__month-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.ops-perf-summary__month-btn {
+  width: 100%;
+  min-height: 34px;
+  padding: 6px 4px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  text-align: center;
+  line-height: 1.2;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.ops-perf-summary__month-btn:hover:not(:disabled):not(.ops-perf-summary__month-btn--on) {
+  border-color: #004b71;
+  color: #004b71;
+  background: #f0f9ff;
+}
+
+.ops-perf-summary__month-btn--on {
+  background: #004b71;
+  border-color: #004b71;
+  color: #fff;
+}
+
+.ops-perf-summary__month-btn--on:hover:not(:disabled) {
+  background: #003a57;
+  border-color: #003a57;
+  color: #fff;
+}
+
+.ops-perf-summary__month-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .ops-perf-summary__actions-row {
   display: flex;
   flex-wrap: nowrap;

@@ -28,6 +28,11 @@ const MONTH_NAMES = [
   'July', 'August', 'September', 'October', 'November', 'December',
 ];
 
+const MONTH_SHORT = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+];
+
 const monthsForYear = (year) =>
   Array.from({ length: 12 }, (_, i) => `${year}-${String(i + 1).padStart(2, '0')}`);
 
@@ -52,6 +57,8 @@ const COLUMNS = [
   { key: 'total_extent_completed_pilot_ha', label: 'Extent completed (Ha) (pilot)' },
   { key: 'pct_achievement_ops', label: 'Achievement vs target (ops) %' },
   { key: 'pct_achievement_pilot', label: 'Achievement vs target (pilot) %' },
+  { key: 'worked_pilots', label: 'Worked pilots' },
+  { key: 'worked_drones', label: 'Worked drones' },
 ];
 
 const OpsroomMonthlyAchievementSummary = () => {
@@ -73,10 +80,14 @@ const OpsroomMonthlyAchievementSummary = () => {
 
   const monthOptions = useMemo(
     () =>
-      monthsForYear(selectedYear).map((ym) => ({
-        value: ym,
-        label: formatMonthChipLabel(ym),
-      })),
+      monthsForYear(selectedYear).map((ym) => {
+        const monthIndex = parseInt(ym.split('-')[1], 10) - 1;
+        return {
+          value: ym,
+          label: MONTH_SHORT[monthIndex] || ym,
+          title: MONTH_NAMES[monthIndex] || ym,
+        };
+      }),
     [selectedYear],
   );
 
@@ -271,21 +282,25 @@ const OpsroomMonthlyAchievementSummary = () => {
                 </button>
               </div>
             </div>
-            <div className="ops-perf-summary__chip-panel">
-              {monthOptions.map((o) => {
-                const on = selectedMonths.includes(o.value);
-                return (
-                  <button
-                    key={o.value}
-                    type="button"
-                    className={`ops-perf-summary__chip${on ? ' ops-perf-summary__chip--on' : ''}`}
-                    onClick={() => toggleMonth(o.value)}
-                    disabled={isFetching}
-                  >
-                    {o.label}
-                  </button>
-                );
-              })}
+            <div className="ops-perf-summary__month-grid-panel">
+              <div className="ops-perf-summary__month-grid" role="group" aria-label="Months">
+                {monthOptions.map((o) => {
+                  const on = selectedMonths.includes(o.value);
+                  return (
+                    <button
+                      key={o.value}
+                      type="button"
+                      title={o.title}
+                      className={`ops-perf-summary__month-btn${on ? ' ops-perf-summary__month-btn--on' : ''}`}
+                      onClick={() => toggleMonth(o.value)}
+                      disabled={isFetching}
+                      aria-pressed={on}
+                    >
+                      {o.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>

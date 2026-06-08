@@ -53,6 +53,8 @@ const PDF_COLUMN_WEIGHTS = {
   pct_achievement_pilot: 0.95,
   active_pilots: 0.85,
   active_drones: 0.85,
+  worked_pilots: 0.85,
+  worked_drones: 0.85,
 };
 
 /** Use the same column labels as the on-screen table. */
