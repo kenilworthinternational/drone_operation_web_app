@@ -18,6 +18,7 @@ import '../styles/wingHub.css';
 import TargetCursor from '../components/TargetCursor';
 
 const LOGO_SRC = `${process.env.PUBLIC_URL}/assets/images/kenilowrth-white.png`;
+const BEE_SRC = `${process.env.PUBLIC_URL}/assets/images/bee.png`;
 const LOGOUT_ICON_SRC = `${process.env.PUBLIC_URL}/assets/images/logout.png`;
 const GROUP_LOGO_BASE = 'https://drone-admin.kenilworthinternational.com/storage/image/logo/';
 const FALLBACK_AVATAR =
@@ -137,9 +138,15 @@ const WingHubHome = () => {
       <TargetCursor spinDuration={2} hideDefaultCursor parallaxOn hoverDuration={0.2} />
       <header className="wing-hub-header">
         <div className="wing-hub-header-inner">
-          <img className="wing-hub-brand-logo" src={LOGO_SRC} alt="Kenilworth International" />
-          <div className="wing-hub-header-actions">
-            <div className="wing-hub-user-card" title={`${userDisplayName}${userJobRoleLabel ? ` · ${userJobRoleLabel}` : ''}`}>
+          <div className="wing-hub-header-left">
+            <img className="wing-hub-brand-logo" src={LOGO_SRC} alt="Kenilworth International" />
+          </div>
+
+          <div className="wing-hub-header-center">
+            <div
+              className="wing-hub-user-identity"
+              title={`${userDisplayName}${userJobRoleLabel ? ` · ${userJobRoleLabel}` : ''}`}
+            >
               <div className="wing-hub-user-avatar" aria-hidden>
                 {avatarStage === 'profile' && userProfileImage ? (
                   <img
@@ -149,7 +156,7 @@ const WingHubHome = () => {
                     onError={() => setAvatarStage('group')}
                   />
                 ) : avatarStage === 'fallback' ? (
-                  <FaUserCircle className="wing-hub-user-avatar-fallback" />
+                  <FaUserCircle className="wing-hub-user-avatar-fallback wing-hub-user-avatar-fallback--header" />
                 ) : (
                   <img
                     className="wing-hub-user-avatar-img"
@@ -160,19 +167,26 @@ const WingHubHome = () => {
                 )}
               </div>
               <div className="wing-hub-user-text">
-                <span className="wing-hub-user-name">{userDisplayName}</span>
+                <span className="wing-hub-user-name wing-hub-user-name--header">{userDisplayName}</span>
                 {userJobRoleLabel ? (
-                  <span className="wing-hub-user-role">{userJobRoleLabel}</span>
+                  <span className="wing-hub-user-role wing-hub-user-role--header">{userJobRoleLabel}</span>
                 ) : null}
               </div>
             </div>
+          </div>
+
+          <div className="wing-hub-header-actions">
             <button
               type="button"
-              className="wing-hub-comb-shortcut cursor-target"
+              className="wing-hub-comb-card wing-hub-comb-card--action cursor-target"
               onClick={() => navigate('/home/monitoringDashboard?comb=1')}
               title="Central Operations Management Base"
             >
-              COMB
+              <img className="wing-hub-bee" src={BEE_SRC} alt="" />
+              <div className="wing-hub-comb-text">
+                <span className="wing-hub-comb-title">COMB</span>
+                <span className="wing-hub-comb-sub">Central Operations Management Base</span>
+              </div>
             </button>
             <button
               type="button"
