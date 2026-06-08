@@ -105,6 +105,7 @@ export const getPdfAutoTableOptions = (exportColumns, extra = {}) => {
   const base = {
     tableWidth,
     columnStyles,
+    showFoot: 'lastPage',
     styles: {
       fontSize: bodyFontSize,
       overflow: 'linebreak',
