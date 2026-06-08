@@ -30,8 +30,8 @@ const COLUMNS = [
   { key: 'total_extent_attended_ha', label: 'Extent attended (Ha)' },
   { key: 'total_extent_completed_ops_ha', label: 'Extent completed (Ha) (ops)' },
   { key: 'total_extent_completed_pilot_ha', label: 'Extent completed (Ha) (pilot)' },
-  { key: 'pct_achievement_ops', label: 'Achievement against monthly target (ops) %' },
-  { key: 'pct_achievement_pilot', label: 'Achievement against monthly target (pilot) %' },
+  { key: 'pct_achievement_ops', label: 'Achievement vs target (ops) %' },
+  { key: 'pct_achievement_pilot', label: 'Achievement vs target (pilot) %' },
 ];
 
 const OpsroomMonthlyAchievementSummary = () => {
