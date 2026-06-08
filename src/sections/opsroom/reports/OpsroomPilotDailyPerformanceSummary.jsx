@@ -1,8 +1,15 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { Bars } from 'react-loader-spinner';
-import { FiDownload, FiRefreshCw } from 'react-icons/fi';
+import { FiRefreshCw } from 'react-icons/fi';
+import OpsroomPerfSummaryExportControls from './OpsroomPerfSummaryExportControls';
+import {
+  buildPilotTotalRow,
+  createPerfSummaryPdfDoc,
+  formatExportCell,
+  getPdfAutoTableOptions,
+  getPdfHeadRow,
+} from './opsroomPerfSummaryExportUtils';
 import * as XLSX from 'xlsx';
-import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { useLazyGetOpsroomPilotDailyPerformanceSummaryQuery } from '../../../api/services NodeJs/opsroomPerformanceSummaryApi';
 import { useGetReportPlantationsQuery } from '../../../api/services NodeJs/monthlyPlantationReportApi';
@@ -41,10 +48,10 @@ const COLUMNS = [
   { key: 'pct_achievement_monthly', label: 'Achievement vs daily target %' },
 ];
 
-const formatCell = (key, value) => {
-  if (key === 'pct_achievement_monthly') return `${value ?? 0}%`;
-  return value ?? '';
-};
+const formatCell = (key, value) => formatExportCell(key, value);
+
+const pilotSectionTitle = (pilot) =>
+  `${pilot.pilot_name} — ${formatMonthLabel(pilot.year_month)} — ${missionLabel(pilot.mission_type)} (${pilot.month_plan_count} plans · target ${pilot.monthly_target_ha} Ha)`;
 
 const OpsroomPilotDailyPerformanceSummary = () => {
   const [selectedMonths, setSelectedMonths] = useState([getCurrentYearMonth()]);
@@ -163,10 +170,9 @@ const OpsroomPilotDailyPerformanceSummary = () => {
     return `${missionPart}_${pilotPart}`;
   }, [missionType, selectedPilotId, pilotOptions]);
 
-  const exportExcel = () => {
-    if (!filteredPilots.length) return;
+  const exportExcel = (exportColumns) => {
+    if (!filteredPilots.length || !exportColumns.length) return;
 
-    const tableHeader = ['Pilot', 'Mission', 'Month', ...COLUMNS.map((c) => c.label)];
     const aoa = [
       ['Pilot Daily Performance Summary'],
       ['Months', report?.months?.map(formatMonthLabel).join(', ') || ''],
@@ -178,33 +184,15 @@ const OpsroomPilotDailyPerformanceSummary = () => {
           : 'All',
       ],
       [],
-      tableHeader,
     ];
 
     filteredPilots.forEach((pilot, idx) => {
+      aoa.push([pilotSectionTitle(pilot)]);
+      aoa.push(exportColumns.map((c) => c.label));
       pilot.rows.forEach((r) => {
-        aoa.push([
-          pilot.pilot_name,
-          missionLabel(pilot.mission_type),
-          formatMonthLabel(pilot.year_month),
-          ...COLUMNS.map((c) => {
-            if (c.key === 'pct_achievement_monthly') return r[c.key] ?? 0;
-            return r[c.key] ?? '';
-          }),
-        ]);
+        aoa.push(exportColumns.map((c) => formatCell(c.key, r[c.key])));
       });
-      aoa.push([
-        pilot.pilot_name,
-        missionLabel(pilot.mission_type),
-        formatMonthLabel(pilot.year_month),
-        'Total',
-        pilot.totals.daily_operational_target_ha,
-        pilot.totals.total_extent_assigned_ha,
-        pilot.totals.total_extent_attended_ha,
-        pilot.totals.total_extent_completed_ops_ha,
-        pilot.totals.total_extent_completed_pilot_ha,
-        pilot.totals.pct_achievement_monthly ?? 0,
-      ]);
+      aoa.push(buildPilotTotalRow(exportColumns, pilot.totals));
       if (idx < filteredPilots.length - 1) aoa.push([]);
     });
 
@@ -214,9 +202,9 @@ const OpsroomPilotDailyPerformanceSummary = () => {
     XLSX.writeFile(wb, `Pilot_Performance_${exportFileSuffix}_${exportFilterSlug}.xlsx`);
   };
 
-  const exportPdf = () => {
-    if (!filteredPilots.length) return;
-    const doc = new jsPDF({ orientation: 'landscape' });
+  const exportPdf = (exportColumns) => {
+    if (!filteredPilots.length || !exportColumns.length) return;
+    const doc = createPerfSummaryPdfDoc();
     let y = 14;
     doc.setFontSize(12);
     doc.text('Pilot Daily Performance Summary', 14, y);
@@ -230,33 +218,23 @@ const OpsroomPilotDailyPerformanceSummary = () => {
     y += 10;
 
     filteredPilots.forEach((pilot, idx) => {
-      if (y > 170) {
+      if (y > 165) {
         doc.addPage();
         y = 14;
       }
-      doc.setFontSize(10);
-      doc.text(
-        `${pilot.pilot_name} — ${formatMonthLabel(pilot.year_month)} — ${missionLabel(pilot.mission_type)}`,
-        14,
-        y,
-      );
-      y += 4;
+      doc.setFontSize(9);
+      doc.setFont(undefined, 'bold');
+      doc.text(pilotSectionTitle(pilot), 14, y);
+      doc.setFont(undefined, 'normal');
+      y += 6;
       autoTable(doc, {
         startY: y,
-        head: [COLUMNS.map((c) => c.label)],
-        body: pilot.rows.map((r) => COLUMNS.map((c) => formatCell(c.key, r[c.key]))),
-        foot: [
-          COLUMNS.map((c) => {
-            if (c.key === 'date_display') return 'Total';
-            if (c.key === 'pct_achievement_monthly') {
-              return `${pilot.totals.pct_achievement_monthly ?? 0}%`;
-            }
-            return String(pilot.totals[c.key] ?? '');
-          }),
-        ],
-        styles: { fontSize: 6 },
-        headStyles: { fillColor: [0, 75, 113] },
-        margin: { left: 14, right: 14 },
+        head: [getPdfHeadRow(exportColumns)],
+        body: pilot.rows.map((r) =>
+          exportColumns.map((c) => String(formatCell(c.key, r[c.key]) ?? '')),
+        ),
+        foot: [buildPilotTotalRow(exportColumns, pilot.totals).map((v) => String(v ?? ''))],
+        ...getPdfAutoTableOptions(exportColumns, { styles: { fontSize: 6 } }),
       });
       y = (doc.lastAutoTable?.finalY || y) + 12;
       if (idx < filteredPilots.length - 1 && y > 175) {
@@ -272,12 +250,7 @@ const OpsroomPilotDailyPerformanceSummary = () => {
       key={`${pilot.pilot_id}-${pilot.mission_type}-${pilot.year_month}`}
       className="ops-perf-summary__pilot-block"
     >
-      <h3 className="ops-perf-summary__pilot-title">
-        {pilot.pilot_name} — {formatMonthLabel(pilot.year_month)} — {missionLabel(pilot.mission_type)}
-        <span className="ops-perf-summary__hint-inline" style={{ marginLeft: 8, fontWeight: 500 }}>
-          ({pilot.month_plan_count} plans · target {pilot.monthly_target_ha} Ha)
-        </span>
-      </h3>
+      <h3 className="ops-perf-summary__pilot-title">{pilotSectionTitle(pilot)}</h3>
       <table className="ops-perf-summary__table">
         <thead>
           <tr>
@@ -395,6 +368,37 @@ const OpsroomPilotDailyPerformanceSummary = () => {
         </div>
 
         <div className="ops-perf-summary__actions-row">
+          <div className="ops-perf-summary__field">
+            <label htmlFor="ops-pilot-perf-mission">Mission (filter view)</label>
+            <select
+              id="ops-pilot-perf-mission"
+              value={missionType}
+              onChange={(e) => setMissionType(e.target.value)}
+              disabled={!hasReport}
+            >
+              {MISSION_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="ops-perf-summary__field">
+            <label htmlFor="ops-pilot-perf-pilot">Pilot (filter view)</label>
+            <select
+              id="ops-pilot-perf-pilot"
+              value={selectedPilotId}
+              onChange={(e) => setSelectedPilotId(e.target.value)}
+              disabled={!hasReport}
+            >
+              <option value="">All</option>
+              {pilotOptions.map((p) => (
+                <option key={p.id} value={String(p.id)}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </div>
           <button
             type="button"
             className="ops-perf-summary__btn ops-perf-summary__btn--primary"
@@ -403,61 +407,13 @@ const OpsroomPilotDailyPerformanceSummary = () => {
           >
             <FiRefreshCw /> Generate
           </button>
-          {hasReport && (
-            <>
-              <button
-                type="button"
-                className="ops-perf-summary__btn"
-                onClick={exportExcel}
-                disabled={!filteredFlatRows.length}
-              >
-                <FiDownload /> Excel
-              </button>
-              <button
-                type="button"
-                className="ops-perf-summary__btn"
-                onClick={exportPdf}
-                disabled={!filteredPilots.length}
-              >
-                <FiDownload /> PDF
-              </button>
-            </>
-          )}
+          <OpsroomPerfSummaryExportControls
+            columns={COLUMNS}
+            exportDisabled={!hasReport || !filteredFlatRows.length}
+            onExportExcel={exportExcel}
+            onExportPdf={exportPdf}
+          />
         </div>
-
-        {hasReport && (
-          <div className="ops-perf-summary__actions-row ops-perf-summary__client-filters">
-            <div className="ops-perf-summary__field">
-              <label htmlFor="ops-pilot-perf-mission">Mission (filter view)</label>
-              <select
-                id="ops-pilot-perf-mission"
-                value={missionType}
-                onChange={(e) => setMissionType(e.target.value)}
-              >
-                {MISSION_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="ops-perf-summary__field">
-              <label htmlFor="ops-pilot-perf-pilot">Pilot (filter view)</label>
-              <select
-                id="ops-pilot-perf-pilot"
-                value={selectedPilotId}
-                onChange={(e) => setSelectedPilotId(e.target.value)}
-              >
-                <option value="">All</option>
-                {pilotOptions.map((p) => (
-                  <option key={p.id} value={String(p.id)}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        )}
       </div>
 
       {error && (

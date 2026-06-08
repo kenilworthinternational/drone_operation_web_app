@@ -52,6 +52,7 @@
   object-fit: contain;
 }
 
+.wing-hub-user-card,
 .wing-hub-comb-card {
   display: flex;
   align-items: center;
@@ -64,6 +65,88 @@
     0 8px 28px rgba(0, 0, 0, 0.14),
     0 0 0 1px rgba(10, 35, 66, 0.04) inset;
   transition: transform 0.25s ease, box-shadow 0.25s ease;
+  min-width: 0;
+  max-width: min(360px, 52vw);
+}
+
+.wing-hub-user-card {
+  flex: 0 1 auto;
+}
+
+.wing-hub-user-avatar {
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 10px;
+  background: #f1f5f9;
+}
+
+.wing-hub-user-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.wing-hub-user-avatar-fallback {
+  width: 52px;
+  height: 52px;
+  color: #64748b;
+}
+
+.wing-hub-user-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.wing-hub-user-name {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #0a2342;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wing-hub-user-role {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1e3a5f;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.wing-hub-comb-shortcut {
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  border-radius: 10px;
+  padding: 0.55rem 0.85rem;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.wing-hub-comb-shortcut:hover {
+  background: rgba(255, 255, 255, 0.24);
+  transform: translateY(-1px);
+}
+
+.wing-hub-comb-shortcut:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.7);
+  outline-offset: 2px;
 }
 
 .wing-hub-comb-card--action:hover {
@@ -116,8 +199,11 @@
 .wing-hub-header-actions {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 0.75rem;
+  min-width: 0;
+  flex: 0 1 auto;
+  justify-content: flex-end;
 }
 
 .wing-hub-logout-btn {

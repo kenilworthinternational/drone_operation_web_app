@@ -1,8 +1,15 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { Bars } from 'react-loader-spinner';
-import { FiDownload, FiRefreshCw } from 'react-icons/fi';
+import { FiRefreshCw } from 'react-icons/fi';
+import OpsroomPerfSummaryExportControls from './OpsroomPerfSummaryExportControls';
+import {
+  buildMonthlyTotalRow,
+  createPerfSummaryPdfDoc,
+  formatExportCell,
+  getPdfAutoTableOptions,
+  getPdfHeadRow,
+} from './opsroomPerfSummaryExportUtils';
 import * as XLSX from 'xlsx';
-import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { useLazyGetOpsroomMonthlyAchievementSummaryQuery } from '../../../api/services NodeJs/opsroomPerformanceSummaryApi';
 import { useGetReportPlantationsQuery } from '../../../api/services NodeJs/monthlyPlantationReportApi';
@@ -26,8 +33,6 @@ const COLUMNS = [
   { key: 'pct_achievement_ops', label: 'Achievement against monthly target (ops) %' },
   { key: 'pct_achievement_pilot', label: 'Achievement against monthly target (pilot) %' },
 ];
-
-const PCT_KEYS = new Set(['pct_achievement_ops', 'pct_achievement_pilot']);
 
 const OpsroomMonthlyAchievementSummary = () => {
   const currentYear = new Date().getFullYear();
@@ -85,25 +90,22 @@ const OpsroomMonthlyAchievementSummary = () => {
   const totals = report?.totals || {};
   const title = report?.year ? `Monthly Achievement Data — ${report.year}` : 'Monthly Achievement Data';
 
-  const formatCell = (key, value) => (PCT_KEYS.has(key) ? `${value}%` : value);
+  const formatCell = (key, value) => formatExportCell(key, value);
 
-  const exportExcel = () => {
-    if (!rows.length) return;
-    const header = COLUMNS.map((c) => c.label);
-    const body = rows.map((r) => COLUMNS.map((c) => formatCell(c.key, r[c.key])));
-    const totalRow = COLUMNS.map((c) => {
-      if (c.key === 'month_display') return 'Year total';
-      return formatCell(c.key, totals[c.key] ?? '');
-    });
+  const exportExcel = (exportColumns) => {
+    if (!rows.length || !exportColumns.length) return;
+    const header = exportColumns.map((c) => c.label);
+    const body = rows.map((r) => exportColumns.map((c) => formatCell(c.key, r[c.key])));
+    const totalRow = buildMonthlyTotalRow(exportColumns, totals);
     const ws = XLSX.utils.aoa_to_sheet([header, ...body, totalRow]);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Monthly Achievement');
     XLSX.writeFile(wb, `Monthly_Achievement_${selectedYear}.xlsx`);
   };
 
-  const exportPdf = () => {
-    if (!rows.length) return;
-    const doc = new jsPDF({ orientation: 'landscape' });
+  const exportPdf = (exportColumns) => {
+    if (!rows.length || !exportColumns.length) return;
+    const doc = createPerfSummaryPdfDoc();
     doc.setFontSize(12);
     doc.text(title, 14, 14);
     doc.setFontSize(8);
@@ -114,14 +116,12 @@ const OpsroomMonthlyAchievementSummary = () => {
     );
     autoTable(doc, {
       startY: 24,
-      head: [COLUMNS.map((c) => c.label)],
-      body: rows.map((r) => COLUMNS.map((c) => String(formatCell(c.key, r[c.key]) ?? ''))),
-      foot: [COLUMNS.map((c) => {
-        if (c.key === 'month_display') return 'Year total';
-        return String(formatCell(c.key, totals[c.key] ?? ''));
-      })],
-      styles: { fontSize: 7 },
-      headStyles: { fillColor: [0, 75, 113] },
+      head: [getPdfHeadRow(exportColumns)],
+      body: rows.map((r) =>
+        exportColumns.map((c) => String(formatCell(c.key, r[c.key]) ?? '')),
+      ),
+      foot: [buildMonthlyTotalRow(exportColumns, totals).map((v) => String(v ?? ''))],
+      ...getPdfAutoTableOptions(exportColumns),
     });
     doc.save(`Monthly_Achievement_${selectedYear}.pdf`);
   };
@@ -221,12 +221,12 @@ const OpsroomMonthlyAchievementSummary = () => {
           >
             <FiRefreshCw /> Generate
           </button>
-          <button type="button" className="ops-perf-summary__btn" onClick={exportExcel} disabled={!rows.length || isFetching}>
-            <FiDownload /> Excel
-          </button>
-          <button type="button" className="ops-perf-summary__btn" onClick={exportPdf} disabled={!rows.length || isFetching}>
-            <FiDownload /> PDF
-          </button>
+          <OpsroomPerfSummaryExportControls
+            columns={COLUMNS}
+            exportDisabled={!rows.length || isFetching}
+            onExportExcel={exportExcel}
+            onExportPdf={exportPdf}
+          />
         </div>
       </div>
 

@@ -1,8 +1,15 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { Bars } from 'react-loader-spinner';
-import { FiDownload, FiRefreshCw } from 'react-icons/fi';
+import { FiRefreshCw } from 'react-icons/fi';
+import OpsroomPerfSummaryExportControls from './OpsroomPerfSummaryExportControls';
+import {
+  buildDailyTotalRow,
+  createPerfSummaryPdfDoc,
+  formatExportCell,
+  getPdfAutoTableOptions,
+  getPdfHeadRow,
+} from './opsroomPerfSummaryExportUtils';
 import * as XLSX from 'xlsx';
-import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { useLazyGetOpsroomDailyPerformanceSummaryQuery } from '../../../api/services NodeJs/opsroomPerformanceSummaryApi';
 import { useGetReportPlantationsQuery } from '../../../api/services NodeJs/monthlyPlantationReportApi';
@@ -131,32 +138,22 @@ const OpsroomDailyPerformanceSummary = () => {
 
   const exportFileSuffix = sortedSelected.join('_') || 'report';
 
-  const exportExcel = () => {
-    if (!rows.length) return;
-    const header = COLUMNS.map((c) => c.label);
+  const exportExcel = (exportColumns) => {
+    if (!rows.length || !exportColumns.length) return;
+    const header = exportColumns.map((c) => c.label);
     const body = rows.map((r) =>
-      COLUMNS.map((c) => {
-        const v = r[c.key];
-        if (c.key === 'pct_achievement_monthly') return `${v}%`;
-        return v;
-      }),
+      exportColumns.map((c) => formatExportCell(c.key, r[c.key])),
     );
-    const totalRow = COLUMNS.map((c) => {
-      if (c.key === 'date_display') return 'Total';
-      if (c.key === 'pct_achievement_monthly') return `${totals.pct_achievement_monthly ?? 0}%`;
-      if (c.key === 'active_pilots') return totals.active_pilots_max ?? '';
-      if (c.key === 'active_drones') return totals.active_drones_max ?? '';
-      return totals[c.key] ?? '';
-    });
+    const totalRow = buildDailyTotalRow(exportColumns, totals);
     const ws = XLSX.utils.aoa_to_sheet([header, ...body, totalRow]);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Performance Summary');
     XLSX.writeFile(wb, `Performance_Summary_${exportFileSuffix}.xlsx`);
   };
 
-  const exportPdf = () => {
-    if (!rows.length) return;
-    const doc = new jsPDF({ orientation: 'landscape' });
+  const exportPdf = (exportColumns) => {
+    if (!rows.length || !exportColumns.length) return;
+    const doc = createPerfSummaryPdfDoc();
     doc.setFontSize(12);
     doc.text(title, 14, 14);
     doc.setFontSize(8);
@@ -167,25 +164,12 @@ const OpsroomDailyPerformanceSummary = () => {
     );
     autoTable(doc, {
       startY: 24,
-      head: [COLUMNS.map((c) => c.label)],
+      head: [getPdfHeadRow(exportColumns)],
       body: rows.map((r) =>
-        COLUMNS.map((c) => {
-          const v = r[c.key];
-          if (c.key === 'pct_achievement_monthly') return `${v}%`;
-          return String(v ?? '');
-        }),
+        exportColumns.map((c) => String(formatExportCell(c.key, r[c.key]) ?? '')),
       ),
-      foot: [
-        COLUMNS.map((c) => {
-          if (c.key === 'date_display') return 'Total';
-          if (c.key === 'pct_achievement_monthly') return `${totals.pct_achievement_monthly ?? 0}%`;
-          if (c.key === 'active_pilots') return String(totals.active_pilots_max ?? '');
-          if (c.key === 'active_drones') return String(totals.active_drones_max ?? '');
-          return String(totals[c.key] ?? '');
-        }),
-      ],
-      styles: { fontSize: 7 },
-      headStyles: { fillColor: [0, 75, 113] },
+      foot: [buildDailyTotalRow(exportColumns, totals).map((v) => String(v ?? ''))],
+      ...getPdfAutoTableOptions(exportColumns),
     });
     doc.save(`Performance_Summary_${exportFileSuffix}.pdf`);
   };
@@ -298,12 +282,12 @@ const OpsroomDailyPerformanceSummary = () => {
           >
             <FiRefreshCw /> Generate
           </button>
-          <button type="button" className="ops-perf-summary__btn" onClick={exportExcel} disabled={!rows.length || isFetching}>
-            <FiDownload /> Excel
-          </button>
-          <button type="button" className="ops-perf-summary__btn" onClick={exportPdf} disabled={!rows.length || isFetching}>
-            <FiDownload /> PDF
-          </button>
+          <OpsroomPerfSummaryExportControls
+            columns={COLUMNS}
+            exportDisabled={!rows.length || isFetching}
+            onExportExcel={exportExcel}
+            onExportPdf={exportPdf}
+          />
         </div>
       </div>
 

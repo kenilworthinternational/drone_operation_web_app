@@ -1,9 +1,11 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
+import { FaUserCircle } from 'react-icons/fa';
 import { useAppDispatch } from '../store/hooks';
 import { baseApi } from '../api/services/allEndpoints';
 import { logout } from '../store/slices/authSlice';
+import { useGetUserJobRolesQuery } from '../api/services NodeJs/jdManagementApi';
 import { useNavbarPermissions } from '../hooks/useNavbarPermissions';
 import {
   WING_HUB_META,
@@ -11,12 +13,15 @@ import {
 } from '../config/wingHubDisplay';
 import { OD_WING_OPERATION_DIGITALIZATION_TITLE } from '../config/odWingShell';
 import { isInternalDeveloper } from '../utils/authUtils';
+import { ensureHttps } from '../utils/urlUtils';
 import '../styles/wingHub.css';
 import TargetCursor from '../components/TargetCursor';
 
 const LOGO_SRC = `${process.env.PUBLIC_URL}/assets/images/kenilowrth-white.png`;
-const BEE_SRC = `${process.env.PUBLIC_URL}/assets/images/bee.png`;
 const LOGOUT_ICON_SRC = `${process.env.PUBLIC_URL}/assets/images/logout.png`;
+const GROUP_LOGO_BASE = 'https://drone-admin.kenilworthinternational.com/storage/image/logo/';
+const FALLBACK_AVATAR =
+  'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
 
 /** Same rules as LeftNavBar: which navbar rows under this wing resolve to at least one allowed path. */
 function getVisibleNavChildren(category, allowedPaths) {
@@ -28,6 +33,27 @@ function getVisibleNavChildren(category, allowedPaths) {
   });
 }
 
+function resolveJobRoleLabel(userData, jobRoles = []) {
+  const code = String(userData?.job_role || '').trim();
+  if (!code) return '';
+  const match = jobRoles.find(
+    (role) =>
+      String(role?.jdCode || '').trim().toLowerCase() === code.toLowerCase() ||
+      String(role?.id) === code
+  );
+  return match?.designation || code;
+}
+
+function resolveGroupLogoSrc(userData, logoErrorCount) {
+  const rawGroupId = userData?.group ?? userData?.group_id ?? userData?.user_group_id ?? null;
+  const normalizedGroupId = Number(rawGroupId);
+  const hasValidGroupId = Number.isFinite(normalizedGroupId) && normalizedGroupId > 0;
+  const paddedGroupId = hasValidGroupId ? String(normalizedGroupId).padStart(3, '0') : '000';
+  if (logoErrorCount >= 2) return FALLBACK_AVATAR;
+  if (logoErrorCount === 1) return `${GROUP_LOGO_BASE}000.png`;
+  return `${GROUP_LOGO_BASE}${paddedGroupId}.png`;
+}
+
 /**
  * Post-login landing: wing tiles (main nav categories).
  * SPMW / FOW open Forecast; ODDME opens Workflow Dashboard; other wings open first allowed nav item.
@@ -37,7 +63,20 @@ const WingHubHome = () => {
   const dispatch = useAppDispatch();
   const queryClient = useQueryClient();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+  const [avatarStage, setAvatarStage] = useState('profile');
   const { categories, categoryVisibility, allowedPaths, userData, loadingPermissions } = useNavbarPermissions();
+  const { data: userJobRolesData } = useGetUserJobRolesQuery(undefined, { skip: !userData?.id });
+  const userJobRoles = userJobRolesData?.data || [];
+
+  const userDisplayName = String(userData?.name || '').trim() || 'User';
+  const userJobRoleLabel = resolveJobRoleLabel(userData, userJobRoles);
+  const userProfileImage = userData?.image ? ensureHttps(userData.image) : null;
+  const groupLogoSrc = resolveGroupLogoSrc(userData, 0);
+  const groupLogoFallbackSrc = resolveGroupLogoSrc(userData, 1);
+
+  useEffect(() => {
+    setAvatarStage(userProfileImage ? 'profile' : 'group');
+  }, [userProfileImage, userData?.id]);
 
   const handleConfirmLogout = () => {
     dispatch(baseApi.util.resetApiState());
@@ -100,16 +139,40 @@ const WingHubHome = () => {
         <div className="wing-hub-header-inner">
           <img className="wing-hub-brand-logo" src={LOGO_SRC} alt="Kenilworth International" />
           <div className="wing-hub-header-actions">
+            <div className="wing-hub-user-card" title={`${userDisplayName}${userJobRoleLabel ? ` · ${userJobRoleLabel}` : ''}`}>
+              <div className="wing-hub-user-avatar" aria-hidden>
+                {avatarStage === 'profile' && userProfileImage ? (
+                  <img
+                    className="wing-hub-user-avatar-img"
+                    src={userProfileImage}
+                    alt=""
+                    onError={() => setAvatarStage('group')}
+                  />
+                ) : avatarStage === 'fallback' ? (
+                  <FaUserCircle className="wing-hub-user-avatar-fallback" />
+                ) : (
+                  <img
+                    className="wing-hub-user-avatar-img"
+                    src={avatarStage === 'group-fallback' ? groupLogoFallbackSrc : groupLogoSrc}
+                    alt=""
+                    onError={() => setAvatarStage((prev) => (prev === 'group' ? 'group-fallback' : 'fallback'))}
+                  />
+                )}
+              </div>
+              <div className="wing-hub-user-text">
+                <span className="wing-hub-user-name">{userDisplayName}</span>
+                {userJobRoleLabel ? (
+                  <span className="wing-hub-user-role">{userJobRoleLabel}</span>
+                ) : null}
+              </div>
+            </div>
             <button
               type="button"
-              className="wing-hub-comb-card wing-hub-comb-card--action cursor-target"
+              className="wing-hub-comb-shortcut cursor-target"
               onClick={() => navigate('/home/monitoringDashboard?comb=1')}
+              title="Central Operations Management Base"
             >
-              <img className="wing-hub-bee" src={BEE_SRC} alt="" />
-              <div className="wing-hub-comb-text">
-                <span className="wing-hub-comb-title">COMB</span>
-                <span className="wing-hub-comb-sub">Central Operations Management Base</span>
-              </div>
+              COMB
             </button>
             <button
               type="button"

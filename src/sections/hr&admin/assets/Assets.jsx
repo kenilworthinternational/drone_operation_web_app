@@ -10,7 +10,8 @@ import {
   FaBatteryFull,
   FaGamepad,
   FaChevronLeft,
-  FaChevronRight
+  FaChevronRight,
+  FaTimes,
 } from 'react-icons/fa';
 import '../../../styles/assets.css';
 import '../../../styles/vehicleProfile.css';
@@ -966,7 +967,11 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
           if (hasNewVehicleFiles) {
             const fd = new FormData();
             Object.entries(vehiclePayload).forEach(([key, value]) => {
-              if (value === undefined || value === null) return;
+              if (value === undefined) return;
+              if (value === null) {
+                fd.append(key, '');
+                return;
+              }
               fd.append(key, typeof value === 'object' ? JSON.stringify(value) : String(value));
             });
             vehicleFileFields.forEach((field) => {
@@ -1475,38 +1480,50 @@ const Assets = ({ singleMode = false, selectedType = null }) => {
                     <div className="form-row-assets">
                       <div className="form-group-assets">
                         <label htmlFor="driver">Driver</label>
-                        <select
-                          id="driver"
-                          name="driver"
-                          value={formData.driver}
-                          onChange={handleFormChange}
-                          disabled={vehicleDriversLoading}
-                        >
-                          <option value="">
-                            {vehicleDriversLoading 
-                              ? 'Loading drivers...' 
-                              : (formData.ownership === 'o' && internalDrivers.length === 0) || (formData.ownership === 'r' && externalDrivers.length === 0)
-                                ? 'No drivers available'
-                                : 'Select driver'}
-                          </option>
-                          {formData.ownership === 'o' ? (
-                            // Own Vehicle - Show Internal Drivers (member_type = 'i')
-                            internalDrivers.map((driver) => (
-                              <option key={driver.id} value={driver.id}>
-                                {driver.user_name} {driver.user_nic ? `(${driver.user_nic})` : ''}
-                                {Number(driver.assigned_vehicle_count) > 0 ? ` — ${driver.assigned_vehicle_count} vehicle(s)` : ''}
-                              </option>
-                            ))
-                          ) : (
-                            // Rented Vehicle - external members with driver role (driex preferred; legacy dri)
-                            externalDrivers.map((driver) => (
-                              <option key={driver.id} value={driver.id}>
-                                {driver.user_name} {driver.user_nic ? `(${driver.user_nic})` : ''}
-                                {Number(driver.assigned_vehicle_count) > 0 ? ` — ${driver.assigned_vehicle_count} vehicle(s)` : ''}
-                              </option>
-                            ))
-                          )}
-                        </select>
+                        <div className="driver-field-row-assets">
+                          <select
+                            id="driver"
+                            name="driver"
+                            value={formData.driver}
+                            onChange={handleFormChange}
+                            disabled={vehicleDriversLoading}
+                          >
+                            <option value="">
+                              {vehicleDriversLoading 
+                                ? 'Loading drivers...' 
+                                : (formData.ownership === 'o' && internalDrivers.length === 0) || (formData.ownership === 'r' && externalDrivers.length === 0)
+                                  ? 'No drivers available'
+                                  : 'Select driver'}
+                            </option>
+                            {formData.ownership === 'o' ? (
+                              internalDrivers.map((driver) => (
+                                <option key={driver.id} value={driver.id}>
+                                  {driver.user_name} {driver.user_nic ? `(${driver.user_nic})` : ''}
+                                  {Number(driver.assigned_vehicle_count) > 0 ? ` — ${driver.assigned_vehicle_count} vehicle(s)` : ''}
+                                </option>
+                              ))
+                            ) : (
+                              externalDrivers.map((driver) => (
+                                <option key={driver.id} value={driver.id}>
+                                  {driver.user_name} {driver.user_nic ? `(${driver.user_nic})` : ''}
+                                  {Number(driver.assigned_vehicle_count) > 0 ? ` — ${driver.assigned_vehicle_count} vehicle(s)` : ''}
+                                </option>
+                              ))
+                            )}
+                          </select>
+                          <button
+                            type="button"
+                            className="driver-clear-btn-assets"
+                            title="Remove driver"
+                            aria-label="Remove driver"
+                            disabled={!formData.driver || vehicleDriversLoading}
+                            onClick={() =>
+                              handleFormChange({ target: { name: 'driver', value: '' } })
+                            }
+                          >
+                            <FaTimes />
+                          </button>
+                        </div>
                         <small className="form-field-helper-assets">
                           Driver license images are reused from User Registration.
                         </small>

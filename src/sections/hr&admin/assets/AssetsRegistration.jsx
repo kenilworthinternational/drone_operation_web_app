@@ -1302,6 +1302,7 @@ const AssetsRegistration = ({
       <div className="form-row-assets-reg">
         <div className="form-group-assets-reg">
           <label htmlFor="driver">Driver</label>
+          <div className="driver-field-row-assets-reg">
           <div className="driver-search-wrapper-assets-reg">
             <input
               id="driver"
@@ -1367,6 +1368,21 @@ const AssetsRegistration = ({
                 )}
               </div>
             ) : null}
+          </div>
+          <button
+            type="button"
+            className="driver-clear-btn-assets-reg"
+            title="Remove driver"
+            aria-label="Remove driver"
+            disabled={!vehicleFormData.driver || vehicleDriversLoading}
+            onClick={() => {
+              setVehicleFormData((prev) => ({ ...prev, driver: '' }));
+              setDriverSearchTerm('');
+              setShowDriverDropdown(false);
+            }}
+          >
+            ×
+          </button>
           </div>
           <small className="form-field-helper-assets-reg">
             Driver license images are reused from User Registration driver profile.

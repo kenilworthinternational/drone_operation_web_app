@@ -147,6 +147,28 @@ const VEHICLE_REG_TABS = [
   { key: 'rental', label: 'Rental & owner' },
 ];
 
+const VEHICLE_REG_TAB_REQUIRED_FIELDS = {
+  basics: [
+    'ownership',
+    'vehicle_no',
+    'purchase_price',
+    'wing_id',
+    'vehicle_category',
+    'make',
+    'model',
+    'chassis_no',
+    'engine_no',
+    'insurance_expire_date',
+    'revenue_license_expire_date',
+    'initial_mileage',
+    'operational_status',
+    'activated',
+  ],
+  driver: [],
+  documents: [],
+  rental: ['owner_name', 'owner_contact_no'],
+};
+
 const VehiclesRegistration = ({
   compactHeader = false,
   profileLayout = false,
@@ -354,6 +376,58 @@ const VehiclesRegistration = ({
       .filter(Boolean)
       .join(' ');
 
+  const currentRegTabIndex = useMemo(
+    () => visibleRegTabs.findIndex((t) => t.key === vehicleRegTab),
+    [visibleRegTabs, vehicleRegTab]
+  );
+  const isFirstRegTab = currentRegTabIndex <= 0;
+  const isLastRegTab = currentRegTabIndex === visibleRegTabs.length - 1;
+
+  const validateVehicleRegTabBeforeNext = (tabKey) => {
+    const fields = VEHICLE_REG_TAB_REQUIRED_FIELDS[tabKey] || [];
+    const missingFields = fields.filter(
+      (field) => !vehicleFormData[field] || !String(vehicleFormData[field]).trim()
+    );
+
+    if (missingFields.length > 0) {
+      setMessage(
+        `Please fill in all required fields: ${missingFields.map(formatFieldLabel).join(', ')}`
+      );
+      setMessageType('error');
+      return false;
+    }
+
+    if (tabKey === 'basics') {
+      if (parsePurchasePrice(vehicleFormData.purchase_price) === null) {
+        setMessage('Please enter a valid purchase price.');
+        setMessageType('error');
+        return false;
+      }
+      if (parseWingId(vehicleFormData.wing_id) === null) {
+        setMessage('Please select a wing.');
+        setMessageType('error');
+        return false;
+      }
+    }
+
+    setMessage('');
+    return true;
+  };
+
+  const goToNextRegTab = () => {
+    if (!validateVehicleRegTabBeforeNext(vehicleRegTab)) return;
+    const nextTab = visibleRegTabs[currentRegTabIndex + 1];
+    if (nextTab) setVehicleRegTab(nextTab.key);
+  };
+
+  const goToPrevRegTab = () => {
+    const prevTab = visibleRegTabs[currentRegTabIndex - 1];
+    if (prevTab) {
+      setMessage('');
+      setVehicleRegTab(prevTab.key);
+    }
+  };
+
   // Form fields for Generators
   const [generatorFormData, setGeneratorFormData] = useState(() => ({ ...equipmentInitialState }));
 
@@ -542,6 +616,9 @@ const VehiclesRegistration = ({
         break;
       case 'vehicles':
         setVehicleFormData({ ...vehicleInitialState });
+        if (profileLayout) {
+          setVehicleRegTab('basics');
+        }
         // Clear file inputs
         if (registrationDocRef.current) registrationDocRef.current.value = '';
         if (revenueLicenseRef.current) revenueLicenseRef.current.value = '';
@@ -1106,6 +1183,7 @@ const VehiclesRegistration = ({
   const renderVehiclesForm = () => (
     <form
       onSubmit={(e) => handleSubmit(e, 'vehicles')}
+      noValidate={profileLayout || undefined}
       className={`assets-registration-form-assets-reg${profileLayout ? ' assets-registration-form-assets-reg--profile' : ''}`}
     >
       {profileLayout ? (
@@ -1306,6 +1384,7 @@ const VehiclesRegistration = ({
       <div className="form-row-assets-reg">
         <div className="form-group-assets-reg">
           <label htmlFor="driver">Driver</label>
+          <div className="driver-field-row-assets-reg">
           <div className="driver-search-wrapper-assets-reg">
             <input
               id="driver"
@@ -1371,6 +1450,21 @@ const VehiclesRegistration = ({
                 )}
               </div>
             ) : null}
+          </div>
+          <button
+            type="button"
+            className="driver-clear-btn-assets-reg"
+            title="Remove driver"
+            aria-label="Remove driver"
+            disabled={!vehicleFormData.driver || vehicleDriversLoading}
+            onClick={() => {
+              setVehicleFormData((prev) => ({ ...prev, driver: '' }));
+              setDriverSearchTerm('');
+              setShowDriverDropdown(false);
+            }}
+          >
+            ×
+          </button>
           </div>
           <small className="form-field-helper-assets-reg">
             Driver license images are reused from User Registration driver profile.
@@ -1846,31 +1940,74 @@ const VehiclesRegistration = ({
       ) : null}
 
       <div className={profileLayout ? 'vehicle-profile-form-actions' : 'form-actions-assets-reg'}>
-        <button
-          type="submit"
-          className={profileLayout ? 'vehicle-profile-btn-primary' : 'submit-btn-assets-reg'}
-          disabled={isLoading}
-        >
-          {isLoading ? 'Registering...' : 'Register Vehicle'}
-        </button>
-        <button
-          type="button"
-          className={profileLayout ? 'vehicle-profile-btn-secondary' : 'reset-btn-assets-reg'}
-          onClick={() => resetForm('vehicles')}
-          disabled={isLoading}
-        >
-          Reset
-        </button>
-        {profileLayout && onCancel ? (
-          <button
-            type="button"
-            className="vehicle-profile-btn-secondary"
-            onClick={onCancel}
-            disabled={isLoading}
-          >
-            Cancel
-          </button>
-        ) : null}
+        {profileLayout ? (
+          <>
+            {isLastRegTab ? (
+              <button
+                type="submit"
+                className="vehicle-profile-btn-primary"
+                disabled={isLoading}
+              >
+                {isLoading ? 'Registering...' : 'Register'}
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="vehicle-profile-btn-primary"
+                onClick={goToNextRegTab}
+                disabled={isLoading}
+              >
+                Next
+              </button>
+            )}
+            {!isFirstRegTab ? (
+              <button
+                type="button"
+                className="vehicle-profile-btn-secondary"
+                onClick={goToPrevRegTab}
+                disabled={isLoading}
+              >
+                Back
+              </button>
+            ) : null}
+            <button
+              type="button"
+              className="vehicle-profile-btn-secondary"
+              onClick={() => resetForm('vehicles')}
+              disabled={isLoading}
+            >
+              Reset
+            </button>
+            {onCancel ? (
+              <button
+                type="button"
+                className="vehicle-profile-btn-secondary"
+                onClick={onCancel}
+                disabled={isLoading}
+              >
+                Cancel
+              </button>
+            ) : null}
+          </>
+        ) : (
+          <>
+            <button
+              type="submit"
+              className="submit-btn-assets-reg"
+              disabled={isLoading}
+            >
+              {isLoading ? 'Registering...' : 'Register Vehicle'}
+            </button>
+            <button
+              type="button"
+              className="reset-btn-assets-reg"
+              onClick={() => resetForm('vehicles')}
+              disabled={isLoading}
+            >
+              Reset
+            </button>
+          </>
+        )}
       </div>
     </form>
   );
