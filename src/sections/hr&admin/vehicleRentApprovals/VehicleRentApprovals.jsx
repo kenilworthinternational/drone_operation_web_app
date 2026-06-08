@@ -121,15 +121,19 @@ const VehicleRentApprovals = ({ embedded = false }) => {
   const userId = userData?.id;
   
   // Month selector - default to current month (must be declared before use in query)
-  const [selectedMonth, setSelectedMonth] = useState(() => {
+  const defaultYearMonth = () => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  });
+  };
 
-  // Status filter - default to 'p' (pending)
-  const [statusFilter, setStatusFilter] = useState('p');
-  const [vehicleFilter, setVehicleFilter] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
+  const [dailySelectedMonth, setDailySelectedMonth] = useState(defaultYearMonth);
+  const [dailyVehicleFilter, setDailyVehicleFilter] = useState('');
+  const [dailySearchTerm, setDailySearchTerm] = useState('');
+
+  const [monthlySelectedMonth, setMonthlySelectedMonth] = useState(defaultYearMonth);
+  const [monthlyStatusFilter, setMonthlyStatusFilter] = useState('p');
+  const [monthlyVehicleFilter, setMonthlyVehicleFilter] = useState('');
+  const [monthlySearchTerm, setMonthlySearchTerm] = useState('');
 
   // Generate list of months (last 12 months)
   const months = useMemo(() => {
@@ -147,12 +151,12 @@ const VehicleRentApprovals = ({ embedded = false }) => {
   
   // Vehicle Rent queries - filter by selected month and status
   const { data: pendingVehicleRents = [], isLoading: vehicleRentLoading, refetch: refetchVehicleRents } = useGetPendingApprovalsQuery({ 
-    yearMonth: selectedMonth,
-    status: statusFilter
+    yearMonth: monthlySelectedMonth,
+    status: monthlyStatusFilter
   });
   const { data: dailyVerificationRows = [], isLoading: verificationQueueLoading, refetch: refetchVerificationQueue } = useGetDailyVerificationQueueQuery({
-    yearMonth: selectedMonth,
-    vehicle: vehicleFilter || undefined,
+    yearMonth: dailySelectedMonth,
+    vehicle: dailyVehicleFilter || undefined,
   });
   
   const [approveVehicleDate, { isLoading: isApprovingVehicle }] = useApproveVehicleDateMutation();
@@ -252,7 +256,7 @@ const VehicleRentApprovals = ({ embedded = false }) => {
     setDailyDetailsDialog(true);
     try {
       const rows = await fetchDailyDetails({
-        yearMonth: selectedMonth,
+        yearMonth: rent?.month_key || monthlySelectedMonth,
         vehicle: vehicleRef,
       }).unwrap();
       setDailyDetailsRows(rows || []);
@@ -272,7 +276,7 @@ const VehicleRentApprovals = ({ embedded = false }) => {
       if (dailyDetailsTarget) {
         const vehicleRef = dailyDetailsTarget?.vehicle_id || dailyDetailsTarget?.vehicle_no || dailyDetailsTarget?.vehicle;
         const rows = await fetchDailyDetails({
-          yearMonth: selectedMonth,
+          yearMonth: dailyDetailsTarget?.month_key || monthlySelectedMonth,
           vehicle: vehicleRef,
         }).unwrap();
         setDailyDetailsRows(rows || []);
@@ -307,7 +311,7 @@ const VehicleRentApprovals = ({ embedded = false }) => {
       if (dailyDetailsTarget) {
         const vehicleRef = dailyDetailsTarget?.vehicle_id || dailyDetailsTarget?.vehicle_no || dailyDetailsTarget?.vehicle;
         const rows = await fetchDailyDetails({
-          yearMonth: selectedMonth,
+          yearMonth: dailyDetailsTarget?.month_key || monthlySelectedMonth,
           vehicle: vehicleRef,
         }).unwrap();
         setDailyDetailsRows(rows || []);
@@ -326,21 +330,21 @@ const VehicleRentApprovals = ({ embedded = false }) => {
 
   // Filter vehicle rents (client-side search + vehicle dropdown)
   const filteredVehicleRents = useMemo(() => {
-    const q = String(searchTerm || '').trim().toLowerCase();
+    const q = String(monthlySearchTerm || '').trim().toLowerCase();
     return pendingVehicleRents.filter((rent) => {
       const matchesSearch =
         !q ||
         String(rent.vehicle_no || rent.vehicle || '').toLowerCase().includes(q) ||
         String(rent.driver_name || '').toLowerCase().includes(q);
       const matchesVehicle =
-        !vehicleFilter || (rent.vehicle_no || rent.vehicle) === vehicleFilter;
+        !monthlyVehicleFilter || (rent.vehicle_no || rent.vehicle) === monthlyVehicleFilter;
       return matchesSearch && matchesVehicle;
     });
-  }, [pendingVehicleRents, searchTerm, vehicleFilter]);
+  }, [pendingVehicleRents, monthlySearchTerm, monthlyVehicleFilter]);
 
   /** Daily queue API has no text search; narrow by vehicle / make / model in the UI */
   const filteredDailyVerificationRows = useMemo(() => {
-    const q = String(searchTerm || '').trim().toLowerCase();
+    const q = String(dailySearchTerm || '').trim().toLowerCase();
     if (!q) return dailyVerificationRows;
     return dailyVerificationRows.filter((row) => {
       const vn = String(row.vehicle_no || row.vehicle || '').toLowerCase();
@@ -348,14 +352,15 @@ const VehicleRentApprovals = ({ embedded = false }) => {
       const meta = `${row.make || ''} ${row.model || ''}`.toLowerCase();
       return vn.includes(q) || submitter.includes(q) || meta.includes(q);
     });
-  }, [dailyVerificationRows, searchTerm]);
+  }, [dailyVerificationRows, dailySearchTerm]);
 
-  // Extract unique vehicles using vehicle_no (preferred) or vehicle as fallback
-  const uniqueVehicles = [...new Set(
-    pendingVehicleRents
-      .map(r => r.vehicle_no || r.vehicle)
-      .filter(Boolean)
-  )].sort();
+  const dailyUniqueVehicles = useMemo(() => (
+    [...new Set(dailyVerificationRows.map((r) => r.vehicle_no || r.vehicle).filter(Boolean))].sort()
+  ), [dailyVerificationRows]);
+
+  const monthlyUniqueVehicles = useMemo(() => (
+    [...new Set(pendingVehicleRents.map((r) => r.vehicle_no || r.vehicle).filter(Boolean))].sort()
+  ), [pendingVehicleRents]);
 
   const formatVehicleDate = (dateString) => {
     if (!dateString) return 'N/A';
@@ -432,56 +437,191 @@ const VehicleRentApprovals = ({ embedded = false }) => {
     ? { flex: 1, minHeight: 0, overflow: 'auto' }
     : { flex: 1, minHeight: 0, overflow: 'auto' };
 
-  if (vehicleRentLoading || verificationQueueLoading) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight={embedded ? 220 : 400}>
-        <CircularProgress />
-      </Box>
-    );
-  }
+  const filterControlSx = {
+    '& .MuiOutlinedInput-root': {
+      backgroundColor: 'white',
+      borderRadius: 2,
+      '&:hover': {
+        '& .MuiOutlinedInput-notchedOutline': {
+          borderColor: 'primary.main',
+        },
+      },
+    },
+  };
 
-  return (
-    <Box className="vehicle-rent-approvals-container" sx={shellSx}>
-      {/* Filters */}
-      <Card 
-        className="vehicle-rent-approvals-filter-card"
-        sx={{ 
-          mb: 1.5,
-          p: 1.6,
-          boxShadow: 'none',
-          borderRadius: 2,
+  const renderFilterActions = (onRefresh, onClear, showClear) => (
+    <Box sx={{ display: 'flex', gap: 0.75, justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>
+      <Tooltip title="Refresh Data" slotProps={popperAboveHostOverlaySlotProps}>
+        <IconButton
+          onClick={onRefresh}
+          color="primary"
+          size="small"
+          sx={{
+            backgroundColor: 'primary.main',
+            color: 'white',
+            '&:hover': {
+              backgroundColor: 'primary.dark',
+              transform: 'rotate(180deg)',
+            },
+            transition: 'all 0.3s ease',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+          }}
+        >
+          <Refresh />
+        </IconButton>
+      </Tooltip>
+      {showClear ? (
+        <Tooltip title="Clear Filters" slotProps={popperAboveHostOverlaySlotProps}>
+          <IconButton
+            onClick={onClear}
+            size="small"
+            sx={{
+              backgroundColor: 'error.light',
+              color: 'white',
+              '&:hover': {
+                backgroundColor: 'error.main',
+              },
+              transition: 'all 0.2s ease',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+            }}
+          >
+            <Cancel />
+          </IconButton>
+        </Tooltip>
+      ) : null}
+    </Box>
+  );
+
+  const renderDailyFilters = () => {
+    const showClear =
+      dailySearchTerm ||
+      dailyVehicleFilter ||
+      dailySelectedMonth !== months[0]?.value;
+
+    return (
+      <Box
+        className="vehicle-rent-approvals-filter-card vehicle-rent-approvals-queue-filter"
+        sx={{
+          p: 1.5,
+          borderBottom: '1px solid #d9e5ef',
           background: 'linear-gradient(180deg, #fdfefe 0%, #f6fbff 100%)',
-          border: '1px solid #d9e5ef'
         }}
       >
-        <Box sx={{ mb: 1.25, display: 'flex', alignItems: 'center', gap: 0.75 }}>
+        <Box sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 0.75 }}>
           <FilterList sx={{ color: 'primary.main', fontSize: 18 }} />
-          <Typography variant="body1" sx={{ fontWeight: 600, color: '#1a202c' }}>
-            Search & Filter
+          <Typography variant="body2" sx={{ fontWeight: 600, color: '#1a202c' }}>
+            Daily verification filters
           </Typography>
         </Box>
         <Grid container spacing={1.25} alignItems="center">
           <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <FormControl 
-              fullWidth 
-              size="small"
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  backgroundColor: 'white',
-                  borderRadius: 2,
-                  '&:hover': {
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: 'primary.main',
-                    },
-                  },
-                },
-              }}
-            >
+            <FormControl fullWidth size="small" sx={filterControlSx}>
               <InputLabel>Select Month</InputLabel>
               <Select
-                value={selectedMonth}
+                value={dailySelectedMonth}
                 label="Select Month"
-                onChange={(e) => setSelectedMonth(e.target.value)}
+                onChange={(e) => setDailySelectedMonth(e.target.value)}
+                MenuProps={selectMenuPropsAboveHostOverlay}
+                startAdornment={
+                  <InputAdornment position="start" sx={{ ml: 1 }}>
+                    <CalendarToday sx={{ fontSize: 18, color: 'text.secondary' }} />
+                  </InputAdornment>
+                }
+              >
+                {months.map((month) => (
+                  <MenuItem key={month.value} value={month.value}>
+                    {month.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+            <TextField
+              fullWidth
+              size="small"
+              placeholder="Search by vehicle number or submitter name..."
+              value={dailySearchTerm}
+              onChange={(e) => setDailySearchTerm(e.target.value)}
+              sx={filterControlSx}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search sx={{ color: 'text.secondary' }} />
+                  </InputAdornment>
+                ),
+              }}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <FormControl fullWidth size="small" sx={filterControlSx}>
+              <InputLabel>Filter by Vehicle</InputLabel>
+              <Select
+                value={dailyVehicleFilter}
+                label="Filter by Vehicle"
+                onChange={(e) => setDailyVehicleFilter(e.target.value)}
+                MenuProps={selectMenuPropsAboveHostOverlay}
+                startAdornment={
+                  <InputAdornment position="start" sx={{ ml: 1 }}>
+                    <DirectionsCar sx={{ fontSize: 18, color: 'text.secondary' }} />
+                  </InputAdornment>
+                }
+              >
+                <MenuItem value="">All Vehicles</MenuItem>
+                {dailyUniqueVehicles.map((vehicle) => (
+                  <MenuItem key={vehicle} value={vehicle}>
+                    {vehicle}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6, md: 2 }}>
+            {renderFilterActions(
+              () => refetchVerificationQueue(),
+              () => {
+                setDailySearchTerm('');
+                setDailyVehicleFilter('');
+                setDailySelectedMonth(defaultYearMonth());
+              },
+              showClear,
+            )}
+          </Grid>
+        </Grid>
+      </Box>
+    );
+  };
+
+  const renderMonthlyFilters = () => {
+    const showClear =
+      monthlySearchTerm ||
+      monthlyVehicleFilter ||
+      monthlySelectedMonth !== months[0]?.value ||
+      monthlyStatusFilter !== 'p';
+
+    return (
+      <Box
+        className="vehicle-rent-approvals-filter-card vehicle-rent-approvals-queue-filter"
+        sx={{
+          p: 1.5,
+          borderBottom: '1px solid #d9e5ef',
+          background: 'linear-gradient(180deg, #fdfefe 0%, #f6fbff 100%)',
+        }}
+      >
+        <Box sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 0.75 }}>
+          <FilterList sx={{ color: 'primary.main', fontSize: 18 }} />
+          <Typography variant="body2" sx={{ fontWeight: 600, color: '#1a202c' }}>
+            Monthly approval filters
+          </Typography>
+        </Box>
+        <Grid container spacing={1.25} alignItems="center">
+          <Grid size={{ xs: 12, sm: 6, md: 2.5 }}>
+            <FormControl fullWidth size="small" sx={filterControlSx}>
+              <InputLabel>Select Month</InputLabel>
+              <Select
+                value={monthlySelectedMonth}
+                label="Select Month"
+                onChange={(e) => setMonthlySelectedMonth(e.target.value)}
                 MenuProps={selectMenuPropsAboveHostOverlay}
                 startAdornment={
                   <InputAdornment position="start" sx={{ ml: 1 }}>
@@ -498,26 +638,12 @@ const VehicleRentApprovals = ({ embedded = false }) => {
             </FormControl>
           </Grid>
           <Grid size={{ xs: 12, sm: 6, md: 2 }}>
-            <FormControl 
-              fullWidth 
-              size="small"
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  backgroundColor: 'white',
-                  borderRadius: 2,
-                  '&:hover': {
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: 'primary.main',
-                    },
-                  },
-                },
-              }}
-            >
+            <FormControl fullWidth size="small" sx={filterControlSx}>
               <InputLabel>Status</InputLabel>
               <Select
-                value={statusFilter}
+                value={monthlyStatusFilter}
                 label="Status"
-                onChange={(e) => setStatusFilter(e.target.value)}
+                onChange={(e) => setMonthlyStatusFilter(e.target.value)}
                 MenuProps={selectMenuPropsAboveHostOverlay}
               >
                 <MenuItem value="p">Pending</MenuItem>
@@ -527,31 +653,14 @@ const VehicleRentApprovals = ({ embedded = false }) => {
               </Select>
             </FormControl>
           </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }} sx={{ position: 'relative', zIndex: 2 }}>
+          <Grid size={{ xs: 12, sm: 6, md: 3.5 }}>
             <TextField
               fullWidth
               size="small"
               placeholder="Search by vehicle number or driver name..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              sx={{
-                position: 'relative',
-                zIndex: 2,
-                '& .MuiOutlinedInput-root': {
-                  backgroundColor: 'white',
-                  borderRadius: 2,
-                  '&:hover': {
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: 'primary.main',
-                    },
-                  },
-                  '&.Mui-focused': {
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderWidth: 2,
-                    },
-                  },
-                },
-              }}
+              value={monthlySearchTerm}
+              onChange={(e) => setMonthlySearchTerm(e.target.value)}
+              sx={filterControlSx}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -562,26 +671,12 @@ const VehicleRentApprovals = ({ embedded = false }) => {
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6, md: 2 }}>
-            <FormControl 
-              fullWidth 
-              size="small"
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  backgroundColor: 'white',
-                  borderRadius: 2,
-                  '&:hover': {
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: 'primary.main',
-                    },
-                  },
-                },
-              }}
-            >
+            <FormControl fullWidth size="small" sx={filterControlSx}>
               <InputLabel>Filter by Vehicle</InputLabel>
               <Select
-                value={vehicleFilter}
+                value={monthlyVehicleFilter}
                 label="Filter by Vehicle"
-                onChange={(e) => setVehicleFilter(e.target.value)}
+                onChange={(e) => setMonthlyVehicleFilter(e.target.value)}
                 MenuProps={selectMenuPropsAboveHostOverlay}
                 startAdornment={
                   <InputAdornment position="start" sx={{ ml: 1 }}>
@@ -590,7 +685,7 @@ const VehicleRentApprovals = ({ embedded = false }) => {
                 }
               >
                 <MenuItem value="">All Vehicles</MenuItem>
-                {uniqueVehicles.map((vehicle) => (
+                {monthlyUniqueVehicles.map((vehicle) => (
                   <MenuItem key={vehicle} value={vehicle}>
                     {vehicle}
                   </MenuItem>
@@ -598,58 +693,35 @@ const VehicleRentApprovals = ({ embedded = false }) => {
               </Select>
             </FormControl>
           </Grid>
-          <Grid size={{ xs: 12, sm: 12, md: 2 }} sx={{ display: 'flex', gap: 0.75, justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>
-            <Tooltip title="Refresh Data" slotProps={popperAboveHostOverlaySlotProps}>
-              <IconButton 
-                onClick={() => {
-                  refetchVehicleRents();
-                  refetchVerificationQueue();
-                }} 
-                color="primary"
-                size="small"
-                sx={{ 
-                  backgroundColor: 'primary.main',
-                  color: 'white',
-                  '&:hover': {
-                    backgroundColor: 'primary.dark',
-                    transform: 'rotate(180deg)',
-                  },
-                  transition: 'all 0.3s ease',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                }}
-              >
-                <Refresh />
-              </IconButton>
-            </Tooltip>
-            {(searchTerm || vehicleFilter || selectedMonth !== months[0]?.value || statusFilter !== 'p') ? (
-              <Tooltip title="Clear Filters" slotProps={popperAboveHostOverlaySlotProps}>
-                <IconButton 
-                  onClick={() => {
-                    setSearchTerm('');
-                    setVehicleFilter('');
-                    setStatusFilter('p');
-                    const now = new Date();
-                    setSelectedMonth(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`);
-                  }}
-                  size="small"
-                  sx={{ 
-                    backgroundColor: 'error.light',
-                    color: 'white',
-                    '&:hover': {
-                      backgroundColor: 'error.main',
-                    },
-                    transition: 'all 0.2s ease',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                  }}
-                >
-                  <Cancel />
-                </IconButton>
-              </Tooltip>
-            ) : null}
+          <Grid size={{ xs: 12, sm: 6, md: 2 }}>
+            {renderFilterActions(
+              () => refetchVehicleRents(),
+              () => {
+                setMonthlySearchTerm('');
+                setMonthlyVehicleFilter('');
+                setMonthlyStatusFilter('p');
+                setMonthlySelectedMonth(defaultYearMonth());
+              },
+              showClear,
+            )}
           </Grid>
         </Grid>
-      </Card>
+      </Box>
+    );
+  };
 
+  const tabLoading = activeQueueTab === 'daily' ? verificationQueueLoading : vehicleRentLoading;
+
+  if (tabLoading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight={embedded ? 220 : 400}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  return (
+    <Box className="vehicle-rent-approvals-container" sx={shellSx}>
       <Card sx={{ mb: 1.5, boxShadow: 'none', border: '1px solid #000000', borderRadius: 2, backgroundColor: '#ffffff' }}>
         <Tabs
           value={activeQueueTab}
@@ -692,6 +764,7 @@ const VehicleRentApprovals = ({ embedded = false }) => {
 
       {activeQueueTab === 'daily' ? (
       <Card sx={{ mb: 0, flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', boxShadow: 'none', border: '1px solid #d9e5ef', borderRadius: 2, overflow: 'hidden' }}>
+        {renderDailyFilters()}
         
         {filteredDailyVerificationRows.length === 0 ? (
           <Box sx={{ p: 3, textAlign: 'center' }}>
@@ -802,24 +875,25 @@ const VehicleRentApprovals = ({ embedded = false }) => {
       </Card>
       ) : null}
 
-      {/* Vehicle Rent Table */}
-      {activeQueueTab === 'monthly' && filteredVehicleRents.length === 0 ? (
-        <Card sx={{ p: 4, flex: 1, minHeight: 0, boxShadow: 'none', border: '1px solid #d9e5ef', borderRadius: 2 }}>
-          <DirectionsCar sx={{ fontSize: 64, color: '#cbd5e0', mb: 2 }} />
-          <Typography variant="h6" color="text.secondary" gutterBottom>
-            {statusFilter === 'p' ? 'No pending vehicle rent approvals' : 
-             statusFilter === 'a' ? 'No approved vehicle rent records' :
-             statusFilter === 'd' ? 'No declined vehicle rent records' :
-             'No vehicle rent records found'}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {pendingVehicleRents.length === 0 
-              ? 'Try adjusting your filters or select a different month'
-              : 'Try adjusting your filters'}
-          </Typography>
-        </Card>
-      ) : activeQueueTab === 'monthly' ? (
+      {activeQueueTab === 'monthly' ? (
         <Card sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', boxShadow: 'none', border: '1px solid #d9e5ef', borderRadius: 2, overflow: 'hidden' }}>
+          {renderMonthlyFilters()}
+          {filteredVehicleRents.length === 0 ? (
+            <Box sx={{ p: 4, flex: 1, textAlign: 'center' }}>
+              <DirectionsCar sx={{ fontSize: 64, color: '#cbd5e0', mb: 2 }} />
+              <Typography variant="h6" color="text.secondary" gutterBottom>
+                {monthlyStatusFilter === 'p' ? 'No pending vehicle rent approvals' :
+                 monthlyStatusFilter === 'a' ? 'No approved vehicle rent records' :
+                 monthlyStatusFilter === 'd' ? 'No declined vehicle rent records' :
+                 'No vehicle rent records found'}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {pendingVehicleRents.length === 0
+                  ? 'Try adjusting your filters or select a different month'
+                  : 'Try adjusting your filters'}
+              </Typography>
+            </Box>
+          ) : (
           <TableContainer className="vehicle-rent-queue-table-wrap" sx={queueTableContainerSx}>
             <Table stickyHeader>
               <TableHead>
@@ -1008,6 +1082,7 @@ const VehicleRentApprovals = ({ embedded = false }) => {
               </TableBody>
             </Table>
           </TableContainer>
+          )}
         </Card>
       ) : null}
 
@@ -1114,7 +1189,7 @@ const VehicleRentApprovals = ({ embedded = false }) => {
           </Box>
           {dailyDetailsTarget && (
             <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
-              {(dailyDetailsTarget.vehicle_no || dailyDetailsTarget.vehicle || 'Vehicle')} - {selectedMonth}
+              {(dailyDetailsTarget.vehicle_no || dailyDetailsTarget.vehicle || 'Vehicle')} - {dailyDetailsTarget?.month_key || monthlySelectedMonth}
             </Typography>
           )}
         </DialogTitle>

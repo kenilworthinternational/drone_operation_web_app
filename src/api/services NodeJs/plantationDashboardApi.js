@@ -418,6 +418,187 @@ export const plantationDashboardApi = baseApi.injectEndpoints({
       },
       invalidatesTags: ['PlantationPlanRequests', 'Plans', 'Calendar'],
     }),
+
+    approvePlantationPlanRequest: builder.mutation({
+      queryFn: async ({ id, pickedDate, planCount }) => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: `/api/plantation-plan-requests/${id}/approve`,
+            method: 'POST',
+            body: { pickedDate, planCount },
+          },
+          {},
+          {}
+        );
+        return result;
+      },
+      invalidatesTags: ['PlantationPlanRequests', 'Plans', 'Calendar'],
+    }),
+
+    getPlantationPlanRequestOpsCalendarPlans: builder.query({
+      queryFn: async ({ startDate, endDate, estateId } = {}) => {
+        const q = new URLSearchParams({
+          startDate: String(startDate),
+          endDate: String(endDate),
+        });
+        if (estateId != null && estateId !== '') {
+          q.set('estateId', String(estateId));
+        }
+        const result = await nodeBackendBaseQuery(
+          { url: `/api/plantation-plan-requests/ops-calendar-plans?${q.toString()}`, method: 'GET' },
+          {},
+          {}
+        );
+        if (result.error) return result;
+        const rows = extractPlantationPlanRequestsRows(result.data);
+        return { data: rows };
+      },
+      providesTags: ['PlantationPlanRequests', 'Calendar'],
+    }),
+
+    getPlantationPlanRescheduleRequestsPendingCount: builder.query({
+      queryFn: async () => {
+        const result = await nodeBackendBaseQuery(
+          { url: '/api/plantation-plan-reschedule-requests/pending-count', method: 'GET' },
+          {},
+          {}
+        );
+        return result;
+      },
+      providesTags: ['PlantationPlanRescheduleRequests'],
+    }),
+
+    getPlantationPlanRescheduleRequestsList: builder.query({
+      queryFn: async ({ status = 'pending', limit } = {}) => {
+        const q = new URLSearchParams({ status: String(status) });
+        if (limit != null && limit !== '') q.set('limit', String(limit));
+        const result = await nodeBackendBaseQuery(
+          { url: `/api/plantation-plan-reschedule-requests?${q.toString()}`, method: 'GET' },
+          {},
+          {}
+        );
+        if (result.error) return result;
+        const rows = extractPlantationPlanRequestsRows(result.data);
+        return { data: rows };
+      },
+      providesTags: ['PlantationPlanRescheduleRequests'],
+    }),
+
+    approvePlantationPlanRescheduleRequest: builder.mutation({
+      queryFn: async ({ id, pickedDate }) => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: `/api/plantation-plan-reschedule-requests/${id}/approve`,
+            method: 'POST',
+            body: { pickedDate },
+          },
+          {},
+          {}
+        );
+        return result;
+      },
+      invalidatesTags: ['PlantationPlanRescheduleRequests', 'Plans', 'Calendar'],
+    }),
+
+    declinePlantationPlanRescheduleRequest: builder.mutation({
+      queryFn: async ({ id, declineReason }) => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: `/api/plantation-plan-reschedule-requests/${id}/decline`,
+            method: 'POST',
+            body: { declineReason: declineReason || '' },
+          },
+          {},
+          {}
+        );
+        return result;
+      },
+      invalidatesTags: ['PlantationPlanRescheduleRequests'],
+    }),
+
+    getPlantationMonthlyPlanRequestsPendingCount: builder.query({
+      queryFn: async () => {
+        const result = await nodeBackendBaseQuery(
+          { url: '/api/plantation-monthly-plan-requests/pending-count', method: 'GET' },
+          {},
+          {}
+        );
+        return result;
+      },
+      providesTags: ['PlantationMonthlyPlanRequests'],
+    }),
+
+    getPlantationMonthlyPlanRequestsList: builder.query({
+      queryFn: async ({ status = 'pending', limit } = {}) => {
+        const q = new URLSearchParams({ status: String(status) });
+        if (limit != null && limit !== '') q.set('limit', String(limit));
+        const result = await nodeBackendBaseQuery(
+          { url: `/api/plantation-monthly-plan-requests?${q.toString()}`, method: 'GET' },
+          {},
+          {}
+        );
+        if (result.error) return result;
+        const rows = extractPlantationPlanRequestsRows(result.data);
+        return { data: rows };
+      },
+      providesTags: ['PlantationMonthlyPlanRequests'],
+    }),
+
+    getPlantationMonthlyPlanRequestById: builder.query({
+      queryFn: async (id) => {
+        const result = await nodeBackendBaseQuery(
+          { url: `/api/plantation-monthly-plan-requests/${id}`, method: 'GET' },
+          {},
+          {}
+        );
+        return result;
+      },
+      providesTags: ['PlantationMonthlyPlanRequests'],
+    }),
+
+    getPlantationMonthlyPlanRequestCalendarContext: builder.query({
+      queryFn: async (id) => {
+        const result = await nodeBackendBaseQuery(
+          { url: `/api/plantation-monthly-plan-requests/${id}/calendar-context`, method: 'GET' },
+          {},
+          {}
+        );
+        return result;
+      },
+      providesTags: ['PlantationMonthlyPlanRequests'],
+    }),
+
+    approvePlantationMonthlyPlanRequest: builder.mutation({
+      queryFn: async ({ id, lines }) => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: `/api/plantation-monthly-plan-requests/${id}/approve`,
+            method: 'POST',
+            body: { lines },
+          },
+          {},
+          {}
+        );
+        return result;
+      },
+      invalidatesTags: ['PlantationMonthlyPlanRequests', 'Plans', 'Calendar'],
+    }),
+
+    declinePlantationMonthlyPlanRequest: builder.mutation({
+      queryFn: async ({ id, declineReason }) => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: `/api/plantation-monthly-plan-requests/${id}/decline`,
+            method: 'POST',
+            body: { declineReason: declineReason || '' },
+          },
+          {},
+          {}
+        );
+        return result;
+      },
+      invalidatesTags: ['PlantationMonthlyPlanRequests'],
+    }),
   }),
 });
 
@@ -448,4 +629,16 @@ export const {
   useGetPlantationPlanRequestsListQuery,
   useDeclinePlantationPlanRequestMutation,
   useMarkPlantationPlanRequestApprovedMutation,
+  useApprovePlantationPlanRequestMutation,
+  useLazyGetPlantationPlanRequestOpsCalendarPlansQuery,
+  useGetPlantationPlanRescheduleRequestsPendingCountQuery,
+  useGetPlantationPlanRescheduleRequestsListQuery,
+  useApprovePlantationPlanRescheduleRequestMutation,
+  useDeclinePlantationPlanRescheduleRequestMutation,
+  useGetPlantationMonthlyPlanRequestsPendingCountQuery,
+  useGetPlantationMonthlyPlanRequestsListQuery,
+  useGetPlantationMonthlyPlanRequestByIdQuery,
+  useGetPlantationMonthlyPlanRequestCalendarContextQuery,
+  useApprovePlantationMonthlyPlanRequestMutation,
+  useDeclinePlantationMonthlyPlanRequestMutation,
 } = plantationDashboardApi;

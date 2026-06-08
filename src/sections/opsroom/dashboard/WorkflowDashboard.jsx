@@ -38,7 +38,7 @@ import {
   useMarkNotificationAsDisplayedMutation,
   useLogNotificationActionMutation,
 } from '../../../api/services NodeJs/notificationsApi';
-import { useGetPlantationPlanRequestsPendingCountQuery } from '../../../api/services NodeJs/plantationDashboardApi';
+import { useGetPlantationPlanRequestsPendingCountQuery, useGetPlantationPlanRescheduleRequestsPendingCountQuery, useGetPlantationMonthlyPlanRequestsPendingCountQuery } from '../../../api/services NodeJs/plantationDashboardApi';
 import {
   getCategoryVisibility,
   getUserData,
@@ -278,14 +278,10 @@ const WorkflowDashboard = () => {
       const tomorrowDate = getTomorrowDate();
       const todayDate = getTodayDate();
       // Fetch all counts in parallel (faster than sequential)
-      const [adhocResult, rescheduleResult, plansResult, todayPlansResult] = await Promise.all([
-        dispatch(baseApi.endpoints.getPendingAdHocRequests.initiate()),
-        dispatch(baseApi.endpoints.getPendingRescheduleRequestsByManager.initiate()),
+      const [plansResult, todayPlansResult] = await Promise.all([
         dispatch(baseApi.endpoints.getPlansByDate.initiate(tomorrowDate)),
         dispatch(baseApi.endpoints.getPlansByDate.initiate(todayDate)),
       ]);
-      const adhocData = adhocResult.data;
-      const rescheduleData = rescheduleResult.data;
       const plansData = plansResult.data;
       const todayPlansData = todayPlansResult.data;
 
@@ -333,8 +329,6 @@ const WorkflowDashboard = () => {
 
       // Process and return the counts
       return {
-        adhoc: adhocData?.status === 'true' ? (adhocData.request_count || 0) : 0,
-        reschedule: rescheduleData?.requests?.length || 0,
         managerApproval: managerApprovalCount,
         opsAssignPending: opsAssignPendingCount,
       };
@@ -376,12 +370,26 @@ const WorkflowDashboard = () => {
   );
   const resourceAssignmentCount = resourceAssignmentData?.data?.total || 0;
 
+  const { data: plantationPlanReschedulePayload, refetch: refetchPlantationPlanRescheduleCount } =
+    useGetPlantationPlanRescheduleRequestsPendingCountQuery(undefined, {
+      pollingInterval: 120000,
+      skip: !userId,
+    });
+  const plantationPlanRescheduleCount = Number(plantationPlanReschedulePayload?.data?.count ?? 0);
+
   const { data: plantationPlanRequestPayload, refetch: refetchPlantationPlanRequestCount } =
     useGetPlantationPlanRequestsPendingCountQuery(undefined, {
       pollingInterval: 120000,
       skip: !userId,
     });
   const plantationPlanRequestCount = Number(plantationPlanRequestPayload?.data?.count ?? 0);
+
+  const { data: plantationMonthlyPlanPayload, refetch: refetchPlantationMonthlyPlanCount } =
+    useGetPlantationMonthlyPlanRequestsPendingCountQuery(undefined, {
+      pollingInterval: 120000,
+      skip: !userId,
+    });
+  const plantationMonthlyPlanCount = Number(plantationMonthlyPlanPayload?.data?.count ?? 0);
 
   // Refresh all counts handler
   const handleRefreshAll = async () => {
@@ -395,6 +403,8 @@ const WorkflowDashboard = () => {
         refetchDayEndProcess(),
         refetchDjiImages(),
         refetchPlantationPlanRequestCount(),
+        refetchPlantationPlanRescheduleCount(),
+        refetchPlantationMonthlyPlanCount(),
         ...(hasPilotAssignmentResourceFeature ? [refetchResourceAssignment()] : []),
       ]);
     } catch (error) {
@@ -416,6 +426,8 @@ const WorkflowDashboard = () => {
           refetchDayEndProcess(),
           refetchDjiImages(),
           refetchPlantationPlanRequestCount(),
+        refetchPlantationPlanRescheduleCount(),
+        refetchPlantationMonthlyPlanCount(),
           ...(hasPilotAssignmentResourceFeature ? [refetchResourceAssignment()] : []),
         ]);
       } catch (error) {
@@ -431,8 +443,9 @@ const WorkflowDashboard = () => {
   }, [routerLocation.pathname, hasPilotAssignmentResourceFeature]); // Refresh when route changes to this page
 
   // Extract counts with fallback to 0
-  const adhocCount = counts?.adhoc || 0;
-  const rescheduleCount = counts?.reschedule || 0;
+  const adhocCount = plantationPlanRequestCount;
+  const rescheduleCount = plantationPlanRescheduleCount;
+  const monthlyCount = plantationMonthlyPlanCount;
   const managerApprovalCount = counts?.managerApproval || 0;
   const opsAssignCount = counts?.opsAssignPending || 0;
 
@@ -693,12 +706,12 @@ const WorkflowDashboard = () => {
                 <button
                   type="button"
                   className="wf-nested-queue-row-workflowDashboard"
-                  onClick={() => go('/home/plantationPlanRequestQueue')}
-                  aria-label={`Plantation calendar plan requests, ${plantationPlanRequestCount} pending`}
+                  onClick={() => go('/home/requestsQueue')}
+                  aria-label={`Monthly plans, ${monthlyCount} pending`}
                 >
-                  <span className="wf-nested-queue-label-workflowDashboard">Plantation calendar requests</span>
+                  <span className="wf-nested-queue-label-workflowDashboard">Monthly plans</span>
                   <span className="wf-nested-queue-meta-workflowDashboard">
-                    <span className="wf-count-pill-workflowDashboard">{plantationPlanRequestCount}</span>
+                    <span className="wf-count-pill-workflowDashboard">{monthlyCount}</span>
                     <FaChevronRight className="wf-chevron-workflowDashboard" aria-hidden />
                   </span>
                 </button>

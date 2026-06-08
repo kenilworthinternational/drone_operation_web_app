@@ -1,15 +1,74 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Bars } from 'react-loader-spinner';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, addMonths } from 'date-fns';
-import { baseApi } from '../../../api/services/allEndpoints';
-import { useAppDispatch } from '../../../store/hooks';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, parse } from 'date-fns';
+import {
+  useGetBookingCreationMissionTypesQuery,
+  useGetBookingCreationCropTypesQuery,
+} from '../../../api/services NodeJs/bookingCreationApi';
+import {
+  useGetPlantationPlanRequestsListQuery,
+  useDeclinePlantationPlanRequestMutation,
+  useApprovePlantationPlanRequestMutation,
+  useGetPlantationPlanRescheduleRequestsListQuery,
+  useApprovePlantationPlanRescheduleRequestMutation,
+  useDeclinePlantationPlanRescheduleRequestMutation,
+} from '../../../api/services NodeJs/plantationDashboardApi';
+import { useLazyGetOpsroomPlansByDateRangeQuery } from '../../../api/services NodeJs/opsroomPlanCalendarApi';
 import { useCreateAdHocNotificationMutation, useCreateRescheduleNotificationMutation, useCreatePlanApprovalNotificationMutation } from '../../../api/services NodeJs/notificationsApi';
 import { withCurrentWingSearch } from '../../../config/wingRouteGuard';
+import {
+  originalRequestedSlots,
+  mapPlantationRowToAdhocTile,
+  approvePlantationPlanRequest,
+  declinePlantationPlanRequest as submitPlantationPlanRequestDecline,
+  missionCodeLabel,
+} from '../plantation-plan-requests/plantationPlanRequestApproval';
+import {
+  mapRescheduleRowToTile,
+  approveRescheduleRequest,
+  declineRescheduleRequest as submitRescheduleRequestDecline,
+} from '../plantation-plan-requests/plantationPlanRescheduleApproval';
 import '../../../styles/requestProceed.css';
 
+/** Same PHP-shaped payload as Plan Calendar (`status` + numeric keys). */
+function parseOpsroomPlansGroupedByDate(apiData) {
+  const grouped = {};
+  if (!apiData || (apiData.status !== 'true' && apiData.status !== true)) {
+    return grouped;
+  }
+  Object.keys(apiData)
+    .filter((k) => !Number.isNaN(Number(k)))
+    .forEach((k) => {
+      const item = apiData[k];
+      const dateKey = item?.date;
+      if (!dateKey) return;
+      if (!grouped[dateKey]) grouped[dateKey] = [];
+      grouped[dateKey].push(item);
+    });
+  return grouped;
+}
+
+function applyEstateHighlight(grouped, estateId) {
+  if (estateId == null || estateId === '') return grouped;
+  const highlightId = Number(estateId);
+  if (!Number.isFinite(highlightId)) return grouped;
+  const out = {};
+  Object.entries(grouped).forEach(([dateKey, plans]) => {
+    out[dateKey] = plans.map((plan) => ({
+      ...plan,
+      is_request_estate:
+        Number(plan.estate_id ?? plan.estateId) === highlightId ? 1 : 0,
+    }));
+  });
+  return out;
+}
+
+function planMissionLabel(plan) {
+  return plan.mission_type_name || missionCodeLabel(plan.mission_type_id);
+}
+
 const RequestProceed = () => {
-  const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const location = useLocation();
   const [selectedRequestId, setSelectedRequestId] = useState(null);
@@ -19,28 +78,54 @@ const RequestProceed = () => {
   const [createAdHocNotification] = useCreateAdHocNotificationMutation();
   const [createRescheduleNotification] = useCreateRescheduleNotificationMutation();
   const [createPlanApprovalNotification] = useCreatePlanApprovalNotificationMutation();
-  
-  // Get current user ID
-  const getCurrentUserId = () => {
-    try {
-      const userData = JSON.parse(localStorage.getItem('userData') || '{}');
-      return userData?.id || null;
-    } catch (error) {
-      console.error('Error getting user ID:', error);
-      return null;
-    }
-  };
-  
-  const [adhocLoading, setAdhocLoading] = useState(false);
-  const [adhocData, setAdhocData] = useState(null);
-  const [adhocError, setAdhocError] = useState('');
-  
-  const [rescheduleLoading, setRescheduleLoading] = useState(false);
-  const [rescheduleData, setRescheduleData] = useState(null);
-  const [rescheduleError, setRescheduleError] = useState('');
+  const [declinePlanRequestMutation] = useDeclinePlantationPlanRequestMutation();
+  const [approveAdhocMutation] = useApprovePlantationPlanRequestMutation();
+  const [fetchOpsCalendarPlans] = useLazyGetOpsroomPlansByDateRangeQuery();
+  const [approveRescheduleMutation] = useApprovePlantationPlanRescheduleRequestMutation();
+  const [declineRescheduleMutation] = useDeclinePlantationPlanRescheduleRequestMutation();
+
+  const {
+    data: plantationRows,
+    isLoading: adhocLoading,
+    isError: adhocQueryError,
+    refetch: refetchPlantationRequests,
+  } = useGetPlantationPlanRequestsListQuery({ status: 'pending' });
+  const { data: missionTypesRaw } = useGetBookingCreationMissionTypesQuery();
+  const { data: cropTypesRaw } = useGetBookingCreationCropTypesQuery();
+
+  const adhocData = useMemo(() => {
+    const rows = Array.isArray(plantationRows) ? plantationRows : [];
+    const requests = rows
+      .map((row) =>
+        mapPlantationRowToAdhocTile(row, {
+          missionTypes: missionTypesRaw,
+          cropTypes: cropTypesRaw,
+        })
+      )
+      .filter(Boolean);
+    return { requests, request_count: requests.length };
+  }, [plantationRows, missionTypesRaw, cropTypesRaw]);
+
+  const adhocError = adhocQueryError ? 'Failed to load ad-hoc requests' : '';
+
+  const {
+    data: rescheduleRows,
+    isLoading: rescheduleLoading,
+    isError: rescheduleQueryError,
+    refetch: refetchRescheduleRequests,
+  } = useGetPlantationPlanRescheduleRequestsListQuery({ status: 'pending' });
+
+  const rescheduleData = useMemo(() => {
+    const rows = Array.isArray(rescheduleRows) ? rescheduleRows : [];
+    const requests = rows.map((row) => mapRescheduleRowToTile(row)).filter(Boolean);
+    return { requests };
+  }, [rescheduleRows]);
+
+  const rescheduleError = rescheduleQueryError ? 'Failed to load reschedule requests' : '';
   
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(null);
+  const [planCount, setPlanCount] = useState(1);
   
   const [plansLoading, setPlansLoading] = useState(false);
   const [plansByDate, setPlansByDate] = useState({});
@@ -54,6 +139,16 @@ const RequestProceed = () => {
   const [errorMessage, setErrorMessage] = useState('');
 
   const normalizeId = (id) => (id !== null && id !== undefined ? String(id) : null);
+
+  const getCurrentUserId = () => {
+    try {
+      const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+      return userData?.id || null;
+    } catch (error) {
+      console.error('Error getting user ID:', error);
+      return null;
+    }
+  };
 
   const monthRange = useMemo(() => {
     const start = format(startOfMonth(currentMonth), 'yyyy-MM-dd');
@@ -72,85 +167,7 @@ const RequestProceed = () => {
     if (type) {
       setRequestType(type);
     }
-
-    const fetchAdhocData = async () => {
-      setAdhocLoading(true);
-      setAdhocError('');
-      try {
-        const result = await dispatch(baseApi.endpoints.getPendingAdHocRequests.initiate());
-        const data = result.data;
-        if (data && data.status === 'true') {
-          setAdhocData(data);
-        } else {
-          setAdhocData({ requests: [], request_count: 0 });
-        }
-      } catch (e) {
-        setAdhocError('Failed to load ad-hoc requests');
-        setAdhocData({ requests: [], request_count: 0 });
-      } finally {
-        setAdhocLoading(false);
-      }
-    };
-
-    const fetchRescheduleData = async () => {
-      setRescheduleLoading(true);
-      setRescheduleError('');
-      try {
-        const result = await dispatch(baseApi.endpoints.getPendingRescheduleRequestsByManager.initiate());
-        const data = result.data;
-        if (data && data.requests) {
-          setRescheduleData(data);
-        } else {
-          setRescheduleData({ requests: [] });
-        }
-      } catch (e) {
-        setRescheduleError('Failed to load reschedule requests');
-        setRescheduleData({ requests: [] });
-      } finally {
-        setRescheduleLoading(false);
-      }
-    };
-
-    fetchAdhocData();
-    if (type === 'reschedule') {
-      fetchRescheduleData();
-    }
   }, [location]);
-
-  useEffect(() => {
-    let isCancelled = false;
-    const fetchPlansData = async () => {
-      setPlansLoading(true);
-      try {
-        const result = await dispatch(baseApi.endpoints.getAllPlansByDateRange.initiate({
-          startDate: monthRange.start,
-          endDate: monthRange.end
-        }));
-        const data = result.data;
-        if (isCancelled) return;
-        const grouped = {};
-        if (data && (data.status === 'true' || data.status === true)) {
-          Object.keys(data)
-            .filter((k) => !isNaN(k))
-            .forEach((k) => {
-              const item = data[k];
-              const dateKey = item.date;
-              if (!grouped[dateKey]) grouped[dateKey] = [];
-              grouped[dateKey].push(item);
-            });
-        }
-        setPlansByDate(grouped);
-      } catch (e) {
-        if (!isCancelled) console.error('Failed to load calendar plans data');
-      } finally {
-        if (!isCancelled) setPlansLoading(false);
-      }
-    };
-    fetchPlansData();
-    return () => {
-      isCancelled = true;
-    };
-  }, [monthRange]);
 
   const handleDateClick = (date) => {
     setSelectedDate(date);
@@ -195,7 +212,6 @@ const RequestProceed = () => {
     setShowCreateConfirm(false);
     setIsSubmitting(true);
     try {
-      // Validate inputs
       if (!selectedDate) {
         setErrorMessage('Please select a date from the calendar');
         setShowError(true);
@@ -211,225 +227,195 @@ const RequestProceed = () => {
 
       const dateFormatted = format(selectedDate, 'yyyy-MM-dd');
       const parsedRequestId = selectedRequestId ? Number(selectedRequestId) : null;
-      const apiRequestId = parsedRequestId !== null && !Number.isNaN(parsedRequestId)
-        ? parsedRequestId
-        : selectedRequestId;
-      
-      console.log('Creating plan:', {
-        requestType,
-        selectedRequestId,
-        dateFormatted,
-        status: 'a'
-      });
-      
-      // Call appropriate API based on request type
-      const result = requestType === 'reschedule' 
-        ? await dispatch(baseApi.endpoints.updateRescheduleRequest.initiate({ requestId: apiRequestId, datePlanned: dateFormatted, status: 'a' }))
-        : await dispatch(baseApi.endpoints.updateAdHocRequest.initiate({ requestId: apiRequestId, datePlanned: dateFormatted, status: 'a' }));
-      const resultData = result.data;
-      
-      console.log('API Response:', resultData);
-      
-      // Handle null/undefined response
-      if (!resultData) {
-        console.error('API returned null or undefined');
-        setErrorMessage('No response from server. Please try again.');
+      const apiRequestId =
+        parsedRequestId !== null && !Number.isNaN(parsedRequestId) ? parsedRequestId : selectedRequestId;
+
+      if (requestType === 'reschedule') {
+        const row = selectedRescheduleRequest?._rescheduleRow || selectedRescheduleRequest;
+        if (!row?.id) {
+          setErrorMessage('Selected request not found');
+          setShowError(true);
+          return;
+        }
+
+        const approveResult = await approveRescheduleRequest({
+          row,
+          pickedDate: dateFormatted,
+          approveMutation: approveRescheduleMutation,
+        });
+
+        if (approveResult.ok) {
+          setSuccessMessage('Plan rescheduled successfully');
+          setShowSuccess(true);
+          await handlePostApproveNotifications({
+            apiRequestId: row.id,
+            dateFormatted,
+            resultData: { status: 'true', plan_id: row.plan_id || selectedRescheduleRequest?.plan },
+            selectedRequest: selectedRescheduleRequest,
+          });
+          const refetchResult = await refetchRescheduleRequests();
+          const refreshedRows = Array.isArray(refetchResult.data) ? refetchResult.data : [];
+          const stillExists = refreshedRows.some((r) => String(r.id) === selectedRequestId);
+          if (!stillExists) {
+            setSelectedRequestId(null);
+            setSelectedDate(null);
+          }
+          await refreshCalendarPlans();
+        } else {
+          setErrorMessage(approveResult.error || 'Failed to reschedule plan');
+          setShowError(true);
+        }
+        return;
+      }
+
+      const plantationRow = selectedAdhocRequest?._plantationRow || selectedAdhocRequest;
+      if (!plantationRow?.id) {
+        setErrorMessage('Selected request not found');
         setShowError(true);
         return;
       }
-      
-      // Check for success - handle both string 'true' and boolean true
-      if (resultData.status === 'true' || resultData.status === true || resultData.success === true) {
-        setSuccessMessage('Plan created successfully');
+
+      const approveResult = await approvePlantationPlanRequest({
+        row: plantationRow,
+        planCount,
+        pickedDate: dateFormatted,
+        approveMutation: approveAdhocMutation,
+      });
+
+      if (approveResult.ok) {
+        setSuccessMessage(
+          approveResult.created === 1
+            ? 'Plan created successfully'
+            : `${approveResult.created} plans created successfully`
+        );
         setShowSuccess(true);
-        
-        // Create notification for estate managers
-        // Only create for Plantation requests (not Non-Plantation)
-        try {
-          const selectedRequest = requestType === 'reschedule' ? selectedRescheduleRequest : selectedAdhocRequest;
-          if (selectedRequest) {
-            // Get estate_id from request (may be estate_id, estateId, or need to look up by estate name)
-            const estateId = selectedRequest.estate_id || selectedRequest.estateId || null;
-            const estateName = selectedRequest.estate || null;
-            
-            // Only create notification if we have estate information (Plantation request)
-            // Non-Plantation requests won't have estate info, so skip notifications for those
-            if (estateId || estateName) {
-              // Create notification for estate managers
-              if (requestType === 'reschedule') {
-                await createRescheduleNotification({
-                  request_id: apiRequestId,
-                  estate_id: estateId || undefined,
-                  estate_name: estateName || undefined,
-                  date_planned: dateFormatted
-                }).unwrap().catch(err => {
-                  console.warn('Failed to create reschedule notification:', err);
-                  // Don't fail the whole operation if notification fails
-                });
-              } else {
-                await createAdHocNotification({
-                  request_id: apiRequestId,
-                  estate_id: estateId || undefined,
-                  estate_name: estateName || undefined,
-                  date_planned: dateFormatted
-                }).unwrap().catch(err => {
-                  console.warn('Failed to create ad-hoc notification:', err);
-                  // Don't fail the whole operation if notification fails
-                });
-              }
-            } else {
-              console.log('Skipping notification: Non-Plantation request (no estate info)');
-            }
-            
-            // Create plan approval notification
-            // Try to get plan ID from response, or fetch it
-            try {
-              let planId = resultData.plan_id || resultData.plan || resultData.id || null;
-              
-              // If plan ID not in response, try to fetch it by request ID and date
-              if (!planId) {
-                try {
-                  // Fetch plans for the selected date to find the newly created plan
-                  const plansResult = await dispatch(baseApi.endpoints.getPlansByDate.initiate(dateFormatted));
-                  const plansData = plansResult.data;
-                  
-                  if (plansData && (plansData.status === 'true' || plansData.status === true)) {
-                    // Find plan that matches the request
-                    const plansArray = Array.isArray(plansData) 
-                      ? plansData 
-                      : Object.keys(plansData)
-                          .filter(key => !isNaN(key) && key !== 'status' && key !== 'count')
-                          .map(key => plansData[key]);
-                    
-                    // Try to find plan by estate and date
-                    const matchingPlan = plansArray.find(plan => {
-                      const planEstate = plan.estate || plan.estate_name || plan.estateId;
-                      const matchesEstate = estateName 
-                        ? (planEstate === estateName || String(planEstate) === String(estateId))
-                        : true;
-                      return matchesEstate && plan.pickedDate === dateFormatted;
-                    });
-                    
-                    if (matchingPlan) {
-                      planId = matchingPlan.id;
-                    }
-                  }
-                } catch (fetchError) {
-                  console.warn('Could not fetch plan ID:', fetchError);
-                }
-              }
-              
-              // Create plan approval notification if we have plan ID and user ID
-              if (planId) {
-                const currentUserId = getCurrentUserId();
-                if (currentUserId) {
-                  await createPlanApprovalNotification({
-                    plan_id: planId,
-                    approved_by_user_id: currentUserId
-                  }).unwrap().catch(err => {
-                    console.warn('Failed to create plan approval notification:', err);
-                    // Don't fail the whole operation if notification fails
-                  });
-                } else {
-                  console.warn('Cannot create plan approval notification: User ID not found');
-                }
-              } else {
-                console.warn('Cannot create plan approval notification: Plan ID not found');
-              }
-            } catch (planApprovalError) {
-              console.error('Error creating plan approval notification:', planApprovalError);
-              // Don't fail the whole operation if notification fails
-            }
-          }
-        } catch (notificationError) {
-          console.error('Error creating notification:', notificationError);
-          // Don't fail the whole operation if notification fails
+
+        await handlePostApproveNotifications({
+          apiRequestId: plantationRow.id,
+          dateFormatted,
+          createdPlanIds: approveResult.createdPlanIds || [],
+          selectedRequest: selectedAdhocRequest,
+        });
+
+        const refetchResult = await refetchPlantationRequests();
+        const refreshedRows = Array.isArray(refetchResult.data) ? refetchResult.data : [];
+        const stillExists = refreshedRows.some((r) => String(r.id) === selectedRequestId);
+        if (!stillExists) {
+          setSelectedRequestId(null);
+          setSelectedDate(null);
         }
-        
-        // Refresh the request list based on type
-        if (requestType === 'reschedule') {
-          try {
-            const result = await dispatch(baseApi.endpoints.getPendingRescheduleRequestsByManager.initiate());
-        const data = result.data;
-            if (data && data.requests) {
-              setRescheduleData(data);
-              const stillExists = data.requests?.find(r => String(r.request_id) === selectedRequestId);
-              if (!stillExists) {
-                setSelectedRequestId(null);
-                setSelectedDate(null);
-              }
-            }
-          } catch (refreshError) {
-            console.error('Failed to refresh reschedule requests:', refreshError);
-            // Don't show error to user as plan was created successfully
-          }
-        } else {
-          try {
-            const result = await dispatch(baseApi.endpoints.getPendingAdHocRequests.initiate());
-        const data = result.data;
-            if (data && data.status === 'true') {
-              setAdhocData(data);
-              const stillExists = data.requests?.find(r => String(r.request_id) === selectedRequestId);
-              if (!stillExists) {
-                setSelectedRequestId(null);
-                setSelectedDate(null);
-              }
-            }
-          } catch (refreshError) {
-            console.error('Failed to refresh adhoc requests:', refreshError);
-            // Don't show error to user as plan was created successfully
-          }
-        }
-        
-        // Refresh the calendar
-        const monthRange = {
-          start: format(startOfMonth(currentMonth), 'yyyy-MM-dd'),
-          end: format(endOfMonth(currentMonth), 'yyyy-MM-dd')
-        };
-        try {
-          const calendarResult = await dispatch(baseApi.endpoints.getAllPlansByDateRange.initiate({
-            startDate: monthRange.start,
-            endDate: monthRange.end
-          }));
-          const calendarData = calendarResult.data;
-          const grouped = {};
-          if (calendarData && (calendarData.status === 'true' || calendarData.status === true)) {
-            Object.keys(calendarData)
-              .filter((k) => !isNaN(k))
-              .forEach((k) => {
-                const item = calendarData[k];
-                const dateKey = item.date;
-                if (!grouped[dateKey]) grouped[dateKey] = [];
-                grouped[dateKey].push(item);
-              });
-          }
-          setPlansByDate(grouped);
-        } catch (e) {
-          console.error('Failed to refresh calendar data:', e);
-          // Don't show error to user as plan was created successfully
-        }
+        await refreshCalendarPlans();
       } else {
-        // Show more detailed error message
-        console.error('Plan creation failed:', result);
-        const errorMsg = result?.message || 
-                        result?.error?.message || 
-                        result?.error?.exception || 
-                        result?.error ||
-                        (typeof result === 'string' ? result : 'Failed to create plan');
-        setErrorMessage(errorMsg);
+        setErrorMessage(approveResult.error || 'Failed to create plan');
         setShowError(true);
       }
     } catch (e) {
       console.error('Error creating plan:', e);
-      const errorMsg = e.response?.data?.message || 
-                      e.response?.data?.exception || 
-                      e.response?.data?.error ||
-                      e.message || 
-                      'Failed to create plan. Please try again.';
+      const errorMsg =
+        e?.data?.message ||
+        e?.response?.data?.message ||
+        e?.response?.data?.exception ||
+        e?.response?.data?.error ||
+        e?.message ||
+        'Failed to create plan. Please try again.';
       setErrorMessage(errorMsg);
       setShowError(true);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handlePostApproveNotifications = async ({
+    apiRequestId,
+    dateFormatted,
+    createdPlanIds = [],
+    resultData,
+    selectedRequest,
+  }) => {
+    try {
+      if (!selectedRequest) return;
+
+      const estateId = selectedRequest.estate_id || selectedRequest.estateId || null;
+      const estateName = selectedRequest.estate || null;
+
+      if (estateId || estateName) {
+        if (requestType === 'reschedule') {
+          await createRescheduleNotification({
+            request_id: apiRequestId,
+            estate_id: estateId || undefined,
+            estate_name: estateName || undefined,
+            date_planned: dateFormatted,
+          })
+            .unwrap()
+            .catch((err) => {
+              console.warn('Failed to create reschedule notification:', err);
+            });
+        } else {
+          await createAdHocNotification({
+            request_id: apiRequestId,
+            estate_id: estateId || undefined,
+            estate_name: estateName || undefined,
+            date_planned: dateFormatted,
+          })
+            .unwrap()
+            .catch((err) => {
+              console.warn('Failed to create ad-hoc notification:', err);
+            });
+        }
+      }
+
+      try {
+        const planIdsFromApprove = Array.isArray(createdPlanIds) ? createdPlanIds.filter(Boolean) : [];
+        let planId =
+          planIdsFromApprove[0] ||
+          resultData?.plan_id ||
+          resultData?.plan ||
+          resultData?.id ||
+          selectedRequest?.plan_id ||
+          selectedRequest?.plan ||
+          null;
+
+        if (planId) {
+          const currentUserId = getCurrentUserId();
+          if (currentUserId) {
+            await createPlanApprovalNotification({
+              plan_id: planId,
+              approved_by_user_id: currentUserId,
+            })
+              .unwrap()
+              .catch((err) => {
+                console.warn('Failed to create plan approval notification:', err);
+              });
+          }
+        }
+      } catch (planApprovalError) {
+        console.error('Error creating plan approval notification:', planApprovalError);
+      }
+    } catch (notificationError) {
+      console.error('Error creating notification:', notificationError);
+    }
+  };
+
+  const refreshCalendarPlans = async () => {
+    const range = {
+      start: format(startOfMonth(currentMonth), 'yyyy-MM-dd'),
+      end: format(endOfMonth(currentMonth), 'yyyy-MM-dd'),
+    };
+    const req = requestType === 'reschedule' ? selectedRescheduleRequest : selectedAdhocRequest;
+    const estateId = req?.estate_id ?? req?.estateId ?? null;
+    try {
+      const result = await fetchOpsCalendarPlans({
+        startDate: range.start,
+        endDate: range.end,
+      });
+      if (result.error) {
+        console.error('Failed to refresh calendar data:', result.error);
+        return;
+      }
+      const grouped = applyEstateHighlight(parseOpsroomPlansGroupedByDate(result.data), estateId);
+      setPlansByDate(grouped);
+    } catch (e) {
+      console.error('Failed to refresh calendar data:', e);
     }
   };
 
@@ -446,7 +432,6 @@ const RequestProceed = () => {
     setShowDeclineConfirm(false);
     setIsSubmitting(true);
     try {
-      // Validate inputs
       if (!selectedRequestId) {
         setErrorMessage('Please select a request');
         setShowError(true);
@@ -454,137 +439,54 @@ const RequestProceed = () => {
         return;
       }
 
-      console.log('Declining request:', {
-        requestType,
-        selectedRequestId,
-        status: 'r'
-      });
-      
-      // Call appropriate API based on request type
       const parsedRequestId = selectedRequestId ? Number(selectedRequestId) : null;
-      const apiRequestId = parsedRequestId !== null && !Number.isNaN(parsedRequestId)
-        ? parsedRequestId
-        : selectedRequestId;
+      const apiRequestId =
+        parsedRequestId !== null && !Number.isNaN(parsedRequestId) ? parsedRequestId : selectedRequestId;
 
-      const result = requestType === 'reschedule'
-        ? await dispatch(baseApi.endpoints.updateRescheduleRequest.initiate({ requestId: apiRequestId, datePlanned: '', status: 'r' }))
-        : await dispatch(baseApi.endpoints.updateAdHocRequest.initiate({ requestId: apiRequestId, datePlanned: '', status: 'r' }));
-      const resultData = result.data;
-      
-      console.log('Decline API Response:', resultData);
-      
-      // Handle null/undefined response
-      if (!resultData) {
-        console.error('API returned null or undefined');
-        setErrorMessage('No response from server. Please try again.');
-        setShowError(true);
-        return;
-      }
-      
-      // Check for success - handle both string 'true' and boolean true
-      if (resultData.status === 'true' || resultData.status === true || resultData.success === true) {
+      if (requestType === 'reschedule') {
+        await submitRescheduleRequestDecline({
+          id: apiRequestId,
+          declineMutation: declineRescheduleMutation,
+        });
+
         setSuccessMessage('Request declined successfully');
         setShowSuccess(true);
-        
-        // Clear selection immediately
         setSelectedRequestId(null);
         setSelectedDate(null);
-        
-        // Refresh the request list based on type
-        if (requestType === 'reschedule') {
-          try {
-            const result = await dispatch(baseApi.endpoints.getPendingRescheduleRequestsByManager.initiate());
-        const data = result.data;
-            if (data && data.requests) {
-              setRescheduleData(data);
-            } else {
-              // If no data returned, set empty array
-              setRescheduleData({ requests: [] });
-            }
-          } catch (refreshError) {
-            console.error('Failed to refresh reschedule requests:', refreshError);
-            // Still show success as decline was successful
-            // Try to refresh again or set empty state
-            setRescheduleData({ requests: [] });
-          }
-        } else {
-          try {
-            const result = await dispatch(baseApi.endpoints.getPendingAdHocRequests.initiate());
-        const data = result.data;
-            console.log('Refreshed adhoc data:', data);
-            // Handle different response structures
-            if (data) {
-              if (data.status === 'true' || data.status === true) {
-                setAdhocData(data);
-              } else if (data.requests) {
-                // If data has requests array directly
-                setAdhocData({ ...data, status: 'true' });
-              } else {
-                // If data structure is different, set with empty requests
-                setAdhocData({ requests: [], request_count: 0, status: 'true' });
-              }
-            } else {
-              // If no data returned, set empty state
-              setAdhocData({ requests: [], request_count: 0, status: 'true' });
-            }
-          } catch (refreshError) {
-            console.error('Failed to refresh adhoc requests:', refreshError);
-            // Still show success as decline was successful
-            // Set empty state to clear the queue
-            setAdhocData({ requests: [], request_count: 0, status: 'true' });
-          }
-        }
-        
-        // Refresh the calendar
-        const monthRange = {
-          start: format(startOfMonth(currentMonth), 'yyyy-MM-dd'),
-          end: format(endOfMonth(currentMonth), 'yyyy-MM-dd')
-        };
-        try {
-          const calendarResult = await dispatch(baseApi.endpoints.getAllPlansByDateRange.initiate({
-            startDate: monthRange.start,
-            endDate: monthRange.end
-          }));
-          const calendarData = calendarResult.data;
-          const grouped = {};
-          if (calendarData && (calendarData.status === 'true' || calendarData.status === true)) {
-            Object.keys(calendarData)
-              .filter((k) => !isNaN(k))
-              .forEach((k) => {
-                const item = calendarData[k];
-                const dateKey = item.date;
-                if (!grouped[dateKey]) grouped[dateKey] = [];
-                grouped[dateKey].push(item);
-              });
-          }
-          setPlansByDate(grouped);
-        } catch (e) {
-          console.error('Failed to refresh calendar data:', e);
-          // Don't show error to user as decline was successful
-        }
-      } else {
-        // Show more detailed error message
-        console.error('Request decline failed:', result);
-        const errorMsg = result?.message || 
-                        result?.error?.message || 
-                        result?.error?.exception || 
-                        result?.error ||
-                        (typeof result === 'string' ? result : 'Failed to decline request');
-        setErrorMessage(errorMsg);
-        setShowError(true);
+        await refreshRescheduleListAfterDecline();
+        await refreshCalendarPlans();
+        return;
       }
+
+      await submitPlantationPlanRequestDecline({
+        id: apiRequestId,
+        declineMutation: declinePlanRequestMutation,
+      });
+
+      setSuccessMessage('Request declined successfully');
+      setShowSuccess(true);
+      setSelectedRequestId(null);
+      setSelectedDate(null);
+      await refetchPlantationRequests();
+      await refreshCalendarPlans();
     } catch (e) {
       console.error('Error declining request:', e);
-      const errorMsg = e.response?.data?.message || 
-                      e.response?.data?.exception || 
-                      e.response?.data?.error ||
-                      e.message || 
-                      'Failed to decline request. Please try again.';
+      const errorMsg =
+        e?.data?.message ||
+        e?.response?.data?.message ||
+        e?.response?.data?.exception ||
+        e?.response?.data?.error ||
+        e?.message ||
+        'Failed to decline request. Please try again.';
       setErrorMessage(errorMsg);
       setShowError(true);
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const refreshRescheduleListAfterDecline = async () => {
+    await refetchRescheduleRequests();
   };
 
   const selectedAdhocRequest = useMemo(() => {
@@ -596,6 +498,83 @@ const RequestProceed = () => {
     if (!selectedRequestId || !rescheduleData?.requests) return null;
     return rescheduleData.requests.find((r) => String(r.request_id) === selectedRequestId) || null;
   }, [rescheduleData?.requests, selectedRequestId]);
+
+  const selectedEstateId = useMemo(() => {
+    const req = requestType === 'reschedule' ? selectedRescheduleRequest : selectedAdhocRequest;
+    return req?.estate_id ?? req?.estateId ?? null;
+  }, [requestType, selectedAdhocRequest, selectedRescheduleRequest]);
+
+  useEffect(() => {
+    let isCancelled = false;
+    const loadCalendarPlans = async () => {
+      setPlansLoading(true);
+      try {
+        const result = await fetchOpsCalendarPlans({
+          startDate: monthRange.start,
+          endDate: monthRange.end,
+        });
+        if (isCancelled) return;
+        if (result.error) {
+          console.error('Failed to load calendar plans data:', result.error);
+          setPlansByDate({});
+          return;
+        }
+        setPlansByDate(
+          applyEstateHighlight(parseOpsroomPlansGroupedByDate(result.data), selectedEstateId)
+        );
+      } catch (e) {
+        if (!isCancelled) console.error('Failed to load calendar plans data', e);
+      } finally {
+        if (!isCancelled) setPlansLoading(false);
+      }
+    };
+    loadCalendarPlans();
+    return () => {
+      isCancelled = true;
+    };
+  }, [monthRange, selectedEstateId, fetchOpsCalendarPlans]);
+
+  useEffect(() => {
+    if (requestType !== 'adhoc' || !selectedAdhocRequest) return;
+
+    const row = selectedAdhocRequest._plantationRow || selectedAdhocRequest;
+    const slots = originalRequestedSlots(row);
+    setPlanCount(slots > 0 ? slots : 1);
+
+    const picked = String(selectedAdhocRequest.picked_date || selectedAdhocRequest.dates || '').slice(0, 10);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(picked)) {
+      try {
+        const parsedDate = parse(picked, 'yyyy-MM-dd', new Date());
+        if (!Number.isNaN(parsedDate.getTime())) {
+          setSelectedDate(parsedDate);
+          setCurrentMonth(parsedDate);
+        }
+      } catch {
+        // ignore invalid date
+      }
+    }
+  }, [requestType, selectedAdhocRequest]);
+
+  useEffect(() => {
+    if (requestType !== 'reschedule' || !selectedRescheduleRequest) return;
+
+    const requested = String(
+      selectedRescheduleRequest.requested_picked_date ||
+        selectedRescheduleRequest.requested_dates ||
+        ''
+    ).slice(0, 10);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(requested)) {
+      try {
+        const parsedDate = parse(requested, 'yyyy-MM-dd', new Date());
+        if (!Number.isNaN(parsedDate.getTime())) {
+          setSelectedDate(parsedDate);
+          setCurrentMonth(parsedDate);
+        }
+      } catch {
+        // ignore invalid date
+      }
+    }
+  }, [requestType, selectedRescheduleRequest]);
 
   const sortedAdhocRequests = useMemo(() => {
     const requests = adhocData?.requests || [];
@@ -631,12 +610,16 @@ const RequestProceed = () => {
       return new Set(dates);
     }
     
-    // Handle adhoc requests (uses dates)
-    if (requestType === 'adhoc' && selectedRequest.dates) {
-      const datesString = selectedRequest.dates;
-      if (!datesString) return new Set();
-      const dates = datesString.split(',').map(d => d.trim()).filter(d => d);
-      return new Set(dates);
+    // Handle adhoc requests (uses dates or picked_date)
+    if (requestType === 'adhoc') {
+      const picked = String(selectedRequest.picked_date || selectedRequest.dates || '').slice(0, 10);
+      if (/^\d{4}-\d{2}-\d{2}$/.test(picked)) {
+        return new Set([picked]);
+      }
+      if (selectedRequest.dates) {
+        const dates = selectedRequest.dates.split(',').map((d) => d.trim()).filter((d) => d);
+        return new Set(dates);
+      }
     }
     
     return new Set();
@@ -691,18 +674,19 @@ const RequestProceed = () => {
           {/* Calendar days */}
           {calendarDays.map((day) => {
             const dayStr = format(day, 'yyyy-MM-dd');
-            const allPlans = plansByDate[dayStr] || [];
-            // Filter out plans where activated=0
-            const dayPlans = allPlans.filter(plan => plan.activated === 1);
+            const dayPlans = plansByDate[dayStr] || [];
             const planCount = dayPlans.length;
             const isSelected = selectedDate && format(selectedDate, 'yyyy-MM-dd') === dayStr;
             const isToday = format(new Date(), 'yyyy-MM-dd') === dayStr;
             const isRequestedDate = requestedDatesSet.has(dayStr);
-            
+            const hasRequestEstatePlans = dayPlans.some(
+              (plan) => Number(plan.is_request_estate) === 1 || Number(plan.is_request_estate) === '1'
+            );
+
             return (
-              <div 
-                key={dayStr} 
-                className={`calendar-day-req-proceed ${isSelected ? 'calendar-day-selected-req-proceed' : ''} ${isToday ? 'calendar-day-today-req-proceed' : ''} ${isRequestedDate ? 'calendar-day-requested-req-proceed' : ''}`}
+              <div
+                key={dayStr}
+                className={`calendar-day-req-proceed ${isSelected ? 'calendar-day-selected-req-proceed' : ''} ${isToday ? 'calendar-day-today-req-proceed' : ''} ${isRequestedDate ? 'calendar-day-requested-req-proceed' : ''} ${hasRequestEstatePlans ? 'calendar-day-has-estate-plans-req-proceed' : ''}`}
                 onClick={() => handleDateClick(day)}
               >
                 <div className="calendar-day-header-req-proceed">
@@ -712,15 +696,17 @@ const RequestProceed = () => {
                   )}
                 </div>
                 <div className="calendar-day-plans-req-proceed">
-                  {dayPlans.map((plan, index) => (
-                    <div 
-                      key={index} 
-                      className="calendar-day-plan-req-proceed"
-                      title={`${plan.estate} - ${plan.id}`}
+                  {dayPlans.map((plan) => (
+                    <div
+                      key={plan.id}
+                      className={`calendar-day-plan-req-proceed ${
+                        Number(plan.is_request_estate) === 1 ? 'calendar-day-plan-estate-req-proceed' : ''
+                      }`}
+                      title={`${plan.estate} · ${planMissionLabel(plan)} · #${plan.id}`}
                       onClick={(e) => e.stopPropagation()}
                     >
                       <span className="calendar-day-plan-text-req-proceed">
-                        {plan.estate} - ID: {plan.id}
+                        {plan.estate} · {planMissionLabel(plan)} · #{plan.id}
                       </span>
                     </div>
                   ))}
@@ -808,20 +794,20 @@ const RequestProceed = () => {
                             </div>
                             {request.plan_date && (
                               <div className="tile-row-req-proceed">
-                                <span className="tile-label-req-proceed">Original Date:</span>
+                                <span className="tile-label-req-proceed">Original date:</span>
                                 <span className="tile-value-req-proceed">{request.plan_date}</span>
                               </div>
                             )}
+                            <div className="tile-row-req-proceed">
+                              <span className="tile-label-req-proceed">Requested date:</span>
+                              <span className="tile-value-req-proceed">{formatDates(request.requested_dates)}</span>
+                            </div>
                             {request.reason && (
                               <div className="tile-row-req-proceed">
                                 <span className="tile-label-req-proceed">Reason:</span>
                                 <span className="tile-value-req-proceed">{request.reason}</span>
                               </div>
                             )}
-                            <div className="tile-row-req-proceed">
-                              <span className="tile-label-req-proceed">Requested Dates:</span>
-                              <span className="tile-value-req-proceed">{formatDates(request.requested_dates)}</span>
-                            </div>
                           </div>
                         </div>
                       ))
@@ -872,26 +858,14 @@ const RequestProceed = () => {
                                 <span className="tile-value-req-proceed">{request.mission_type}</span>
                               </div>
                             )}
-                            {request.total_extent !== null && (
-                              <div className="tile-row-req-proceed">
-                                <span className="tile-label-req-proceed">Total Extent:</span>
-                                <span className="tile-value-req-proceed">{request.total_extent} Ha</span>
-                              </div>
-                            )}
-                            {request.time && (
-                              <div className="tile-row-req-proceed">
-                                <span className="tile-label-req-proceed">Time:</span>
-                                <span className="tile-value-req-proceed">{request.time}</span>
-                              </div>
-                            )}
                             <div className="tile-row-req-proceed">
-                              <span className="tile-label-req-proceed">Requested Dates:</span>
+                              <span className="tile-label-req-proceed">Requested date:</span>
                               <span className="tile-value-req-proceed">{formatDates(request.dates)}</span>
                             </div>
-                            {request.date_planed && (
+                            {request.requested_plan_count != null && request.requested_plan_count > 0 && (
                               <div className="tile-row-req-proceed">
-                                <span className="tile-label-req-proceed">Planned Date:</span>
-                                <span className="tile-value-req-proceed">{request.date_planed}</span>
+                                <span className="tile-label-req-proceed">Requested plans:</span>
+                                <span className="tile-value-req-proceed">{request.requested_plan_count}</span>
                               </div>
                             )}
                           </div>
@@ -908,11 +882,59 @@ const RequestProceed = () => {
         {/* Right Side: Calendar */}
         <div className="calendar-column-req-proceed">
           <div className="calendar-actions-req-proceed">
-            <div className="selected-date-req-proceed">
-              <span className="selected-date-label-req-proceed">Selected Date:</span>
-              <span className="selected-date-value-req-proceed">
-                {selectedDate ? format(selectedDate, 'dd/MM/yyyy') : 'No date selected'}
-              </span>
+            <div className="calendar-actions-meta-req-proceed">
+              <div className="selected-date-req-proceed">
+                <span className="selected-date-label-req-proceed">Selected Date:</span>
+                <span className="selected-date-value-req-proceed">
+                  {selectedDate ? format(selectedDate, 'dd/MM/yyyy') : 'No date selected'}
+                </span>
+              </div>
+            {requestType === 'adhoc' && selectedRequestId && (
+              <div className="plan-count-stepper-req-proceed">
+                <span className="plan-count-label-req-proceed">Plans to create</span>
+                <div className="plan-count-controls-req-proceed">
+                  <button
+                    type="button"
+                    className="plan-count-btn-req-proceed"
+                    onClick={() => setPlanCount((c) => Math.max(1, c - 1))}
+                    disabled={isSubmitting || planCount <= 1}
+                    aria-label="Decrease plan count"
+                  >
+                    −
+                  </button>
+                  <input
+                    type="number"
+                    min={1}
+                    max={100}
+                    className="plan-count-input-req-proceed"
+                    value={planCount}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      if (raw === '') return;
+                      const n = parseInt(raw, 10);
+                      if (Number.isFinite(n)) setPlanCount(Math.min(100, Math.max(1, n)));
+                    }}
+                    disabled={isSubmitting}
+                    aria-label="Number of plans to create"
+                  />
+                  <button
+                    type="button"
+                    className="plan-count-btn-req-proceed"
+                    onClick={() => setPlanCount((c) => Math.min(100, c + 1))}
+                    disabled={isSubmitting || planCount >= 100}
+                    aria-label="Increase plan count"
+                  >
+                    +
+                  </button>
+                </div>
+                {selectedAdhocRequest?.requested_plan_count > 0 &&
+                  selectedAdhocRequest.requested_plan_count !== planCount && (
+                    <span className="plan-count-hint-req-proceed">
+                      Requested: {selectedAdhocRequest.requested_plan_count}
+                    </span>
+                  )}
+              </div>
+            )}
             </div>
             <div className="action-buttons-req-proceed">
               <button 
@@ -927,7 +949,7 @@ const RequestProceed = () => {
                 onClick={handleCreateClick}
                 disabled={isSubmitting || !selectedDate || !selectedRequestId}
               >
-                {isSubmitting ? 'Processing...' : 'Create'}
+                {isSubmitting ? 'Processing...' : requestType === 'reschedule' ? 'Approve' : 'Create'}
               </button>
             </div>
           </div>
@@ -942,7 +964,7 @@ const RequestProceed = () => {
                   ariaLabel="bars-loading"
                   visible={true}
                 />
-                <span>Loading calendar data...</span>
+                <span>Loading active plans...</span>
               </div>
             </div>
           )}
@@ -954,10 +976,23 @@ const RequestProceed = () => {
       {showCreateConfirm && selectedRequest && (
         <div className="modal-backdrop-req-proceed" onClick={() => setShowCreateConfirm(false)}>
           <div className="modal-content-req-proceed" onClick={(e) => e.stopPropagation()}>
-            <h3 className="modal-title-req-proceed">Confirm Create Plan</h3>
+            <h3 className="modal-title-req-proceed">
+              {requestType === 'reschedule' ? 'Confirm reschedule' : 'Confirm Create Plan'}
+            </h3>
             <p className="modal-message-req-proceed">
-              Are you sure you want to create a plan for <strong>{getEstateName()}</strong> on{' '}
-              <strong>{selectedDate ? format(selectedDate, 'dd/MM/yyyy') : ''}</strong>?
+              {requestType === 'reschedule' ? (
+                <>
+                  Approve reschedule for <strong>{getEstateName()}</strong> (Plan #
+                  {selectedRescheduleRequest?.plan}) to{' '}
+                  <strong>{selectedDate ? format(selectedDate, 'dd/MM/yyyy') : ''}</strong>?
+                </>
+              ) : (
+                <>
+                  Are you sure you want to create a plan for <strong>{getEstateName()}</strong> on{' '}
+                  <strong>{selectedDate ? format(selectedDate, 'dd/MM/yyyy') : ''}</strong>?
+                  {planCount > 1 ? ` (${planCount} plans)` : ''}
+                </>
+              )}
             </p>
             <div className="modal-actions-req-proceed">
               <button 
@@ -972,7 +1007,7 @@ const RequestProceed = () => {
                 onClick={handleCreatePlan}
                 disabled={isSubmitting}
               >
-                {isSubmitting ? 'Creating...' : 'Confirm'}
+                {isSubmitting ? (requestType === 'reschedule' ? 'Approving...' : 'Creating...') : 'Confirm'}
               </button>
             </div>
           </div>

@@ -8,11 +8,18 @@ import 'react-toastify/dist/ReactToastify.css';
 import {
   useGetPlantationPlanRequestsListQuery,
   useDeclinePlantationPlanRequestMutation,
-  useMarkPlantationPlanRequestApprovedMutation,
+  useApprovePlantationPlanRequestMutation,
   useLazyGetCalendarPlansQuery,
 } from '../../../api/services NodeJs/plantationDashboardApi';
-import { baseApi, useGetMissionTypesQuery, useGetCropTypesQuery } from '../../../api/services/allEndpoints';
-import { useAppDispatch } from '../../../store/hooks';
+import {
+  useGetBookingCreationMissionTypesQuery,
+  useGetBookingCreationCropTypesQuery,
+} from '../../../api/services NodeJs/bookingCreationApi';
+import {
+  originalRequestedSlots,
+  approvePlantationPlanRequest,
+  declinePlantationPlanRequest,
+} from './plantationPlanRequestApproval';
 import './plantationPlanRequestQueue.css';
 
 function normalizeDropdownList(raw) {
@@ -36,17 +43,6 @@ function ymFromPicked(picked) {
   return s.length >= 7 ? s.slice(0, 7) : '';
 }
 
-/** Original plan slots requested (immutable after submit); falls back to plan_count for older rows. */
-function originalRequestedSlots(row) {
-  if (row == null) return 0;
-  const raw =
-    row.requested_plan_count != null && row.requested_plan_count !== ''
-      ? row.requested_plan_count
-      : row.plan_count;
-  const n = parseInt(raw, 10);
-  return Number.isFinite(n) ? n : 0;
-}
-
 function formatPlanDay(pickedDateVal) {
   if (pickedDateVal == null) return '';
   if (typeof pickedDateVal === 'string') return pickedDateVal.slice(0, 10);
@@ -60,7 +56,6 @@ function formatPlanDay(pickedDateVal) {
 const PlantationPlanRequestQueue = () => {
   const navigate = useNavigate();
   const routerLocation = useLocation();
-  const dispatch = useAppDispatch();
   const go = (path) => navigate({ pathname: path, search: routerLocation.search });
 
   const {
@@ -145,8 +140,8 @@ const PlantationPlanRequestQueue = () => {
     };
   }, [allRows, historyMonthYm]);
 
-  const { data: missionTypesRaw } = useGetMissionTypesQuery();
-  const { data: cropTypesRaw } = useGetCropTypesQuery();
+  const { data: missionTypesRaw } = useGetBookingCreationMissionTypesQuery();
+  const { data: cropTypesRaw } = useGetBookingCreationCropTypesQuery();
   const missionTypes = useMemo(() => normalizeDropdownList(missionTypesRaw), [missionTypesRaw]);
   const cropTypes = useMemo(() => normalizeDropdownList(cropTypesRaw), [cropTypesRaw]);
 
@@ -169,7 +164,7 @@ const PlantationPlanRequestQueue = () => {
   const [dateModalRow, setDateModalRow] = useState(null);
 
   const [declineMutation] = useDeclinePlantationPlanRequestMutation();
-  const [markApprovedMutation] = useMarkPlantationPlanRequestApprovedMutation();
+  const [approveMutation] = useApprovePlantationPlanRequestMutation();
 
   const calendarRaw = calendarPlansResult?.data;
   const calendarPlans = useMemo(() => {
@@ -238,7 +233,7 @@ const PlantationPlanRequestQueue = () => {
     if (!window.confirm('Decline this request? No plans will be created.')) return;
     setBusyId(requestId);
     try {
-      await declineMutation({ id: requestId, declineReason: '' }).unwrap();
+      await declinePlantationPlanRequest({ id: requestId, declineMutation });
       toast.success('Request declined.');
       refetchAll();
     } catch (e) {
@@ -252,67 +247,18 @@ const PlantationPlanRequestQueue = () => {
     const id = row.id;
     setBusyId(id);
     const n = parseInt(editablePlanCounts[id] ?? row.plan_count, 10) || 0;
-    if (!Number.isFinite(n) || n < 1 || n > 100) {
-      toast.error('Plan count must be between 1 and 100.');
-      setBusyId(null);
-      return;
-    }
-    const submissionData = {
-      flag: 'np',
-      missionId: 0,
-      estateId: row.estate_id,
-      groupId: row.group_id,
-      regionId: row.region_id,
-      plantationId: row.plantation_id,
-      missionTypeId: row.mission_type_id,
-      cropTypeId: row.crop_type_id,
-      totalExtent: '0.00',
-      pickedDate: row.picked_date,
-      divisions: [],
-    };
     try {
-      // Parallel create_plan calls (batched) — sequential round-trips were very slow for n > 1.
-      const BATCH = 10;
-      const allSettled = [];
-      let created = 0;
-      for (let start = 0; start < n; start += BATCH) {
-        const size = Math.min(BATCH, n - start);
-        const settled = await Promise.allSettled(
-          Array.from({ length: size }, () =>
-            dispatch(baseApi.endpoints.createPlan.initiate({ ...submissionData })).unwrap()
-          )
-        );
-        allSettled.push(...settled);
-        created += settled.filter(
-          (s) => s.status === 'fulfilled' && (s.value?.status === 'true' || s.value?.status === true)
-        ).length;
-      }
-
-      if (created === n && n > 0) {
-        await markApprovedMutation({ id, planCount: n }).unwrap();
-        toast.success(`Approved: ${created} plan(s) created.`);
+      const result = await approvePlantationPlanRequest({
+        row,
+        planCount: n,
+        pickedDate: row.picked_date,
+        approveMutation,
+      });
+      if (result.ok) {
+        toast.success(`Approved: ${result.created} plan(s) created.`);
         refetchAll();
       } else {
-        const firstBad = allSettled.find(
-          (s) =>
-            s.status === 'rejected' ||
-            (s.status === 'fulfilled' && !(s.value?.status === 'true' || s.value?.status === true))
-        );
-        let detail = '';
-        if (firstBad?.status === 'rejected') {
-          detail =
-            firstBad.reason?.data?.message ||
-            firstBad.reason?.message ||
-            String(firstBad.reason || '');
-        } else if (firstBad?.status === 'fulfilled') {
-          detail = firstBad.value?.message || '';
-        }
-        const suffix = detail ? ` ${detail}` : '';
-        toast.error(
-          created === 0
-            ? `No plans were created.${suffix}`
-            : `Only ${created} of ${n} plan(s) were created. Request not marked approved.${suffix}`
-        );
+        toast.error(result.error || 'Approval failed.');
       }
     } catch (e) {
       toast.error(e?.data?.message || e?.message || 'Approval failed.');

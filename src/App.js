@@ -1,4 +1,4 @@
-import React from 'react';
+import { withCurrentWingSearch } from './config/wingRouteGuard';
 import { HashRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import WingHubHome from './pages/WingHubHome';
@@ -45,6 +45,7 @@ import MonitoringDashboard from './sections/opsroom/monitoring/MonitoringDashboa
 import PlanCalendar from './sections/opsroom/calendar/PlanCalendar';
 import RequestsQueueMain from './sections/opsroom/requests/RequestsQueueMain';
 import RequestProceed from './sections/opsroom/requests/RequestProceed';
+import MonthlyRequestProceed from './sections/opsroom/requests/MonthlyRequestProceed';
 import PlansWithWeather from './sections/opsroom/plans/PlansWithWeather';
 import CorporateCustomers from './sections/strategic/corporateCustomers/CorporateCustomers';
 import StrategicFinanceApprovals from './sections/strategic/StrategicFinanceApprovals';
@@ -65,7 +66,6 @@ import AccidentReports from './sections/administration/accident-reports/Accident
 import Maintenance from './sections/administration/maintenance/Maintenance';
 import DjiMapUpload from './sections/opsroom/dji/DjiMapUpload';
 import ManagerApprovalQueue from './sections/opsroom/manager-approval/ManagerApprovalQueue';
-import PlantationPlanRequestQueue from './sections/opsroom/plantation-plan-requests/PlantationPlanRequestQueue';
 import FieldUnblockRequestQueue from './sections/opsroom/field-unblock/FieldUnblockRequestQueue';
 import PendingPaymentQueue from './sections/opsroom/pending-payment/PendingPaymentQueue';
 import DroneUnlockingQueue from './sections/opsroom/drone-unlocking/DroneUnlockingQueue';
@@ -113,6 +113,12 @@ function FleetUpdateRedirect() {
   }
   const search = next.toString();
   return <Navigate to={`/home/transport/hr${search ? `?${search}` : ''}`} replace />;
+}
+
+/** Legacy `#/home/plantationPlanRequestQueue` → merged requests queue. */
+function PlantationPlanRequestQueueRedirect() {
+  const location = useLocation();
+  return <Navigate to={withCurrentWingSearch('/home/requestsQueue', location.search)} replace />;
 }
 
 function App() {
@@ -616,7 +622,7 @@ function App() {
             path="plantationPlanRequestQueue"
             element={
               <ProtectedRoute>
-                <PlantationPlanRequestQueue />
+                <PlantationPlanRequestQueueRedirect />
               </ProtectedRoute>
             }
           />
@@ -657,6 +663,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <RequestProceed />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="monthlyRequestProceed"
+            element={
+              <ProtectedRoute>
+                <MonthlyRequestProceed />
               </ProtectedRoute>
             }
           />

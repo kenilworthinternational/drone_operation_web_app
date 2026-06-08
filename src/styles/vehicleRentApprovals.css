@@ -111,7 +111,15 @@
   transition: all 0.2s ease-in-out;
 }
 
-.vehicle-rent-approvals-container .vehicle-rent-approvals-filter-card .MuiTextField-root:focus-within {
+.vehicle-rent-approvals-container .vehicle-rent-approvals-queue-filter {
+  flex-shrink: 0;
+}
+
+.vehicle-rent-approvals-container .vehicle-rent-approvals-queue-filter .MuiTextField-root {
+  transition: all 0.2s ease-in-out;
+}
+
+.vehicle-rent-approvals-container .vehicle-rent-approvals-queue-filter .MuiTextField-root:focus-within {
   transform: translateY(-1px);
 }
 

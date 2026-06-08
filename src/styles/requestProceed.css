@@ -413,6 +413,22 @@
   flex: 1;
 }
 
+.calendar-day-plan-estate-req-proceed {
+  background: #1d4ed8;
+  box-shadow: inset 0 0 0 1px #93c5fd;
+}
+
+.calendar-day-has-estate-plans-req-proceed {
+  background: #eff6ff;
+}
+
+.calendar-legend-req-proceed {
+  font-size: 12px;
+  color: #4b5563;
+  margin: 0 0 8px 0;
+  padding: 0 4px;
+}
+
 .calendar-day-plan-req-proceed {
   background: #004b71;
   color: #ffffff;
@@ -436,12 +452,22 @@
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  flex-wrap: wrap;
+  gap: 12px 16px;
   padding: 12px 16px;
   background: #f9fafb;
   border: 1px solid #e5e7eb;
   border-radius: 6px;
   margin-bottom: 16px;
+}
+
+.calendar-actions-meta-req-proceed {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  flex: 1;
+  min-width: 0;
 }
 
 .action-buttons-req-proceed {
@@ -466,6 +492,100 @@
   font-weight: 600;
   color: #003057;
   font-size: 14px;
+}
+
+.plan-count-stepper-req-proceed {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.plan-count-label-req-proceed {
+  font-weight: 600;
+  color: #374151;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.plan-count-controls-req-proceed {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.plan-count-btn-req-proceed {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  min-height: 36px;
+  padding: 0;
+  border: none;
+  background: #f3f4f6;
+  color: #003057;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.plan-count-btn-req-proceed:hover:not(:disabled) {
+  background: #e5e7eb;
+  color: #004b71;
+}
+
+.plan-count-btn-req-proceed:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.plan-count-input-req-proceed {
+  width: 52px;
+  min-height: 36px;
+  padding: 0 4px;
+  border: none;
+  border-left: 1px solid #e5e7eb;
+  border-right: 1px solid #e5e7eb;
+  background: #ffffff;
+  color: #003057;
+  font-size: 15px;
+  font-weight: 700;
+  text-align: center;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.plan-count-input-req-proceed::-webkit-outer-spin-button,
+.plan-count-input-req-proceed::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.plan-count-input-req-proceed:focus {
+  outline: none;
+  background: #f0f9ff;
+}
+
+.plan-count-input-req-proceed:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.plan-count-hint-req-proceed {
+  font-size: 12px;
+  font-weight: 500;
+  color: #6b7280;
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  border-radius: 999px;
+  padding: 4px 10px;
+  white-space: nowrap;
 }
 
 .create-plan-btn-req-proceed {
