@@ -344,8 +344,9 @@ const VehicleRentApprovals = ({ embedded = false }) => {
     if (!q) return dailyVerificationRows;
     return dailyVerificationRows.filter((row) => {
       const vn = String(row.vehicle_no || row.vehicle || '').toLowerCase();
+      const submitter = String(row.submitted_by_name || row.driver_name || '').toLowerCase();
       const meta = `${row.make || ''} ${row.model || ''}`.toLowerCase();
-      return vn.includes(q) || meta.includes(q);
+      return vn.includes(q) || submitter.includes(q) || meta.includes(q);
     });
   }, [dailyVerificationRows, searchTerm]);
 
@@ -719,7 +720,17 @@ const VehicleRentApprovals = ({ embedded = false }) => {
                 {filteredDailyVerificationRows.map((row) => (
                   <TableRow key={row.id}>
                     <TableCell>{formatVehicleDate(row.date)}</TableCell>
-                    <TableCell>{row.vehicle_no || row.vehicle || '-'}</TableCell>
+                    <TableCell>
+                      <Typography variant="body2" sx={{ fontWeight: 600, lineHeight: 1.3 }}>
+                        {row.vehicle_no || row.vehicle || '-'}
+                      </Typography>
+                      {row.submitted_by_name || row.driver_name ? (
+                        <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.25, lineHeight: 1.3 }}>
+                          {row.submitted_by_name || row.driver_name}
+                          {row.submitted_by_role ? ` · ${row.submitted_by_role}` : ''}
+                        </Typography>
+                      ) : null}
+                    </TableCell>
                     <TableCell>{row.start_meter || '-'}</TableCell>
                     <TableCell>{row.end_meter || '-'}</TableCell>
                     <TableCell>{Number(row.trip_distance ?? row.daily_km ?? 0).toFixed(2)}</TableCell>
