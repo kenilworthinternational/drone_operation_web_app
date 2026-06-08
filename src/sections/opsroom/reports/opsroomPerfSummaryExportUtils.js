@@ -14,7 +14,7 @@ export const formatExportCell = (key, value) => {
 export const buildDailyTotalRow = (columns, totals) =>
   columns.map((c) => {
     if (c.key === 'date_display') return 'Total';
-    if (c.key === 'pct_achievement_monthly') return `${totals.pct_achievement_monthly ?? 0}%`;
+    if (PCT_KEYS.has(c.key)) return `${totals[c.key] ?? 0}%`;
     if (c.key === 'active_pilots') return totals.active_pilots_max ?? '';
     if (c.key === 'active_drones') return totals.active_drones_max ?? '';
     return totals[c.key] ?? '';
@@ -23,7 +23,7 @@ export const buildDailyTotalRow = (columns, totals) =>
 export const buildPilotTotalRow = (columns, totals) =>
   columns.map((c) => {
     if (c.key === 'date_display') return 'Total';
-    if (c.key === 'pct_achievement_monthly') return `${totals.pct_achievement_monthly ?? 0}%`;
+    if (PCT_KEYS.has(c.key)) return `${totals[c.key] ?? 0}%`;
     if (c.key === 'pilot_name' || c.key === 'mission_type' || c.key === 'year_month') return '';
     return totals[c.key] ?? '';
   });

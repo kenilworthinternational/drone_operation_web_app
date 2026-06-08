@@ -45,7 +45,8 @@ const COLUMNS = [
   { key: 'total_extent_attended_ha', label: 'Total extent attended (Ha)' },
   { key: 'total_extent_completed_ops_ha', label: 'Completed (ops) (Ha)' },
   { key: 'total_extent_completed_pilot_ha', label: 'Completed (pilot) (Ha)' },
-  { key: 'pct_achievement_monthly', label: 'Achievement vs daily target %' },
+  { key: 'pct_achievement_ops', label: 'Achievement vs daily target (ops) %' },
+  { key: 'pct_achievement_pilot', label: 'Achievement vs daily target (pilot) %' },
   { key: 'active_pilots', label: 'Number of assigned pilots' },
   { key: 'active_drones', label: 'Number of assigned drones' },
 ];
@@ -305,7 +306,7 @@ const OpsroomDailyPerformanceSummary = () => {
           Mission: <strong>{missionLabel(report.mission_type ?? missionType)}</strong>.
           Combined target: <strong>{report.monthly_target_ha} Ha</strong> ({report.month_plan_count} plans × {report.ha_per_plan} Ha).
           Assigned = pilot-assigned field Ha; Attended = field Ha when DJI started; Completed (ops) = DJI field area;
-          Completed (pilot) = pilot sub-task field area. Achievement % uses Completed (ops).
+          Completed (pilot) = pilot sub-task field area. Achievement % compares completed extent to daily target (ops or pilot).
         </p>
       )}
 
@@ -329,9 +330,7 @@ const OpsroomDailyPerformanceSummary = () => {
               {rows.map((row) => (
                 <tr key={`${row.year_month}-${row.date}`}>
                   {COLUMNS.map((c) => (
-                    <td key={c.key}>
-                      {c.key === 'pct_achievement_monthly' ? `${row[c.key]}%` : row[c.key]}
-                    </td>
+                    <td key={c.key}>{formatExportCell(c.key, row[c.key])}</td>
                   ))}
                 </tr>
               ))}
@@ -339,15 +338,9 @@ const OpsroomDailyPerformanceSummary = () => {
             {rows.length > 0 && (
               <tfoot>
                 <tr>
-                  <td>Total</td>
-                  <td>{totals.daily_operational_target_ha}</td>
-                  <td>{totals.total_extent_assigned_ha}</td>
-                  <td>{totals.total_extent_attended_ha}</td>
-                  <td>{totals.total_extent_completed_ops_ha}</td>
-                  <td>{totals.total_extent_completed_pilot_ha}</td>
-                  <td>{totals.pct_achievement_monthly}%</td>
-                  <td>—</td>
-                  <td>—</td>
+                  {buildDailyTotalRow(COLUMNS, totals).map((cell, idx) => (
+                    <td key={COLUMNS[idx].key}>{cell}</td>
+                  ))}
                 </tr>
               </tfoot>
             )}

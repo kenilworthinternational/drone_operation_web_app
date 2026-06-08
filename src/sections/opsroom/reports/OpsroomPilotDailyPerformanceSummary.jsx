@@ -45,7 +45,8 @@ const COLUMNS = [
   { key: 'total_extent_attended_ha', label: 'Total extent attended (Ha)' },
   { key: 'total_extent_completed_ops_ha', label: 'Completed (ops) (Ha)' },
   { key: 'total_extent_completed_pilot_ha', label: 'Completed (pilot) (Ha)' },
-  { key: 'pct_achievement_monthly', label: 'Achievement vs daily target %' },
+  { key: 'pct_achievement_ops', label: 'Achievement vs daily target (ops) %' },
+  { key: 'pct_achievement_pilot', label: 'Achievement vs daily target (pilot) %' },
 ];
 
 const formatCell = (key, value) => formatExportCell(key, value);
@@ -270,13 +271,9 @@ const OpsroomPilotDailyPerformanceSummary = () => {
         </tbody>
         <tfoot>
           <tr>
-            <td>Total</td>
-            <td>{pilot.totals.daily_operational_target_ha}</td>
-            <td>{pilot.totals.total_extent_assigned_ha}</td>
-            <td>{pilot.totals.total_extent_attended_ha}</td>
-            <td>{pilot.totals.total_extent_completed_ops_ha}</td>
-            <td>{pilot.totals.total_extent_completed_pilot_ha}</td>
-            <td>{pilot.totals.pct_achievement_monthly}%</td>
+            {buildPilotTotalRow(COLUMNS, pilot.totals).map((cell, idx) => (
+              <td key={COLUMNS[idx].key}>{cell}</td>
+            ))}
           </tr>
         </tfoot>
       </table>
