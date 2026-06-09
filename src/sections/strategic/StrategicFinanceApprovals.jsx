@@ -319,8 +319,21 @@ const StrategicFinanceApprovals = () => {
             <Tab label="Fuel Voucher Approvals" />
             <Tab label="More approvals (coming soon)" disabled />
           </Tabs>
-          {mainTab === 0 ? (
-            <div className="settlements-tab-nav-financial-cards" style={{ marginTop: 12, marginBottom: 0 }}>
+        </CardContent>
+      </Card>
+
+      {mainTab === 0 ? (
+        <Card elevation={0} sx={{ border: '1px solid #d9e5ef', borderRadius: 2 }}>
+          <CardContent>
+            <div className="settlements-tab-nav-financial-cards spm-fuel-header-row-financial-cards">
+              <Box sx={{ flex: 1, minWidth: 0, pr: 2 }}>
+                <Typography variant="h6" sx={{ fontWeight: 700, color: '#102739' }}>
+                  {fuelSourceLabel} Vouchers
+                </Typography>
+                <Typography variant="caption" sx={{ color: '#5f7383', display: 'block', mt: 0.5 }}>
+                  MD system approval for finance-created {isVehicleFuel ? 'vehicle fuel transport' : 'generator fuel'} vouchers.
+                </Typography>
+              </Box>
               <div className="settlements-tab-group-financial-cards">
                 <span className="settlements-tab-group-label-financial-cards">Fuel type</span>
                 <div className="settlements-tab-pills-financial-cards">
@@ -341,21 +354,6 @@ const StrategicFinanceApprovals = () => {
                 </div>
               </div>
             </div>
-          ) : null}
-        </CardContent>
-      </Card>
-
-      {mainTab === 0 ? (
-        <Card elevation={0} sx={{ border: '1px solid #d9e5ef', borderRadius: 2 }}>
-          <CardContent>
-            <Box sx={{ mb: 1.5 }}>
-              <Typography variant="h6" sx={{ fontWeight: 700, color: '#102739' }}>
-                {fuelSourceLabel} Vouchers
-              </Typography>
-              <Typography variant="caption" sx={{ color: '#5f7383' }}>
-                MD system approval for finance-created {isVehicleFuel ? 'vehicle fuel transport' : 'generator fuel'} vouchers.
-              </Typography>
-            </Box>
 
             <Tabs value={fuelTab} onChange={(_, v) => setFuelTab(v)} sx={{ mb: 1.5 }}>
               <Tab label={`Pending (${pending.length})`} />

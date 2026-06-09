@@ -91,7 +91,7 @@ export const baseApi = createApi({
     'HrLeave', 'HrAttendance', 'HrRoster',
     // Financial cards / fuel approvals
     'FinancialCards', 'FinancialCardTransactions', 'Transactions', 'FuelApprovals', 'FuelTransportVouchers',
-    'GeneratorFuelApprovals', 'FuelGeneratorVouchers', 'FinanceMasterData'
+    'GeneratorFuelApprovals', 'FuelGeneratorVouchers', 'FinanceMasterData', 'StrategicFinanceApprovals'
   ],
   endpoints: () => ({}),
 });

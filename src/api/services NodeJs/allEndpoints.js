@@ -30,6 +30,7 @@ import './opsroomPlanCalendarApi';
 import './financeWorkSummaryBillingApi';
 import './opsroomPerformanceSummaryApi';
 import './fuelTransportVoucherApi';
+import './strategicFinanceApprovalsApi';
 
 // Export the complete API
 export { baseApi };
@@ -57,6 +58,7 @@ export * from './opsroomPlanCalendarApi';
 export * from './financeWorkSummaryBillingApi';
 export * from './opsroomPerformanceSummaryApi';
 export * from './fuelTransportVoucherApi';
+export * from './strategicFinanceApprovalsApi';
 
 /**
  * Node.js Backend Services:

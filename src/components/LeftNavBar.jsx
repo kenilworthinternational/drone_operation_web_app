@@ -27,6 +27,7 @@ import {
 import { useNavbarPermissions } from '../hooks/useNavbarPermissions';
 import { useGetFieldUnblockPendingCountQuery } from '../api/services NodeJs/fieldUnblockRequestsApi';
 import { useGetPlanActivatePendingCountQuery } from '../api/services NodeJs/planActivateRequestsApi';
+import { useGetStrategicFuelVoucherPendingCountQuery } from '../api/services NodeJs/strategicFinanceApprovalsApi';
 
 const categories = navbarCategories;
 
@@ -93,9 +94,18 @@ const LeftNavBar = ({ showSidebar = false, onClose = () => { }, onCollapseChange
   });
   const planActivatePendingCount = Number(planActivatePendingPayload?.count ?? 0);
 
+  const { data: strategicFinancePendingPayload } = useGetStrategicFuelVoucherPendingCountQuery(undefined, {
+    pollingInterval: 60000,
+    refetchOnMountOrArgChange: true,
+    refetchOnFocus: true,
+    skip: !userId,
+  });
+  const strategicFinancePendingCount = Number(strategicFinancePendingPayload?.count ?? 0);
+
   const getNavPendingCount = (item) => {
     if (item?.pendingCountKey === 'fieldUnblock') return fieldUnblockPendingCount;
     if (item?.pendingCountKey === 'planActivate') return planActivatePendingCount;
+    if (item?.pendingCountKey === 'strategicFinanceApprovals') return strategicFinancePendingCount;
     if (item?.showPendingCount) return pendingCount;
     return 0;
   };

@@ -1277,6 +1277,15 @@
     margin-left: 0;
     justify-content: flex-end;
   }
+
+  .spm-fuel-header-row-financial-cards .settlements-tab-group-financial-cards {
+    justify-content: flex-end;
+  }
+}
+
+.spm-fuel-header-row-financial-cards {
+  align-items: center;
+  margin-bottom: 1rem;
 }
 
 .voucher-status-pill-financial-cards {
