@@ -27,6 +27,10 @@ import {
   useSaveVehicleMakeMutation as useSaveMasterVehicleMakeMutation,
   useGetVehicleModelsQuery as useGetMasterVehicleModelsQuery,
   useSaveVehicleModelMutation as useSaveMasterVehicleModelMutation,
+  useGetFinanceCategoriesMasterQuery,
+  useSaveFinanceCategoryMasterMutation,
+  useGetFinanceSubCategoriesMasterQuery,
+  useSaveFinanceSubCategoryMasterMutation,
 } from '../../../api/services NodeJs/jdManagementApi';
 import {
   useGetSecurityCodeListQuery,
@@ -70,6 +74,7 @@ const MasterData = ({ mode = 'full' }) => {
   const [activeTab, setActiveTab] = useState(tabs[0]);
   const [yearMonth] = useState('');
   const [selectedMasterModule, setSelectedMasterModule] = useState('vehicleMaster');
+  const [selectedFinanceCategoryId, setSelectedFinanceCategoryId] = useState('1');
   const [activeReasonsTab, setActiveReasonsTab] = useState('pilotOps');
   const [reasonSearch, setReasonSearch] = useState('');
   const [reasonFlagFilter, setReasonFlagFilter] = useState('all');
@@ -88,6 +93,15 @@ const MasterData = ({ mode = 'full' }) => {
   const { data: masterVehicleCategoriesData = [], refetch: refetchMasterVehicleCategories } = useGetMasterVehicleCategoriesQuery();
   const { data: masterVehicleMakesData = [], refetch: refetchMasterVehicleMakes } = useGetMasterVehicleMakesQuery();
   const { data: masterVehicleModelsData = [], refetch: refetchMasterVehicleModels } = useGetMasterVehicleModelsQuery();
+  const { data: financeCategoriesMaster = [], refetch: refetchFinanceCategoriesMaster } =
+    useGetFinanceCategoriesMasterQuery(undefined, { skip: activeTab !== 'masters' });
+  const { data: financeSubCategoriesMaster = [], refetch: refetchFinanceSubCategoriesMaster } =
+    useGetFinanceSubCategoriesMasterQuery(
+      { finance_category: selectedFinanceCategoryId ? Number(selectedFinanceCategoryId) : null },
+      { skip: activeTab !== 'masters' || selectedMasterModule !== 'financeSubCategories' }
+    );
+  const [saveFinanceCategoryMaster] = useSaveFinanceCategoryMasterMutation();
+  const [saveFinanceSubCategoryMaster] = useSaveFinanceSubCategoryMasterMutation();
   const { data: missionPartialReasons = [] } = useGetMissionPartialReasonsQuery({ include_inactive: true });
   const { data: notSprayingRecens = [] } = useGetNotSprayingRecensQuery({ include_inactive: true });
   const { data: deactivateReasons = [] } = useGetDeactivateReasonsQuery({ include_inactive: true });
@@ -577,6 +591,15 @@ const MasterData = ({ mode = 'full' }) => {
     }
     if (type === 'maintenanceCategory') setModalDraft({ category: item.category || '' });
     if (type === 'fuel') setModalDraft({ category: item.category || '', unit_price: item.unit_price != null ? String(item.unit_price) : '' });
+    if (type === 'financeCategory') {
+      setModalDraft({ category_name: item.category_name || '' });
+    }
+    if (type === 'financeSubCategory') {
+      setModalDraft({
+        type: item.type || '',
+        finance_category: String(item.finance_category || selectedFinanceCategoryId || '1'),
+      });
+    }
     if (type === 'wing') setModalDraft({ wing: item.wing || '', wingsCode: item.wingsCode || '', hod: item.hod ? String(item.hod) : '' });
     if (type === 'workLocation') {
       setModalDraft({
@@ -707,7 +730,10 @@ const MasterData = ({ mode = 'full' }) => {
   };
 
   const saveEditModal = async () => {
-    if (!editModal?.item?.id) return;
+    if (!editModal?.item) return;
+    const isCreate = !editModal.item.id;
+    if (isCreate && !['financeCategory', 'financeSubCategory'].includes(editModal.type)) return;
+    if (!isCreate && !editModal.item.id) return;
     if (editModal.type === 'workingTime') {
       const wt = String(modalDraft.time_of_day || '').trim();
       if (!wt) {
@@ -760,6 +786,21 @@ const MasterData = ({ mode = 'full' }) => {
           activated: editModal.item.activated ?? 1,
         }).unwrap();
         refetchFuelCategories();
+      } else if (editModal.type === 'financeCategory') {
+        await saveFinanceCategoryMaster({
+          id: editModal.item.id || undefined,
+          category_name: modalDraft.category_name,
+          activated: editModal.item.activated ?? 1,
+        }).unwrap();
+        await refetchFinanceCategoriesMaster();
+      } else if (editModal.type === 'financeSubCategory') {
+        await saveFinanceSubCategoryMaster({
+          id: editModal.item.id || undefined,
+          finance_category: Number(modalDraft.finance_category || selectedFinanceCategoryId || 1),
+          type: modalDraft.type,
+          activated: editModal.item.activated ?? 1,
+        }).unwrap();
+        await refetchFinanceSubCategoriesMaster();
       } else if (editModal.type === 'wing') {
         await saveWing({
           id: editModal.item.id,
@@ -936,6 +977,8 @@ const MasterData = ({ mode = 'full' }) => {
             {[
               { key: 'vehicleMaster', label: 'Vehicle Master (Category/Make/Model)' },
               { key: 'fuelTypes', label: 'Fuel Types' },
+              { key: 'financeCategories', label: 'Finance Categories' },
+              { key: 'financeSubCategories', label: 'Finance Sub Categories' },
               { key: 'wings', label: 'Wings' },
               { key: 'workLocations', label: 'Work Locations' },
               { key: 'maintenanceCategories', label: 'Maintenance Categories' },
@@ -1029,6 +1072,74 @@ const MasterData = ({ mode = 'full' }) => {
                       <div className="master-actions-master-data">
                         <button className="action-btn-master-data neutral-master-data" onClick={() => openEditModal('fuel', c)}>Edit</button>
                       </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {selectedMasterModule === 'financeCategories' && (
+              <div className="vehicle-admin-card-master-data">
+                <div className="master-data-chemicals-head-master-data">
+                  <div className="master-data-chemicals-head-text-master-data">
+                    <h3>Finance Categories</h3>
+                    <p className="vehicle-master-note-master-data">Expense card categories used in Financial Cards.</p>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-submit-master-data master-data-chemicals-add-btn-master-data"
+                    onClick={() => openEditModal('financeCategory', { category_name: '', activated: 1 })}
+                  >
+                    Add category
+                  </button>
+                </div>
+                <div className="master-list-master-data" style={{ marginTop: 12 }}>
+                  {financeCategoriesMaster.map((row) => (
+                    <div key={row.id} className="master-row-master-data">
+                      <span className="master-label-master-data">{row.category_name}</span>
+                      <button className="action-btn-master-data neutral-master-data" onClick={() => openEditModal('financeCategory', row)}>Edit</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {selectedMasterModule === 'financeSubCategories' && (
+              <div className="vehicle-admin-card-master-data">
+                <div className="master-data-chemicals-head-master-data">
+                  <div className="master-data-chemicals-head-text-master-data">
+                    <h3>Finance Sub Categories</h3>
+                    <p className="vehicle-master-note-master-data">Under Fuel (category 1): Vehicle and Generator.</p>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <select
+                      value={selectedFinanceCategoryId}
+                      onChange={(e) => setSelectedFinanceCategoryId(e.target.value)}
+                    >
+                      {financeCategoriesMaster.map((row) => (
+                        <option key={row.id} value={row.id}>{row.category_name}</option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      className="btn-submit-master-data master-data-chemicals-add-btn-master-data"
+                      onClick={() =>
+                        openEditModal('financeSubCategory', {
+                          finance_category: selectedFinanceCategoryId,
+                          type: '',
+                          activated: 1,
+                        })
+                      }
+                    >
+                      Add sub category
+                    </button>
+                  </div>
+                </div>
+                <div className="master-list-master-data" style={{ marginTop: 12 }}>
+                  {financeSubCategoriesMaster.map((row) => (
+                    <div key={row.id} className="master-row-master-data">
+                      <span className="master-label-master-data">{row.type}</span>
+                      <button className="action-btn-master-data neutral-master-data" onClick={() => openEditModal('financeSubCategory', row)}>Edit</button>
                     </div>
                   ))}
                 </div>
@@ -1882,6 +1993,33 @@ const MasterData = ({ mode = 'full' }) => {
                   placeholder="Unit price (LKR/L)"
                   min="0"
                   step="0.01"
+                />
+              </div>
+            )}
+            {editModal.type === 'financeCategory' && (
+              <input
+                className="master-edit-input-master-data"
+                value={modalDraft.category_name || ''}
+                onChange={(e) => setModalDraft((p) => ({ ...p, category_name: e.target.value }))}
+                placeholder="Finance category name"
+              />
+            )}
+            {editModal.type === 'financeSubCategory' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <select
+                  className="master-edit-input-master-data"
+                  value={modalDraft.finance_category || selectedFinanceCategoryId}
+                  onChange={(e) => setModalDraft((p) => ({ ...p, finance_category: e.target.value }))}
+                >
+                  {financeCategoriesMaster.map((row) => (
+                    <option key={row.id} value={row.id}>{row.category_name}</option>
+                  ))}
+                </select>
+                <input
+                  className="master-edit-input-master-data"
+                  value={modalDraft.type || ''}
+                  onChange={(e) => setModalDraft((p) => ({ ...p, type: e.target.value }))}
+                  placeholder="Sub category type (Vehicle / Generator for Fuel)"
                 />
               </div>
             )}

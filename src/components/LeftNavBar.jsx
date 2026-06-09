@@ -18,6 +18,7 @@ import {
   getUserData,
   getNavbarColor,
 } from '../utils/authUtils';
+import { getGroupLogoBaseUrl } from '../utils/resourceUrls';
 import {
   isCalendarAllowedWing,
   isForecastAllowedWing,
@@ -117,8 +118,7 @@ const LeftNavBar = ({ showSidebar = false, onClose = () => { }, onCollapseChange
 
   let companyLogo = '';
   let navbarColor = '';
-  // Ensure HTTPS is used for logo URLs
-  const url = 'https://drone-admin.kenilworthinternational.com/storage/image/logo/';
+  const url = getGroupLogoBaseUrl();
   const rawGroupId = userData?.group ?? userData?.group_id ?? userData?.user_group_id ?? null;
   const normalizedGroupId = Number(rawGroupId);
   const hasValidGroupId = Number.isFinite(normalizedGroupId) && normalizedGroupId > 0;

@@ -6,6 +6,7 @@ import {
   useGetCardsQuery,
   useGetBanksQuery,
   useGetFinanceCategoriesQuery,
+  useGetFinanceSubCategoriesQuery,
   useGetTransactionsQuery,
   useCreateCardMutation,
   useUpdateCardMutation,
@@ -24,6 +25,14 @@ import {
   useRecordFuelTransportPhysicalApprovalMutation,
   useSettleFuelTransportVoucherMutation,
 } from '../../../api/services NodeJs/fuelTransportVoucherApi';
+import {
+  useCreateFuelGeneratorVoucherMutation,
+  useDeclineFuelGeneratorVoucherByFinanceMutation,
+  useGetFuelGeneratorVoucherHistoryQuery,
+  useGetFuelGeneratorVoucherByIdQuery,
+  useRecordFuelGeneratorPhysicalApprovalMutation,
+  useSettleFuelGeneratorVoucherMutation,
+} from '../../../api/services NodeJs/fuelGeneratorVoucherApi';
 import { useSendMessageMutation } from '../../../api/services/authApi';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -161,6 +170,7 @@ const FinancialCards = () => {
     bank_id: '',
     user: '',
     vehicle_id: '',
+    sub_category: '',
   });
 
   const { data: cardsData, isLoading: cardsLoading, refetch: refetchCards } = useGetCardsQuery();
@@ -168,6 +178,10 @@ const FinancialCards = () => {
   const { data: ownVehiclesData } = useGetOwnVehiclesQuery();
   const { data: banksData } = useGetBanksQuery();
   const { data: categoriesData } = useGetFinanceCategoriesQuery();
+  const { data: fuelSubCategoriesData = [] } = useGetFinanceSubCategoriesQuery(
+    { finance_category: 1 },
+    { skip: !showCardModal && String(cardFormData.category) !== '1' }
+  );
   const { data: allTransactionsData } = useGetTransactionsQuery();
   const [createCard, { isLoading: creatingCard }] = useCreateCardMutation();
   const [updateCard, { isLoading: updatingCard }] = useUpdateCardMutation();
@@ -184,10 +198,21 @@ const FinancialCards = () => {
   const [recordPhysicalApproval, { isLoading: recordingPhysicalApproval }] =
     useRecordFuelTransportPhysicalApprovalMutation();
   const { data: voucherHistory = [], refetch: refetchVoucherHistory } = useGetFuelTransportVoucherHistoryQuery();
+  const [createGeneratorFuelVoucher, { isLoading: creatingGeneratorVoucher }] =
+    useCreateFuelGeneratorVoucherMutation();
+  const [declineGeneratorFuelVoucherByFinance, { isLoading: decliningGeneratorFinanceVoucher }] =
+    useDeclineFuelGeneratorVoucherByFinanceMutation();
+  const [settleGeneratorFuelVoucher, { isLoading: settlingGeneratorVoucher }] =
+    useSettleFuelGeneratorVoucherMutation();
+  const [recordGeneratorPhysicalApproval, { isLoading: recordingGeneratorPhysicalApproval }] =
+    useRecordFuelGeneratorPhysicalApprovalMutation();
+  const { data: generatorVoucherHistory = [], refetch: refetchGeneratorVoucherHistory } =
+    useGetFuelGeneratorVoucherHistoryQuery();
 
   // Top-level tab: 'cards' (card view) or 'settlements' (transactions to settle)
   const [activeTab, setActiveTab] = useState('cards');
   const [settlementsSubTab, setSettlementsSubTab] = useState('pending');
+  const [fuelSettlementSource, setFuelSettlementSource] = useState('vehicle');
 
   const [pendingViewCard, setPendingViewCard] = useState(null);
 
@@ -206,15 +231,19 @@ const FinancialCards = () => {
   const [settlementProofPreviewUrl, setSettlementProofPreviewUrl] = useState(null);
   const [detailVoucherId, setDetailVoucherId] = useState(null);
   const { data: voucherDetailData } = useGetFuelTransportVoucherByIdQuery(detailVoucherId, {
-    skip: !detailVoucherId,
+    skip: !detailVoucherId || fuelSettlementSource !== 'vehicle',
+  });
+  const { data: generatorVoucherDetailData } = useGetFuelGeneratorVoucherByIdQuery(detailVoucherId, {
+    skip: !detailVoucherId || fuelSettlementSource !== 'generator',
   });
 
   useEffect(() => {
-    if (voucherDetailData && detailVoucherId) {
-      setPrintVoucher(voucherDetailData);
+    const detail = fuelSettlementSource === 'generator' ? generatorVoucherDetailData : voucherDetailData;
+    if (detail && detailVoucherId) {
+      setPrintVoucher(detail);
       setDetailVoucherId(null);
     }
-  }, [voucherDetailData, detailVoucherId]);
+  }, [voucherDetailData, generatorVoucherDetailData, detailVoucherId, fuelSettlementSource]);
 
   const toggleGlobalSelection = (txId) => {
     setSelectedTxIds((prev) =>
@@ -282,6 +311,10 @@ const FinancialCards = () => {
 
   const banks = banksData || [];
   const categories = categoriesData || [];
+  const fuelSubCategories = fuelSubCategoriesData || [];
+  const selectedFuelSubType = String(
+    fuelSubCategories.find((s) => String(s.id) === String(cardFormData.sub_category))?.type || ''
+  ).toLowerCase();
   const ownVehicles = ownVehiclesData || [];
   const allTransactions = allTransactionsData || [];
   const pendingSettlements = pendingSettlementsData || [];
@@ -340,6 +373,7 @@ const FinancialCards = () => {
         bank_id: card.bank_id ? String(card.bank_id) : '',
         user: card.user ? String(card.user) : '',
         vehicle_id: card.vehicle_id ? String(card.vehicle_id) : '',
+        sub_category: card.sub_category ? String(card.sub_category) : '',
       });
     } else {
       setEditingCard(null);
@@ -354,6 +388,7 @@ const FinancialCards = () => {
         bank_id: '',
         user: '',
         vehicle_id: '',
+        sub_category: '',
       });
     }
     setShowCardModal(true);
@@ -373,6 +408,7 @@ const FinancialCards = () => {
       bank_id: '',
       user: '',
       vehicle_id: '',
+      sub_category: '',
     });
   };
 
@@ -409,16 +445,23 @@ const FinancialCards = () => {
       const trimmedCvc = cardFormData.cvc ? cardFormData.cvc.trim() : '';
 
       const isFuelCategory = String(cardFormData.category) === '1';
+      const selectedSub = fuelSubCategories.find(
+        (s) => String(s.id) === String(cardFormData.sub_category)
+      );
+      const subType = String(selectedSub?.type || '').toLowerCase();
       const cardData = {
         ...cardFormData,
         category: cardFormData.category ? parseInt(cardFormData.category) : null,
+        sub_category:
+          isFuelCategory && cardFormData.sub_category
+            ? parseInt(cardFormData.sub_category, 10)
+            : null,
         limitation: parseAmountField(cardFormData.limitation),
         amount: parseAmountField(cardFormData.amount),
         bank_id: cardFormData.bank_id ? parseInt(cardFormData.bank_id) : null,
         user: cardFormData.user ? parseInt(cardFormData.user) : null,
-        // Always send vehicle_id so backend can clear vehicles.card_id when unassigned
         vehicle_id:
-          isFuelCategory && cardFormData.vehicle_id
+          isFuelCategory && subType === 'vehicle' && cardFormData.vehicle_id
             ? parseInt(cardFormData.vehicle_id, 10)
             : null,
       };
@@ -683,7 +726,7 @@ const FinancialCards = () => {
     }
   };
 
-  const fuelSettlementRows = useMemo(() => {
+  const vehicleFuelSettlementRows = useMemo(() => {
     const rows = [];
     pendingSettlements.forEach((settlement) => {
       settlement.transactions.forEach((transaction) => {
@@ -709,6 +752,47 @@ const FinancialCards = () => {
     });
     return rows;
   }, [pendingSettlements]);
+
+  const generatorFuelSettlementRows = useMemo(() => {
+    const rows = [];
+    pendingSettlements.forEach((settlement) => {
+      settlement.transactions.forEach((transaction) => {
+        if (
+          transaction.type !== 'use' ||
+          Number(transaction.approved) !== 1 ||
+          transaction.generator_fuel_record_id == null ||
+          transaction.generator_fuel_record_id === ''
+        ) {
+          return;
+        }
+        rows.push({
+          ...transaction,
+          card_id: settlement.card_id,
+          card_holder: settlement.card_holder,
+          card_number: settlement.card_number,
+          current_amount: settlement.current_amount,
+          voucher_status: transaction.voucher_status || 'not_create',
+          voucher_id: transaction.voucher_id || null,
+          voucher_no: transaction.voucher_no || null,
+        });
+      });
+    });
+    return rows;
+  }, [pendingSettlements]);
+
+  const fuelSettlementRows =
+    fuelSettlementSource === 'generator' ? generatorFuelSettlementRows : vehicleFuelSettlementRows;
+
+  const activeVoucherHistory =
+    fuelSettlementSource === 'generator' ? generatorVoucherHistory : voucherHistory;
+  const isCreatingVoucher =
+    fuelSettlementSource === 'generator' ? creatingGeneratorVoucher : creatingVoucher;
+  const isDecliningFinanceVoucher =
+    fuelSettlementSource === 'generator' ? decliningGeneratorFinanceVoucher : decliningFinanceVoucher;
+  const isSettlingActiveVoucher =
+    fuelSettlementSource === 'generator' ? settlingGeneratorVoucher : settlingVoucher;
+  const isRecordingPhysicalApproval =
+    fuelSettlementSource === 'generator' ? recordingGeneratorPhysicalApproval : recordingPhysicalApproval;
 
   const filteredFuelRows = useMemo(() => {
     if (!settlementSearch) return fuelSettlementRows;
@@ -786,9 +870,44 @@ const FinancialCards = () => {
   }, [fuelSettlementRows, selectedTxIds]);
 
   const approvedUnsettledVouchers = useMemo(
-    () => voucherHistory.filter((v) => v.status === 'approved' && Number(v.settled) !== 1),
-    [voucherHistory]
+    () => activeVoucherHistory.filter((v) => v.status === 'approved' && Number(v.settled) !== 1),
+    [activeVoucherHistory]
   );
+
+  const allApprovedUnsettledVouchers = useMemo(
+    () => [
+      ...(voucherHistory || []).filter((v) => v.status === 'approved' && Number(v.settled) !== 1),
+      ...(generatorVoucherHistory || []).filter((v) => v.status === 'approved' && Number(v.settled) !== 1),
+    ],
+    [voucherHistory, generatorVoucherHistory]
+  );
+
+  const settlementsTabBadgeCount = useMemo(() => {
+    let count = allApprovedUnsettledVouchers.length;
+
+    const cardsNeedingVoucher = new Set();
+    vehicleFuelSettlementRows.forEach((row) => {
+      if (VOUCHER_ELIGIBLE_STATUSES.includes(row.voucher_status || 'not_create')) {
+        cardsNeedingVoucher.add(`v-${row.card_id}`);
+      }
+    });
+    generatorFuelSettlementRows.forEach((row) => {
+      if (VOUCHER_ELIGIBLE_STATUSES.includes(row.voucher_status || 'not_create')) {
+        cardsNeedingVoucher.add(`g-${row.card_id}`);
+      }
+    });
+    count += cardsNeedingVoucher.size;
+
+    const pendingVoucherIds = new Set();
+    [...vehicleFuelSettlementRows, ...generatorFuelSettlementRows].forEach((row) => {
+      if (row.voucher_id && row.voucher_status === 'pending' && Number(row.settled) !== 1) {
+        pendingVoucherIds.add(row.voucher_id);
+      }
+    });
+    count += pendingVoucherIds.size;
+
+    return count;
+  }, [allApprovedUnsettledVouchers, vehicleFuelSettlementRows, generatorFuelSettlementRows]);
 
   const mdUsers = useMemo(
     () =>
@@ -824,14 +943,20 @@ const FinancialCards = () => {
   const handleCreateVoucher = async () => {
     if (!selectedEligibleRows.length) return;
     try {
-      const result = await createFuelVoucher({
+      const createFn =
+        fuelSettlementSource === 'generator' ? createGeneratorFuelVoucher : createFuelVoucher;
+      const result = await createFn({
         transaction_ids: selectedEligibleRows.map((row) => row.id),
       }).unwrap();
       setShowCreateVoucherModal(false);
       setSelectedTxIds([]);
       setPrintVoucher(result);
       refetchSettlements();
-      refetchVoucherHistory();
+      if (fuelSettlementSource === 'generator') {
+        refetchGeneratorVoucherHistory();
+      } else {
+        refetchVoucherHistory();
+      }
     } catch (error) {
       toast.error(error?.data?.message || error?.message || 'Failed to create voucher');
     }
@@ -840,7 +965,11 @@ const FinancialCards = () => {
   const handleFinanceDeclineVoucher = async () => {
     if (!selectedFinanceDeclineTarget?.transaction_ids?.length || !declineVoucherReason.trim()) return;
     try {
-      await declineFuelVoucherByFinance({
+      const declineFn =
+        fuelSettlementSource === 'generator'
+          ? declineGeneratorFuelVoucherByFinance
+          : declineFuelVoucherByFinance;
+      await declineFn({
         transaction_ids: selectedFinanceDeclineTarget.transaction_ids,
         reason: declineVoucherReason.trim(),
       }).unwrap();
@@ -848,7 +977,11 @@ const FinancialCards = () => {
       setDeclineVoucherReason('');
       setSelectedTxIds([]);
       refetchSettlements();
-      refetchVoucherHistory();
+      if (fuelSettlementSource === 'generator') {
+        refetchGeneratorVoucherHistory();
+      } else {
+        refetchVoucherHistory();
+      }
       toast.success('Declined');
     } catch (error) {
       toast.error(error?.data?.message || error?.message || 'Failed to decline');
@@ -860,9 +993,13 @@ const FinancialCards = () => {
     if (!selectedVoucherToSettle?.id) return;
     try {
       const imageDataUri = await fileToDataUri(voucherSettleImage);
-      await settleFuelVoucher({
+      const settleFn =
+        fuelSettlementSource === 'generator' ? settleGeneratorFuelVoucher : settleFuelVoucher;
+      const voucherLabel =
+        fuelSettlementSource === 'generator' ? 'Fuel generator voucher' : 'Fuel transport voucher';
+      await settleFn({
         id: selectedVoucherToSettle.id,
-        description: voucherSettleDescription || `Fuel transport voucher ${selectedVoucherToSettle.voucher_no}`,
+        description: voucherSettleDescription || `${voucherLabel} ${selectedVoucherToSettle.voucher_no}`,
         image: imageDataUri,
       }).unwrap();
       setShowSettleVoucherModal(false);
@@ -870,7 +1007,11 @@ const FinancialCards = () => {
       setVoucherSettleDescription('');
       setVoucherSettleImage(null);
       refetchSettlements();
-      refetchVoucherHistory();
+      if (fuelSettlementSource === 'generator') {
+        refetchGeneratorVoucherHistory();
+      } else {
+        refetchVoucherHistory();
+      }
       refetchCards();
       toast.success('Voucher settled successfully');
     } catch (error) {
@@ -900,7 +1041,11 @@ const FinancialCards = () => {
     if (!physicalApprovalVoucher?.id || !physicalApproverId) return;
     try {
       const imageDataUri = await fileToDataUri(physicalApprovalImage);
-      await recordPhysicalApproval({
+      const recordFn =
+        fuelSettlementSource === 'generator'
+          ? recordGeneratorPhysicalApproval
+          : recordPhysicalApproval;
+      await recordFn({
         id: physicalApprovalVoucher.id,
         approved_by: Number(physicalApproverId),
         physical_approval_image: imageDataUri,
@@ -909,7 +1054,11 @@ const FinancialCards = () => {
       setPhysicalApproverId('');
       setPhysicalApprovalImage(null);
       refetchSettlements();
-      refetchVoucherHistory();
+      if (fuelSettlementSource === 'generator') {
+        refetchGeneratorVoucherHistory();
+      } else {
+        refetchVoucherHistory();
+      }
       toast.success('Physical approval recorded');
     } catch (error) {
       toast.error(error?.data?.message || error?.message || 'Failed to record physical approval');
@@ -941,8 +1090,8 @@ const FinancialCards = () => {
           onClick={() => setActiveTab('settlements')}
         >
           Transactions to Settle
-          {pendingSettlements.length > 0 ? (
-            <span className="financial-cards-tab-badge">{pendingSettlements.length}</span>
+          {settlementsTabBadgeCount > 0 ? (
+            <span className="financial-cards-tab-badge">{settlementsTabBadgeCount}</span>
           ) : null}
         </button>
       </div>
@@ -1117,10 +1266,10 @@ const FinancialCards = () => {
               <button
                 type="button"
                 className="btn-primary-financial-cards"
-                disabled={!selectedEligibleRows.length || creatingVoucher}
+                disabled={!selectedEligibleRows.length || isCreatingVoucher}
                 onClick={() => setShowCreateVoucherModal(true)}
               >
-                {creatingVoucher ? 'Creating...' : `Create Voucher (${selectedEligibleRows.length})`}
+                {isCreatingVoucher ? 'Creating...' : `Create Voucher (${selectedEligibleRows.length})`}
               </button>
               <button
                 type="button"
@@ -1136,32 +1285,62 @@ const FinancialCards = () => {
               <button
                 type="button"
                 className="btn-decline-voucher-financial-cards"
-                disabled={!selectedFinanceDeclineTarget || decliningFinanceVoucher}
+                disabled={!selectedFinanceDeclineTarget || isDecliningFinanceVoucher}
                 onClick={() => {
                   setDeclineVoucherReason('');
                   setShowDeclineVoucherModal(true);
                 }}
               >
-                {decliningFinanceVoucher ? 'Declining...' : 'Decline'}
+                {isDecliningFinanceVoucher ? 'Declining...' : 'Decline'}
               </button>
             </div>
           </div>
 
-          <div className="settlements-subtabs-financial-cards">
-            <button
-              type="button"
-              className={`settlements-subtab-financial-cards${settlementsSubTab === 'pending' ? ' active' : ''}`}
-              onClick={() => setSettlementsSubTab('pending')}
-            >
-              Transactions to Settle
-            </button>
-            <button
-              type="button"
-              className={`settlements-subtab-financial-cards${settlementsSubTab === 'voucher-history' ? ' active' : ''}`}
-              onClick={() => setSettlementsSubTab('voucher-history')}
-            >
-              Transport Voucher History
-            </button>
+          <div className="settlements-tab-nav-financial-cards">
+            <div className="settlements-tab-group-financial-cards">
+              <span className="settlements-tab-group-label-financial-cards">Fuel type</span>
+              <div className="settlements-tab-pills-financial-cards">
+                <button
+                  type="button"
+                  className={`settlements-tab-pill-financial-cards${fuelSettlementSource === 'vehicle' ? ' active' : ''}`}
+                  onClick={() => {
+                    setFuelSettlementSource('vehicle');
+                    setSelectedTxIds([]);
+                  }}
+                >
+                  Vehicle Fuel
+                </button>
+                <button
+                  type="button"
+                  className={`settlements-tab-pill-financial-cards${fuelSettlementSource === 'generator' ? ' active' : ''}`}
+                  onClick={() => {
+                    setFuelSettlementSource('generator');
+                    setSelectedTxIds([]);
+                  }}
+                >
+                  Generator Fuel
+                </button>
+              </div>
+            </div>
+            <div className="settlements-tab-group-financial-cards">
+              <span className="settlements-tab-group-label-financial-cards">View</span>
+              <div className="settlements-tab-pills-financial-cards">
+                <button
+                  type="button"
+                  className={`settlements-tab-pill-financial-cards${settlementsSubTab === 'pending' ? ' active' : ''}`}
+                  onClick={() => setSettlementsSubTab('pending')}
+                >
+                  To Settle
+                </button>
+                <button
+                  type="button"
+                  className={`settlements-tab-pill-financial-cards${settlementsSubTab === 'voucher-history' ? ' active' : ''}`}
+                  onClick={() => setSettlementsSubTab('voucher-history')}
+                >
+                  Voucher History
+                </button>
+              </div>
+            </div>
           </div>
 
           {settlementsSubTab === 'pending' ? (
@@ -1328,14 +1507,14 @@ const FinancialCards = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {voucherHistory.length === 0 ? (
+                  {activeVoucherHistory.length === 0 ? (
                     <tr>
                       <td colSpan={8} style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
-                        No transport vouchers yet
+                        No {fuelSettlementSource === 'generator' ? 'generator' : 'transport'} vouchers yet
                       </td>
                     </tr>
                   ) : (
-                    voucherHistory.map((voucher) => (
+                    activeVoucherHistory.map((voucher) => (
                       <tr key={voucher.id}>
                         <td>{voucher.voucher_no}</td>
                         <td>{new Date(voucher.created_at).toLocaleDateString()}</td>
@@ -1565,7 +1744,7 @@ const FinancialCards = () => {
                 <select
                   value={cardFormData.category}
                   onChange={(e) =>
-                    setCardFormData({ ...cardFormData, category: e.target.value, vehicle_id: '' })
+                    setCardFormData({ ...cardFormData, category: e.target.value, vehicle_id: '', sub_category: '', user: '' })
                   }
                 >
                   <option value="">-- Select Category --</option>
@@ -1576,22 +1755,47 @@ const FinancialCards = () => {
                   ))}
                 </select>
               </div>
-              <div className="form-group-financial-cards">
-                <label>Card User</label>
-                <select
-                  value={cardFormData.user}
-                  onChange={(e) => setCardFormData({ ...cardFormData, user: e.target.value })}
-                >
-                  <option value="">-- Select User --</option>
-                  {users.map((u) => (
-                    <option key={u.id} value={u.id}>
-                      {u.name || u.user_name || u.email || `User #${u.id}`}
-                      {u.mobile_no ? ` (${u.mobile_no})` : ''}
-                    </option>
-                  ))}
-                </select>
-              </div>
               {String(cardFormData.category) === '1' && (
+                <div className="form-group-financial-cards">
+                  <label>Sub Category</label>
+                  <select
+                    value={cardFormData.sub_category}
+                    onChange={(e) =>
+                      setCardFormData({
+                        ...cardFormData,
+                        sub_category: e.target.value,
+                        vehicle_id: '',
+                        user: '',
+                      })
+                    }
+                  >
+                    <option value="">-- Select Sub Category --</option>
+                    {fuelSubCategories.map((sub) => (
+                      <option key={sub.id} value={sub.id}>
+                        {sub.type}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {String(cardFormData.category) !== '1' && (
+                <div className="form-group-financial-cards">
+                  <label>Card User</label>
+                  <select
+                    value={cardFormData.user}
+                    onChange={(e) => setCardFormData({ ...cardFormData, user: e.target.value })}
+                  >
+                    <option value="">-- Select User --</option>
+                    {users.map((u) => (
+                      <option key={u.id} value={u.id}>
+                        {u.name || u.user_name || u.email || `User #${u.id}`}
+                        {u.mobile_no ? ` (${u.mobile_no})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {String(cardFormData.category) === '1' && selectedFuelSubType === 'vehicle' && (
                 <div className="form-group-financial-cards">
                   <label>Vehicle (Own)</label>
                   <select
@@ -1603,10 +1807,33 @@ const FinancialCards = () => {
                       })
                     }
                   >
-                    <option value="">-- No vehicle (clear link) --</option>
+                    <option value="">-- Select vehicle --</option>
                     {ownVehicles.map((v) => (
                       <option key={v.id} value={v.id}>
                         {v.vehicle_no}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {String(cardFormData.category) === '1' && selectedFuelSubType === 'generator' && (
+                <div className="form-group-financial-cards">
+                  <label>Pilot User</label>
+                  <select
+                    value={cardFormData.user}
+                    onChange={(e) =>
+                      setCardFormData({
+                        ...cardFormData,
+                        user: e.target.value,
+                        vehicle_id: '',
+                      })
+                    }
+                  >
+                    <option value="">-- Select pilot user --</option>
+                    {users.map((u) => (
+                      <option key={u.id} value={u.id}>
+                        {u.name || u.user_name || u.email || `User #${u.id}`}
+                        {u.mobile_no ? ` (${u.mobile_no})` : ''}
                       </option>
                     ))}
                   </select>

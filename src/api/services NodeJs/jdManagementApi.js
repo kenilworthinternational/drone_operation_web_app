@@ -1132,6 +1132,56 @@ export const jdManagementApi = baseApi.injectEndpoints({
       },
       invalidatesTags: ['Users'],
     }),
+
+    getFinanceCategoriesMaster: builder.query({
+      queryFn: async () => {
+        const result = await nodeBackendBaseQuery(
+          { url: '/api/jd-management/finance-categories', method: 'POST', body: {} },
+          {},
+          {}
+        );
+        if (result.error) return { error: result.error };
+        return { data: result.data?.data || result.data || [] };
+      },
+      providesTags: ['FinanceMasterData'],
+    }),
+
+    saveFinanceCategoryMaster: builder.mutation({
+      queryFn: async (body) => {
+        const result = await nodeBackendBaseQuery(
+          { url: '/api/jd-management/finance-categories/save', method: 'POST', body },
+          {},
+          {}
+        );
+        return result;
+      },
+      invalidatesTags: ['FinanceMasterData'],
+    }),
+
+    getFinanceSubCategoriesMaster: builder.query({
+      queryFn: async (body = {}) => {
+        const result = await nodeBackendBaseQuery(
+          { url: '/api/jd-management/finance-sub-categories', method: 'POST', body },
+          {},
+          {}
+        );
+        if (result.error) return { error: result.error };
+        return { data: result.data?.data || result.data || [] };
+      },
+      providesTags: ['FinanceMasterData'],
+    }),
+
+    saveFinanceSubCategoryMaster: builder.mutation({
+      queryFn: async (body) => {
+        const result = await nodeBackendBaseQuery(
+          { url: '/api/jd-management/finance-sub-categories/save', method: 'POST', body },
+          {},
+          {}
+        );
+        return result;
+      },
+      invalidatesTags: ['FinanceMasterData'],
+    }),
   }),
 });
 
@@ -1188,5 +1238,9 @@ export const {
   useGetUserByIdQuery,
   useUpdateUserMutation,
   useDeleteUserMutation,
+  useGetFinanceCategoriesMasterQuery,
+  useSaveFinanceCategoryMasterMutation,
+  useGetFinanceSubCategoriesMasterQuery,
+  useSaveFinanceSubCategoryMasterMutation,
 } = jdManagementApi;
 

@@ -24,6 +24,7 @@ import { useGetPendingAdHocRequestsQuery, useGetPendingRescheduleRequestsByManag
 import { getUserData } from '../../../utils/authUtils';
 import { COMPANY } from '../../../config/companyConstants';
 import { withCurrentWingSearch } from '../../../config/wingRouteGuard';
+import { getGroupLogoBaseUrl } from '../../../utils/resourceUrls';
 import '../../../styles/monitoringDashboard.css';
 
 const REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes
@@ -38,7 +39,7 @@ const MonitoringDashboard = () => {
 
   const userData = getUserData();
   const userGroupId = userData.group;
-  const logoUrl = 'https://drone-admin.kenilworthinternational.com/storage/image/logo/';
+  const logoUrl = getGroupLogoBaseUrl();
   const companyLogo = userGroupId !== 0 ? `${logoUrl}${userGroupId}.png` : `${logoUrl}000.png`;
 
   const formatDate = (date) => {

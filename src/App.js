@@ -64,6 +64,7 @@ import LeaveManagement from './sections/hr&admin/leave/LeaveManagement';
 import ResourceAllocation from './sections/administration/resource-allocation/ResourceAllocation';
 import AccidentReports from './sections/administration/accident-reports/AccidentReports';
 import Maintenance from './sections/administration/maintenance/Maintenance';
+import GeneratorFuelApprovals from './sections/hr&admin/fuelApprovals/GeneratorFuelApprovals';
 import DjiMapUpload from './sections/opsroom/dji/DjiMapUpload';
 import ManagerApprovalQueue from './sections/opsroom/manager-approval/ManagerApprovalQueue';
 import FieldUnblockRequestQueue from './sections/opsroom/field-unblock/FieldUnblockRequestQueue';
@@ -759,6 +760,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Maintenance />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="generator-fuel-approvals"
+            element={
+              <ProtectedRoute>
+                <GeneratorFuelApprovals />
               </ProtectedRoute>
             }
           />

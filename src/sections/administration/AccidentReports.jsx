@@ -11,6 +11,7 @@ import {
   useGetTechniciansQuery,
 } from '../../api/services NodeJs/maintenanceApi';
 import '../../styles/accidentReports.css';
+import { resolveMediaUrl } from '../../utils/resourceUrls';
 
 const AccidentReports = () => {
   const [filters, setFilters] = useState({
@@ -174,6 +175,8 @@ const AccidentReports = () => {
     });
   };
 
+  const getResourceUrl = (url, resourceType = 'ACCIDENT_IMAGE') => resolveMediaUrl(url, resourceType);
+
   const handleDownload = (url, filename) => {
     try {
       const fullUrl = getResourceUrl(url);
@@ -210,18 +213,6 @@ const AccidentReports = () => {
 
   const handleRotateImage = (direction) => {
     setImageRotation(prev => direction === 'left' ? prev - 90 : prev + 90);
-  };
-
-  const getResourceUrl = (url) => {
-    if (!url) return null;
-    // Backend now sends full URLs, so return as is
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-      return url;
-    }
-    // Fallback: if somehow we get a relative URL, prepend the base URL
-    const baseUrl = 'https://drone-admin.kenilworthinternational.com/storage';
-    const cleanUrl = url.startsWith('/') ? url.substring(1) : url;
-    return `${baseUrl}/${cleanUrl}`;
   };
 
   const formatDate = (dateString) => {

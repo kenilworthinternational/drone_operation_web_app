@@ -4,7 +4,6 @@ import {
   Button,
   Card,
   CardContent,
-  Chip,
   CircularProgress,
   Dialog,
   DialogActions,
@@ -25,6 +24,13 @@ import {
   useApproveFuelTransportVoucherMutation,
   useDeclineFuelTransportVoucherMutation,
 } from '../../api/services NodeJs/fuelTransportVoucherApi';
+import {
+  useGetPendingFuelGeneratorVouchersQuery,
+  useGetFuelGeneratorVoucherHistoryQuery,
+  useGetFuelGeneratorVoucherByIdQuery,
+  useApproveFuelGeneratorVoucherMutation,
+  useDeclineFuelGeneratorVoucherMutation,
+} from '../../api/services NodeJs/fuelGeneratorVoucherApi';
 import { getUserData } from '../../utils/authUtils';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -83,6 +89,7 @@ const StrategicFinanceApprovals = () => {
   const isMd = String(userData?.job_role || '').trim().toLowerCase() === 'md';
 
   const [mainTab, setMainTab] = useState(0);
+  const [fuelSource, setFuelSource] = useState('vehicle');
   const [fuelTab, setFuelTab] = useState(0);
   const [selectedId, setSelectedId] = useState(null);
   const [decline, setDecline] = useState(null);
@@ -92,22 +99,60 @@ const StrategicFinanceApprovals = () => {
   const [settlementProofPreviewUrl, setSettlementProofPreviewUrl] = useState(null);
   const [voucherSearch, setVoucherSearch] = useState('');
 
-  const { data: pending = [], isLoading: pendingLoading, refetch: refetchPending } =
-    useGetPendingFuelTransportVouchersQuery();
-  const { data: history = [], isLoading: historyLoading, refetch: refetchHistory } =
-    useGetFuelTransportVoucherHistoryQuery();
-  const { data: detail, isLoading: detailLoading } = useGetFuelTransportVoucherByIdQuery(selectedId, {
-    skip: !selectedId,
-  });
-  const { data: printDetail } = useGetFuelTransportVoucherByIdQuery(printVoucherId, {
-    skip: !printVoucherId,
-  });
+  const { data: transportPending = [], isLoading: transportPendingLoading, refetch: refetchTransportPending } =
+    useGetPendingFuelTransportVouchersQuery(undefined, { skip: fuelSource !== 'vehicle' });
+  const { data: transportHistory = [], isLoading: transportHistoryLoading, refetch: refetchTransportHistory } =
+    useGetFuelTransportVoucherHistoryQuery(undefined, { skip: fuelSource !== 'vehicle' });
+  const { data: generatorPending = [], isLoading: generatorPendingLoading, refetch: refetchGeneratorPending } =
+    useGetPendingFuelGeneratorVouchersQuery(undefined, { skip: fuelSource !== 'generator' });
+  const { data: generatorHistory = [], isLoading: generatorHistoryLoading, refetch: refetchGeneratorHistory } =
+    useGetFuelGeneratorVoucherHistoryQuery(undefined, { skip: fuelSource !== 'generator' });
 
-  const [approveVoucher, { isLoading: approving }] = useApproveFuelTransportVoucherMutation();
-  const [declineVoucher, { isLoading: declining }] = useDeclineFuelTransportVoucherMutation();
+  const pending = fuelSource === 'vehicle' ? transportPending : generatorPending;
+  const history = fuelSource === 'vehicle' ? transportHistory : generatorHistory;
+  const pendingLoading = fuelSource === 'vehicle' ? transportPendingLoading : generatorPendingLoading;
+  const historyLoading = fuelSource === 'vehicle' ? transportHistoryLoading : generatorHistoryLoading;
+  const refetchPending = fuelSource === 'vehicle' ? refetchTransportPending : refetchGeneratorPending;
+  const refetchHistory = fuelSource === 'vehicle' ? refetchTransportHistory : refetchGeneratorHistory;
+
+  const { data: transportDetail, isLoading: transportDetailLoading } = useGetFuelTransportVoucherByIdQuery(selectedId, {
+    skip: !selectedId || fuelSource !== 'vehicle',
+  });
+  const { data: generatorDetail, isLoading: generatorDetailLoading } = useGetFuelGeneratorVoucherByIdQuery(selectedId, {
+    skip: !selectedId || fuelSource !== 'generator',
+  });
+  const detail = fuelSource === 'vehicle' ? transportDetail : generatorDetail;
+  const detailLoading = fuelSource === 'vehicle' ? transportDetailLoading : generatorDetailLoading;
+
+  const { data: transportPrintDetail } = useGetFuelTransportVoucherByIdQuery(printVoucherId, {
+    skip: !printVoucherId || fuelSource !== 'vehicle',
+  });
+  const { data: generatorPrintDetail } = useGetFuelGeneratorVoucherByIdQuery(printVoucherId, {
+    skip: !printVoucherId || fuelSource !== 'generator',
+  });
+  const printDetail = fuelSource === 'vehicle' ? transportPrintDetail : generatorPrintDetail;
+
+  const [approveTransportVoucher, { isLoading: approvingTransport }] = useApproveFuelTransportVoucherMutation();
+  const [declineTransportVoucher, { isLoading: decliningTransport }] = useDeclineFuelTransportVoucherMutation();
+  const [approveGeneratorVoucher, { isLoading: approvingGenerator }] = useApproveFuelGeneratorVoucherMutation();
+  const [declineGeneratorVoucher, { isLoading: decliningGenerator }] = useDeclineFuelGeneratorVoucherMutation();
+  const approving = fuelSource === 'vehicle' ? approvingTransport : approvingGenerator;
+  const declining = fuelSource === 'vehicle' ? decliningTransport : decliningGenerator;
+
+  const isVehicleFuel = fuelSource === 'vehicle';
+  const fuelSourceLabel = isVehicleFuel ? 'Vehicle Fuel' : 'Generator Fuel';
+  const personColumnLabel = isVehicleFuel ? 'Driver' : 'Pilot';
 
   const sourceRows = fuelTab === 0 ? pending : history;
   const fuelLoading = fuelTab === 0 ? pendingLoading : historyLoading;
+
+  useEffect(() => {
+    setSelectedId(null);
+    setDecline(null);
+    setApproveConfirm(null);
+    setPrintVoucherId(null);
+    setFuelTab(0);
+  }, [fuelSource]);
 
   useEffect(() => {
     if (printDetail && printVoucherId) {
@@ -130,14 +175,6 @@ const StrategicFinanceApprovals = () => {
     );
   }, [sourceRows, voucherSearch]);
 
-  const totals = useMemo(
-    () => ({
-      pendingCount: pending.length,
-      pendingAmount: pending.reduce((s, r) => s + (Number(r.total_amount) || 0), 0),
-    }),
-    [pending]
-  );
-
   const openSettlementProof = (url) => {
     if (!url) return;
     if (isPdfProofUrl(url)) {
@@ -158,7 +195,8 @@ const StrategicFinanceApprovals = () => {
   const submitApprove = async () => {
     if (!approveConfirm) return;
     try {
-      const result = await approveVoucher(approveConfirm.id).unwrap();
+      const approveFn = fuelSource === 'vehicle' ? approveTransportVoucher : approveGeneratorVoucher;
+      const result = await approveFn(approveConfirm.id).unwrap();
       setApproveConfirm(null);
       setPrintVoucher(result);
       toast.success('Voucher approved');
@@ -172,7 +210,8 @@ const StrategicFinanceApprovals = () => {
   const submitDecline = async () => {
     if (!decline?.reason?.trim()) return;
     try {
-      await declineVoucher({ id: decline.row.id, reason: decline.reason.trim() }).unwrap();
+      const declineFn = fuelSource === 'vehicle' ? declineTransportVoucher : declineGeneratorVoucher;
+      await declineFn({ id: decline.row.id, reason: decline.reason.trim() }).unwrap();
       setDecline(null);
       if (selectedId === decline.row.id) setSelectedId(null);
       toast.success('Voucher declined');
@@ -277,32 +316,45 @@ const StrategicFinanceApprovals = () => {
             Strategic Planning and Monitoring wing — system approvals for finance vouchers.
           </Typography>
           <Tabs value={mainTab} onChange={(_, v) => setMainTab(v)} sx={{ mt: 2 }}>
-            <Tab label="Fuel Transport Approvals" />
+            <Tab label="Fuel Voucher Approvals" />
             <Tab label="More approvals (coming soon)" disabled />
           </Tabs>
+          {mainTab === 0 ? (
+            <div className="settlements-tab-nav-financial-cards" style={{ marginTop: 12, marginBottom: 0 }}>
+              <div className="settlements-tab-group-financial-cards">
+                <span className="settlements-tab-group-label-financial-cards">Fuel type</span>
+                <div className="settlements-tab-pills-financial-cards">
+                  <button
+                    type="button"
+                    className={`settlements-tab-pill-financial-cards${fuelSource === 'vehicle' ? ' active' : ''}`}
+                    onClick={() => setFuelSource('vehicle')}
+                  >
+                    Vehicle Fuel
+                  </button>
+                  <button
+                    type="button"
+                    className={`settlements-tab-pill-financial-cards${fuelSource === 'generator' ? ' active' : ''}`}
+                    onClick={() => setFuelSource('generator')}
+                  >
+                    Generator Fuel
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : null}
         </CardContent>
       </Card>
 
       {mainTab === 0 ? (
         <Card elevation={0} sx={{ border: '1px solid #d9e5ef', borderRadius: 2 }}>
           <CardContent>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5, mb: 1.5 }}>
-              <Box>
-                <Typography variant="h6" sx={{ fontWeight: 700, color: '#102739' }}>
-                  Fuel Transport Vouchers
-                </Typography>
-                <Typography variant="caption" sx={{ color: '#5f7383' }}>
-                  MD system approval for finance-created fuel transport vouchers.
-                </Typography>
-              </Box>
-              <Box sx={{ display: 'flex', gap: 0.8, flexWrap: 'wrap' }}>
-                <Chip size="small" label={`Pending: ${totals.pendingCount}`} sx={{ background: '#fff7e8', color: '#9a6700' }} />
-                <Chip
-                  size="small"
-                  label={`Pending total: ${formatLkr(totals.pendingAmount)}`}
-                  sx={{ background: '#eef4ff', color: '#1d4ed8' }}
-                />
-              </Box>
+            <Box sx={{ mb: 1.5 }}>
+              <Typography variant="h6" sx={{ fontWeight: 700, color: '#102739' }}>
+                {fuelSourceLabel} Vouchers
+              </Typography>
+              <Typography variant="caption" sx={{ color: '#5f7383' }}>
+                MD system approval for finance-created {isVehicleFuel ? 'vehicle fuel transport' : 'generator fuel'} vouchers.
+              </Typography>
             </Box>
 
             <Tabs value={fuelTab} onChange={(_, v) => setFuelTab(v)} sx={{ mb: 1.5 }}>
@@ -399,7 +451,7 @@ const StrategicFinanceApprovals = () => {
                 <table className="voucher-history-table-financial-cards">
                   <thead>
                     <tr>
-                      <th>Driver</th>
+                      <th>{personColumnLabel}</th>
                       <th>Fuel Date</th>
                       <th>Time</th>
                       <th>Fuel Details</th>
@@ -459,7 +511,7 @@ const StrategicFinanceApprovals = () => {
           }}
         >
           <CheckCircleIcon sx={{ color: '#15803d', fontSize: 22 }} />
-          Approve Fuel Transport Voucher
+          Approve {fuelSourceLabel} Voucher
         </DialogTitle>
         <DialogContent sx={{ px: 3, pt: 1, pb: 2.5 }}>
           <Typography variant="body2" sx={{ color: '#475569', lineHeight: 1.55 }}>
@@ -521,7 +573,7 @@ const StrategicFinanceApprovals = () => {
           }}
         >
           <CancelIcon sx={{ color: '#b91c1c', fontSize: 22 }} />
-          Decline Fuel Transport Voucher
+          Decline {fuelSourceLabel} Voucher
         </DialogTitle>
         <DialogContent sx={{ px: 3, pt: 1, pb: 2.5 }}>
           <Typography variant="body2" sx={{ color: '#475569', lineHeight: 1.55, mb: 1.5 }}>

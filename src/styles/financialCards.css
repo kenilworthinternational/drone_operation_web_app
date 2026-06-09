@@ -1203,27 +1203,80 @@
   flex-wrap: wrap;
 }
 
-.settlements-subtabs-financial-cards {
+.settlements-tab-nav-financial-cards {
   display: flex;
-  gap: 0.5rem;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
   margin-bottom: 1rem;
 }
 
-.settlements-subtab-financial-cards {
-  border: 1px solid #d0dbe4;
-  background: #f8fafc;
-  color: #334155;
-  padding: 0.45rem 0.9rem;
-  border-radius: 8px;
+.settlements-tab-group-financial-cards {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.settlements-tab-group-financial-cards:first-child {
+  justify-content: flex-start;
+}
+
+.settlements-tab-group-financial-cards:last-child {
+  justify-content: flex-end;
+  margin-left: auto;
+}
+
+.settlements-tab-group-label-financial-cards {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.settlements-tab-pills-financial-cards {
+  display: flex;
+  gap: 0.5rem;
+  flex: 0 0 auto;
+}
+
+.settlements-tab-pill-financial-cards {
+  flex: 0 0 auto;
+  padding: 0.55rem 0.85rem;
+  border: none;
+  border-radius: 10px;
+  background: #f1f5f9;
+  color: #475569;
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+  white-space: nowrap;
 }
 
-.settlements-subtab-financial-cards.active {
-  background: linear-gradient(135deg, #004B71 0%, #0066a1 100%);
+.settlements-tab-pill-financial-cards:hover:not(.active) {
+  background: #e2e8f0;
+}
+
+.settlements-tab-pill-financial-cards.active {
+  background: #0f766e;
   color: #fff;
-  border-color: transparent;
+}
+
+@media (max-width: 768px) {
+  .settlements-tab-nav-financial-cards {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.65rem;
+  }
+
+  .settlements-tab-group-financial-cards:last-child {
+    margin-left: 0;
+    justify-content: flex-end;
+  }
 }
 
 .voucher-status-pill-financial-cards {

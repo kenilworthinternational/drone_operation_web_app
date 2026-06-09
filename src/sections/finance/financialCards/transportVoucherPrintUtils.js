@@ -33,7 +33,7 @@ export const hasVoucherApprovalInfo = (voucher) => {
 };
 
 export const resolveVoucherDriverName = (line) =>
-  line?.driver_name || line?.driver || '—';
+  line?.driver_name || line?.pilot_name || line?.driver || '—';
 
 export const groupDriverLabel = (transactions = []) => {
   const names = [...new Set(transactions.map((t) => t.driver_name).filter(Boolean))];

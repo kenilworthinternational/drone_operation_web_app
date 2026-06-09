@@ -103,6 +103,28 @@ export const financialCardsApi = baseApi.injectEndpoints({
       providesTags: ['FinancialCards'],
     }),
 
+    getFinanceSubCategories: builder.query({
+      queryFn: async (body = {}) => {
+        try {
+          const result = await nodeBackendBaseQuery(
+            {
+              url: '/api/jd-management/finance-sub-categories',
+              method: 'POST',
+              body,
+            },
+            {},
+            {}
+          );
+          if (result.error) return { error: result.error };
+          const rows = result.data?.data || result.data || [];
+          return { data: rows };
+        } catch (error) {
+          return { error: { status: 'FETCH_ERROR', error: error.message } };
+        }
+      },
+      providesTags: ['FinancialCards'],
+    }),
+
     // Get all cards
     getCards: builder.query({
       queryFn: async () => {
@@ -463,6 +485,7 @@ export const {
   useGetOwnVehiclesQuery,
   useGetBanksQuery,
   useGetFinanceCategoriesQuery,
+  useGetFinanceSubCategoriesQuery,
   useGetCardsQuery,
   useGetCardByIdQuery,
   useCreateCardMutation,

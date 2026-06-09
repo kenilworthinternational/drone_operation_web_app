@@ -119,6 +119,7 @@ const navbarCategories = [
     icon: FaBuilding,
     children: [
       { path: '/home/transport/hr', label: 'T. O. D.', icon: FaTruck },
+      { path: '/home/generator-fuel-approvals', label: 'Generator Fuel Approvals', icon: FaTruck },
       { path: '/home/fleet', label: 'Resource Allocation', icon: FaCogs },
       { path: '/home/accident-reports', label: 'Accident Reports', icon: FaFileAlt },
       { path: '/home/maintenance', label: 'Maintenance', icon: FaTools },

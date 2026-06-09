@@ -14,13 +14,13 @@ import {
 import { OD_WING_OPERATION_DIGITALIZATION_TITLE } from '../config/odWingShell';
 import { isInternalDeveloper } from '../utils/authUtils';
 import { ensureHttps } from '../utils/urlUtils';
+import { getGroupLogoBaseUrl } from '../utils/resourceUrls';
 import '../styles/wingHub.css';
 import TargetCursor from '../components/TargetCursor';
 
 const LOGO_SRC = `${process.env.PUBLIC_URL}/assets/images/kenilowrth-white.png`;
 const BEE_SRC = `${process.env.PUBLIC_URL}/assets/images/bee.png`;
 const LOGOUT_ICON_SRC = `${process.env.PUBLIC_URL}/assets/images/logout.png`;
-const GROUP_LOGO_BASE = 'https://drone-admin.kenilworthinternational.com/storage/image/logo/';
 const FALLBACK_AVATAR =
   'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
 
@@ -46,13 +46,14 @@ function resolveJobRoleLabel(userData, jobRoles = []) {
 }
 
 function resolveGroupLogoSrc(userData, logoErrorCount) {
+  const groupLogoBase = getGroupLogoBaseUrl();
   const rawGroupId = userData?.group ?? userData?.group_id ?? userData?.user_group_id ?? null;
   const normalizedGroupId = Number(rawGroupId);
   const hasValidGroupId = Number.isFinite(normalizedGroupId) && normalizedGroupId > 0;
   const paddedGroupId = hasValidGroupId ? String(normalizedGroupId).padStart(3, '0') : '000';
   if (logoErrorCount >= 2) return FALLBACK_AVATAR;
-  if (logoErrorCount === 1) return `${GROUP_LOGO_BASE}000.png`;
-  return `${GROUP_LOGO_BASE}${paddedGroupId}.png`;
+  if (logoErrorCount === 1) return `${groupLogoBase}000.png`;
+  return `${groupLogoBase}${paddedGroupId}.png`;
 }
 
 /**

@@ -37,7 +37,9 @@ export const formatFuelVoucherDescription = (tx) => {
   const liters = tx.fuel_liters ?? tx.quantity ?? tx.liters;
   const cost = tx.fuel_cost ?? tx.amount;
   const fuelDate = tx.fuel_entry_date || tx.date;
-  const hasFuel = tx.fuel_record_id != null && tx.fuel_record_id !== '';
+  const hasFuel =
+    (tx.fuel_record_id != null && tx.fuel_record_id !== '') ||
+    (tx.generator_fuel_record_id != null && tx.generator_fuel_record_id !== '');
 
   if (!hasFuel && liters == null && cost == null && !fuelDate) {
     return tx.description || '-';

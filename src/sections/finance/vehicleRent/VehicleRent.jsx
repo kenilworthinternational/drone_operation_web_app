@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { getResourceUrl } from '../../../utils/resourceUrls';
 import {
   useGetApprovedForFinanceQuery,
   useGetMonthlySummaryByVehicleQuery,
@@ -294,11 +295,7 @@ const VehicleRent = ({
   const openPaymentProof = (record) => {
     const urlFromUrl = nonEmptySrc(record.payment_image_url);
     const filename = String(record.payment_image || '').trim();
-    const url =
-      urlFromUrl ||
-      (filename
-        ? `https://drone-admin-test.kenilworthinternational.com/storage/image/vehicle_day/${filename}`
-        : '');
+    const url = urlFromUrl || getResourceUrl('VEHICLE_DAY', filename) || '';
     const src = nonEmptySrc(url);
     if (!src) return;
     if (isPdfProof(filename || src)) {
