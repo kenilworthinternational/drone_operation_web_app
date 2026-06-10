@@ -198,7 +198,7 @@ export const dayEndProcessApi = baseApi.injectEndpoints({
       providesTags: ['DayEndProcess', 'PlansCompletionStats'],
     }),
 
-    getPlanSummary: builder.query({
+    getDayEndPlanSummary: builder.query({
       queryFn: async (planId) => {
         const result = await nodeBackendBaseQuery(
           { url: '/api/day-end-process/plan-summary', method: 'POST', body: { planId } },
@@ -211,7 +211,7 @@ export const dayEndProcessApi = baseApi.injectEndpoints({
       providesTags: (result, error, planId) => [{ type: 'PlanDetails', id: `dayend-summary-${planId}` }],
     }),
 
-    getTasksByPlanAndField: builder.query({
+    getDayEndTasksByPlanAndField: builder.query({
       queryFn: async ({ planId, fieldId }) => {
         const result = await nodeBackendBaseQuery(
           {
@@ -230,7 +230,7 @@ export const dayEndProcessApi = baseApi.injectEndpoints({
       ],
     }),
 
-    submitDjiRecord: builder.mutation({
+    submitDayEndDjiRecord: builder.mutation({
       queryFn: async (body) => {
         const result = await nodeBackendBaseQuery(
           { url: '/api/day-end-process/submit-dji-record', method: 'POST', body },
@@ -243,7 +243,7 @@ export const dayEndProcessApi = baseApi.injectEndpoints({
       invalidatesTags: ['DayEndProcess', 'PlansCompletionStats', 'PlanDetails'],
     }),
 
-    updateOpsApproval: builder.mutation({
+    updateDayEndOpsApproval: builder.mutation({
       queryFn: async ({ planId, status }) => {
         const result = await nodeBackendBaseQuery(
           {
@@ -260,7 +260,7 @@ export const dayEndProcessApi = baseApi.injectEndpoints({
       invalidatesTags: ['DayEndProcess', 'PlansCompletionStats'],
     }),
 
-    getFlagReasons: builder.query({
+    getDayEndFlagReasons: builder.query({
       queryFn: async () => {
         const result = await nodeBackendBaseQuery(
           { url: '/api/day-end-process/flag-reasons', method: 'POST', body: {} },
@@ -275,7 +275,7 @@ export const dayEndProcessApi = baseApi.injectEndpoints({
       providesTags: ['Reasons'],
     }),
 
-    getTaskFlag: builder.query({
+    getDayEndTaskFlag: builder.query({
       queryFn: async (taskId) => {
         const result = await nodeBackendBaseQuery(
           { url: '/api/day-end-process/task-flag', method: 'POST', body: { taskId } },
@@ -288,7 +288,7 @@ export const dayEndProcessApi = baseApi.injectEndpoints({
       providesTags: (result, error, taskId) => [{ type: 'TaskReports', id: taskId }],
     }),
 
-    submitTaskFlag: builder.mutation({
+    submitDayEndTaskFlag: builder.mutation({
       queryFn: async ({ taskId, reason, reasonList }) => {
         const result = await nodeBackendBaseQuery(
           {
@@ -321,16 +321,16 @@ export const {
   useGetOpsRoomCanceledByDateRangeQuery,
   useGetDayOverviewQuery,
   useLazyGetDayOverviewQuery,
-  useGetPlanSummaryQuery,
-  useLazyGetPlanSummaryQuery,
-  useGetTasksByPlanAndFieldQuery,
-  useLazyGetTasksByPlanAndFieldQuery,
-  useSubmitDjiRecordMutation,
-  useUpdateOpsApprovalMutation,
-  useGetFlagReasonsQuery,
-  useLazyGetFlagReasonsQuery,
-  useGetTaskFlagQuery,
-  useLazyGetTaskFlagQuery,
-  useSubmitTaskFlagMutation,
+  useGetDayEndPlanSummaryQuery,
+  useLazyGetDayEndPlanSummaryQuery,
+  useGetDayEndTasksByPlanAndFieldQuery,
+  useLazyGetDayEndTasksByPlanAndFieldQuery,
+  useSubmitDayEndDjiRecordMutation,
+  useUpdateDayEndOpsApprovalMutation,
+  useGetDayEndFlagReasonsQuery,
+  useLazyGetDayEndFlagReasonsQuery,
+  useGetDayEndTaskFlagQuery,
+  useLazyGetDayEndTaskFlagQuery,
+  useSubmitDayEndTaskFlagMutation,
 } = dayEndProcessApi;
 

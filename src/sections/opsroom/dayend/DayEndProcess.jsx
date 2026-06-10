@@ -18,13 +18,13 @@ import {
   useClearOpsCancelMutation,
   useResetPilotCancelMutation,
   useLazyGetDayOverviewQuery,
-  useLazyGetPlanSummaryQuery,
-  useLazyGetTasksByPlanAndFieldQuery,
-  useSubmitDjiRecordMutation,
-  useUpdateOpsApprovalMutation,
-  useLazyGetFlagReasonsQuery,
-  useLazyGetTaskFlagQuery,
-  useSubmitTaskFlagMutation,
+  useLazyGetDayEndPlanSummaryQuery,
+  useLazyGetDayEndTasksByPlanAndFieldQuery,
+  useSubmitDayEndDjiRecordMutation,
+  useUpdateDayEndOpsApprovalMutation,
+  useLazyGetDayEndFlagReasonsQuery,
+  useLazyGetDayEndTaskFlagQuery,
+  useSubmitDayEndTaskFlagMutation,
 } from '../../../api/services NodeJs/dayEndProcessApi';
 import { getResourceUrl } from '../../../utils/resourceUrls';
 import { useGetMyPermissionsQuery } from '../../../api/services NodeJs/featurePermissionsApi';
@@ -106,13 +106,13 @@ const DayEndProcess = () => {
   const linkedDjiImages = allDjiImages.filter(img => img.linked_task && img.linked_task !== 0);
 
   const [fetchDayOverview] = useLazyGetDayOverviewQuery();
-  const [fetchPlanSummary] = useLazyGetPlanSummaryQuery();
-  const [fetchTasksByPlanAndField] = useLazyGetTasksByPlanAndFieldQuery();
-  const [submitDjiRecord] = useSubmitDjiRecordMutation();
-  const [updateOpsApproval] = useUpdateOpsApprovalMutation();
-  const [fetchFlagReasons] = useLazyGetFlagReasonsQuery();
-  const [fetchTaskFlag] = useLazyGetTaskFlagQuery();
-  const [submitTaskFlag] = useSubmitTaskFlagMutation();
+  const [fetchPlanSummary] = useLazyGetDayEndPlanSummaryQuery();
+  const [fetchTasksByPlanAndField] = useLazyGetDayEndTasksByPlanAndFieldQuery();
+  const [submitDjiRecord] = useSubmitDayEndDjiRecordMutation();
+  const [updateOpsApproval] = useUpdateDayEndOpsApprovalMutation();
+  const [fetchFlagReasons] = useLazyGetDayEndFlagReasonsQuery();
+  const [fetchTaskFlag] = useLazyGetDayEndTaskFlagQuery();
+  const [submitTaskFlag] = useSubmitDayEndTaskFlagMutation();
 
   // Cancel task state
   const [triggerCancelReasons, { data: cancelReasons = [] }] = useLazyGetCancelReasonsQuery();
