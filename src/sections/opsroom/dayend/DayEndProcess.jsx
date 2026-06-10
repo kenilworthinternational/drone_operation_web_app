@@ -6,12 +6,27 @@ import { FaCalendarAlt, FaRegArrowAltCircleRight, FaArrowCircleDown, FaArrowCirc
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { Bars } from 'react-loader-spinner';
-import { baseApi } from '../../../api/services/allEndpoints';
 import { useAppDispatch } from '../../../store/hooks';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { useGetUnlinkedDjiImagesQuery, useGetAllDjiImagesQuery, useLinkDjiImageToTaskMutation } from '../../../api/services NodeJs/djiImagesApi';
-import { dayEndProcessApi, useUpdateOpsTaskStatusMutation, useGetPlansWithCompletionStatsQuery, useLazyGetCancelReasonsQuery, useCancelTaskMutation, useClearOpsCancelMutation, useGetTasksCancelStatusQuery, useResetPilotCancelMutation } from '../../../api/services NodeJs/dayEndProcessApi';
+import { useGetAllDjiImagesQuery } from '../../../api/services NodeJs/djiImagesApi';
+import { getNodeBackendUrl } from '../../../api/services NodeJs/nodeBackendConfig';
+import {
+  dayEndProcessApi,
+  useLazyGetCancelReasonsQuery,
+  useCancelTaskMutation,
+  useClearOpsCancelMutation,
+  useResetPilotCancelMutation,
+  useLazyGetDayOverviewQuery,
+  useLazyGetPlanSummaryQuery,
+  useLazyGetTasksByPlanAndFieldQuery,
+  useSubmitDjiRecordMutation,
+  useUpdateOpsApprovalMutation,
+  useLazyGetFlagReasonsQuery,
+  useLazyGetTaskFlagQuery,
+  useSubmitTaskFlagMutation,
+} from '../../../api/services NodeJs/dayEndProcessApi';
+import { getResourceUrl } from '../../../utils/resourceUrls';
 import { useGetMyPermissionsQuery } from '../../../api/services NodeJs/featurePermissionsApi';
 import { FEATURE_CODES } from '../../../utils/featurePermissions';
 import { isInternalDeveloper } from '../../../utils/authUtils';
@@ -22,17 +37,6 @@ const CustomDateInput = React.forwardRef(({ value, onClick }, ref) => (
     <FaCalendarAlt className="calendar-icon" />
   </div>
 ));
-
-// Helper function to get backend URL based on environment
-const getBackendUrl = () => {
-  const hostname = window.location.hostname;
-  if (hostname.includes('test')) {
-    return 'https://dsms-api-test.kenilworth.international.com';
-  } else if (!hostname.includes('dev') && !hostname.includes('localhost')) {
-    return 'https://dsms-web-api.kenilworthinternational.com';
-  }
-  return 'https://dsms-web-api-dev.kenilworthinternational.com';
-};
 
 /** DJI field area below this ratio of pilot field area requires a partial (flag h) cancel reason. */
 const PARTIAL_DJI_AREA_RATIO = 0.7;
@@ -101,11 +105,14 @@ const DayEndProcess = () => {
   const unlinkedDjiImages = allDjiImages.filter(img => !img.linked_task || img.linked_task === 0);
   const linkedDjiImages = allDjiImages.filter(img => img.linked_task && img.linked_task !== 0);
 
-  // Link DJI image mutation
-  const [linkDjiImage] = useLinkDjiImageToTaskMutation();
-
-  // Update ops_task_status mutation
-  const [updateOpsTaskStatus] = useUpdateOpsTaskStatusMutation();
+  const [fetchDayOverview] = useLazyGetDayOverviewQuery();
+  const [fetchPlanSummary] = useLazyGetPlanSummaryQuery();
+  const [fetchTasksByPlanAndField] = useLazyGetTasksByPlanAndFieldQuery();
+  const [submitDjiRecord] = useSubmitDjiRecordMutation();
+  const [updateOpsApproval] = useUpdateOpsApprovalMutation();
+  const [fetchFlagReasons] = useLazyGetFlagReasonsQuery();
+  const [fetchTaskFlag] = useLazyGetTaskFlagQuery();
+  const [submitTaskFlag] = useSubmitTaskFlagMutation();
 
   // Cancel task state
   const [triggerCancelReasons, { data: cancelReasons = [] }] = useLazyGetCancelReasonsQuery();
@@ -136,11 +143,9 @@ const DayEndProcess = () => {
   // Helper function to update report data after submission
   const updateReportDataAfterSubmission = async (taskId) => {
     try {
-      const reportResult = await dispatch(
-        baseApi.endpoints.getTaskReport.initiate(taskId)
-      );
+      const reportResult = await fetchTaskFlag(taskId);
       const reportRes = reportResult.data;
-      if (reportRes && reportRes.flags && reportRes.flags.length > 0) {
+      if (reportRes?.flags?.length > 0) {
         setExistingReportData(reportRes.flags[0]);
       }
     } catch (e) {
@@ -202,19 +207,40 @@ const DayEndProcess = () => {
     setSelectedCancelReason(reasonNum);
   };
 
+  const mapTasksResponse = (response, fieldId, missionId, previousTasks = []) => ({
+    tasks: (response?.tasks || []).map((task) => {
+      const previousTask = previousTasks.find((t) => t.task_id === task.task_id);
+      return {
+        ...task,
+        expanded: previousTask ? previousTask.expanded : false,
+        task_image: task.task_image ? `${task.task_image}?${Date.now()}` : null,
+        dji_image: task.dji_image ? `${task.dji_image}?${Date.now()}` : null,
+      };
+    }),
+    field_id: fieldId,
+    mission_id: missionId,
+  });
+
   const refreshAfterCancelChange = async () => {
     if (selectedMission) {
       await fetchCancelStatus(selectedMission.id);
     }
     if (cancelFieldId && selectedMission) {
-      const taskResult = await dispatch(
-        baseApi.endpoints.getTasksByPlanAndField.initiate(
-          { planId: selectedMission.id, fieldId: cancelFieldId },
-          { forceRefetch: true }
-        )
+      const taskResult = await fetchTasksByPlanAndField(
+        { planId: selectedMission.id, fieldId: cancelFieldId },
+        true
       );
       if (taskResult.data) {
-        setFieldTasks((prev) => ({ ...prev, [cancelFieldId]: taskResult.data }));
+        const previousTasks = fieldTasks[cancelFieldId]?.tasks || [];
+        setFieldTasks((prev) => ({
+          ...prev,
+          [cancelFieldId]: mapTasksResponse(
+            taskResult.data,
+            cancelFieldId,
+            selectedMission.id,
+            previousTasks
+          ),
+        }));
       }
     }
   };
@@ -272,14 +298,16 @@ const DayEndProcess = () => {
       }
       // Refresh field tasks
       if (fieldId && selectedMission) {
-        const taskResult = await dispatch(
-          baseApi.endpoints.getTasksByPlanAndField.initiate(
-            { planId: selectedMission.id, fieldId: fieldId },
-            { forceRefetch: true }
-          )
+        const taskResult = await fetchTasksByPlanAndField(
+          { planId: selectedMission.id, fieldId },
+          true
         );
         if (taskResult.data) {
-          setFieldTasks((prev) => ({ ...prev, [fieldId]: taskResult.data }));
+          const previousTasks = fieldTasks[fieldId]?.tasks || [];
+          setFieldTasks((prev) => ({
+            ...prev,
+            [fieldId]: mapTasksResponse(taskResult.data, fieldId, selectedMission.id, previousTasks),
+          }));
         }
       }
     } catch (err) {
@@ -374,104 +402,33 @@ const DayEndProcess = () => {
     try {
       setSelectedDate(date);
       const formattedDate = date.toLocaleDateString('en-CA');
-
-      // Fetch both plantation and non-plantation plans to get all plans for the date
-      let plantationResponse = { status: 'false', count: 0 };
-      let nonPlantationResponse = { status: 'false', count: 0 };
-
-      const plantationResult = await dispatch(
-        baseApi.endpoints.getPlansByDate.initiate(formattedDate)
-      );
-      if (plantationResult.error) {
-        console.error('Error fetching plantation plans:', plantationResult.error);
-      } else if (plantationResult.data) {
-        plantationResponse = plantationResult.data;
+      const overviewResult = await fetchDayOverview({ date: formattedDate });
+      if (overviewResult.error) {
+        console.error('Error fetching day overview:', overviewResult.error);
+        setMissions([]);
+        return;
       }
 
-      const nonPlantationResult = await dispatch(
-        baseApi.endpoints.getMissionsByRequestedDate.initiate(formattedDate)
-      );
-      if (nonPlantationResult.error) {
-        console.error('Error fetching non-plantation plans:', nonPlantationResult.error);
-      } else if (nonPlantationResult.data) {
-        nonPlantationResponse = nonPlantationResult.data;
-      }
-
-      // Combine both responses
-      let allPlans = [];
-
-      // Process plantation plans
-      if (plantationResponse.status === 'true' && Object.keys(plantationResponse).length > 2) {
-        const plantationArray = Object.keys(plantationResponse)
-          .filter((key) => !isNaN(key))
-          .map((key) => plantationResponse[key]);
-        allPlans = [...allPlans, ...plantationArray];
-      }
-
-      // Process non-plantation plans
-      if (nonPlantationResponse.status === 'true' && Object.keys(nonPlantationResponse).length > 2) {
-        const nonPlantationArray = Object.keys(nonPlantationResponse)
-          .filter((key) => !isNaN(key))
-          .map((key) => nonPlantationResponse[key]);
-        allPlans = [...allPlans, ...nonPlantationArray];
-      }
-
+      const allPlans = overviewResult.data || [];
       if (allPlans.length > 0) {
-        // Filter plans based on user role
-        let filteredMissionArray = allPlans;
-        if (userData.job_role === 'ops' && userData.member_type === 'i' && userData.user_level === 'd') {
-          // For ops users with specific criteria, only show their assigned plans
-          filteredMissionArray = allPlans.filter(plan => plan.operator === userData.id);
-        }
-
-        // Fetch completion stats for all plans
-        let completionStatsMap = {};
-        try {
-          // Get Node.js backend URL based on environment
-          const backendUrl = getBackendUrl();
-          const token = userData.token;
-          const response = await fetch(`${backendUrl}/api/day-end-process/plans-completion-stats`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`,
-            },
-            body: JSON.stringify({ date: formattedDate }),
-          });
-          const result = await response.json();
-          if (result.status === true && result.data) {
-            result.data.forEach(stat => {
-              completionStatsMap[stat.planId] = stat;
-            });
-          }
-        } catch (error) {
-          console.error('Error fetching completion stats:', error);
-          // Continue without stats if fetch fails
-        }
-
-        const missionOptions = filteredMissionArray.map((plan) => {
-          const stats = completionStatsMap[plan.id] || {
+        const missionOptions = allPlans.map((plan) => ({
+          id: plan.id,
+          group: `${plan.estate}(${(plan.estate_id)}) - ${plan.area} Ha`,
+          completed: plan.completed,
+          activated: plan.activated,
+          team_assigned: plan.team_assigned,
+          operator_name: plan.operator_name,
+          total_sub_task: plan.total_sub_task,
+          total_sub_task_ops_room_approved_subs: plan.total_sub_task_ops_room_approved_subs,
+          total_sub_task_ops_room_pending_subs: plan.total_sub_task_ops_room_pending_subs,
+          total_sub_task_ops_room_rejected_subs: plan.total_sub_task_ops_room_rejected_subs,
+          completionStats: plan.completionStats || {
             totalFields: 0,
             completedFields: 0,
             pendingFields: 0,
-            completionPercentage: 0
-          };
-
-          return {
-            id: plan.id,
-            group: `${plan.estate}(${(plan.estate_id)}) - ${plan.area} Ha`,
-            completed: plan.completed,
-            activated: plan.activated,
-            team_assigned: plan.team_assigned,
-            operator_name: plan.operator_name,
-            total_sub_task: plan.total_sub_task,
-            total_sub_task_ops_room_approved_subs: plan.total_sub_task_ops_room_approved_subs,
-            total_sub_task_ops_room_pending_subs: plan.total_sub_task_ops_room_pending_subs,
-            total_sub_task_ops_room_rejected_subs: plan.total_sub_task_ops_room_rejected_subs,
-            completionStats: stats,
-          };
-        });
-
+            completionPercentage: 0,
+          },
+        }));
         setMissions(missionOptions);
       } else {
         setMissions([]);
@@ -495,9 +452,7 @@ const DayEndProcess = () => {
       setExpandedFields([]);
       setTaskCancelStatusMap({});
 
-      const summaryResult = await dispatch(
-        baseApi.endpoints.getPlanSummary.initiate(missionId)
-      );
+      const summaryResult = await fetchPlanSummary(missionId);
       const response = summaryResult.data;
       if (response) {
         setSelectedMission({ ...response, id: missionId });
@@ -556,14 +511,9 @@ const DayEndProcess = () => {
     if (shouldFetch) {
       setLoadingFields((prev) => ({ ...prev, [fieldId]: true }));
       try {
-        const taskResult = await dispatch(
-          baseApi.endpoints.getTasksByPlanAndField.initiate(
-            {
-              planId: selectedMission.id,
-              fieldId,
-            },
-            { forceRefetch: true }
-          )
+        const taskResult = await fetchTasksByPlanAndField(
+          { planId: selectedMission.id, fieldId },
+          true
         );
         const response = taskResult.data || {};
         if (response.tasks && response.tasks.length > 0) {
@@ -632,14 +582,9 @@ const DayEndProcess = () => {
         }
       }
 
-      const taskResult = await dispatch(
-        baseApi.endpoints.getTasksByPlanAndField.initiate(
-          {
-            planId: selectedMission.id,
-            fieldId,
-          },
-          { forceRefetch: true }
-        )
+      const taskResult = await fetchTasksByPlanAndField(
+        { planId: selectedMission.id, fieldId },
+        true
       );
       const freshData = taskResult.data || {};
       const freshTask = freshData.tasks?.find((t) => t.task_id === taskData.task_id) || taskData;
@@ -657,9 +602,7 @@ const DayEndProcess = () => {
 
       // Fetch existing report data to show button color immediately
       try {
-        const reportResult = await dispatch(
-          baseApi.endpoints.getTaskReport.initiate(freshTask.task_id)
-        );
+        const reportResult = await fetchTaskFlag(freshTask.task_id);
         const reportRes = reportResult.data;
         if (reportRes && reportRes.flags && reportRes.flags.length > 0) {
           const flag = reportRes.flags[0];
@@ -726,55 +669,22 @@ const DayEndProcess = () => {
     );
   };
 
-  // Get image URL for selected DJI image
   const getDjiImageUrl = () => {
-    // If a DJI image is selected from dropdown
     if (djiData.dji_image_id) {
-      const selectedImage = allDjiImages.find(img => img.id === parseInt(djiData.dji_image_id));
+      const selectedImage = allDjiImages.find((img) => img.id === parseInt(djiData.dji_image_id, 10));
       if (selectedImage) {
-        const baseUrl = getBackendUrl();
+        const baseUrl = getNodeBackendUrl();
         return `${baseUrl}/api/dji-images/file/${selectedImage.image_filename}`;
       }
     }
-    // If task already has a linked DJI image (from old system)
     if (currentTask?.dji_image) {
       return currentTask.dji_image;
     }
+    if (currentTask?.image_crop) {
+      return getResourceUrl('DJI_SCREEN_IMAGE', currentTask.image_crop);
+    }
     return null;
   };
-
-  // Fetch DJI image file as Blob for upload to old API
-  const fetchDjiImageFile = async (imageId) => {
-    try {
-      const selectedImage = allDjiImages.find(img => img.id === parseInt(imageId));
-      if (!selectedImage) return null;
-
-      const baseUrl = getBackendUrl();
-      const imageUrl = `${baseUrl}/api/dji-images/file/${selectedImage.image_filename}`;
-
-      const userData = JSON.parse(localStorage.getItem('userData')) || {};
-      const token = userData.token;
-
-      const response = await fetch(imageUrl, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch image');
-      }
-
-      const blob = await response.blob();
-      // Create a File object from the blob with the original filename
-      const file = new File([blob], selectedImage.image_filename, { type: blob.type });
-      return file;
-    } catch (error) {
-      console.error('Error fetching DJI image file:', error);
-      return null;
-    }
-  };
-
 
   const handleSubmit = async () => {
     const parseArea = (value) => {
@@ -815,112 +725,52 @@ const DayEndProcess = () => {
 
     setIsSubmitting(true);
     try {
-      const formData = new FormData();
       const formatNumber = (value, decimals = 2) => {
         const num = Number(String(value).replace(/,/g, ''));
-        return isNaN(num) ? 0 : num.toFixed(decimals);
+        return Number.isNaN(num) ? 0 : num.toFixed(decimals);
       };
-      formData.append('task_id', currentTask.task_id);
-      formData.append('dji_field_area', formatNumber(djiData.dji_field_area));
-      formData.append('dji_spraying_area', formatNumber(djiData.dji_spraying_area));
-      formData.append('dji_spraying_litres', formatNumber(djiData.dji_spraying_litres));
-      formData.append('dji_flying_duration', formatNumber(djiData.dji_flying_duration));
-      formData.append('dji_no_of_flights', formatNumber(djiData.dji_no_of_flights));
 
-      // Fetch and upload DJI image file to old API if image is selected
-      // Send DJI image as both 'image' and 'image_crop' (same image for both)
-      if (djiData.dji_image_id) {
-        const imageFile = await fetchDjiImageFile(djiData.dji_image_id);
-        if (imageFile) {
-          formData.append('image', imageFile);
-          formData.append('image_crop', imageFile); // Send same DJI image as crop image
-        } else {
-          toast.warning('Selected DJI image could not be loaded. Proceeding without image.');
-        }
-      }
+      const response = await submitDjiRecord({
+        taskId: currentTask.task_id,
+        djiImageId: djiData.dji_image_id ? parseInt(djiData.dji_image_id, 10) : null,
+        dji_field_area: formatNumber(djiData.dji_field_area),
+        dji_spraying_area: formatNumber(djiData.dji_spraying_area),
+        dji_spraying_litres: formatNumber(djiData.dji_spraying_litres),
+        dji_flying_duration: formatNumber(djiData.dji_flying_duration),
+        dji_no_of_flights: formatNumber(djiData.dji_no_of_flights),
+      }).unwrap();
 
-      const submitResult = await dispatch(baseApi.endpoints.submitDJIRecord.initiate(formData));
-      const response = submitResult.data;
       if (response?.success || response?.status === 'true') {
-        // Update ops_task_status to 's' (success) in field_pilot_and_drones
-        try {
-          await updateOpsTaskStatus({
-            taskId: currentTask.task_id,
-            status: 's'
-          }).unwrap();
-
-          // Refresh completion stats for the plan
-          if (selectedMission && selectedMission.id) {
-            const backendUrl = getBackendUrl();
-            const formattedDate = selectedDate.toLocaleDateString('en-CA');
-            const statsResponse = await fetch(`${backendUrl}/api/day-end-process/plans-completion-stats`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${userData.token}`,
-              },
-              body: JSON.stringify({ date: formattedDate }),
-            });
-            const statsResult = await statsResponse.json();
-            if (statsResult.status === true && statsResult.data) {
-              const updatedStats = statsResult.data.find(stat => stat.planId === selectedMission.id);
-              if (updatedStats) {
-                setMissions(prevMissions =>
-                  prevMissions.map(mission =>
-                    mission.id === selectedMission.id
-                      ? { ...mission, completionStats: updatedStats }
-                      : mission
-                  )
-                );
-              }
-            }
-          }
-        } catch (updateError) {
-          console.error('Error updating ops_task_status:', updateError);
-          // Don't fail the whole submission if this update fails
-        }
-
-        // Link DJI image to task after successful submission to old API
-        if (djiData.dji_image_id) {
-          try {
-            await linkDjiImage({
-              imageId: parseInt(djiData.dji_image_id),
-              taskId: currentTask.task_id
-            }).unwrap();
-          } catch (linkError) {
-            console.error('Error linking DJI image:', linkError);
-            // Don't fail the whole submission if linking fails
-            toast.warning('DJI data submitted, but failed to link image. Please link manually.');
+        if (selectedMission?.id) {
+          const formattedDate = selectedDate.toLocaleDateString('en-CA');
+          const overviewResult = await fetchDayOverview({ date: formattedDate });
+          const updatedPlan = (overviewResult.data || []).find((p) => p.id === selectedMission.id);
+          if (updatedPlan?.completionStats) {
+            setMissions((prevMissions) =>
+              prevMissions.map((mission) =>
+                mission.id === selectedMission.id
+                  ? { ...mission, completionStats: updatedPlan.completionStats }
+                  : mission
+              )
+            );
           }
         }
+
         toast.success('DJI data submitted successfully!');
         try {
-          const updatedResult = await dispatch(
-            baseApi.endpoints.getTasksByPlanAndField.initiate(
-              {
-                planId: selectedMission.id,
-                fieldId: currentTask.field_id,
-              },
-              { forceRefetch: true }
-            )
+          const updatedResult = await fetchTasksByPlanAndField(
+            { planId: selectedMission.id, fieldId: currentTask.field_id },
+            true
           );
-          const updatedData = updatedResult.data || {};
           const previousTasks = fieldTasks[currentTask.field_id]?.tasks || [];
-          const updatedTasks = updatedData.tasks?.map((task) => {
-            const previousTask = previousTasks.find((t) => t.task_id === task.task_id);
-            return {
-              ...task,
-              expanded: previousTask ? previousTask.expanded : false,
-              task_image: task.task_image ? `${task.task_image}?${Date.now()}` : null,
-              dji_image: task.dji_image ? `${task.dji_image}?${Date.now()}` : null,
-            };
-          }) || [];
           setFieldTasks((prev) => ({
             ...prev,
-            [currentTask.field_id]: {
-              tasks: updatedTasks,
-              field_id: currentTask.field_id,
-            },
+            [currentTask.field_id]: mapTasksResponse(
+              updatedResult.data,
+              currentTask.field_id,
+              selectedMission.id,
+              previousTasks
+            ),
           }));
         } catch (error) {
           console.error('Error refetching task data:', error);
@@ -959,8 +809,8 @@ const DayEndProcess = () => {
       const loadReportData = async () => {
         try {
           const [reasonsResult, reportResult] = await Promise.all([
-            dispatch(baseApi.endpoints.getFlagReasons.initiate()),
-            dispatch(baseApi.endpoints.getTaskReport.initiate(currentTask.task_id)),
+            fetchFlagReasons(),
+            fetchTaskFlag(currentTask.task_id),
           ]);
 
           const reasonsRes = reasonsResult.data;
@@ -1089,13 +939,10 @@ const DayEndProcess = () => {
                                     m.id === mission.id ? { ...m, completed: newStatus } : m
                                   );
                                   setMissions(updatedMissions);
-                                  const approvalResult = await dispatch(
-                                    baseApi.endpoints.updateOpsApproval.initiate({
-                                      plan: mission.id,
-                                      status: newStatus,
-                                    })
-                                  );
-                                  const response = approvalResult.data || {};
+                                  const response = await updateOpsApproval({
+                                    planId: mission.id,
+                                    status: newStatus,
+                                  }).unwrap();
                                   if (response.status === 'true' || response.success === true) {
                                     toast.success('Status updated successfully');
                                     await handleDateChange(selectedDate);
@@ -1658,14 +1505,11 @@ const DayEndProcess = () => {
                         onClick={async () => {
                           setReportSubmitting(true);
                           try {
-                            const reportResult = await dispatch(
-                              baseApi.endpoints.reportTask.initiate({
-                                taskId: currentTask.task_id,
-                                reason: reportDescription,
-                                reasonList: selectedReportReasons,
-                              })
-                            );
-                            const res = reportResult.data;
+                            const res = await submitTaskFlag({
+                              taskId: currentTask.task_id,
+                              reason: reportDescription,
+                              reasonList: selectedReportReasons,
+                            }).unwrap();
                             if (res && res.status === 'true') {
                               toast.success('Report submitted successfully');
                               await updateReportDataAfterSubmission(currentTask.task_id);
@@ -1741,14 +1585,11 @@ const DayEndProcess = () => {
                         onClick={async () => {
                           setReportSubmitting(true);
                           try {
-                            const reportResult = await dispatch(
-                              baseApi.endpoints.reportTask.initiate({
-                                taskId: currentTask.task_id,
-                                reason: reportDescription,
-                                reasonList: selectedReportReasons,
-                              })
-                            );
-                            const res = reportResult.data;
+                            const res = await submitTaskFlag({
+                              taskId: currentTask.task_id,
+                              reason: reportDescription,
+                              reasonList: selectedReportReasons,
+                            }).unwrap();
                             if (res && res.status === 'true') {
                               toast.success('Report submitted successfully');
                               await updateReportDataAfterSubmission(currentTask.task_id);

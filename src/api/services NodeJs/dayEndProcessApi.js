@@ -184,6 +184,126 @@ export const dayEndProcessApi = baseApi.injectEndpoints({
       },
       providesTags: ['OpsRoomCanceledReport'],
     }),
+
+    getDayOverview: builder.query({
+      queryFn: async ({ date }) => {
+        const result = await nodeBackendBaseQuery(
+          { url: '/api/day-end-process/day-overview', method: 'POST', body: { date } },
+          {},
+          {}
+        );
+        if (result.error) return { error: result.error };
+        return { data: result.data?.data || [] };
+      },
+      providesTags: ['DayEndProcess', 'PlansCompletionStats'],
+    }),
+
+    getPlanSummary: builder.query({
+      queryFn: async (planId) => {
+        const result = await nodeBackendBaseQuery(
+          { url: '/api/day-end-process/plan-summary', method: 'POST', body: { planId } },
+          {},
+          {}
+        );
+        if (result.error) return { error: result.error };
+        return { data: result.data?.data || null };
+      },
+      providesTags: (result, error, planId) => [{ type: 'PlanDetails', id: `dayend-summary-${planId}` }],
+    }),
+
+    getTasksByPlanAndField: builder.query({
+      queryFn: async ({ planId, fieldId }) => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: '/api/day-end-process/tasks-by-plan-and-field',
+            method: 'POST',
+            body: { planId, fieldId },
+          },
+          {},
+          {}
+        );
+        if (result.error) return { error: result.error };
+        return { data: result.data?.data || { tasks: [] } };
+      },
+      providesTags: (result, error, { planId, fieldId }) => [
+        { type: 'PlanDetails', id: `dayend-tasks-${planId}-${fieldId}` },
+      ],
+    }),
+
+    submitDjiRecord: builder.mutation({
+      queryFn: async (body) => {
+        const result = await nodeBackendBaseQuery(
+          { url: '/api/day-end-process/submit-dji-record', method: 'POST', body },
+          {},
+          {}
+        );
+        if (result.error) return { error: result.error };
+        return { data: result.data || null };
+      },
+      invalidatesTags: ['DayEndProcess', 'PlansCompletionStats', 'PlanDetails'],
+    }),
+
+    updateOpsApproval: builder.mutation({
+      queryFn: async ({ planId, status }) => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: '/api/day-end-process/update-ops-approval',
+            method: 'POST',
+            body: { planId, status },
+          },
+          {},
+          {}
+        );
+        if (result.error) return { error: result.error };
+        return { data: result.data || null };
+      },
+      invalidatesTags: ['DayEndProcess', 'PlansCompletionStats'],
+    }),
+
+    getFlagReasons: builder.query({
+      queryFn: async () => {
+        const result = await nodeBackendBaseQuery(
+          { url: '/api/day-end-process/flag-reasons', method: 'POST', body: {} },
+          {},
+          {}
+        );
+        if (result.error) return { error: result.error };
+        const payload = result.data;
+        const list = Array.isArray(payload) ? payload : payload?.data || [];
+        return { data: list };
+      },
+      providesTags: ['Reasons'],
+    }),
+
+    getTaskFlag: builder.query({
+      queryFn: async (taskId) => {
+        const result = await nodeBackendBaseQuery(
+          { url: '/api/day-end-process/task-flag', method: 'POST', body: { taskId } },
+          {},
+          {}
+        );
+        if (result.error) return { error: result.error };
+        return { data: result.data || { flags: [] } };
+      },
+      providesTags: (result, error, taskId) => [{ type: 'TaskReports', id: taskId }],
+    }),
+
+    submitTaskFlag: builder.mutation({
+      queryFn: async ({ taskId, reason, reasonList }) => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: '/api/day-end-process/submit-task-flag',
+            method: 'POST',
+            body: { taskId, reason, reasonList },
+          },
+          {},
+          {}
+        );
+        if (result.error) return { error: result.error };
+        return { data: result.data || null };
+      },
+      invalidatesTags: (result, error, { taskId }) => ['TaskReports', { type: 'TaskReports', id: taskId }],
+    }),
   }),
 });
 
@@ -199,5 +319,18 @@ export const {
   useClearOpsCancelMutation,
   useResetPilotCancelMutation,
   useGetOpsRoomCanceledByDateRangeQuery,
+  useGetDayOverviewQuery,
+  useLazyGetDayOverviewQuery,
+  useGetPlanSummaryQuery,
+  useLazyGetPlanSummaryQuery,
+  useGetTasksByPlanAndFieldQuery,
+  useLazyGetTasksByPlanAndFieldQuery,
+  useSubmitDjiRecordMutation,
+  useUpdateOpsApprovalMutation,
+  useGetFlagReasonsQuery,
+  useLazyGetFlagReasonsQuery,
+  useGetTaskFlagQuery,
+  useLazyGetTaskFlagQuery,
+  useSubmitTaskFlagMutation,
 } = dayEndProcessApi;
 
