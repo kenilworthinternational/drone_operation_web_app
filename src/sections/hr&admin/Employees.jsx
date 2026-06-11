@@ -14,6 +14,7 @@ import {
   useGetDistrictsQuery,
   useGetASCSQuery,
 } from '../../api/services NodeJs/jdManagementApi';
+import { parseNic } from '../../utils/nic';
 import '../../styles/employees.css';
 
 const Employees = () => {
@@ -196,19 +197,28 @@ const Employees = () => {
       
       setFormData({
         employeeName: employeeDetails.employeeName || '',
+        title: employeeDetails.title || '',
+        nameWithInitials: employeeDetails.nameWithInitials || '',
         preferredName: employeeDetails.preferredName || '',
         nic: employeeDetails.nic || '',
+        taxIdentificationNo: employeeDetails.taxIdentificationNo || '',
         drivingLicense: employeeDetails.drivingLicense || '',
         drivingLicenseType: drivingLicenseTypeArray,
         race: employeeDetails.race || '',
+        nationality: employeeDetails.nationality || '',
+        bloodGroup: employeeDetails.bloodGroup || '',
+        passportNo: employeeDetails.passportNo || '',
         religion: employeeDetails.religion || '',
         gender: employeeDetails.gender || '',
         dob: employeeDetails.dob ? employeeDetails.dob.split('T')[0] : '',
+        age: employeeDetails.age != null ? String(employeeDetails.age) : '',
         permanentAddress: employeeDetails.permanentAddress || '',
         temporaryAddress: employeeDetails.temporaryAddress || '',
         telephoneHome: employeeDetails.telephoneHome || '',
         mobileNumber: employeeDetails.mobileNumber || '',
+        companyMobileNo: employeeDetails.companyMobileNo || '',
         emailAddress: employeeDetails.emailAddress || '',
+        personalEmail: employeeDetails.personalEmail || '',
         companyEmailAddress: employeeDetails.companyEmailAddress || '',
         maritalStatus: employeeDetails.maritalStatus || '',
         spouseName: employeeDetails.spouseName || '',
@@ -221,6 +231,21 @@ const Employees = () => {
         divisionalSecretariats: divisionalSecretariatsId,
         asc: ascId,
         policeStation: employeeDetails.policeStation || '',
+        companyName: employeeDetails.companyName || '',
+        shiftType: employeeDetails.shiftType || '',
+        memberTypeFlag: employeeDetails.memberTypeFlag || '',
+        employmentCategory: employeeDetails.employmentCategory || '',
+        jobCategory: employeeDetails.jobCategory || '',
+        designation: employeeDetails.designation || '',
+        employmentType: employeeDetails.employmentType || '',
+        contractType: employeeDetails.contractType || '',
+        contractStartDate: employeeDetails.contractStartDate ? employeeDetails.contractStartDate.split('T')[0] : '',
+        contractEndDate: employeeDetails.contractEndDate ? employeeDetails.contractEndDate.split('T')[0] : '',
+        probationPeriod: employeeDetails.probationPeriod || '',
+        probationEndDate: employeeDetails.probationEndDate ? employeeDetails.probationEndDate.split('T')[0] : '',
+        retirementDate: employeeDetails.retirementDate ? employeeDetails.retirementDate.split('T')[0] : '',
+        employeeStatus: employeeDetails.employeeStatus || '',
+        biometricId: employeeDetails.biometricId || '',
         employeeType: employeeDetails.employeeType || 'i',
         employeeJobRole: employeeJobRoleId,
         joinedDate: employeeDetails.joinedDate ? employeeDetails.joinedDate.split('T')[0] : '',
@@ -296,6 +321,16 @@ const Employees = () => {
     } else {
       setFormData(prev => {
         const updates = { [name]: value || '' };
+
+        // Auto-derive DOB / Gender / Age from NIC
+        if (name === 'nic') {
+          const parsed = parseNic(value);
+          if (parsed.valid) {
+            updates.dob = parsed.dob;
+            updates.gender = parsed.gender;
+            updates.age = parsed.age != null ? String(parsed.age) : '';
+          }
+        }
         
         // Handle cascading dropdowns
         if (name === 'province') {

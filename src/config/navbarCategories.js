@@ -106,8 +106,9 @@ const navbarCategories = [
     title: 'Human Resource Management',
     icon: FaUsers,
     children: [
-      { path: '/home/employeeRegistration', label: 'Employee Registration', icon: FaUserTie },
+      { path: '/home/employeeProfileDetails', label: 'Employee Profile', icon: FaUserTie },
       { path: '/home/employees', label: 'Employees', icon: FaUsers },
+      { path: '/home/organizationStructure', label: 'Organization Structure', icon: FaUsers },
       { path: '/home/jdManagement', label: 'JD Management', icon: FaClipboardList },
       { path: '/home/employeeAssignment', label: 'Employee Assignment', icon: FaUserTie },
       { path: '/home/attendance/roaster-planning', label: 'Attendance & Roaster', icon: FaClock },

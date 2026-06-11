@@ -75,6 +75,8 @@ export const baseApi = createApi({
     'EmergencyMoving',
     // HR & JD Management
     'UserLevels', 'UserMemberTypes', 'UserJobRoles', 'UserJobDescriptions', 'Departments', 'EmployeeAssignment',
+    // HR Employee Profile (Phases 2-7)
+    'EmployeeProfile', 'EmployeeDocuments', 'Organization',
     // Plantation Dashboard
     'PlantationCalendarPlans', 'PlantationUpcomingPlans', 'PlantationCharts', 'PlantationMissionReports', 'PlantationPlanRequests', 'PlantationPlanRescheduleRequests', 'PlantationMonthlyPlanRequests', 'FieldUnblockRequests', 'PlanActivateRequests',
     // Field Size Adjustments
@@ -86,7 +88,7 @@ export const baseApi = createApi({
     // Task Cancel Status
     'TaskCancelStatus',
     // Others
-    'Calendar', 'Reasons', 'ASC', 'Chemicals', 'TimeOfDays',
+    'Calendar', 'Reasons', 'ASC', 'Chemicals', 'TimeOfDays', 'HrMasterOptions',
     // HR Leave and Attendance
     'HrLeave', 'HrAttendance', 'HrRoster',
     // Financial cards / fuel approvals

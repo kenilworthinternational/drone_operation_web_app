@@ -54,7 +54,8 @@ import TransportArrangePage from './sections/opsroom/pilot-assigment/TransportAr
 import TodayPlans from './sections/opsroom/today-plans/TodayPlans';
 import EmergencyMoving from './sections/opsroom/emergency/EmergencyMoving';
 import FieldSizeAdjustments from './sections/opsroom/fieldSizeAdjustments/FieldSizeAdjustments';
-import EmployeeRegistration from './sections/hr&admin/EmployeeRegistration';
+import EmployeeProfileDetails from './sections/hr&admin/EmployeeProfileDetails';
+import OrganizationStructure from './sections/hr&admin/OrganizationStructure';
 import Employees from './sections/hr&admin/Employees';
 import JDManagement from './sections/hr&admin/JDManagement';
 import EmployeeAssignment from './sections/hr&admin/EmployeeAssignment';
@@ -679,7 +680,7 @@ function App() {
             path="employeeRegistration"
             element={
               <ProtectedRoute>
-                <EmployeeRegistration />
+                <EmployeeProfileDetails />
               </ProtectedRoute>
             }
           />
@@ -696,6 +697,22 @@ function App() {
             element={
               <ProtectedRoute>
                 <Employees />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="employeeProfileDetails"
+            element={
+              <ProtectedRoute>
+                <EmployeeProfileDetails />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="organizationStructure"
+            element={
+              <ProtectedRoute>
+                <OrganizationStructure />
               </ProtectedRoute>
             }
           />

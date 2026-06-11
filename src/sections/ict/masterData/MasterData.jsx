@@ -54,6 +54,7 @@ import {
   useCreateTimeOfDayMutation,
   useUpdateTimeOfDayMutation,
 } from '../../../api/services NodeJs/timeOfDaysApi';
+import HrMasterOptionsPanel from './HrMasterOptionsPanel';
 import { useSendMessageMutation } from '../../../api/services/authApi';
 import {
   useGetInvoiceOrganizationsQuery,
@@ -984,6 +985,7 @@ const MasterData = ({ mode = 'full' }) => {
               { key: 'maintenanceCategories', label: 'Maintenance Categories' },
               { key: 'chemicals', label: 'Chemicals' },
               { key: 'workingTimes', label: 'Working Times' },
+              { key: 'hrMasterOptions', label: 'HR Master Options' },
               { key: 'reasons', label: 'Reasons' },
               { key: 'invoiceOrganizations', label: 'Invoice Organizations' },
               { key: 'invoiceTaxes', label: 'Invoice Tax Types' },
@@ -1363,6 +1365,10 @@ const MasterData = ({ mode = 'full' }) => {
                   </table>
                 </div>
               </div>
+            )}
+
+            {selectedMasterModule === 'hrMasterOptions' && (
+              <HrMasterOptionsPanel onMessage={setQuickMessage} />
             )}
 
             {selectedMasterModule === 'reasons' && (

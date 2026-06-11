@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { useGetUserMemberTypesQuery, useGetUserJobRolesQuery, useGetUserLevelsQuery, useGetWingsQuery, useGetDrivingLicenseTypesQuery, useGetWorkLocationsQuery, useGetDSCSQuery, useGetProvincesQuery, useGetDistrictsQuery, useGetASCSQuery, useCreateEmployeeRegistrationMutation, useGetLastEmpNoQuery, useGetAllEmployeeRegistrationsQuery } from '../../api/services NodeJs/jdManagementApi';
+import { useGetUserMemberTypesQuery, useGetUserJobRolesQuery, useGetUserLevelsQuery, useGetWingsQuery, useGetDrivingLicenseTypesQuery, useGetWorkLocationsQuery, useGetDSCSQuery, useGetProvincesQuery, useGetDistrictsQuery, useGetASCSQuery, useCreateEmployeeRegistrationMutation, useUpdateEmployeeRegistrationMutation, useGetEmployeeRegistrationByIdQuery, useGetLastEmpNoQuery, useGetAllEmployeeRegistrationsQuery } from '../../api/services NodeJs/jdManagementApi';
+import { parseNic } from '../../utils/nic';
 import '../../styles/employeeRegistration.css';
 
-const EmployeeRegistration = () => {
+const EmployeeRegistration = ({ employeeId = null, embedded = false, onSaved = null } = {}) => {
+  const isEditMode = Boolean(employeeId);
   const isValidNic = (nic) => {
     const value = String(nic || '').trim().toUpperCase();
     return /^\d{12}$/.test(value) || /^\d{9}V$/.test(value);
@@ -88,19 +90,28 @@ const EmployeeRegistration = () => {
   const [formData, setFormData] = useState({
     // Employee Details
     employeeName: '',
+    title: '',
+    nameWithInitials: '',
     preferredName: '',
     nic: '',
+    taxIdentificationNo: '',
     drivingLicense: '',
     drivingLicenseType: [], // Changed to array for multiple selection
     race: '',
+    nationality: 'Sri Lankan',
+    bloodGroup: '',
+    passportNo: '',
     religion: '',
     gender: '',
     dob: '',
+    age: '',
     permanentAddress: '',
     temporaryAddress: '',
     telephoneHome: '',
     mobileNumber: '',
+    companyMobileNo: '',
     emailAddress: '',
+    personalEmail: '',
     companyEmailAddress: '',
     educationCertificates: null, // FileList for multiple files
     birthCertificate: null, // File for single file
@@ -127,6 +138,21 @@ const EmployeeRegistration = () => {
     
     // Job Details
     empNo: '',
+    companyName: '',
+    shiftType: '',
+    memberTypeFlag: '',
+    employmentCategory: '',
+    jobCategory: '',
+    designation: '',
+    employmentType: '',
+    contractType: '',
+    contractStartDate: '',
+    contractEndDate: '',
+    probationPeriod: '',
+    probationEndDate: '',
+    retirementDate: '',
+    employeeStatus: '',
+    biometricId: '',
     employeeType: 'i', // Default to Internal (typeCode: 'i')
     employeeJobRole: '',
     joinedDate: '',
@@ -155,6 +181,14 @@ const EmployeeRegistration = () => {
   
   // Employee Registration Mutation
   const [createEmployeeRegistration, { isLoading: isCreating }] = useCreateEmployeeRegistrationMutation();
+  const [updateEmployeeRegistration, { isLoading: isUpdating }] = useUpdateEmployeeRegistrationMutation();
+
+  // Edit mode: load the existing employee record
+  const { data: editEmployeeResponse } = useGetEmployeeRegistrationByIdQuery(
+    { id: employeeId },
+    { skip: !isEditMode },
+  );
+  const editEmployee = editEmployeeResponse?.data || editEmployeeResponse || null;
   
   // Fetch last EMP NO for estimation
   const { data: lastEmpNoData, isLoading: loadingLastEmpNo } = useGetLastEmpNoQuery();
@@ -221,7 +255,14 @@ const EmployeeRegistration = () => {
     } else {
       let normalizedValue = value;
       if (name === 'nic') {
-        normalizedValue = String(value || '').toUpperCase().replace(/[^0-9V]/g, '').slice(0, 12);
+        normalizedValue = String(value || '').toUpperCase().replace(/[^0-9VX]/g, '');
+        if (normalizedValue.length <= 9) {
+          normalizedValue = normalizedValue.replace(/[VX]/g, '');
+        } else if (/^\d{9}[VX]/.test(normalizedValue)) {
+          normalizedValue = normalizedValue.slice(0, 10);
+        } else {
+          normalizedValue = normalizedValue.replace(/[VX]/g, '').slice(0, 12);
+        }
       }
       if (name === 'mobileNumber' || name === 'telephoneHome' || name === 'emergencyContactNumber') {
         normalizedValue = sanitizePhone9(value);
@@ -230,6 +271,32 @@ const EmployeeRegistration = () => {
       // Handle cascading dropdowns - reset dependent fields
       setFormData(prev => {
         const updates = { [name]: normalizedValue || '' };
+
+        // Auto-derive DOB / Gender / Age from NIC
+        if (name === 'nic') {
+          const parsed = parseNic(normalizedValue);
+          if (parsed.valid) {
+            updates.dob = parsed.dob;
+            updates.gender = parsed.gender;
+            updates.age = parsed.age != null ? String(parsed.age) : '';
+          }
+        }
+        // Keep age in sync when DOB is manually edited
+        if (name === 'dob') {
+          const parsedAge = parseNic(prev.nic);
+          if (normalizedValue) {
+            const d = new Date(normalizedValue);
+            if (!Number.isNaN(d.getTime())) {
+              const now = new Date();
+              let age = now.getFullYear() - d.getFullYear();
+              const md = now.getMonth() - d.getMonth();
+              if (md < 0 || (md === 0 && now.getDate() < d.getDate())) age -= 1;
+              updates.age = age >= 0 ? String(age) : '';
+            }
+          } else if (parsedAge.valid) {
+            updates.age = parsedAge.age != null ? String(parsedAge.age) : '';
+          }
+        }
         
         // If province changes, reset district and dependent fields
         if (name === 'province') {
@@ -318,15 +385,101 @@ const EmployeeRegistration = () => {
     }));
   };
 
-  // Set Employee Type to Internal (typeCode: 'i') automatically
+  // Set Employee Type to Internal (typeCode: 'i') automatically (create mode only)
   useEffect(() => {
+    if (isEditMode) return;
     if (userMemberTypes.length > 0 && formData.employeeType !== 'i') {
       setFormData(prev => ({
         ...prev,
         employeeType: 'i'
       }));
     }
-  }, [userMemberTypes, formData.employeeType]);
+  }, [userMemberTypes, formData.employeeType, isEditMode]);
+
+  // Edit mode: prefill the form from the loaded employee record.
+  // Codes stored in `employees` are mapped back to dropdown IDs.
+  useEffect(() => {
+    if (!isEditMode || !editEmployee) return;
+    const splitDate = (v) => (v ? String(v).split('T')[0] : '');
+    const jobRoleId = userJobRoles.find((r) => r.jdCode === editEmployee.employeeJobRole)?.id || '';
+    const levelId = userLevels.find((l) => l.levelCode === editEmployee.jobRoleLayer)?.id || '';
+    const deptId = wings.find((w) => w.wingsCode === editEmployee.department)?.id || '';
+    const locId = workLocations.find((wl) => wl.locationCode === editEmployee.workLocation)?.id || '';
+    let licenseTypes = [];
+    if (editEmployee.drivingLicenseType) {
+      licenseTypes = String(editEmployee.drivingLicenseType)
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .map((s) => (Number.isNaN(Number(s)) ? s : Number(s)));
+    }
+    setFormData((prev) => ({
+      ...prev,
+      employeeName: editEmployee.employeeName || '',
+      title: editEmployee.title || '',
+      nameWithInitials: editEmployee.nameWithInitials || '',
+      preferredName: editEmployee.preferredName || '',
+      nic: editEmployee.nic || '',
+      taxIdentificationNo: editEmployee.taxIdentificationNo || '',
+      drivingLicense: editEmployee.drivingLicense || '',
+      drivingLicenseType: licenseTypes,
+      race: editEmployee.race || '',
+      nationality: editEmployee.nationality || 'Sri Lankan',
+      bloodGroup: editEmployee.bloodGroup || '',
+      passportNo: editEmployee.passportNo || '',
+      religion: editEmployee.religion || '',
+      gender: editEmployee.gender || '',
+      dob: splitDate(editEmployee.dob),
+      age: editEmployee.age != null ? String(editEmployee.age) : '',
+      permanentAddress: editEmployee.permanentAddress || '',
+      temporaryAddress: editEmployee.temporaryAddress || '',
+      telephoneHome: editEmployee.telephoneHome || '',
+      mobileNumber: editEmployee.mobileNumber || '',
+      companyMobileNo: editEmployee.companyMobileNo || '',
+      emailAddress: editEmployee.emailAddress || '',
+      personalEmail: editEmployee.personalEmail || '',
+      companyEmailAddress: editEmployee.companyEmailAddress || '',
+      maritalStatus: editEmployee.maritalStatus || '',
+      spouseName: editEmployee.spouseName || '',
+      noOfChildren: editEmployee.noOfChildren ?? '',
+      emergencyContactName: editEmployee.emergencyContactName || '',
+      emergencyContactRelationship: editEmployee.emergencyContactRelationship || '',
+      emergencyContactNumber: editEmployee.emergencyContactNumber || '',
+      province: editEmployee.province || '',
+      district: editEmployee.district || '',
+      divisionalSecretariats: editEmployee.divisionalSecretariats || '',
+      asc: editEmployee.ascsId || '',
+      policeStation: editEmployee.policeStation || '',
+      companyName: editEmployee.companyName || '',
+      shiftType: editEmployee.shiftType || '',
+      memberTypeFlag: editEmployee.memberTypeFlag || '',
+      employmentCategory: editEmployee.employmentCategory || '',
+      jobCategory: editEmployee.jobCategory || '',
+      designation: editEmployee.designation || '',
+      employmentType: editEmployee.employmentType || '',
+      contractType: editEmployee.contractType || '',
+      contractStartDate: splitDate(editEmployee.contractStartDate),
+      contractEndDate: splitDate(editEmployee.contractEndDate),
+      probationPeriod: editEmployee.probationPeriod || '',
+      probationEndDate: splitDate(editEmployee.probationEndDate),
+      retirementDate: splitDate(editEmployee.retirementDate),
+      employeeStatus: editEmployee.employeeStatus || '',
+      biometricId: editEmployee.biometricId || '',
+      employeeType: editEmployee.employeeType || 'i',
+      employeeJobRole: jobRoleId,
+      joinedDate: splitDate(editEmployee.joinedDate),
+      appointmentDate: splitDate(editEmployee.appointmentDate),
+      department: deptId,
+      reportingOfficer: editEmployee.reportofficer ? String(editEmployee.reportofficer) : '',
+      jobRoleLayer: levelId,
+      bulkLeaveAvailable: editEmployee.bulkLeaveAvailable != null ? String(editEmployee.bulkLeaveAvailable) : '0',
+      flexHoursEnabled: editEmployee.flexHoursEnabled != null ? String(editEmployee.flexHoursEnabled) : '0',
+      flexHoursMinutes: editEmployee.flexHoursMinutes != null ? String(editEmployee.flexHoursMinutes) : '0',
+      workStatus: editEmployee.workStatus || '',
+      permanentDate: splitDate(editEmployee.permanentDate),
+      workLocation: locId,
+    }));
+  }, [isEditMode, editEmployee, userJobRoles, userLevels, wings, workLocations]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -476,6 +629,11 @@ const EmployeeRegistration = () => {
 
       // Prepare FormData for file uploads
       const formDataToSend = new FormData();
+
+      // Edit mode: include the employee id so backend updates the existing row
+      if (isEditMode) {
+        formDataToSend.append('id', String(employeeId));
+      }
       
       // Add all form fields
       Object.keys(formData).forEach(key => {
@@ -539,7 +697,17 @@ const EmployeeRegistration = () => {
       console.log('[EMP-REG][DEBUG][FRONTEND] FormData mobileNumber entries:', formDataToSend.getAll('mobileNumber'));
       console.log('[EMP-REG][DEBUG][FRONTEND] FormData telephoneHome entries:', formDataToSend.getAll('telephoneHome'));
 
-      const result = await createEmployeeRegistration(formDataToSend).unwrap();
+      const result = isEditMode
+        ? await updateEmployeeRegistration(formDataToSend).unwrap()
+        : await createEmployeeRegistration(formDataToSend).unwrap();
+
+      if (isEditMode && result.status) {
+        setSubmitMessage({ type: 'success', text: 'Employee details updated successfully.' });
+        if (onSaved) onSaved(result.data);
+        setTimeout(() => setSubmitMessage({ type: '', text: '' }), 4000);
+        setIsSubmitting(false);
+        return;
+      }
 
       if (result.status) {
         // Success - show success message with created EMP NO
@@ -555,24 +723,34 @@ const EmployeeRegistration = () => {
           type: 'success', 
           text: `Employee registration created successfully! Employee Number: ${createdEmpNo}` 
         });
+        if (onSaved) onSaved(result.data);
         
         // Clear form data
         setFormData({
           // Employee Details
           employeeName: '',
+          title: '',
+          nameWithInitials: '',
           preferredName: '',
           nic: '',
+          taxIdentificationNo: '',
           drivingLicense: '',
           drivingLicenseType: [],
           race: '',
+          nationality: 'Sri Lankan',
+          bloodGroup: '',
+          passportNo: '',
           religion: '',
           gender: '',
           dob: '',
+          age: '',
           permanentAddress: '',
           temporaryAddress: '',
           telephoneHome: '',
           mobileNumber: '',
+          companyMobileNo: '',
           emailAddress: '',
+          personalEmail: '',
           companyEmailAddress: '',
           educationCertificates: null,
           birthCertificate: null,
@@ -599,6 +777,21 @@ const EmployeeRegistration = () => {
           
           // Job Details
           empNo: '',
+          companyName: '',
+          shiftType: '',
+          memberTypeFlag: '',
+          employmentCategory: '',
+          jobCategory: '',
+          designation: '',
+          employmentType: '',
+          contractType: '',
+          contractStartDate: '',
+          contractEndDate: '',
+          probationPeriod: '',
+          probationEndDate: '',
+          retirementDate: '',
+          employeeStatus: '',
+          biometricId: '',
           employeeType: 'i',
           employeeJobRole: '',
           joinedDate: '',
@@ -705,11 +898,34 @@ const EmployeeRegistration = () => {
           <div className="form-section-emp-reg">
             <div className="form-row-emp-reg">
               <div className="form-group-emp-reg">
-                <label>Employee Name:</label>
+                <label>Title:</label>
+                <select name="title" value={formData.title} onChange={handleInputChange}>
+                  <option value="">-- Select --</option>
+                  <option value="Mr">Mr</option>
+                  <option value="Mrs">Mrs</option>
+                  <option value="Ms">Ms</option>
+                  <option value="Miss">Miss</option>
+                  <option value="Dr">Dr</option>
+                </select>
+              </div>
+              <div className="form-group-emp-reg">
+                <label>Employee Name (as per NIC):</label>
                 <input
                   type="text"
                   name="employeeName"
                   value={formData.employeeName}
+                  onChange={handleInputChange}
+                />
+              </div>
+            </div>
+
+            <div className="form-row-emp-reg">
+              <div className="form-group-emp-reg">
+                <label>Name with Initials:</label>
+                <input
+                  type="text"
+                  name="nameWithInitials"
+                  value={formData.nameWithInitials}
                   onChange={handleInputChange}
                 />
               </div>
@@ -741,6 +957,53 @@ const EmployeeRegistration = () => {
                     Invalid NIC format. Use 12 digits or 9 digits ending with V.
                   </span>
                 )}
+              </div>
+              <div className="form-group-emp-reg">
+                <label>Tax Identification Number:</label>
+                <input
+                  type="text"
+                  name="taxIdentificationNo"
+                  value={formData.taxIdentificationNo}
+                  onChange={handleInputChange}
+                  placeholder="If applicable"
+                />
+              </div>
+            </div>
+
+            <div className="form-row-emp-reg">
+              <div className="form-group-emp-reg">
+                <label>Nationality:</label>
+                <select name="nationality" value={formData.nationality} onChange={handleInputChange}>
+                  <option value="Sri Lankan">Sri Lankan</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div className="form-group-emp-reg">
+                <label>Blood Group:</label>
+                <select name="bloodGroup" value={formData.bloodGroup} onChange={handleInputChange}>
+                  <option value="">-- Select --</option>
+                  <option value="A+">A+</option>
+                  <option value="A-">A-</option>
+                  <option value="B+">B+</option>
+                  <option value="B-">B-</option>
+                  <option value="AB+">AB+</option>
+                  <option value="AB-">AB-</option>
+                  <option value="O+">O+</option>
+                  <option value="O-">O-</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="form-row-emp-reg">
+              <div className="form-group-emp-reg">
+                <label>Passport No:</label>
+                <input
+                  type="text"
+                  name="passportNo"
+                  value={formData.passportNo}
+                  onChange={handleInputChange}
+                  placeholder="If applicable"
+                />
               </div>
               <div className="form-group-emp-reg">
                 <label>Driving License:</label>
@@ -915,6 +1178,20 @@ const EmployeeRegistration = () => {
                 />
               </div>
               <div className="form-group-emp-reg">
+                <label>Age:</label>
+                <input
+                  type="text"
+                  name="age"
+                  value={formData.age ? `${formData.age} years` : ''}
+                  readOnly
+                  placeholder="Auto from DOB/NIC"
+                  style={{ backgroundColor: '#f5f5f5' }}
+                />
+              </div>
+            </div>
+
+            <div className="form-row-emp-reg">
+              <div className="form-group-emp-reg">
                 <label>Email Address:</label>
                 <input
                   type="email"
@@ -929,6 +1206,16 @@ const EmployeeRegistration = () => {
                     Invalid email format for Email Address.
                   </span>
                 )}
+              </div>
+              <div className="form-group-emp-reg">
+                <label>Personal Email Address:</label>
+                <input
+                  type="email"
+                  name="personalEmail"
+                  value={formData.personalEmail}
+                  onChange={handleInputChange}
+                  placeholder="personal@domain.com"
+                />
               </div>
             </div>
 
@@ -1009,6 +1296,16 @@ const EmployeeRegistration = () => {
                     Mobile Number must be 9 digits and cannot start with 0.
                   </span>
                 )}
+              </div>
+              <div className="form-group-emp-reg">
+                <label>Company Mobile No:</label>
+                <input
+                  type="tel"
+                  name="companyMobileNo"
+                  value={formData.companyMobileNo}
+                  onChange={handleInputChange}
+                  placeholder="Company-provided number"
+                />
               </div>
             </div>
 
@@ -1525,7 +1822,7 @@ const EmployeeRegistration = () => {
                 <input
                   type="text"
                   name="empNo"
-                  value={estimatedEmpNo || (loadingLastEmpNo ? 'Loading...' : 'Auto-generated on save')}
+                  value={isEditMode ? (editEmployee?.empNo || '') : (estimatedEmpNo || (loadingLastEmpNo ? 'Loading...' : 'Auto-generated on save'))}
                   onChange={handleInputChange}
                   disabled={true}
                   style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed' }}
@@ -1547,6 +1844,174 @@ const EmployeeRegistration = () => {
                     </option>
                   ))}
                 </select>
+              </div>
+            </div>
+
+            <div className="form-row-emp-reg">
+              <div className="form-group-emp-reg">
+                <label>Company:</label>
+                <select name="companyName" value={formData.companyName} onChange={handleInputChange}>
+                  <option value="">-- Select --</option>
+                  <option value="KWIL">KWIL</option>
+                  <option value="CRMC">CRMC</option>
+                  <option value="LAPMC">LAPMC</option>
+                </select>
+              </div>
+              <div className="form-group-emp-reg">
+                <label>Shift Type:</label>
+                <select name="shiftType" value={formData.shiftType} onChange={handleInputChange}>
+                  <option value="">-- Select --</option>
+                  <option value="Full time">Full time</option>
+                  <option value="Roaster">Roaster (24 work days / 6 bulk holidays)</option>
+                </select>
+              </div>
+              <div className="form-group-emp-reg">
+                <label>Member Type:</label>
+                <select name="memberTypeFlag" value={formData.memberTypeFlag} onChange={handleInputChange}>
+                  <option value="">-- Select --</option>
+                  <option value="Internal">Internal</option>
+                  <option value="External">External</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="form-row-emp-reg">
+              <div className="form-group-emp-reg">
+                <label>Employment Category:</label>
+                <select name="employmentCategory" value={formData.employmentCategory} onChange={handleInputChange}>
+                  <option value="">-- Select --</option>
+                  <option value="Senior Management">Senior Management</option>
+                  <option value="Middle Management">Middle Management</option>
+                  <option value="Junior Management">Junior Management</option>
+                  <option value="Non Management">Non Management</option>
+                </select>
+              </div>
+              <div className="form-group-emp-reg">
+                <label>Job Category:</label>
+                <select name="jobCategory" value={formData.jobCategory} onChange={handleInputChange}>
+                  <option value="">-- Select --</option>
+                  <option value="CEO">CEO</option>
+                  <option value="COO">COO</option>
+                  <option value="CHRO">CHRO</option>
+                  <option value="HOD">HOD</option>
+                  <option value="Manager">Manager</option>
+                  <option value="Assistant Manager">Assistant Manager</option>
+                  <option value="Senior Executive">Senior Executive</option>
+                  <option value="Executive">Executive</option>
+                  <option value="Junior Executive">Junior Executive</option>
+                  <option value="Non-Executive">Non-Executive</option>
+                </select>
+              </div>
+              <div className="form-group-emp-reg">
+                <label>Designation (current job role):</label>
+                <input
+                  type="text"
+                  name="designation"
+                  value={formData.designation}
+                  onChange={handleInputChange}
+                />
+              </div>
+            </div>
+
+            <div className="form-row-emp-reg">
+              <div className="form-group-emp-reg">
+                <label>Employment Type:</label>
+                <select name="employmentType" value={formData.employmentType} onChange={handleInputChange}>
+                  <option value="">-- Select --</option>
+                  <option value="Permanent Employee">Permanent Employee</option>
+                  <option value="Probation Employee">Probation Employee</option>
+                  <option value="Trainee Employee">Trainee Employee</option>
+                  <option value="Intern">Intern</option>
+                </select>
+              </div>
+              <div className="form-group-emp-reg">
+                <label>Contract Type:</label>
+                <select name="contractType" value={formData.contractType} onChange={handleInputChange}>
+                  <option value="">-- Select --</option>
+                  <option value="Fixed-term Contract">Fixed-term Contract</option>
+                  <option value="Short-term Contract">Short-term Contract</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="form-row-emp-reg">
+              <div className="form-group-emp-reg">
+                <label>Contract Start Date:</label>
+                <input
+                  type="date"
+                  name="contractStartDate"
+                  value={formData.contractStartDate}
+                  onChange={handleInputChange}
+                  onClick={handleDateInputClick}
+                />
+              </div>
+              <div className="form-group-emp-reg">
+                <label>Contract End Date:</label>
+                <input
+                  type="date"
+                  name="contractEndDate"
+                  value={formData.contractEndDate}
+                  onChange={handleInputChange}
+                  onClick={handleDateInputClick}
+                />
+              </div>
+            </div>
+
+            <div className="form-row-emp-reg">
+              <div className="form-group-emp-reg">
+                <label>Probation Period:</label>
+                <select name="probationPeriod" value={formData.probationPeriod} onChange={handleInputChange}>
+                  <option value="">-- Select --</option>
+                  <option value="6 months">6 months</option>
+                  <option value="9 months">9 months</option>
+                  <option value="1 year">1 year</option>
+                </select>
+              </div>
+              <div className="form-group-emp-reg">
+                <label>Probation End Date (auto):</label>
+                <input
+                  type="date"
+                  name="probationEndDate"
+                  value={formData.probationEndDate}
+                  onChange={handleInputChange}
+                  onClick={handleDateInputClick}
+                  placeholder="Auto-calculated"
+                />
+              </div>
+              <div className="form-group-emp-reg">
+                <label>Retirement Date (auto, age 60):</label>
+                <input
+                  type="date"
+                  name="retirementDate"
+                  value={formData.retirementDate}
+                  onChange={handleInputChange}
+                  onClick={handleDateInputClick}
+                  placeholder="Auto-calculated"
+                />
+              </div>
+            </div>
+
+            <div className="form-row-emp-reg">
+              <div className="form-group-emp-reg">
+                <label>Employee Status:</label>
+                <select name="employeeStatus" value={formData.employeeStatus} onChange={handleInputChange}>
+                  <option value="">-- Select --</option>
+                  <option value="Active">Active</option>
+                  <option value="On Long Leave">On Long Leave</option>
+                  <option value="Suspended">Suspended</option>
+                  <option value="Resigned">Resigned</option>
+                  <option value="Terminated">Terminated</option>
+                  <option value="Retired">Retired</option>
+                </select>
+              </div>
+              <div className="form-group-emp-reg">
+                <label>Biometric / Fingerprint ID:</label>
+                <input
+                  type="text"
+                  name="biometricId"
+                  value={formData.biometricId}
+                  onChange={handleInputChange}
+                />
               </div>
             </div>
 
@@ -1816,9 +2281,13 @@ const EmployeeRegistration = () => {
               type="button"
               className="btn-submit-emp-reg"
               onClick={handleSubmit}
-              disabled={isSubmitting || isCreating}
+              disabled={isSubmitting || isCreating || isUpdating}
             >
-              {isSubmitting || isCreating ? 'Processing...' : 'Forward to Payroll'}
+              {isSubmitting || isCreating || isUpdating
+                ? 'Processing...'
+                : isEditMode
+                  ? 'Save Changes'
+                  : 'Create Employee'}
             </button>
             {submitMessage.text && (
               <div 
