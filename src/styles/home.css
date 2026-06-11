@@ -109,7 +109,8 @@
 }
 
 /* Employee Profile (HRM): full viewport, scroll sidebar list + tab body only */
-.content-dashboard.content-dashboard--employee-profile {
+.content-dashboard.content-dashboard--employee-profile,
+.content-dashboard.content-dashboard--organization-structure {
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -118,7 +119,8 @@
     box-sizing: border-box;
 }
 
-.content-dashboard.content-dashboard--employee-profile > * {
+.content-dashboard.content-dashboard--employee-profile > *,
+.content-dashboard.content-dashboard--organization-structure > * {
     flex: 1 1 0;
     min-height: 0;
     min-width: 0;
