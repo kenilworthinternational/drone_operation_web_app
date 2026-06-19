@@ -1,0 +1,417 @@
+/* Accept plans tab — aligned with Create Bookings (updateservices + bookingsCalender) */
+
+.create-bookings-tabs {
+  display: flex;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  background: #fff;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.create-bookings-tab {
+  flex: 1 1 0;
+  width: 50%;
+  min-width: 0;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: #f8f9fa;
+  color: #495057;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  height: 42px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  box-sizing: border-box;
+}
+
+.create-bookings-tab:hover:not(.active) {
+  background: #eef2f6;
+  color: #004b71;
+}
+
+.create-bookings-tab.active {
+  background: #004b71;
+  color: #fff;
+}
+
+.create-bookings-shell {
+  gap: 0;
+  flex: 1;
+  min-height: 0;
+}
+
+.create-bookings-shell .create-bookings-tabs {
+  flex-shrink: 0;
+  align-self: stretch;
+  width: 100%;
+}
+
+.create-bookings-shell > .calendar-section-bottom {
+  margin-top: 15px;
+  flex: 1;
+  min-height: 0;
+}
+
+.create-bookings-shell .form-section-top.create-bookings-panel-connect,
+.accept-monthly-board .form-section-top {
+  border-radius: 0 0 8px 8px;
+  border-top: none;
+  margin-top: 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.accept-monthly-board {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  gap: 15px;
+}
+
+.accept-monthly-actions-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) repeat(4, auto);
+  gap: 10px;
+  align-items: end;
+  width: 100%;
+  padding-top: 14px;
+  margin-top: 0;
+  border-top: none;
+  box-sizing: border-box;
+}
+
+.accept-monthly-board .accept-monthly-actions-row .mission-type-controls.accept-monthly-inline-filter {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  flex: none;
+}
+
+.accept-monthly-inline-filter label {
+  margin-bottom: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #555;
+}
+
+.accept-monthly-actions-row .accept-monthly-mark-btn {
+  width: auto;
+  max-width: 100%;
+  box-sizing: border-box;
+  text-align: center;
+  padding: 8px 12px;
+  font-size: 12px;
+  justify-self: start;
+}
+
+.accept-monthly-loading-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 13px;
+  color: #004b71;
+}
+
+.accept-monthly-mark-btn {
+  border: 1px solid #004b71;
+  background: #004b71;
+  color: #fff;
+  border-radius: 4px;
+  padding: 9px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.accept-monthly-mark-btn.secondary {
+  background: #fff;
+  color: #004b71;
+}
+
+.accept-monthly-mark-btn.approve {
+  background: #16a34a;
+  border-color: #16a34a;
+}
+
+.accept-monthly-mark-btn.reject {
+  background: #dc2626;
+  border-color: #dc2626;
+}
+
+.accept-monthly-mark-btn.approve:disabled,
+.accept-monthly-mark-btn.reject:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.accept-monthly-meta-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 12px;
+  margin-top: 4px;
+  border-top: 1px solid #eee;
+}
+
+.accept-monthly-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  font-size: 12px;
+  color: #555;
+}
+
+.accept-monthly-legend .legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+}
+
+.accept-monthly-legend .legend::before {
+  content: '';
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.accept-monthly-legend .existing::before {
+  background: #004b71;
+  border: 1px solid #004b71;
+}
+
+.accept-monthly-legend .requested::before,
+.accept-monthly-legend .pending::before {
+  background: #f59e0b;
+  border: 1px solid #d97706;
+}
+
+.accept-monthly-legend .approved::before {
+  background: #15803d;
+  border: 1px solid #15803d;
+}
+
+.accept-monthly-legend .rejected::before {
+  background: #dc2626;
+  border: 1px solid #b91c1c;
+}
+
+.accept-monthly-legend .filtered::before {
+  background: #4f46e5;
+  border: 1px solid #4f46e5;
+}
+
+.accept-monthly-legend .selected::before {
+  background: #2563eb;
+  border: 1px solid #2563eb;
+}
+
+.accept-monthly-hint {
+  font-size: 12px;
+  color: #6c757d;
+  max-width: 420px;
+  line-height: 1.4;
+}
+
+.accept-monthly-alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+  font-size: 13px;
+}
+
+.accept-monthly-alert button {
+  border: 1px solid #dc2626;
+  background: #fff;
+  color: #dc2626;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.accept-monthly-loading-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #004b71;
+}
+
+.accept-monthly-empty-hint {
+  margin-top: 10px;
+  padding: 10px 12px;
+  background: #f0f7fb;
+  border: 1px solid #cce4f0;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #004b71;
+}
+
+.accept-monthly-calendar-section {
+  flex: 1;
+  min-height: 420px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.accept-monthly-calendar-section .booking-calender-wrapper {
+  height: 100%;
+  background: transparent;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.accept-monthly-calendar-section .booking-calender-container {
+  height: auto;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  border: none;
+  border-radius: 0;
+}
+
+.accept-monthly-calendar-section .booking-calender-grid {
+  flex: 1;
+  min-height: 0;
+  align-content: start;
+  overflow: visible;
+}
+
+.accept-monthly-calendar-section .booking-calender-day {
+  min-height: 120px;
+  height: auto;
+  padding: 6px 4px;
+  align-items: stretch;
+  overflow: visible;
+}
+
+.accept-monthly-calendar-section .booking-calender-tasks.accept-monthly-tasks {
+  min-height: 0;
+  gap: 2px;
+  width: 100%;
+}
+
+.accept-monthly-calendar-section .booking-calender-task {
+  width: 100%;
+  margin: 0;
+  padding: 4px 6px;
+  padding-right: 6px;
+  border: 1px solid transparent;
+}
+
+.accept-monthly-task-existing {
+  cursor: default;
+}
+
+.accept-monthly-task-existing:hover {
+  background: #004b71;
+}
+
+.accept-monthly-task-requested {
+  border-color: transparent;
+  font: inherit;
+  text-align: left;
+}
+
+.accept-monthly-task-requested.accept-monthly-task-pending {
+  background: #f59e0b;
+}
+
+.accept-monthly-task-requested.accept-monthly-task-pending:hover {
+  background: #d97706;
+}
+
+.accept-monthly-task-requested.accept-monthly-task-approved {
+  background: #15803d;
+  cursor: default;
+}
+
+.accept-monthly-task-requested.accept-monthly-task-rejected {
+  background: #dc2626;
+  cursor: default;
+}
+
+.accept-monthly-task-requested.accept-monthly-task-rejected:hover {
+  background: #b91c1c;
+}
+
+.accept-monthly-task-requested.accept-monthly-task-approved:hover {
+  filter: brightness(0.95);
+}
+
+.accept-monthly-task-requested.accept-monthly-task-filtered {
+  background: #f59e0b;
+  box-shadow: inset 0 0 0 2px #1d4ed8;
+}
+
+.accept-monthly-task-requested.accept-monthly-task-filtered:hover {
+  background: #d97706;
+}
+
+.accept-monthly-task-requested.accept-monthly-task-dimmed {
+  opacity: 0.35;
+}
+
+.accept-monthly-task-requested.accept-monthly-task-selected {
+  background: #2563eb;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
+.accept-monthly-task-requested.accept-monthly-task-selected:hover {
+  background: #1d4ed8;
+}
+
+.accept-monthly-task-requested .booking-calender-task-estate,
+.accept-monthly-task-existing .booking-calender-task-estate {
+  padding: 3px 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
+@media (max-width: 1100px) {
+  .accept-monthly-actions-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .accept-monthly-actions-row .accept-monthly-mark-btn {
+    justify-self: stretch;
+    width: 100%;
+  }
+
+  .accept-monthly-calendar-section .booking-calender-day {
+    min-height: 90px;
+  }
+}

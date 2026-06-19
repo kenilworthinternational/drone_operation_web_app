@@ -4,6 +4,7 @@ import {
   useGetPendingApprovalsQuery,
   useLazyGetVehicleRentDailyDetailsQuery,
   useVerifyVehicleDayRecordMutation,
+  useRejectVehicleDayRecordMutation,
   useApproveVehicleDateMutation,
 } from '../../../api/services NodeJs/vehicleRentApi';
 import {
@@ -161,6 +162,7 @@ const VehicleRentApprovals = ({ embedded = false }) => {
   
   const [approveVehicleDate, { isLoading: isApprovingVehicle }] = useApproveVehicleDateMutation();
   const [verifyVehicleDayRecord, { isLoading: isVerifyingDay }] = useVerifyVehicleDayRecordMutation();
+  const [rejectVehicleDayRecord, { isLoading: isRejectingDay }] = useRejectVehicleDayRecordMutation();
   
   const [selectedVehicleRent, setSelectedVehicleRent] = useState(null);
   const [vehicleRentDialog, setVehicleRentDialog] = useState(false);
@@ -176,6 +178,9 @@ const VehicleRentApprovals = ({ embedded = false }) => {
   const [editStartMeter, setEditStartMeter] = useState('');
   const [editEndMeter, setEditEndMeter] = useState('');
   const [editVerifyReason, setEditVerifyReason] = useState('');
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [rejectTargetRow, setRejectTargetRow] = useState(null);
+  const [rejectReason, setRejectReason] = useState('');
   const [imageDialog, setImageDialog] = useState({ open: false, imageUrl: null, title: '' });
   const [fetchDailyDetails, { isFetching: loadingDailyDetails }] = useLazyGetVehicleRentDailyDetailsQuery();
   const todayYmd = useMemo(() => sriLankaTodayYmd(), []);
@@ -326,6 +331,92 @@ const VehicleRentApprovals = ({ embedded = false }) => {
     } catch (error) {
       alert(error?.data?.message || 'Failed to edit and verify record');
     }
+  };
+
+  const refreshDailyDetailsIfOpen = async () => {
+    if (!dailyDetailsTarget) return;
+    const vehicleRef = dailyDetailsTarget?.vehicle_id || dailyDetailsTarget?.vehicle_no || dailyDetailsTarget?.vehicle;
+    const rows = await fetchDailyDetails({
+      yearMonth: dailyDetailsTarget?.month_key || monthlySelectedMonth,
+      vehicle: vehicleRef,
+    }).unwrap();
+    setDailyDetailsRows(rows || []);
+  };
+
+  const openRejectDialog = (row) => {
+    setRejectTargetRow(row);
+    setRejectReason('');
+    setRejectDialogOpen(true);
+  };
+
+  const handleSubmitRejectDay = async () => {
+    if (!rejectTargetRow?.id || !String(rejectReason || '').trim()) return;
+    try {
+      await rejectVehicleDayRecord({
+        id: rejectTargetRow.id,
+        rejection_type: 'reject_update',
+        reason: String(rejectReason).trim(),
+        rejectedBy: userId,
+      }).unwrap();
+      setRejectDialogOpen(false);
+      setRejectTargetRow(null);
+      setRejectReason('');
+      await refreshDailyDetailsIfOpen();
+      refetchVehicleRents();
+      refetchVerificationQueue();
+    } catch (error) {
+      alert(error?.data?.message || 'Failed to reject record');
+    }
+  };
+
+  const renderDailyRowActions = (row) => {
+    if (Number(row.verified) === 1) {
+      return <Chip icon={<Done />} label="Verified" color="success" size="small" />;
+    }
+    if (row.hr_rejection_type === 'reject') {
+      return <Chip icon={<Cancel />} label="Not approved" color="error" size="small" />;
+    }
+    if (row.resubmission_status === 'pending_correction') {
+      return <Chip icon={<Pending />} label="Sent for driver update" color="warning" size="small" />;
+    }
+
+    const correctedLabel = row.resubmission_status === 'resubmitted' || Number(row.was_corrected) === 1;
+
+    return (
+      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+        {correctedLabel ? <Chip label="Corrected" color="info" size="small" sx={{ mr: 0.5 }} /> : null}
+        <Button
+          size="small"
+          variant="outlined"
+          color="success"
+          disabled={isVerifyingDay || isRejectingDay}
+          onClick={() => handleVerifyDayRecord(row)}
+          sx={{ textTransform: 'none' }}
+        >
+          Verify
+        </Button>
+        <Button
+          size="small"
+          variant="outlined"
+          color="info"
+          disabled={isVerifyingDay || isRejectingDay}
+          onClick={() => openEditVerifyDialog(row)}
+          sx={{ textTransform: 'none' }}
+        >
+          Edit
+        </Button>
+        <Button
+          size="small"
+          variant="outlined"
+          color="warning"
+          disabled={isVerifyingDay || isRejectingDay}
+          onClick={() => openRejectDialog(row)}
+          sx={{ textTransform: 'none' }}
+        >
+          Send for update
+        </Button>
+      </Box>
+    );
   };
 
   // Filter vehicle rents (client-side search + vehicle dropdown)
@@ -834,37 +925,7 @@ const VehicleRentApprovals = ({ embedded = false }) => {
                       ) : '-'}
                     </TableCell>
                     <TableCell>
-                      {Number(row.verified) === 1 ? (
-                        <Chip
-                          icon={<Done />}
-                          label="Verified"
-                          color="success"
-                          size="small"
-                        />
-                      ) : (
-                        <Box sx={{ display: 'flex', gap: 1 }}>
-                          <Button
-                            size="small"
-                            variant="outlined"
-                            color="success"
-                            disabled={isVerifyingDay}
-                            onClick={() => handleVerifyDayRecord(row)}
-                            sx={{ textTransform: 'none' }}
-                          >
-                            Verify
-                          </Button>
-                          <Button
-                            size="small"
-                            variant="outlined"
-                            color="info"
-                            disabled={isVerifyingDay}
-                            onClick={() => openEditVerifyDialog(row)}
-                            sx={{ textTransform: 'none' }}
-                          >
-                            Edit
-                          </Button>
-                        </Box>
-                      )}
+                      {renderDailyRowActions(row)}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -1268,32 +1329,7 @@ const VehicleRentApprovals = ({ embedded = false }) => {
                         {Number(row.verified) === 1 ? 'Verified' : Number(row.verified) === 0 ? 'Not Verified' : 'Pending'}
                       </TableCell>
                       <TableCell>
-                        {Number(row.verified) === 1 ? (
-                          <Typography variant="body2" color="text.secondary">-</Typography>
-                        ) : (
-                          <Box sx={{ display: 'flex', gap: 1 }}>
-                            <Button
-                              size="small"
-                              variant="outlined"
-                              color="success"
-                              disabled={isVerifyingDay}
-                              onClick={() => handleVerifyDayRecord(row)}
-                              sx={{ textTransform: 'none' }}
-                            >
-                              Verify
-                            </Button>
-                            <Button
-                              size="small"
-                              variant="outlined"
-                              color="info"
-                              disabled={isVerifyingDay}
-                              onClick={() => openEditVerifyDialog(row)}
-                              sx={{ textTransform: 'none' }}
-                            >
-                              Edit
-                            </Button>
-                          </Box>
-                        )}
+                        {renderDailyRowActions(row)}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -1432,6 +1468,45 @@ const VehicleRentApprovals = ({ embedded = false }) => {
             sx={{ textTransform: 'none' }}
           >
             {isVerifyingDay ? <CircularProgress size={18} /> : 'Submit Verified'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={rejectDialogOpen}
+        onClose={() => setRejectDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        slotProps={nestedDialogSlotProps}
+      >
+        <DialogTitle sx={{ fontWeight: 600 }}>Send Back for Update</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            The driver, pilot, or part-time driver will see this record in the transport app, correct meters,
+            images, and trip events for the same date, then resubmit for your review.
+          </Typography>
+          <TextField
+            fullWidth
+            multiline
+            rows={4}
+            label="Reason"
+            value={rejectReason}
+            onChange={(e) => setRejectReason(e.target.value)}
+            required
+          />
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setRejectDialogOpen(false)} sx={{ textTransform: 'none' }}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSubmitRejectDay}
+            color="warning"
+            variant="contained"
+            disabled={isRejectingDay || !String(rejectReason || '').trim()}
+            sx={{ textTransform: 'none' }}
+          >
+            {isRejectingDay ? <CircularProgress size={18} /> : 'Send for update'}
           </Button>
         </DialogActions>
       </Dialog>

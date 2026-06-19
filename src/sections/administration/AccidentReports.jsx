@@ -1,4 +1,4 @@
-import React, { useState, useMemo, Fragment } from 'react';
+import React, { useState, useMemo, useEffect, Fragment } from 'react';
 import { FaEye, FaFilter, FaTimes, FaImage, FaVideo, FaMicrophone, FaDownload, FaUndoAlt, FaRedoAlt, FaExpand, FaCog, FaBan, FaWrench } from 'react-icons/fa';
 import {
   useGetAccidentReportsQuery,
@@ -18,8 +18,6 @@ const AccidentReports = () => {
     start_date: '',
     end_date: '',
     pilot: '',
-    type: '',
-    estate: '',
     equipment_type: '',
     device_serial: '',
   });
@@ -31,6 +29,8 @@ const AccidentReports = () => {
   const [showActionModal, setShowActionModal] = useState(false);
   const [actionType, setActionType] = useState(null); // 'decline' or 'repair'
   const [actionForm, setActionForm] = useState({ decline_reason: '', technician_id: '', description: '', scheduled_date: '' });
+  const [message, setMessage] = useState('');
+  const [messageType, setMessageType] = useState('');
 
   // Mutations
   const [declineReport] = useDeclineAccidentReportMutation();
@@ -59,6 +59,21 @@ const AccidentReports = () => {
   // Fetch data
   const { data: reportsData, isLoading, error, refetch } = useGetAccidentReportsQuery(cleanFilters);
   const { data: pilotsData } = useGetPilotsQuery();
+  const { data: reportDetail, isLoading: detailLoading } = useGetAccidentReportByIdQuery(selectedReport?.id, {
+    skip: !showDetailsModal || !selectedReport?.id,
+  });
+
+  const detailView = reportDetail || selectedReport;
+
+  useEffect(() => {
+    if (message && messageType === 'success') {
+      const timer = setTimeout(() => {
+        setMessage('');
+        setMessageType('');
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [message, messageType]);
 
   // Ensure reports is always an array
   const reports = Array.isArray(reportsData) ? reportsData : (reportsData ? [reportsData] : []);
@@ -81,7 +96,7 @@ const AccidentReports = () => {
         (report.device_serial && String(report.device_serial).toLowerCase().includes(term)) ||
         (report.estate_name && String(report.estate_name).toLowerCase().includes(term)) ||
         (report.equipment_type_name && String(report.equipment_type_name).toLowerCase().includes(term)) ||
-        (report.plan_mission_label && String(report.plan_mission_label).toLowerCase().includes(term))
+        (report.incident_type_name && String(report.incident_type_name).toLowerCase().includes(term))
       );
     });
   }, [reports, searchTerm]);
@@ -123,13 +138,15 @@ const AccidentReports = () => {
     try {
       const userId = getCurrentUserId();
       if (!userId) {
-        alert('User ID not found. Please login again.');
+        setMessage('Please sign in again to continue.');
+        setMessageType('warning');
         return;
       }
 
       if (actionType === 'decline') {
         if (!actionForm.decline_reason.trim()) {
-          alert('Please enter a decline reason');
+          setMessage('Please enter a decline reason.');
+          setMessageType('warning');
           return;
         }
         await declineReport({
@@ -137,10 +154,12 @@ const AccidentReports = () => {
           decline_reason: actionForm.decline_reason,
           action_by: userId,
         }).unwrap();
-        alert('Accident report declined successfully');
+        setMessage('Accident report declined.');
+        setMessageType('success');
       } else if (actionType === 'repair') {
         if (!actionForm.technician_id || !actionForm.description.trim() || !actionForm.scheduled_date) {
-          alert('Please fill all required fields (Technician, Description, Scheduled Date)');
+          setMessage('Technician, description, and scheduled date are required.');
+          setMessageType('warning');
           return;
         }
         await createMaintenance({
@@ -150,12 +169,14 @@ const AccidentReports = () => {
           description: actionForm.description,
           scheduled_date: actionForm.scheduled_date,
         }).unwrap();
-        alert('Maintenance record created successfully');
+        setMessage('Maintenance record created from incident.');
+        setMessageType('success');
       }
       handleCloseActionModal();
       refetch();
-    } catch (error) {
-      alert('Failed to process action: ' + (error.message || 'Unknown error'));
+    } catch (err) {
+      setMessage(err?.data?.message || err?.message || 'Could not complete this action.');
+      setMessageType('warning');
     }
   };
 
@@ -168,8 +189,6 @@ const AccidentReports = () => {
       start_date: '',
       end_date: '',
       pilot: '',
-      type: '',
-      estate: '',
       equipment_type: '',
       device_serial: '',
     });
@@ -190,13 +209,13 @@ const AccidentReports = () => {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-    } catch (error) {
-      console.error('Download failed:', error);
-      // Fallback: open in new window
+    } catch (downloadErr) {
+      console.warn('Download issue:', downloadErr);
       try {
         window.open(getResourceUrl(url), '_blank');
-      } catch (e) {
-        alert('Failed to download file. Please try right-clicking and selecting "Save As"');
+      } catch {
+        setMessage('Could not download this file. Try right-click and Save As.');
+        setMessageType('warning');
       }
     }
   };
@@ -261,6 +280,12 @@ const AccidentReports = () => {
         </button>
       </div>
 
+      {message && (
+        <div className={`accidentreports-feedback ${messageType}`}>
+          {message}
+        </div>
+      )}
+
       {/* Filters Panel */}
       {showFilters && (
         <div className="accidentreports-filters-panel">
@@ -303,18 +328,6 @@ const AccidentReports = () => {
               </select>
             </div>
             <div className="accidentreports-filter-group">
-              <label>Type</label>
-              <select
-                value={filters.type}
-                onChange={(e) => handleFilterChange('type', e.target.value)}
-                className="accidentreports-filter-select"
-              >
-                <option value="">All Types</option>
-                <option value="p">Plan</option>
-                <option value="m">Mission</option>
-              </select>
-            </div>
-            <div className="accidentreports-filter-group">
               <label>Device Serial</label>
               <input
                 type="text"
@@ -353,10 +366,9 @@ const AccidentReports = () => {
               <th>Date</th>
               <th>Time</th>
               <th>Pilot</th>
-              <th>Type</th>
-              <th>Plan/Mission</th>
               <th>Estate</th>
               <th>Equipment</th>
+              <th>Incident Type</th>
               <th>Device Serial</th>
               <th>Media</th>
               <th>Action</th>
@@ -365,14 +377,14 @@ const AccidentReports = () => {
           <tbody>
             {isLoading ? (
               <tr>
-                <td colSpan="11" className="accidentreports-loading-cell">
+                <td colSpan="10" className="accidentreports-loading-cell">
                   <strong>Loading accident reports...</strong>
                 </td>
               </tr>
             ) : error ? (
               <tr>
-                <td colSpan="11" className="accidentreports-error-cell">
-                  <strong>Error loading reports:</strong> {error.message || 'Unknown error'}
+                <td colSpan="10" className="accidentreports-error-cell">
+                  <strong>Unable to load reports.</strong> Refresh the page and try again.
                 </td>
               </tr>
             ) : Array.isArray(filteredReports) && filteredReports.length > 0 ? (
@@ -386,12 +398,9 @@ const AccidentReports = () => {
                     <td>{formatDate(report.date)}</td>
                     <td>{formatTime(report.time)}</td>
                     <td>{report.pilot_name || 'N/A'}</td>
-                    <td>
-                      {report.type === 'p' ? 'Plan' : report.type === 'm' ? 'Mission' : 'N/A'}
-                    </td>
-                    <td>{report.plan_mission_label || 'N/A'}</td>
                     <td>{report.estate_name || 'N/A'}</td>
                     <td>{report.equipment_type_name || 'N/A'}</td>
+                    <td>{report.incident_type_name || 'N/A'}</td>
                     <td>{report.device_serial || 'N/A'}</td>
                     <td>
                       <button
@@ -436,7 +445,7 @@ const AccidentReports = () => {
               })
             ) : (
               <tr>
-                <td colSpan="11" className="accidentreports-empty-cell">
+                <td colSpan="10" className="accidentreports-empty-cell">
                   <strong>No accident reports found</strong> {reports.length > 0 ? `(Total: ${reports.length}, Filtered: ${filteredReports?.length || 0})` : ''}
                 </td>
               </tr>
@@ -446,7 +455,7 @@ const AccidentReports = () => {
       </div>
 
       {/* Details Modal */}
-      {showDetailsModal && selectedReport && (
+      {showDetailsModal && detailView && (
         <div className="accidentreports-modal-overlay">
           <div className="accidentreports-modal-content">
             <div className="accidentreports-modal-header">
@@ -456,46 +465,69 @@ const AccidentReports = () => {
               </button>
             </div>
 
+            {detailLoading ? (
+              <p style={{ padding: '1rem' }}>Loading report details...</p>
+            ) : (
             <div className="accidentreports-modal-details-grid">
               <div>
-                <strong>ID:</strong> {selectedReport.id}
+                <strong>ID:</strong> {detailView.id}
               </div>
               <div>
-                <strong>Date:</strong> {formatDate(selectedReport.date)}
+                <strong>Date:</strong> {formatDate(detailView.date)}
               </div>
               <div>
-                <strong>Time:</strong> {formatTime(selectedReport.time)}
+                <strong>Time:</strong> {formatTime(detailView.time)}
               </div>
               <div>
-                <strong>Pilot:</strong> {selectedReport.pilot_name || 'N/A'}
+                <strong>Pilot:</strong> {detailView.pilot_name || 'N/A'}
               </div>
               <div>
-                <strong>Type:</strong> {selectedReport.type === 'p' ? 'Plan' : selectedReport.type === 'm' ? 'Mission' : 'N/A'}
+                <strong>Estate:</strong> {detailView.estate_name || 'N/A'}
               </div>
               <div>
-                <strong>Plan/Mission:</strong> {selectedReport.plan_mission_label || 'N/A'}
+                <strong>Task:</strong> {detailView.task_id ? `Task #${detailView.task_id}` : 'N/A'}
               </div>
               <div>
-                <strong>Estate:</strong> {selectedReport.estate_name || 'N/A'}
+                <strong>Incident Type:</strong> {detailView.incident_type_name || 'N/A'}
               </div>
               <div>
-                <strong>Task:</strong> {selectedReport.task_id ? `Task #${selectedReport.task_id}` : 'N/A'}
+                <strong>Equipment Type:</strong> {detailView.equipment_type_name || 'N/A'}
               </div>
               <div>
-                <strong>Equipment Type:</strong> {selectedReport.equipment_type_name || 'N/A'}
+                <strong>Equipment Items:</strong>{' '}
+                {(detailView.equipment_items || []).length
+                  ? detailView.equipment_items.map((item) => item.label).join(', ')
+                  : 'N/A'}
               </div>
               <div>
-                <strong>Device Serial:</strong> {selectedReport.device_serial || 'N/A'}
+                <strong>Device Serial:</strong> {detailView.device_serial || 'N/A'}
               </div>
+              <div>
+                <strong>Action:</strong>{' '}
+                {detailView.action === 'd'
+                  ? 'Declined'
+                  : detailView.action === 'r'
+                    ? `Repair${detailView.maintenance_id || detailView.maintenanceId ? ` #${detailView.maintenance_id || detailView.maintenanceId}` : ''}`
+                    : 'Pending review'}
+              </div>
+              {(detailView.decline_reason || detailView.declineReason) && (
+                <div className="accidentreports-description-full">
+                  <strong>Decline Reason:</strong>
+                  <p>{detailView.decline_reason || detailView.declineReason}</p>
+                </div>
+              )}
             </div>
+            )}
 
+            {!detailLoading && (
+            <>
             {/* Media Section */}
             <div className="accidentreports-modal-media-section">
               <h3>Media Files</h3>
               <div className="accidentreports-media-three-column">
                 {/* Column 1 - Image 1 */}
                 <div className="accidentreports-media-column">
-                  {selectedReport.image_1_url && (
+                  {detailView.image_1_url && (
                     <div className="accidentreports-modal-media-item">
                       <div className="accidentreports-media-label">
                         <FaImage style={{ marginRight: '6px', color: '#007bff', fontSize: '14px' }} />
@@ -503,7 +535,7 @@ const AccidentReports = () => {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleDownload(selectedReport.image_1_url, selectedReport.image_1 || 'image-1.jpg');
+                            handleDownload(detailView.image_1_url, detailView.image_1 || 'image-1.jpg');
                           }}
                           className="accidentreports-download-btn"
                           title="Download Image 1"
@@ -511,9 +543,9 @@ const AccidentReports = () => {
                           <FaDownload />
                         </button>
                       </div>
-                      <div className="accidentreports-image-wrapper" onClick={() => handleImageClick(selectedReport.image_1_url)} style={{ cursor: 'pointer' }}>
+                      <div className="accidentreports-image-wrapper" onClick={() => handleImageClick(detailView.image_1_url)} style={{ cursor: 'pointer' }}>
                         <img 
-                          src={getResourceUrl(selectedReport.image_1_url)} 
+                          src={getResourceUrl(detailView.image_1_url)} 
                           alt="Accident Image 1"
                           className="accidentreports-modal-image"
                           onError={(e) => {
@@ -531,7 +563,7 @@ const AccidentReports = () => {
                         </div>
                         <div className="accidentreports-image-error" style={{ display: 'none' }}>
                           <FaImage style={{ fontSize: '32px', color: '#ccc', marginBottom: '5px' }} />
-                          <p>Failed to load</p>
+                          <p>Could not load</p>
                         </div>
                       </div>
                     </div>
@@ -540,7 +572,7 @@ const AccidentReports = () => {
 
                 {/* Column 2 - Image 2 */}
                 <div className="accidentreports-media-column">
-                  {selectedReport.image_2_url && (
+                  {detailView.image_2_url && (
                     <div className="accidentreports-modal-media-item">
                       <div className="accidentreports-media-label">
                         <FaImage style={{ marginRight: '6px', color: '#007bff', fontSize: '14px' }} />
@@ -548,7 +580,7 @@ const AccidentReports = () => {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleDownload(selectedReport.image_2_url, selectedReport.image_2 || 'image-2.jpg');
+                            handleDownload(detailView.image_2_url, detailView.image_2 || 'image-2.jpg');
                           }}
                           className="accidentreports-download-btn"
                           title="Download Image 2"
@@ -556,9 +588,9 @@ const AccidentReports = () => {
                           <FaDownload />
                         </button>
                       </div>
-                      <div className="accidentreports-image-wrapper" onClick={() => handleImageClick(selectedReport.image_2_url)} style={{ cursor: 'pointer' }}>
+                      <div className="accidentreports-image-wrapper" onClick={() => handleImageClick(detailView.image_2_url)} style={{ cursor: 'pointer' }}>
                         <img 
-                          src={getResourceUrl(selectedReport.image_2_url)} 
+                          src={getResourceUrl(detailView.image_2_url)} 
                           alt="Accident Image 2"
                           className="accidentreports-modal-image"
                           onError={(e) => {
@@ -576,7 +608,7 @@ const AccidentReports = () => {
                         </div>
                         <div className="accidentreports-image-error" style={{ display: 'none' }}>
                           <FaImage style={{ fontSize: '32px', color: '#ccc', marginBottom: '5px' }} />
-                          <p>Failed to load</p>
+                          <p>Could not load</p>
                         </div>
                       </div>
                     </div>
@@ -585,7 +617,7 @@ const AccidentReports = () => {
 
                 {/* Column 3 - Voice Notes */}
                 <div className="accidentreports-media-column">
-                  {selectedReport.voice_note_1_url && (
+                  {detailView.voice_note_1_url && (
                     <div className="accidentreports-modal-media-item accidentreports-audio-item">
                       <div className="accidentreports-media-label">
                         <FaMicrophone style={{ marginRight: '6px', color: '#28a745', fontSize: '14px' }} />
@@ -593,7 +625,7 @@ const AccidentReports = () => {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleDownload(selectedReport.voice_note_1_url, selectedReport.voice_note_1 || 'voice-note-1.m4a');
+                            handleDownload(detailView.voice_note_1_url, detailView.voice_note_1 || 'voice-note-1.m4a');
                           }}
                           className="accidentreports-download-btn"
                           title="Download Voice Note 1"
@@ -615,18 +647,18 @@ const AccidentReports = () => {
                             }
                           }}
                         >
-                          <source src={getResourceUrl(selectedReport.voice_note_1_url)} type="audio/mpeg" />
-                          <source src={getResourceUrl(selectedReport.voice_note_1_url)} type="audio/mp4" />
-                          <source src={getResourceUrl(selectedReport.voice_note_1_url)} type="audio/m4a" />
+                          <source src={getResourceUrl(detailView.voice_note_1_url)} type="audio/mpeg" />
+                          <source src={getResourceUrl(detailView.voice_note_1_url)} type="audio/mp4" />
+                          <source src={getResourceUrl(detailView.voice_note_1_url)} type="audio/m4a" />
                         </audio>
                         <div className="accidentreports-audio-error" style={{ display: 'none' }}>
                           <FaMicrophone style={{ fontSize: '32px', color: '#ccc', marginBottom: '5px' }} />
-                          <p>Failed to load</p>
+                          <p>Could not load</p>
                         </div>
                       </div>
                     </div>
                   )}
-                  {selectedReport.voice_note_2_url && (
+                  {detailView.voice_note_2_url && (
                     <div className="accidentreports-modal-media-item accidentreports-audio-item">
                       <div className="accidentreports-media-label">
                         <FaMicrophone style={{ marginRight: '6px', color: '#28a745', fontSize: '14px' }} />
@@ -634,7 +666,7 @@ const AccidentReports = () => {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleDownload(selectedReport.voice_note_2_url, selectedReport.voice_note_2 || 'voice-note-2.m4a');
+                            handleDownload(detailView.voice_note_2_url, detailView.voice_note_2 || 'voice-note-2.m4a');
                           }}
                           className="accidentreports-download-btn"
                           title="Download Voice Note 2"
@@ -656,13 +688,13 @@ const AccidentReports = () => {
                             }
                           }}
                         >
-                          <source src={getResourceUrl(selectedReport.voice_note_2_url)} type="audio/mpeg" />
-                          <source src={getResourceUrl(selectedReport.voice_note_2_url)} type="audio/mp4" />
-                          <source src={getResourceUrl(selectedReport.voice_note_2_url)} type="audio/m4a" />
+                          <source src={getResourceUrl(detailView.voice_note_2_url)} type="audio/mpeg" />
+                          <source src={getResourceUrl(detailView.voice_note_2_url)} type="audio/mp4" />
+                          <source src={getResourceUrl(detailView.voice_note_2_url)} type="audio/m4a" />
                         </audio>
                         <div className="accidentreports-audio-error" style={{ display: 'none' }}>
                           <FaMicrophone style={{ fontSize: '32px', color: '#ccc', marginBottom: '5px' }} />
-                          <p>Failed to load</p>
+                          <p>Could not load</p>
                         </div>
                       </div>
                     </div>
@@ -670,7 +702,7 @@ const AccidentReports = () => {
                 </div>
               </div>
               {/* Video - Full Width Row */}
-              {selectedReport.video_1_url && (
+              {detailView.video_1_url && (
                 <div className="accidentreports-video-full-width">
                   <div className="accidentreports-modal-media-item accidentreports-video-item">
                     <div className="accidentreports-media-label">
@@ -679,7 +711,7 @@ const AccidentReports = () => {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleDownload(selectedReport.video_1_url, selectedReport.video_1 || 'video.mp4');
+                          handleDownload(detailView.video_1_url, detailView.video_1 || 'video.mp4');
                         }}
                         className="accidentreports-download-btn"
                         title="Download Video"
@@ -701,18 +733,23 @@ const AccidentReports = () => {
                           }
                         }}
                       >
-                        <source src={getResourceUrl(selectedReport.video_1_url)} type="video/mp4" />
-                        <source src={getResourceUrl(selectedReport.video_1_url)} type="video/webm" />
+                        <source src={getResourceUrl(detailView.video_1_url)} type="video/mp4" />
+                        <source src={getResourceUrl(detailView.video_1_url)} type="video/webm" />
                       </video>
                       <div className="accidentreports-video-error" style={{ display: 'none' }}>
                         <FaVideo style={{ fontSize: '32px', color: '#ccc', marginBottom: '5px' }} />
-                        <p>Failed to load</p>
+                        <p>Could not load</p>
                       </div>
                     </div>
                   </div>
                 </div>
               )}
             </div>
+            </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Image Viewer Modal */}
       {selectedImage && (
@@ -758,9 +795,6 @@ const AccidentReports = () => {
                 style={{ transform: `rotate(${imageRotation}deg)` }}
               />
             </div>
-          </div>
-        </div>
-      )}
           </div>
         </div>
       )}

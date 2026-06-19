@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import CustomDropdown from '../../../components/CustomDropdown';
 import BookingsCalender from './BookingsCalender';
+import AcceptMonthlyPlansBoard from './AcceptMonthlyPlansBoard';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { Bars } from 'react-loader-spinner';
 import { toast, ToastContainer } from 'react-toastify';
@@ -16,10 +17,12 @@ import {
   useCreateBookingPlanMutation,
 } from '../../../api/services NodeJs/bookingCreationApi';
 import '../../../styles/updateservices.css';
+import '../../../styles/acceptMonthlyPlansBoard.css';
 
 const EMPTY_LIST = [];
 
 const NewServices = () => {
+  const [bookingTab, setBookingTab] = useState('add');
   const [state, setState] = useState({
     plantationOptions: [],
     regionOptions: [],
@@ -675,9 +678,37 @@ const NewServices = () => {
   };
   return (
     <div className={`services ${state.isSubmitting ? 'submitting-cursor' : ''}`}>
-      <div className="services-container-new">
+      <div className="services-container-new create-bookings-shell">
+        <div className="create-bookings-tabs">
+          <button
+            type="button"
+            className={`create-bookings-tab ${bookingTab === 'add' ? 'active' : ''}`}
+            onClick={() => setBookingTab('add')}
+          >
+            Add and Manage Bookings
+          </button>
+          <button
+            type="button"
+            className={`create-bookings-tab ${bookingTab === 'accept' ? 'active' : ''}`}
+            onClick={() => setBookingTab('accept')}
+          >
+            Accept bookings
+          </button>
+        </div>
+
+        {bookingTab === 'accept' ? (
+          <AcceptMonthlyPlansBoard
+            estates={estates}
+            missionTypes={missionTypes}
+            cropTypes={cropTypes}
+            currentMonth={currentMonth}
+            onMonthChange={setCurrentMonth}
+            onApproved={() => refreshCalendarForMonth(currentMonth)}
+          />
+        ) : (
+          <>
         {/* Top Section - Form Controls */}
-        <div className="form-section-top">
+        <div className="form-section-top create-bookings-panel-connect">
           <div className="form-controls-row">
             {/* Estate Search Dropdown */}
             <div className="estate-search-container-controls">
@@ -916,6 +947,9 @@ const NewServices = () => {
               </div>
             </div>
           </div>
+        )}
+
+          </>
         )}
 
         {/* Toast Container for notifications */}

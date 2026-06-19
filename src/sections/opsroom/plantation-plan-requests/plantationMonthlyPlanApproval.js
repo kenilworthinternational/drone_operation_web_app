@@ -77,3 +77,107 @@ export async function declineMonthlyPlanRequest({ id, declineMutation, declineRe
   await declineMutation({ id, declineReason }).unwrap();
   return { ok: true };
 }
+
+/** Build bulk-approve payload from selected slot keys (`requestId:lineId:slotIndex`). */
+export function buildBulkApprovePayload(requestedSlots, selectedSlotKeys) {
+  const selected = selectedSlotKeys instanceof Set ? selectedSlotKeys : new Set(selectedSlotKeys || []);
+  if (!selected.size || !Array.isArray(requestedSlots)) {
+    return { requestApprovals: [] };
+  }
+
+  const slotIndicesByLine = new Map();
+  const linesByRequest = new Map();
+
+  for (const slot of requestedSlots) {
+    const reqId = Number(slot.requestId);
+    const lineId = Number(slot.lineId);
+    if (!linesByRequest.has(reqId)) linesByRequest.set(reqId, new Set());
+    linesByRequest.get(reqId).add(lineId);
+  }
+
+  for (const key of selected) {
+    const parts = String(key).split(':');
+    if (parts.length < 3) continue;
+    const lineKey = `${parts[0]}:${parts[1]}`;
+    const slotIndex = parseInt(parts[2], 10);
+    if (!Number.isFinite(slotIndex)) continue;
+    if (!slotIndicesByLine.has(lineKey)) slotIndicesByLine.set(lineKey, []);
+    slotIndicesByLine.get(lineKey).push(slotIndex);
+  }
+
+  const requestApprovals = [];
+  for (const [reqId, lineIdSet] of linesByRequest) {
+    const lines = [...lineIdSet]
+      .map((lineId) => {
+        const lineKey = `${reqId}:${lineId}`;
+        const slotIndices = [...new Set(slotIndicesByLine.get(lineKey) || [])].sort((a, b) => a - b);
+        if (!slotIndices.length) return null;
+        return {
+          lineId,
+          opsSelected: true,
+          approvedPlanCount: slotIndices.length,
+          slotIndices,
+        };
+      })
+      .filter(Boolean);
+
+    if (lines.length) {
+      requestApprovals.push({ requestId: reqId, lines });
+    }
+  }
+
+  return { requestApprovals };
+}
+
+/** Build bulk-reject payload from selected pending slot keys. */
+export function buildBulkRejectPayload(requestedSlots, selectedSlotKeys) {
+  const selected = selectedSlotKeys instanceof Set ? selectedSlotKeys : new Set(selectedSlotKeys || []);
+  if (!selected.size || !Array.isArray(requestedSlots)) {
+    return { requestRejections: [] };
+  }
+
+  const slotIndicesByLine = new Map();
+  const linesByRequest = new Map();
+  const slotByKey = new Map(requestedSlots.map((slot) => [slot.slotKey, slot]));
+
+  for (const slot of requestedSlots) {
+    const reqId = Number(slot.requestId);
+    const lineId = Number(slot.lineId);
+    if (!linesByRequest.has(reqId)) linesByRequest.set(reqId, new Set());
+    linesByRequest.get(reqId).add(lineId);
+  }
+
+  for (const key of selected) {
+    const slot = slotByKey.get(key);
+    if (!slot || slot.slotStatus !== 'pending') continue;
+    const parts = String(key).split(':');
+    if (parts.length < 3) continue;
+    const lineKey = `${parts[0]}:${parts[1]}`;
+    const slotIndex = parseInt(parts[2], 10);
+    if (!Number.isFinite(slotIndex)) continue;
+    if (!slotIndicesByLine.has(lineKey)) slotIndicesByLine.set(lineKey, []);
+    slotIndicesByLine.get(lineKey).push(slotIndex);
+  }
+
+  const requestRejections = [];
+  for (const [reqId, lineIdSet] of linesByRequest) {
+    const lines = [...lineIdSet]
+      .map((lineId) => {
+        const lineKey = `${reqId}:${lineId}`;
+        const slotIndices = [...new Set(slotIndicesByLine.get(lineKey) || [])].sort((a, b) => a - b);
+        if (!slotIndices.length) return null;
+        return {
+          lineId,
+          rejectedPlanCount: slotIndices.length,
+          slotIndices,
+        };
+      })
+      .filter(Boolean);
+
+    if (lines.length) {
+      requestRejections.push({ requestId: reqId, lines });
+    }
+  }
+
+  return { requestRejections };
+}

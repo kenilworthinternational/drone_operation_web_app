@@ -568,6 +568,25 @@ export const plantationDashboardApi = baseApi.injectEndpoints({
       providesTags: ['PlantationMonthlyPlanRequests'],
     }),
 
+    getPlantationMonthlyPlanAcceptBoard: builder.query({
+      queryFn: async ({ yearMonth, status = 'open' } = {}) => {
+        const q = new URLSearchParams({
+          yearMonth: String(yearMonth || ''),
+          status: String(status || 'open'),
+        });
+        const result = await nodeBackendBaseQuery(
+          { url: `/api/plantation-monthly-plan-requests/accept-board?${q.toString()}`, method: 'GET' },
+          {},
+          {}
+        );
+        if (result.error) return result;
+        const body = result.data;
+        const data = body?.data ?? body;
+        return { data };
+      },
+      providesTags: ['PlantationMonthlyPlanRequests', 'Plans', 'Calendar'],
+    }),
+
     approvePlantationMonthlyPlanRequest: builder.mutation({
       queryFn: async ({ id, lines }) => {
         const result = await nodeBackendBaseQuery(
@@ -575,6 +594,38 @@ export const plantationDashboardApi = baseApi.injectEndpoints({
             url: `/api/plantation-monthly-plan-requests/${id}/approve`,
             method: 'POST',
             body: { lines },
+          },
+          {},
+          {}
+        );
+        return result;
+      },
+      invalidatesTags: ['PlantationMonthlyPlanRequests', 'Plans', 'Calendar'],
+    }),
+
+    bulkApprovePlantationMonthlyPlanRequests: builder.mutation({
+      queryFn: async (body) => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: '/api/plantation-monthly-plan-requests/bulk-approve',
+            method: 'POST',
+            body,
+          },
+          {},
+          {}
+        );
+        return result;
+      },
+      invalidatesTags: ['PlantationMonthlyPlanRequests', 'Plans', 'Calendar'],
+    }),
+
+    bulkRejectPlantationMonthlyPlanRequests: builder.mutation({
+      queryFn: async (body) => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: '/api/plantation-monthly-plan-requests/bulk-reject',
+            method: 'POST',
+            body,
           },
           {},
           {}
@@ -639,6 +690,9 @@ export const {
   useGetPlantationMonthlyPlanRequestsListQuery,
   useGetPlantationMonthlyPlanRequestByIdQuery,
   useGetPlantationMonthlyPlanRequestCalendarContextQuery,
+  useGetPlantationMonthlyPlanAcceptBoardQuery,
   useApprovePlantationMonthlyPlanRequestMutation,
+  useBulkApprovePlantationMonthlyPlanRequestsMutation,
+  useBulkRejectPlantationMonthlyPlanRequestsMutation,
   useDeclinePlantationMonthlyPlanRequestMutation,
 } = plantationDashboardApi;

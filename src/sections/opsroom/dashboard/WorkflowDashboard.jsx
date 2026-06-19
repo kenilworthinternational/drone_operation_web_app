@@ -38,7 +38,7 @@ import {
   useMarkNotificationAsDisplayedMutation,
   useLogNotificationActionMutation,
 } from '../../../api/services NodeJs/notificationsApi';
-import { useGetPlantationPlanRequestsPendingCountQuery, useGetPlantationPlanRescheduleRequestsPendingCountQuery, useGetPlantationMonthlyPlanRequestsPendingCountQuery } from '../../../api/services NodeJs/plantationDashboardApi';
+import { useGetPlantationPlanRequestsPendingCountQuery, useGetPlantationPlanRescheduleRequestsPendingCountQuery } from '../../../api/services NodeJs/plantationDashboardApi';
 import {
   getCategoryVisibility,
   getUserData,
@@ -384,13 +384,6 @@ const WorkflowDashboard = () => {
     });
   const plantationPlanRequestCount = Number(plantationPlanRequestPayload?.data?.count ?? 0);
 
-  const { data: plantationMonthlyPlanPayload, refetch: refetchPlantationMonthlyPlanCount } =
-    useGetPlantationMonthlyPlanRequestsPendingCountQuery(undefined, {
-      pollingInterval: 120000,
-      skip: !userId,
-    });
-  const plantationMonthlyPlanCount = Number(plantationMonthlyPlanPayload?.data?.count ?? 0);
-
   // Refresh all counts handler
   const handleRefreshAll = async () => {
     setIsRefreshing(true);
@@ -404,7 +397,6 @@ const WorkflowDashboard = () => {
         refetchDjiImages(),
         refetchPlantationPlanRequestCount(),
         refetchPlantationPlanRescheduleCount(),
-        refetchPlantationMonthlyPlanCount(),
         ...(hasPilotAssignmentResourceFeature ? [refetchResourceAssignment()] : []),
       ]);
     } catch (error) {
@@ -426,8 +418,7 @@ const WorkflowDashboard = () => {
           refetchDayEndProcess(),
           refetchDjiImages(),
           refetchPlantationPlanRequestCount(),
-        refetchPlantationPlanRescheduleCount(),
-        refetchPlantationMonthlyPlanCount(),
+          refetchPlantationPlanRescheduleCount(),
           ...(hasPilotAssignmentResourceFeature ? [refetchResourceAssignment()] : []),
         ]);
       } catch (error) {
@@ -445,7 +436,6 @@ const WorkflowDashboard = () => {
   // Extract counts with fallback to 0
   const adhocCount = plantationPlanRequestCount;
   const rescheduleCount = plantationPlanRescheduleCount;
-  const monthlyCount = plantationMonthlyPlanCount;
   const managerApprovalCount = counts?.managerApproval || 0;
   const opsAssignCount = counts?.opsAssignPending || 0;
 
@@ -700,18 +690,6 @@ const WorkflowDashboard = () => {
                   <span className="wf-nested-queue-label-workflowDashboard">Reschedule requests</span>
                   <span className="wf-nested-queue-meta-workflowDashboard">
                     <span className="wf-count-pill-workflowDashboard">{rescheduleCount}</span>
-                    <FaChevronRight className="wf-chevron-workflowDashboard" aria-hidden />
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  className="wf-nested-queue-row-workflowDashboard"
-                  onClick={() => go('/home/requestsQueue')}
-                  aria-label={`Monthly plans, ${monthlyCount} pending`}
-                >
-                  <span className="wf-nested-queue-label-workflowDashboard">Monthly plans</span>
-                  <span className="wf-nested-queue-meta-workflowDashboard">
-                    <span className="wf-count-pill-workflowDashboard">{monthlyCount}</span>
                     <FaChevronRight className="wf-chevron-workflowDashboard" aria-hidden />
                   </span>
                 </button>

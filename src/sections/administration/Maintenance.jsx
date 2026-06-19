@@ -1,10 +1,10 @@
-import React, { useState, useMemo } from 'react';
-import { FaFilter, FaTimes, FaEye, FaEdit, FaCheck, FaTimesCircle, FaExclamationTriangle, FaBan } from 'react-icons/fa';
+import React, { useState, useMemo, useEffect } from 'react';
+import { FaFilter, FaTimes, FaEye, FaEdit, FaCheck, FaExclamationTriangle, FaBan, FaPlus } from 'react-icons/fa';
 import {
   useGetMaintenanceQuery,
-  useGetMaintenanceByIdQuery,
   useUpdateMaintenanceStatusMutation,
   useGetTechniciansQuery,
+  useCreateMaintenanceMutation,
 } from '../../api/services NodeJs/maintenanceApi';
 import '../../styles/maintenance.css';
 
@@ -20,7 +20,21 @@ const Maintenance = () => {
   const [selectedMaintenance, setSelectedMaintenance] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
   const [statusForm, setStatusForm] = useState({ status: '', status_reason: '', completed_date: '' });
+  const [addForm, setAddForm] = useState({
+    device_serial: '',
+    technician_id: '',
+    description: '',
+    scheduled_date: '',
+  });
+  const [message, setMessage] = useState('');
+  const [messageType, setMessageType] = useState('');
+
+  const getCurrentUserId = () => {
+    const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+    return userData?.id || null;
+  };
 
   // Clean filters
   const cleanFilters = useMemo(() => {
@@ -37,6 +51,17 @@ const Maintenance = () => {
   const { data: maintenanceData, isLoading, error, refetch } = useGetMaintenanceQuery(cleanFilters);
   const { data: techniciansData } = useGetTechniciansQuery();
   const [updateStatus] = useUpdateMaintenanceStatusMutation();
+  const [createMaintenance, { isLoading: isCreating }] = useCreateMaintenanceMutation();
+
+  useEffect(() => {
+    if (message && messageType === 'success') {
+      const timer = setTimeout(() => {
+        setMessage('');
+        setMessageType('');
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [message, messageType]);
 
   const maintenance = Array.isArray(maintenanceData) ? maintenanceData : (maintenanceData ? [maintenanceData] : []);
   const technicians = Array.isArray(techniciansData) ? techniciansData : (techniciansData ? [techniciansData] : []);
@@ -102,8 +127,64 @@ const Maintenance = () => {
       }).unwrap();
       handleCloseStatusModal();
       refetch();
-    } catch (error) {
-      alert('Failed to update status: ' + (error.message || 'Unknown error'));
+      setMessage('Maintenance status updated.');
+      setMessageType('success');
+    } catch (err) {
+      setMessage(err?.data?.message || err?.message || 'Could not update status.');
+      setMessageType('warning');
+    }
+  };
+
+  const handleOpenAddModal = () => {
+    setAddForm({
+      device_serial: '',
+      technician_id: '',
+      description: '',
+      scheduled_date: '',
+    });
+    setShowAddModal(true);
+  };
+
+  const handleCloseAddModal = () => {
+    setShowAddModal(false);
+    setAddForm({
+      device_serial: '',
+      technician_id: '',
+      description: '',
+      scheduled_date: '',
+    });
+  };
+
+  const handleAddSubmit = async (e) => {
+    e.preventDefault();
+    const userId = getCurrentUserId();
+    if (!userId) {
+      setMessage('Please sign in again to continue.');
+      setMessageType('warning');
+      return;
+    }
+    if (!addForm.device_serial.trim() || !addForm.description.trim()) {
+      setMessage('Device serial and description are required.');
+      setMessageType('warning');
+      return;
+    }
+
+    try {
+      await createMaintenance({
+        created_by: userId,
+        device_serial: addForm.device_serial.trim(),
+        technician_id: addForm.technician_id ? parseInt(addForm.technician_id, 10) : null,
+        description: addForm.description.trim(),
+        scheduled_date: addForm.scheduled_date || null,
+        status: 'p',
+      }).unwrap();
+      handleCloseAddModal();
+      refetch();
+      setMessage('Maintenance record created.');
+      setMessageType('success');
+    } catch (err) {
+      setMessage(err?.data?.message || err?.message || 'Could not create maintenance record.');
+      setMessageType('warning');
     }
   };
 
@@ -151,13 +232,28 @@ const Maintenance = () => {
     <div className="maintenance-container-maintenance">
       <div className="maintenance-header-maintenance">
         <h1>Maintenance Management</h1>
-        <button
-          onClick={() => setShowFilters(!showFilters)}
-          className="maintenance-filter-button-maintenance"
-        >
-          <FaFilter /> {showFilters ? 'Hide' : 'Show'} Filters
-        </button>
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <button
+            type="button"
+            onClick={handleOpenAddModal}
+            className="maintenance-button-primary-maintenance"
+          >
+            <FaPlus /> Add Maintenance
+          </button>
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="maintenance-filter-button-maintenance"
+          >
+            <FaFilter /> {showFilters ? 'Hide' : 'Show'} Filters
+          </button>
+        </div>
       </div>
+
+      {message && (
+        <div className={`maintenance-feedback-maintenance ${messageType}`}>
+          {message}
+        </div>
+      )}
 
       {/* Filters */}
       {showFilters && (
@@ -270,7 +366,7 @@ const Maintenance = () => {
             ) : error ? (
               <tr>
                 <td colSpan="11" className="maintenance-error-cell-maintenance">
-                  <strong>Error loading records:</strong> {error.message || 'Unknown error'}
+                  <strong>Unable to load records.</strong> Refresh the page and try again.
                 </td>
               </tr>
             ) : Array.isArray(filteredMaintenance) && filteredMaintenance.length > 0 ? (
@@ -411,6 +507,74 @@ const Maintenance = () => {
                 </button>
                 <button type="submit" className="maintenance-button-primary-maintenance">
                   Update Status
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Add Maintenance Modal */}
+      {showAddModal && (
+        <div className="maintenance-modal-overlay-maintenance">
+          <div className="maintenance-modal-content-maintenance">
+            <div className="maintenance-modal-header-maintenance">
+              <h2>Add Maintenance Record</h2>
+              <button onClick={handleCloseAddModal} className="maintenance-modal-close-maintenance">
+                <FaTimes />
+              </button>
+            </div>
+            <form onSubmit={handleAddSubmit} className="maintenance-status-form-maintenance">
+              <div className="maintenance-form-group-maintenance">
+                <label>Drone Device Serial *</label>
+                <input
+                  type="text"
+                  value={addForm.device_serial}
+                  onChange={(e) => setAddForm((prev) => ({ ...prev, device_serial: e.target.value }))}
+                  required
+                  className="maintenance-form-input-maintenance"
+                  placeholder="Enter drone serial number"
+                />
+              </div>
+              <div className="maintenance-form-group-maintenance">
+                <label>Technician</label>
+                <select
+                  value={addForm.technician_id}
+                  onChange={(e) => setAddForm((prev) => ({ ...prev, technician_id: e.target.value }))}
+                  className="maintenance-form-input-maintenance"
+                >
+                  <option value="">Assign later</option>
+                  {technicians.map((tech) => (
+                    <option key={tech.id} value={tech.id}>{tech.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="maintenance-form-group-maintenance">
+                <label>Description *</label>
+                <textarea
+                  value={addForm.description}
+                  onChange={(e) => setAddForm((prev) => ({ ...prev, description: e.target.value }))}
+                  required
+                  className="maintenance-form-textarea-maintenance"
+                  rows="4"
+                  placeholder="Describe the maintenance work required"
+                />
+              </div>
+              <div className="maintenance-form-group-maintenance">
+                <label>Scheduled Date</label>
+                <input
+                  type="date"
+                  value={addForm.scheduled_date}
+                  onChange={(e) => setAddForm((prev) => ({ ...prev, scheduled_date: e.target.value }))}
+                  className="maintenance-form-input-maintenance"
+                />
+              </div>
+              <div className="maintenance-form-actions-maintenance">
+                <button type="button" onClick={handleCloseAddModal} className="maintenance-button-secondary-maintenance">
+                  Cancel
+                </button>
+                <button type="submit" disabled={isCreating} className="maintenance-button-primary-maintenance">
+                  {isCreating ? 'Saving...' : 'Create'}
                 </button>
               </div>
             </form>

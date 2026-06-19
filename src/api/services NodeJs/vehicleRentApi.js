@@ -131,6 +131,34 @@ export const vehicleRentApi = baseApi.injectEndpoints({
       invalidatesTags: ['VehicleRent'],
     }),
 
+    rejectVehicleDayRecord: builder.mutation({
+      queryFn: async ({ id, rejection_type, reason, rejectedBy }) => {
+        try {
+          const result = await nodeBackendBaseQuery(
+            {
+              url: `/api/vehicle-rent/reject-day/${id}`,
+              method: 'POST',
+              body: {
+                rejection_type,
+                reason,
+                rejectedBy,
+              },
+            },
+            {},
+            {}
+          );
+          if (result.error) {
+            return { error: result.error };
+          }
+          const updated = result.data?.data || result.data || null;
+          return { data: updated };
+        } catch (error) {
+          return { error: { status: 'FETCH_ERROR', error: error.message } };
+        }
+      },
+      invalidatesTags: ['VehicleRent'],
+    }),
+
     // Approve or decline a vehicle date
     approveVehicleDate: builder.mutation({
       queryFn: async ({ id, status, approvedBy, bill_note }) => {
@@ -446,6 +474,7 @@ export const {
   useLazyGetVehicleRentDailyDetailsQuery,
   useGetDailyVerificationQueueQuery,
   useVerifyVehicleDayRecordMutation,
+  useRejectVehicleDayRecordMutation,
   useApproveVehicleDateMutation,
   useGetApprovedForFinanceQuery,
   useUpdateFinanceStatusMutation,
