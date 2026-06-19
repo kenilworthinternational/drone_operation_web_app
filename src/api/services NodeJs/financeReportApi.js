@@ -63,6 +63,21 @@ export const financeReportApi = baseApi.injectEndpoints({
         return { data: result.data?.data || { lines: [], total: 0 } };
       },
     }),
+    updatePlanFieldBill: builder.mutation({
+      queryFn: async ({ plan_id, field_id, bill }) => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: '/api/finance-report/plan-field-bill',
+            method: 'POST',
+            body: { plan_id, field_id, bill: bill ? 1 : 0 },
+          },
+          {},
+          {}
+        );
+        if (result.error) return result;
+        return { data: result.data?.data || result.data };
+      },
+    }),
   }),
 });
 
@@ -71,5 +86,6 @@ export const {
   useLazyGetManagementPlanExecutionReportQuery,
   useLazyGetDeactivatedPlansReportQuery,
   useLazyGetManagerApprovedCanceledReportQuery,
+  useUpdatePlanFieldBillMutation,
 } = financeReportApi;
 

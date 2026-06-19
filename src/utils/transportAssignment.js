@@ -1,3 +1,5 @@
+import { formatVehicleOwnershipFromRecord } from './vehicleOwnership';
+
 /** Sri Lanka calendar date YYYY-MM-DD for transport eligibility (today / tomorrow only). */
 export function getColomboYmd(date = new Date()) {
   return date.toLocaleDateString('en-CA', { timeZone: 'Asia/Colombo' });
@@ -29,5 +31,8 @@ export function formatDriverArrivalTimeForInput(value) {
 export function buildVehicleDisplayFromDriver(driver) {
   if (!driver) return '';
   const parts = [driver.vehicle_no, driver.vehicle_make, driver.vehicle_model].filter(Boolean);
-  return parts.length ? parts.join(' · ') : '';
+  const vehicleText = parts.length ? parts.join(' · ') : '';
+  const ownershipLabel = formatVehicleOwnershipFromRecord(driver);
+  if (!vehicleText) return ownershipLabel;
+  return `${vehicleText} · ${ownershipLabel}`;
 }

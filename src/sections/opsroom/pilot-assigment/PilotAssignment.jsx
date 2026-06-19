@@ -14,7 +14,7 @@ import {
   useGetAllTeamsQuery,
 } from '../../../api/services NodeJs/allEndpoints';
 import TransportAssignmentFields from './TransportAssignmentFields';
-import { formatDriverArrivalTimeForInput } from './transportAssignmentUtils';
+import { formatDriverArrivalTimeForInput } from '../../../utils/transportAssignment';
 import { useGetMyPermissionsQuery } from '../../../api/services NodeJs/featurePermissionsApi';
 import { FEATURE_CODES } from '../../../utils/featurePermissions';
 import { isInternalDeveloper } from '../../../utils/authUtils';
@@ -139,6 +139,7 @@ const PilotAssignment = () => {
       assignment_id: assignmentId || null,
       yearMonth: selectedDate ? selectedDate.slice(0, 7) : undefined,
       plan_ids: validPlanIdsForDeploy,
+      pool_vehicles_only: true,
     },
     {
       skip: !requiresTransportOnDeploy || !selectedDate,
@@ -490,6 +491,7 @@ const PilotAssignment = () => {
           driver_id: Number(transportForm.driver_id),
           vehicle_id: Number(transportForm.vehicle_id),
           driver_arrival_time: transportForm.driver_arrival_time,
+          pool_vehicles_only: true,
         }).unwrap();
         toast.success(`Assignment ${savedAssignmentId} saved with driver and vehicle.`);
       } else {
@@ -838,6 +840,7 @@ const PilotAssignment = () => {
                   transportOptions={transportOptions}
                   form={transportForm}
                   onFieldChange={updateTransportField}
+                  poolVehiclesOnly
                 />
               )}
             </div>

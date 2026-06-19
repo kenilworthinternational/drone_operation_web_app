@@ -90,10 +90,11 @@ export const baseApi = createApi({
     // Others
     'Calendar', 'Reasons', 'ASC', 'Chemicals', 'TimeOfDays', 'HrMasterOptions',
     // HR Leave and Attendance
-    'HrLeave', 'HrAttendance', 'HrRoster',
+    'HrLeave', 'HrLeaveAdmin', 'HrAttendance', 'HrRoster',
     // Financial cards / fuel approvals
     'FinancialCards', 'FinancialCardTransactions', 'Transactions', 'FuelApprovals', 'FuelTransportVouchers',
-    'GeneratorFuelApprovals', 'FuelGeneratorVouchers', 'FinanceMasterData', 'StrategicFinanceApprovals'
+    'GeneratorFuelApprovals', 'FuelGeneratorVouchers', 'FinanceMasterData', 'StrategicFinanceApprovals',
+    'VehicleApp', 'PoolVehicleTasks',
   ],
   endpoints: () => ({}),
 });

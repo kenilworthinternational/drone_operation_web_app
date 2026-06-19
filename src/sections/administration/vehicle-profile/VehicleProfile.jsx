@@ -3,6 +3,7 @@ import {
   useGetVehicleProfileQuery,
   useUpdateVehicleMutation,
 } from '../../../api/services/assetsApi';
+import { formatVehiclePoolCategory } from '../../../utils/vehiclePoolCategory';
 import '../../../styles/vehicleProfile.css';
 
 const TABS = [
@@ -237,6 +238,7 @@ export default function VehicleProfile({ vehicleId, onBack, onEditVehicle }) {
   const overviewFields = [
     { label: 'Vehicle number', value: vehicle.vehicle_no },
     { label: 'Ownership', value: vehicle.ownership_label || vehicle.ownership },
+    { label: 'Vehicle category', value: formatVehiclePoolCategory(vehicle.vehicle_pool_category) },
     { label: 'Chassis no', value: vehicle.chassis_no },
     { label: 'Engine no', value: vehicle.engine_no },
     { label: 'Make / model', value: [vehicle.make, vehicle.model].filter(Boolean).join(' ') || '-' },
@@ -244,7 +246,7 @@ export default function VehicleProfile({ vehicleId, onBack, onEditVehicle }) {
     { label: 'Driver', value: vehicle.driver_name || '-' },
     { label: 'Initial mileage', value: formatMeter(vehicle.initial_mileage) },
     { label: 'Operational status', value: vehicle.operational_status === 'y' ? 'Active' : 'Inactive' },
-    { label: 'Vehicle category', value: vehicle.vehicle_category_name || '-' },
+    { label: 'Vehicle type', value: vehicle.vehicle_category_name || '-' },
     { label: 'Fuel category', value: vehicle.fuel_category_name || '-' },
     { label: 'Tank capacity (L)', value: vehicle.tank_capacity_ltr ?? '-' },
     { label: 'Avg fuel consumption', value: vehicle.avg_fuel_consumption ?? '-' },

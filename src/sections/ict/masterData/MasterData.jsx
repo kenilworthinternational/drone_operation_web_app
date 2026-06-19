@@ -11,6 +11,10 @@ import {
   useDecideVehicleAppMaintenanceRequestMutation,
 } from '../../../api/services NodeJs/vehicleAppApi';
 import {
+  useGetPoolRequestCategoriesQuery,
+  useSavePoolRequestCategoryMutation,
+} from '../../../api/services NodeJs/poolVehicleTaskApi';
+import {
   useGetFuelCategoriesQuery,
   useSaveFuelCategoryMutation,
   useGetWingsQuery as useGetLegacyWingsQuery,
@@ -85,6 +89,8 @@ const MasterData = ({ mode = 'full' }) => {
   const { data: drivers = [] } = useGetVehicleAppDriversQuery();
   const { data: vehicleCategories = [] } = useGetVehicleAppVehicleCategoriesQuery();
   const { data: maintenanceCategories = [], refetch: refetchMaintenanceCategories } = useGetVehicleAppMaintenanceCategoriesQuery();
+  const { data: poolRequestCategories = [], refetch: refetchPoolRequestCategories } = useGetPoolRequestCategoriesQuery(false);
+  const [savePoolRequestCategory] = useSavePoolRequestCategoryMutation();
   const { data: maintenanceRequests = [] } = useGetVehicleAppMaintenanceRequestsQuery(yearMonth);
   const { data: fuelCategories = [], refetch: refetchFuelCategories } = useGetFuelCategoriesQuery();
   const { data: wingsData, refetch: refetchWings } = useGetWingsQuery();
@@ -591,6 +597,7 @@ const MasterData = ({ mode = 'full' }) => {
       });
     }
     if (type === 'maintenanceCategory') setModalDraft({ category: item.category || '' });
+    if (type === 'poolRequestCategory') setModalDraft({ category: item.category || '' });
     if (type === 'fuel') setModalDraft({ category: item.category || '', unit_price: item.unit_price != null ? String(item.unit_price) : '' });
     if (type === 'financeCategory') {
       setModalDraft({ category_name: item.category_name || '' });
@@ -779,6 +786,13 @@ const MasterData = ({ mode = 'full' }) => {
         await refreshVehicleMasters();
       } else if (editModal.type === 'maintenanceCategory') {
         await saveMaintenanceCategory({ id: editModal.item.id, category: modalDraft.category, activated: editModal.item.activated ?? 1 }).unwrap();
+      } else if (editModal.type === 'poolRequestCategory') {
+        await savePoolRequestCategory({
+          id: editModal.item.id || undefined,
+          category: modalDraft.category,
+          activated: editModal.item.activated ?? 1,
+        }).unwrap();
+        await refetchPoolRequestCategories();
       } else if (editModal.type === 'fuel') {
         await saveFuelCategory({
           id: editModal.item.id,
@@ -983,6 +997,7 @@ const MasterData = ({ mode = 'full' }) => {
               { key: 'wings', label: 'Wings' },
               { key: 'workLocations', label: 'Work Locations' },
               { key: 'maintenanceCategories', label: 'Maintenance Categories' },
+              { key: 'poolRequestCategories', label: 'Pool Vehicle Request Categories' },
               { key: 'chemicals', label: 'Chemicals' },
               { key: 'workingTimes', label: 'Working Times' },
               { key: 'hrMasterOptions', label: 'HR Master Options' },
@@ -1234,6 +1249,36 @@ const MasterData = ({ mode = 'full' }) => {
                       <span className="master-label-master-data">{c.category}</span>
                       <div className="master-actions-master-data">
                         <button className="action-btn-master-data neutral-master-data" onClick={() => openEditModal('maintenanceCategory', c)}>Edit</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {selectedMasterModule === 'poolRequestCategories' && (
+              <div className="vehicle-admin-card-master-data">
+                <div className="master-data-chemicals-head-master-data">
+                  <div className="master-data-chemicals-head-text-master-data">
+                    <h3>Pool Vehicle Request Categories</h3>
+                    <p className="vehicle-master-note-master-data">
+                      Used when office staff request additional pool vehicle tasks (Transport HR → Additional).
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-submit-master-data master-data-chemicals-add-btn-master-data"
+                    onClick={() => openEditModal('poolRequestCategory', { id: null, category: '', activated: 1 })}
+                  >
+                    Add category
+                  </button>
+                </div>
+                <div className="master-list-master-data" style={{ marginTop: 12 }}>
+                  {poolRequestCategories.map((c) => (
+                    <div key={c.id} className="master-row-master-data">
+                      <span className="master-label-master-data">{c.category}</span>
+                      <div className="master-actions-master-data">
+                        <button className="action-btn-master-data neutral-master-data" onClick={() => openEditModal('poolRequestCategory', c)}>Edit</button>
                       </div>
                     </div>
                   ))}
@@ -1931,6 +1976,14 @@ const MasterData = ({ mode = 'full' }) => {
                 value={modalDraft.category || ''}
                 onChange={(e) => setModalDraft((p) => ({ ...p, category: e.target.value }))}
                 placeholder="Category"
+              />
+            )}
+            {editModal.type === 'poolRequestCategory' && (
+              <input
+                className="master-edit-input-master-data"
+                value={modalDraft.category || ''}
+                onChange={(e) => setModalDraft((p) => ({ ...p, category: e.target.value }))}
+                placeholder="Request category"
               />
             )}
             {editModal.type === 'vehicleMake' && (

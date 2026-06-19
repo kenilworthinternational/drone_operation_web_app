@@ -3,10 +3,9 @@ import PropTypes from 'prop-types';
 import { toast } from 'react-toastify';
 import '../../../styles/finance.css';
 import '../../../styles/workSummary.css';
-import { useLazyGetFieldWiseFinanceReportQuery } from '../../../api/services NodeJs/financeReportApi';
+import { useLazyGetFieldWiseFinanceReportQuery, useUpdatePlanFieldBillMutation } from '../../../api/services NodeJs/financeReportApi';
 import { useLazyGetPlantationsListQuery, useLazyGetEstatesListQuery } from '../../../api/services NodeJs/plantationDashboardApi';
 import {
-    useLazyGetWorkSummaryBillingDraftQuery,
     useSaveWorkSummaryBillingDraftMutation,
     useCreateWorkSummaryPdfDocumentMutation,
 } from '../../../api/services NodeJs/financeWorkSummaryBillingApi';
@@ -31,24 +30,23 @@ const hasFinanceExtentIssue = (row) => {
     return land < completed;
 };
 
-const rowBillingKey = (row) => `${row.planId}:${row.fieldId}`;
-
-const isBillingIncluded = (row, inclusionMap) => {
-    if (!row?.hasChargeableReason) return true;
-    return inclusionMap[rowBillingKey(row)] !== false;
+/** Bill full field Ha when all chargeable tasks have field_pilot_and_drones.bill = 1. */
+const deriveBillIncluded = (tasks) => {
+    const chargeable = (Array.isArray(tasks) ? tasks : []).filter(
+        (t) => Number(t?.com_naration_chargeble) === 1
+    );
+    if (chargeable.length === 0) return true;
+    return chargeable.every((t) => Number(t?.bill) === 1);
 };
 
-const resolveBillingExtent = (row, inclusionMap) => {
+const isBillingIncluded = (row) => row?.billIncluded !== false;
+
+const resolveBillingExtent = (row) => {
     if (row?.isManagerCanceled) return 0;
     const completed = Number(row.fieldExtent) || 0;
     if (!row.hasChargeableReason) return completed;
     const fullField = Number(row.landExtent) || 0;
-    return isBillingIncluded(row, inclusionMap) ? fullField : completed;
-};
-
-const rowHasReasonText = (row) => {
-    const text = String(row?.comNarration || '').trim();
-    return text !== '' && text !== '-';
+    return isBillingIncluded(row) ? fullField : completed;
 };
 
 const MANAGER_CANCEL_EMPTY = '—';
@@ -118,7 +116,6 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
     const [showInvoiceModal, setShowInvoiceModal] = useState(false);
     const [invoiceWorkSummaryRows, setInvoiceWorkSummaryRows] = useState([]);
     const [localPreviewInvoice, setLocalPreviewInvoice] = useState(null);
-    const [billingInclusion, setBillingInclusion] = useState({});
     const saveDraftTimerRef = useRef(null);
     const monthInputRef = useRef(null);
 
@@ -136,9 +133,9 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
         }
     };
 
-    const [fetchBillingDraft] = useLazyGetWorkSummaryBillingDraftQuery();
     const [saveBillingDraft] = useSaveWorkSummaryBillingDraftMutation();
     const [createPdfDocument] = useCreateWorkSummaryPdfDocumentMutation();
+    const [updatePlanFieldBill] = useUpdatePlanFieldBillMutation();
 
     const showInvoicePreview = (inv) => {
         if (onInvoicePreview) {
@@ -159,12 +156,10 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
         };
     }, [selectedPlantation, selectedMonth, selectedEstates, selectedMissionType, periodStart, periodEnd]);
 
-    const buildDraftLines = useCallback((rows, inclusionMap) => {
+    const buildDraftLines = useCallback((rows) => {
         return (rows || [])
             .filter((r) => r.hasChargeableReason && !r.isManagerCanceled)
-            .map((r) => {
-                const key = rowBillingKey(r);
-                return {
+            .map((r) => ({
                     plan_id: r.planId,
                     field_id: r.fieldId,
                     estate_id: r.estateId,
@@ -178,72 +173,80 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
                     billing_ha_default: r.landExtent,
                     reason_text: r.comNarration,
                     has_chargeable_reason: 1,
-                    is_included: inclusionMap[key] !== false,
-                };
-            });
+                    is_included: r.billIncluded ? 1 : 0,
+                }));
     }, []);
 
-    const persistBillingDraft = useCallback(async (inclusionMap) => {
+    const persistBillingDraft = useCallback(async (rows = reportData) => {
         const ctx = getBillingContext();
-        if (!ctx || !reportData.length) return;
+        if (!ctx || !rows.length) return;
         try {
             await saveBillingDraft({
                 ...ctx,
-                lines: buildDraftLines(reportData, inclusionMap),
+                lines: buildDraftLines(rows),
             }).unwrap();
         } catch (e) {
             console.error('Failed to save billing draft', e);
         }
     }, [getBillingContext, reportData, buildDraftLines, saveBillingDraft]);
 
-    const schedulePersistBillingDraft = useCallback((inclusionMap) => {
+    const schedulePersistBillingDraft = useCallback((rows) => {
         if (saveDraftTimerRef.current) clearTimeout(saveDraftTimerRef.current);
         saveDraftTimerRef.current = setTimeout(() => {
-            persistBillingDraft(inclusionMap);
+            persistBillingDraft(rows);
         }, 400);
     }, [persistBillingDraft]);
 
     const getFilteredRows = () => {
         const rows = Array.isArray(reportData) ? reportData : [];
         return rows
-            .filter(row => {
+            .filter((row) => {
                 const missionMatch = selectedMissionType === 'all' || row.missionType === selectedMissionType;
-                const shouldShowByExtent =
-                    row.isManagerCanceled ||
-                    row.hasFieldManagerCancel ||
-                    row.fieldExtent > 0 ||
-                    row.hasChargeableReason ||
-                    rowHasReasonText(row);
-                return missionMatch && shouldShowByExtent;
+                const isActivePlan = Number(row.planActivated ?? 1) === 1;
+                return missionMatch && isActivePlan;
             })
             .map((row) => ({
                 ...row,
-                billingExtent: resolveBillingExtent(row, billingInclusion),
-                billingIncluded: isBillingIncluded(row, billingInclusion),
+                billingExtent: resolveBillingExtent(row),
+                billingIncluded: isBillingIncluded(row),
             }))
             .sort((a, b) => new Date(a.date) - new Date(b.date));
     };
 
-    const toggleBillingInclusion = (row) => {
+    const toggleBillingInclusion = async (row) => {
         if (!row?.hasChargeableReason || row?.isManagerCanceled) return;
-        const key = rowBillingKey(row);
-        setBillingInclusion((prev) => {
-            const currentlyIncluded = prev[key] !== false;
-            const next = { ...prev, [key]: !currentlyIncluded };
-            schedulePersistBillingDraft(next);
-            return next;
+        const planId = Number(row.planId);
+        const fieldId = Number(row.fieldId);
+        const nextBillIncluded = !row.billingIncluded;
+        let snapshot = null;
+        setReportData((prev) => {
+            snapshot = prev;
+            return prev.map((r) =>
+                Number(r.planId) === planId && Number(r.fieldId) === fieldId
+                    ? { ...r, billIncluded: nextBillIncluded }
+                    : r
+            );
         });
+        try {
+            await updatePlanFieldBill({
+                plan_id: planId,
+                field_id: fieldId,
+                bill: nextBillIncluded ? 1 : 0,
+            }).unwrap();
+            setReportData((prev) => {
+                schedulePersistBillingDraft(prev);
+                return prev;
+            });
+        } catch (e) {
+            if (snapshot) setReportData(snapshot);
+            console.error('Failed to update bill flag', e);
+            toast.error('Could not update bill flag');
+        }
     };
 
     const openInvoiceModal = async () => {
         const rowsForInvoice = getFilteredRows();
-        const inclusionMap = {};
-        rowsForInvoice.forEach((r) => {
-            if (r.hasChargeableReason) {
-                inclusionMap[rowBillingKey(r)] = r.billingIncluded;
-            }
-        });
-        await persistBillingDraft(inclusionMap);
+        await persistBillingDraft(reportData);
         setInvoiceWorkSummaryRows(rowsForInvoice);
         setShowInvoiceModal(true);
     };
@@ -290,7 +293,6 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
     useEffect(() => {
         if (selectedPlantation && selectedEstates.length > 0) return;
         setReportData((prev) => (prev.length === 0 ? prev : []));
-        setBillingInclusion((prev) => (Object.keys(prev).length === 0 ? prev : {}));
     }, [selectedPlantation, selectedEstates.length]);
 
     useEffect(() => {
@@ -305,7 +307,6 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
         const fetchReportData = async () => {
             try {
                 setReportLoading(true);
-                setBillingInclusion((prev) => (Object.keys(prev).length === 0 ? prev : {}));
                 const startDate = start.toLocaleDateString('en-CA');
                 const endDate = end.toLocaleDateString('en-CA');
 
@@ -351,6 +352,7 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
                                 ).join(', ');
                                 const hasChargeableReason = (Array.isArray(field.task) ? field.task : [])
                                     .some((t) => Number(t?.com_naration_chargeble) === 1);
+                                const billIncluded = deriveBillIncluded(field.task);
                                 const landExtent = Number(field.field_extent) || 0;
                                 const coveredPercent = landExtent > 0
                                     ? (djiFieldArea / landExtent) * 100
@@ -382,6 +384,7 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
                                     fieldId: Number(field.field_id) || 0,
                                     estateId: Number(estate.estate_id) || 0,
                                     estateName: estate.estate_name || '',
+                                    planActivated: Number(plan.plan_activated ?? 1),
                                     date: plan.plan_date,
                                     fieldName: field.field_short_name || field.field_name || '',
                                     pilotNames: field.pilot_names?.map((p) => p.pilot_name).join(', ') || '',
@@ -392,6 +395,7 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
                                     hasChargeableReason: isFullyManagerCanceledPlan
                                         ? false
                                         : hasChargeableReason,
+                                    billIncluded,
                                     hasFieldManagerCancel,
                                     isManagerCanceled: isFullyManagerCanceledPlan,
                                     isPlanManagerCanceled,
@@ -427,26 +431,6 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- RTK lazy trigger is unstable
     }, [selectedPlantation, selectedMonth, estatesKey]);
 
-    useEffect(() => {
-        if (reportLoading || !reportData.length) return;
-
-        const loadDraft = async () => {
-            const ctx = getBillingContext();
-            if (!ctx) return;
-            try {
-                const result = await fetchBillingDraft(ctx);
-                if (result.data?.inclusions && typeof result.data.inclusions === 'object') {
-                    setBillingInclusion(result.data.inclusions);
-                }
-            } catch (e) {
-                console.error('Failed to load billing draft', e);
-            }
-        };
-
-        loadDraft();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- RTK lazy trigger is unstable
-    }, [reportTick, reportLoading, reportData.length, getBillingContext]);
-
 
     const handlePlantationSelect = (id) => {
         const nextId = Number(id) || null;
@@ -454,7 +438,6 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
         setSelectedPlantation(nextId);
         setSelectedEstates([]);
         setReportData([]);
-        setBillingInclusion({});
     };
 
     const handlePlantationDropdownChange = (e) => {
@@ -464,7 +447,6 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
             setEstates([]);
             setSelectedEstates([]);
             setReportData([]);
-            setBillingInclusion({});
             return;
         }
         handlePlantationSelect(Number(value));
@@ -495,7 +477,6 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
     const exportToExcel = () => {
         if (!Array.isArray(reportData) || reportData.length === 0) return;
 
-        // Filter out rows with fieldExtent <= 0, sort by date ascending
         const filteredData = getFilteredRows();
 
         if (filteredData.length === 0) return;
@@ -572,7 +553,7 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
         const ctx = getBillingContext();
         if (ctx) {
             try {
-                await persistBillingDraft(billingInclusion);
+                await persistBillingDraft(filteredData);
                 const docMeta = await createPdfDocument({
                     ...ctx,
                     plantation_name: plantation,
@@ -813,7 +794,6 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
                                         const next = e.target.value;
                                         if (!next) return;
                                         setSelectedMonth(next);
-                                        setBillingInclusion({});
                                     }}
                                     title="Choose month"
                                 />

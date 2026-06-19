@@ -26,6 +26,7 @@ const emptyForm = {
   is_active: 1,
   maintenance: 0,
   maintenance_message: '',
+  otp_bypass_mobile: '',
 };
 
 /** API / MySQL may send 0/1 as strings; JS treats non-empty strings as truthy — normalize for toggles and badges. */
@@ -94,6 +95,7 @@ export default function AppVersionManagement() {
       is_active: toBit(row.is_active, 1),
       maintenance: toBit(row.maintenance, 0),
       maintenance_message: row.maintenance_message || '',
+      otp_bypass_mobile: row.otp_bypass_mobile || '',
     });
     setShowModal(true);
   };
@@ -180,6 +182,7 @@ export default function AppVersionManagement() {
                 <th>Latest Version</th>
                 <th>Force Update</th>
                 <th>Maintenance</th>
+                <th>OTP Bypass</th>
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
@@ -202,6 +205,7 @@ export default function AppVersionManagement() {
                       {toBit(row.maintenance, 0) ? 'On' : 'Off'}
                     </span>
                   </td>
+                  <td className="avm-cell-id">{row.otp_bypass_mobile || '—'}</td>
                   <td>
                     <span className={`avm-badge ${toBit(row.is_active, 1) ? 'badge-active' : 'badge-inactive'}`}>
                       {toBit(row.is_active, 1) ? 'Active' : 'Inactive'}
@@ -305,6 +309,20 @@ export default function AppVersionManagement() {
                     Set a full <code>https://…</code> link here to override (e.g. App Store or a tracking URL).
                   </p>
                 </div>
+                <div className="avm-field">
+                  <label>OTP Bypass Mobile (optional)</label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={9}
+                    value={form.otp_bypass_mobile}
+                    onChange={(e) => handleChange('otp_bypass_mobile', e.target.value.replace(/\D/g, '').slice(0, 9))}
+                    placeholder="e.g. 888888888"
+                  />
+                  <p className="avm-field-hint">
+                    9-digit test mobile (no leading 0) that skips OTP for this app. Leave blank to disable bypass.
+                  </p>
+                </div>
                 <div className="avm-field avm-field-full">
                   <label>Update Message</label>
                   <textarea
@@ -369,6 +387,20 @@ export default function AppVersionManagement() {
                     placeholder="e.g. We are performing scheduled maintenance. Please try again in 30 minutes."
                     rows={2}
                   />
+                </div>
+                <div className="avm-field">
+                  <label>OTP Bypass Mobile (optional)</label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={9}
+                    value={form.otp_bypass_mobile}
+                    onChange={(e) => handleChange('otp_bypass_mobile', e.target.value.replace(/\D/g, '').slice(0, 9))}
+                    placeholder="e.g. 888888888"
+                  />
+                  <p className="avm-field-hint">
+                    9-digit test mobile (no leading 0) that skips OTP for this app. Leave blank to disable bypass.
+                  </p>
                 </div>
               </div>
               <div className="avm-form-actions">

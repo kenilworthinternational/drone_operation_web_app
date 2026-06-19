@@ -68,6 +68,46 @@ export const hrLeaveApi = baseApi.injectEndpoints({
         nodeBackendBaseQuery({ url: '/api/hr-leave/holidays/save', method: 'POST', body }, {}, {}),
       invalidatesTags: ['HrHoliday', 'HrRoster'],
     }),
+    listHrLeaveAdminTypes: builder.query({
+      queryFn: async (body = {}) =>
+        nodeBackendBaseQuery({ url: '/api/hr-leave/admin/types/list', method: 'POST', body }, {}, {}),
+      providesTags: ['HrLeaveAdmin', 'HrLeave'],
+    }),
+    saveHrLeaveAdminType: builder.mutation({
+      queryFn: async (body) =>
+        nodeBackendBaseQuery({ url: '/api/hr-leave/admin/types/save', method: 'POST', body }, {}, {}),
+      invalidatesTags: ['HrLeaveAdmin', 'HrLeave'],
+    }),
+    setHrLeaveAdminTypeStatus: builder.mutation({
+      queryFn: async (body) =>
+        nodeBackendBaseQuery({ url: '/api/hr-leave/admin/types/status', method: 'POST', body }, {}, {}),
+      invalidatesTags: ['HrLeaveAdmin', 'HrLeave'],
+    }),
+    listHrLeaveAdminPolicies: builder.query({
+      queryFn: async (body = {}) =>
+        nodeBackendBaseQuery({ url: '/api/hr-leave/admin/policies/list', method: 'POST', body }, {}, {}),
+      providesTags: ['HrLeaveAdmin'],
+    }),
+    saveHrLeaveAdminPolicy: builder.mutation({
+      queryFn: async (body) =>
+        nodeBackendBaseQuery({ url: '/api/hr-leave/admin/policies/save', method: 'POST', body }, {}, {}),
+      invalidatesTags: ['HrLeaveAdmin', 'HrLeave'],
+    }),
+    listHrLeaveAdminEntitlements: builder.query({
+      queryFn: async (body = {}) =>
+        nodeBackendBaseQuery({ url: '/api/hr-leave/admin/entitlements/list', method: 'POST', body }, {}, {}),
+      providesTags: ['HrLeaveAdmin'],
+    }),
+    saveHrLeaveAdminEntitlement: builder.mutation({
+      queryFn: async (body) =>
+        nodeBackendBaseQuery({ url: '/api/hr-leave/admin/entitlements/save', method: 'POST', body }, {}, {}),
+      invalidatesTags: ['HrLeaveAdmin', 'HrLeave'],
+    }),
+    deleteHrLeaveAdminEntitlement: builder.mutation({
+      queryFn: async (body) =>
+        nodeBackendBaseQuery({ url: '/api/hr-leave/admin/entitlements/delete', method: 'POST', body }, {}, {}),
+      invalidatesTags: ['HrLeaveAdmin', 'HrLeave'],
+    }),
   }),
 });
 
@@ -85,4 +125,12 @@ export const {
   useGetHrRosterPlanQuery,
   useGetHrHolidayCalendarQuery,
   useSaveHrHolidayMarkMutation,
+  useListHrLeaveAdminTypesQuery,
+  useSaveHrLeaveAdminTypeMutation,
+  useSetHrLeaveAdminTypeStatusMutation,
+  useListHrLeaveAdminPoliciesQuery,
+  useSaveHrLeaveAdminPolicyMutation,
+  useListHrLeaveAdminEntitlementsQuery,
+  useSaveHrLeaveAdminEntitlementMutation,
+  useDeleteHrLeaveAdminEntitlementMutation,
 } = hrLeaveApi;

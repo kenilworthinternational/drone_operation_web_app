@@ -44,7 +44,8 @@ import {
   useAssignPilotTransportDetailsMutation,
 } from '../../api/services NodeJs/pilotAssignmentApi';
 import TransportAssignmentFields from '../opsroom/pilot-assigment/TransportAssignmentFields';
-import { formatDriverArrivalTimeForInput } from '../opsroom/pilot-assigment/transportAssignmentUtils';
+import PoolVehicleTasksPanel from './PoolVehicleTasksPanel';
+import { formatDriverArrivalTimeForInput } from '../../utils/transportAssignment';
 import '../../styles/transportHrDashboard.css';
 
 function getTodayInfo() {
@@ -333,6 +334,7 @@ function TransportHrDashboard() {
       assignment_id: transportDetailAssignmentId || null,
       yearMonth: transportDetailYearMonth || undefined,
       plan_ids: [],
+      pool_vehicles_only: true,
     },
     { skip: !showTransportDetailModal || !transportDetailAssignmentId }
   );
@@ -404,9 +406,10 @@ function TransportHrDashboard() {
 
     return (vehicles || []).filter((vehicle) => {
       const isActive = Number(vehicle.activated) === 1;
+      const isPoolVehicle = String(vehicle.vehicle_pool_category ?? 'p').trim().toLowerCase() === 'p';
       const vehicleNo = String(vehicle.vehicle_no || '').trim();
       const driverName = String(vehicle.assigned_driver_name || '').trim();
-      if (!isActive || !vehicleNo || !driverName) return false;
+      if (!isActive || !isPoolVehicle || !vehicleNo || !driverName) return false;
       if (leaveVehicleSet.has(vehicleNo.toLowerCase())) return false;
       if (leaveDriverSet.has(driverName.toLowerCase())) return false;
       return true;
@@ -485,6 +488,7 @@ function TransportHrDashboard() {
         driver_id: Number(transportForm.driver_id),
         vehicle_id: Number(transportForm.vehicle_id),
         driver_arrival_time: transportForm.driver_arrival_time,
+        pool_vehicles_only: true,
       }).unwrap();
       setHrDecisionNotice({ open: true, title: 'Saved', message: 'Transport details saved successfully.', tone: 'success' });
       closeTransportDetailModal();
@@ -1022,7 +1026,14 @@ function TransportHrDashboard() {
               className={availableTodayTab === 'assignVehicle' ? 'action-btn-outline-transport-hr' : 'action-btn-secondary-transport-hr'}
               onClick={() => setAvailableTodayTab('assignVehicle')}
             >
-              Assign Vehicle
+              Operational
+            </button>
+            <button
+              type="button"
+              className={availableTodayTab === 'additional' ? 'action-btn-outline-transport-hr' : 'action-btn-secondary-transport-hr'}
+              onClick={() => setAvailableTodayTab('additional')}
+            >
+              Additional
             </button>
             <button
               type="button"
@@ -1033,8 +1044,15 @@ function TransportHrDashboard() {
             </button>
           </div>
 
+          {availableTodayTab === 'additional' ? (
+            <PoolVehicleTasksPanel />
+          ) : null}
+
           {availableTodayTab === 'assignVehicle' ? (
             <>
+              <p className="quick-add-modal-hint-transport-hr" style={{ marginBottom: 10 }}>
+                Operational assignments use pool vehicles only (vehicle category = Pool).
+              </p>
               <div className="assign-vehicle-toolbar-transport-hr">
                 <label className="assign-vehicle-date-label-transport-hr" htmlFor="assign-vehicle-date-input">
                   Assignment Date
@@ -1097,7 +1115,11 @@ function TransportHrDashboard() {
                 </table>
               )}
             </>
-          ) : (
+          ) : availableTodayTab === 'availableVehicles' ? (
+            <>
+            <p className="quick-add-modal-hint-transport-hr" style={{ marginBottom: 10 }}>
+              Available pool vehicle–driver pairs for today (assign-category vehicles are excluded).
+            </p>
             <table className="details-table-transport-hr">
               <thead>
                 <tr>
@@ -1118,12 +1140,13 @@ function TransportHrDashboard() {
                 ))}
                 {!availableVehicles.length ? (
                   <tr>
-                    <td colSpan={4}>No available vehicle-driver pairs for today.</td>
+                    <td colSpan={4}>No available pool vehicle-driver pairs for today.</td>
                   </tr>
                 ) : null}
               </tbody>
             </table>
-          )}
+            </>
+          ) : null}
 
           {showTransportDetailModal ? (
             <div className="pilot-assignment-teams-modal-overlay-pilotsassign" onClick={closeTransportDetailModal}>
@@ -1146,6 +1169,7 @@ function TransportHrDashboard() {
                     showSaveButton
                     savingTransport={savingTransport}
                     onSave={onSaveTransport}
+                    poolVehiclesOnly
                     viewOnlyHint={
                       !transportEditable
                         ? 'View only: assignment is locked (driver started day or date outside edit window).'

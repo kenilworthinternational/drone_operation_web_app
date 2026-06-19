@@ -22,6 +22,11 @@ import VehicleMasterSelectFields, {
   vehicleMasterLabelsFromIds,
 } from '../../../components/VehicleMasterSelectFields';
 import {
+  formatVehiclePoolCategory,
+  normalizeVehiclePoolCategory,
+  VEHICLE_POOL_CATEGORY_OPTIONS,
+} from '../../../utils/vehiclePoolCategory';
+import {
   fetchInsuranceTypes,
   fetchAssets as fetchAssetsThunk,
   updateAsset as updateAssetThunk,
@@ -719,6 +724,7 @@ const Vehicles = ({ embeddedInVehicleManagement = false }) => {
       serial: asset?.serial ?? '',
       type: asset?.type ?? '',
       ownership: asset?.ownership ?? '',
+      vehicle_pool_category: normalizeVehiclePoolCategory(asset?.vehicle_pool_category),
       chassis_no: asset?.chassis_no ?? '',
       engine_no: asset?.engine_no ?? '',
       vehicle_no: asset?.vehicle_no ?? '',
@@ -1057,6 +1063,7 @@ const Vehicles = ({ embeddedInVehicleManagement = false }) => {
           const vehiclePayload = {
             id: formData.id,
             ownership: formData.ownership.trim(),
+            vehicle_pool_category: formData.vehicle_pool_category || 'p',
             chassis_no: formData.chassis_no.trim(),
             engine_no: formData.engine_no.trim(),
             vehicle_no: formData.vehicle_no.trim(),
@@ -1175,6 +1182,7 @@ const Vehicles = ({ embeddedInVehicleManagement = false }) => {
       return (
         <tr>
           <th>Vehicle No</th>
+          <th>Vehicle Category</th>
           <th>Make / Model</th>
           <th>Driver</th>
           <th>Owner(rented)</th>
@@ -1249,6 +1257,7 @@ const Vehicles = ({ embeddedInVehicleManagement = false }) => {
               </span>
             ) : null}
           </td>
+          <td>{formatVehiclePoolCategory(asset?.vehicle_pool_category)}</td>
           <td>{formatMakeModel(asset?.make, asset?.model)}</td>
           <td className="vehicle-person-cell-td">
             {renderVehiclePersonCell(
@@ -1327,6 +1336,10 @@ const Vehicles = ({ embeddedInVehicleManagement = false }) => {
             {
               label: 'Vehicle No',
               value: formatVehicleNoWithOwnership(selectedAsset.vehicle_no, selectedAsset.ownership),
+            },
+            {
+              label: 'Vehicle Category',
+              value: formatVehiclePoolCategory(selectedAsset.vehicle_pool_category),
             },
             { label: 'Make / Model', value: formatMakeModel(selectedAsset.make, selectedAsset.model) },
             {
@@ -1581,6 +1594,25 @@ const Vehicles = ({ embeddedInVehicleManagement = false }) => {
                           <option value="r">Rented Vehicle</option>
                         </select>
                       </div>
+                      <div className="form-group-assets">
+                        <label htmlFor="vehicle_pool_category">Vehicle Category <span className="required-indicator-assets">*</span></label>
+                        <select
+                          id="vehicle_pool_category"
+                          name="vehicle_pool_category"
+                          value={formData.vehicle_pool_category || 'p'}
+                          onChange={handleFormChange}
+                          required
+                        >
+                          {VEHICLE_POOL_CATEGORY_OPTIONS.map((opt) => (
+                            <option key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="form-row-assets">
                       <div className="form-group-assets">
                         <label htmlFor="vehicle_no">Vehicle Number <span className="required-indicator-assets">*</span></label>
                         <input

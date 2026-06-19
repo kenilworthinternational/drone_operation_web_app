@@ -10,7 +10,7 @@ import { useGetMyPermissionsQuery } from '../../../api/services NodeJs/featurePe
 import { FEATURE_CODES } from '../../../utils/featurePermissions';
 import { isInternalDeveloper } from '../../../utils/authUtils';
 import TransportAssignmentFields from './TransportAssignmentFields';
-import { formatDriverArrivalTimeForInput } from './transportAssignmentUtils';
+import { formatDriverArrivalTimeForInput } from '../../../utils/transportAssignment';
 import '../../../styles/pilotAssignment-pilotsassign.css';
 
 /**
@@ -64,6 +64,7 @@ const TransportArrangePage = () => {
       assignment_id: transportDetailAssignmentId || null,
       yearMonth: transportDetailYearMonth || undefined,
       plan_ids: [],
+      pool_vehicles_only: true,
     },
     { skip: !showDetailModal || !transportDetailAssignmentId || !hasArrangeTransportFeature }
   );
@@ -155,6 +156,7 @@ const TransportArrangePage = () => {
         driver_id: Number(transportForm.driver_id),
         vehicle_id: Number(transportForm.vehicle_id),
         driver_arrival_time: transportForm.driver_arrival_time,
+        pool_vehicles_only: true,
       }).unwrap();
       alert('Transport details saved successfully.');
       closeDetailModal();
@@ -294,6 +296,7 @@ const TransportArrangePage = () => {
                 showSaveButton
                 savingTransport={savingTransport}
                 onSave={onSaveTransport}
+                poolVehiclesOnly
                 viewOnlyHint={
                   !transportEditable
                     ? 'View only: this assignment cannot be edited (driver started the day in the transport app, or date is outside today/tomorrow).'

@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { Bars } from 'react-loader-spinner';
-import { buildVehicleDisplayFromDriver } from './transportAssignmentUtils';
+import { buildVehicleDisplayFromDriver } from '../../../utils/transportAssignment';
+import { formatVehicleOwnershipFromRecord } from '../../../utils/vehicleOwnership';
 
 /**
  * Shared driver / vehicle / arrival fields for resource assignment and arrange-transport modal.
@@ -21,6 +22,7 @@ export default function TransportAssignmentFields({
   saveLabel = 'Save Driver & Vehicle',
   showEstimateButton = false,
   viewOnlyHint = null,
+  poolVehiclesOnly = false,
 }) {
   const transportDrivers = transportOptions?.drivers || [];
   const transportEstates = transportOptions?.estates || [];
@@ -60,11 +62,17 @@ export default function TransportAssignmentFields({
           {viewOnlyHint}
         </div>
       ) : null}
+      {poolVehiclesOnly && editable ? (
+        <div className="pilot-assignment-transport-hint-pilotsassign" style={{ marginBottom: '12px' }}>
+          Only pool vehicles are listed. Ownership label (KWIL / Rented) is shown for each option.
+        </div>
+      ) : null}
       <div className="pilot-assignment-transport-grid-pilotsassign">
         {!transportDrivers.length ? (
           <div className="pilot-assignment-transport-hint-pilotsassign" style={{ gridColumn: '1 / -1' }}>
-            No drivers with a linked vehicle are available. Link each driver to a vehicle in fleet / transport
-            settings first.
+            {poolVehiclesOnly
+              ? 'No drivers with a linked pool vehicle are available. Link each driver to a pool vehicle in fleet settings first.'
+              : 'No drivers with a linked vehicle are available. Link each driver to a vehicle in fleet / transport settings first.'}
           </div>
         ) : null}
         <div className="pilot-assignment-transport-field-pilotsassign">
@@ -78,7 +86,8 @@ export default function TransportAssignmentFields({
             <option value="">-- Select Driver --</option>
             {transportDrivers.map((driver) => (
               <option key={driver.id} value={driver.id}>
-                {driver.driver_name} ({Number(driver.month_km || 0).toFixed(1)} km)
+                {driver.driver_name} ({Number(driver.month_km || 0).toFixed(1)} km) ·{' '}
+                {formatVehicleOwnershipFromRecord(driver)}
               </option>
             ))}
           </select>

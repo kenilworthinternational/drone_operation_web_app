@@ -51,6 +51,7 @@ const CATEGORY_ICONS = {
   'financial-cards': { icon: FaCreditCard, color: 'blue-logs-report' },
   'finance-approvals': { icon: FaFileInvoiceDollar, color: 'green-logs-report' },
   'field-size-adjustments': { icon: FaRuler, color: 'teal-logs-report' },
+  'work-summary-bill': { icon: FaMoneyBillWave, color: 'green-logs-report' },
   'general': { icon: FaCog, color: 'indigo-logs-report' },
 };
 
@@ -60,7 +61,7 @@ function getActionBadgeClass(action) {
   if (a.includes('CREATE') || a.includes('CREATED') || a.includes('UPLOADED')) return 'action-create-logs-report';
   if (a.includes('UPDATE') || a.includes('UPDATED') || a.includes('LINKED')) return 'action-update-logs-report';
   if (a.includes('DELETE') || a.includes('DELETED') || a.includes('REJECTED')) return 'action-delete-logs-report';
-  if (a.includes('TOGGLE') || a.includes('LOCKED') || a.includes('UNLOCKED') || a.includes('APPROVED')) return 'action-toggle-logs-report';
+  if (a.includes('TOGGLE') || a.includes('LOCKED') || a.includes('UNLOCKED') || a.includes('APPROVED') || a.includes('BILL_')) return 'action-toggle-logs-report';
   return 'action-default-logs-report';
 }
 

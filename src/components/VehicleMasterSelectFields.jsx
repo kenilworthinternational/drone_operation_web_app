@@ -202,7 +202,7 @@ export default function VehicleMasterSelectFields({
       <div className={`form-row-vehicle-master form-row-vehicle-master--${prefix}`}>
         <div className={`form-group-vehicle-master form-group-${prefix}`}>
           <label htmlFor="vehicle_category">
-            Vehicle Category{required ? <span className={requiredMarkClass}> *</span> : null}
+            Vehicle Type{required ? <span className={requiredMarkClass}> *</span> : null}
           </label>
           <div className="input-with-add-vehicle-master">
             <select
@@ -212,7 +212,7 @@ export default function VehicleMasterSelectFields({
               onChange={(e) => patch({ vehicle_category: e.target.value, make: '', model: '' })}
               disabled={categoriesLoading}
             >
-              <option value="">{categoriesLoading ? 'Loading...' : 'Select vehicle category'}</option>
+              <option value="">{categoriesLoading ? 'Loading...' : 'Select vehicle type'}</option>
               {vehicleCategories.map((category) => (
                 <option key={category.id} value={String(category.id)}>
                   {category.category}
@@ -244,7 +244,7 @@ export default function VehicleMasterSelectFields({
             >
               <option value="">
                 {!categoryId
-                  ? 'Select vehicle category first'
+                  ? 'Select vehicle type first'
                   : makesLoading
                     ? 'Loading makes...'
                     : 'Select make'}

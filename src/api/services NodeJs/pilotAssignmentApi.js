@@ -284,12 +284,12 @@ export const pilotAssignmentApi = baseApi.injectEndpoints({
     }),
 
     getPilotTransportOptions: builder.query({
-      queryFn: async ({ assignment_id, yearMonth, plan_ids = [] }) => {
+      queryFn: async ({ assignment_id, yearMonth, plan_ids = [], pool_vehicles_only = false }) => {
         const result = await nodeBackendBaseQuery(
           {
             url: '/api/pilot-assignment/transport/options',
             method: 'POST',
-            body: { assignment_id, yearMonth, plan_ids },
+            body: { assignment_id, yearMonth, plan_ids, pool_vehicles_only: Boolean(pool_vehicles_only) },
           },
           {},
           {}

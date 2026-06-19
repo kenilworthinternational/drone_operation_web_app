@@ -1210,3 +1210,315 @@
     height: 96vh;
   }
 }
+
+.pool-tasks-panel-transport-hr {
+  margin-top: 8px;
+}
+
+.pool-tasks-toolbar-transport-hr {
+  margin-bottom: 12px;
+}
+
+.pool-tasks-message-transport-hr {
+  margin: 0 0 10px;
+  color: #0f766e;
+  font-size: 13px;
+}
+
+.pool-request-form-transport-hr {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.pool-request-form-transport-hr h4 {
+  margin: 0 0 12px;
+  font-size: 15px;
+}
+
+.pool-request-grid-transport-hr {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 14px;
+  margin-bottom: 12px;
+}
+
+.pool-request-grid-transport-hr > label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: #475569;
+}
+
+.pool-request-grid-transport-hr > label.pool-passenger-field-transport-hr {
+  gap: 6px;
+}
+
+.pool-request-grid-transport-hr > label.pool-request-category-field-transport-hr {
+  min-width: 0;
+}
+
+.pool-request-category-dept-row-transport-hr {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px 16px;
+}
+
+.pool-request-category-dept-row-transport-hr > label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: #475569;
+  min-width: 0;
+}
+
+.pool-request-grid-transport-hr input,
+.pool-request-grid-transport-hr select,
+.pool-request-grid-transport-hr textarea {
+  font-size: 13px;
+  padding: 6px 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.pool-request-grid-transport-hr select {
+  padding-right: 2rem;
+}
+
+.pool-request-grid-transport-hr > label.pool-datetime-label-transport-hr {
+  cursor: pointer;
+}
+
+.pool-request-grid-transport-hr input.pool-datetime-input-transport-hr {
+  position: relative;
+  width: 100%;
+  min-height: 34px;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.pool-request-grid-transport-hr input.pool-datetime-input-transport-hr::-webkit-calendar-picker-indicator {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+  opacity: 0;
+}
+
+.pool-request-span2-transport-hr {
+  grid-column: span 2;
+}
+
+.pool-passenger-picker-transport-hr {
+  max-height: 240px;
+  overflow-y: auto;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 10px;
+  background: #f8fafc;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px 8px;
+  align-content: start;
+  width: 100%;
+}
+
+.pool-passenger-search-transport-hr {
+  grid-column: 1 / -1;
+  width: 100%;
+  font-size: 13px;
+  padding: 7px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #fff;
+  margin-bottom: 4px;
+}
+
+.pool-passenger-option-transport-hr {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  width: 100%;
+  min-height: 30px;
+  padding: 4px 4px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #0f172a;
+  cursor: pointer;
+  text-align: left;
+}
+
+.pool-passenger-option-transport-hr:hover {
+  background: #e2e8f0;
+}
+
+.pool-passenger-option-transport-hr input[type='checkbox'] {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 3px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.pool-passenger-option-transport-hr span {
+  flex: 1;
+  line-height: 1.3;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pool-passenger-option-transport-hr.pool-passenger-guest-transport-hr {
+  grid-column: 1 / -1;
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px dashed #cbd5e1;
+  font-weight: 600;
+}
+
+.pool-passenger-selected-transport-hr {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.pool-assign-modal-transport-hr {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1200;
+}
+
+.pool-assign-card-transport-hr {
+  background: #fff;
+  border-radius: 10px;
+  padding: 20px 24px;
+  width: min(560px, 96vw);
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+}
+
+.pool-assign-card-transport-hr h4 {
+  margin: 0 0 14px;
+  color: #003057;
+  font-size: 16px;
+}
+
+.pool-assign-summary-transport-hr {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.pool-assign-summary-row-transport-hr {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  font-size: 13px;
+}
+
+.pool-assign-summary-label-transport-hr {
+  color: #64748b;
+  font-weight: 600;
+}
+
+.pool-assign-summary-value-transport-hr {
+  color: #0f172a;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.pool-assign-field-transport-hr {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  color: #475569;
+  margin-bottom: 4px;
+}
+
+.pool-assign-select-transport-hr {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  font-size: 13px;
+  padding: 8px 2rem 8px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #fff;
+  color: #0f172a;
+  cursor: pointer;
+}
+
+.pool-assign-select-transport-hr:focus {
+  outline: none;
+  border-color: #0b6e9f;
+  box-shadow: 0 0 0 2px rgba(11, 110, 159, 0.15);
+}
+
+.pool-assign-hint-transport-hr {
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.pool-assign-actions-transport-hr {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.pool-request-modal-card-transport-hr {
+  background: #fff;
+  border-radius: 10px;
+  padding: 20px 24px;
+  width: min(1080px, 96vw);
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+}
+
+.pool-request-modal-card-transport-hr h4 {
+  margin: 0 0 14px;
+  color: #003057;
+}
+
+.pool-request-modal-actions-transport-hr {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #e2e8f0;
+}

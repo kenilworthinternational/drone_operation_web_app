@@ -18,6 +18,7 @@ import {
   useGetVehicleModelsQuery,
 } from '../../../api/services/assetsApi';
 import VehicleMasterSelectFields, { vehicleMasterLabelsFromIds } from '../../../components/VehicleMasterSelectFields';
+import { VEHICLE_POOL_CATEGORY_OPTIONS } from '../../../utils/vehiclePoolCategory';
 
 const parsePurchasePrice = (value) => {
   if (value === undefined || value === null) return null;
@@ -98,6 +99,7 @@ const batteryInitialState = {
 
 const vehicleInitialState = {
   ownership: '',
+  vehicle_pool_category: 'p',
   chassis_no: '',
   engine_no: '',
   vehicle_no: '',
@@ -150,6 +152,7 @@ const VEHICLE_REG_TABS = [
 const VEHICLE_REG_TAB_REQUIRED_FIELDS = {
   basics: [
     'ownership',
+    'vehicle_pool_category',
     'vehicle_no',
     'purchase_price',
     'wing_id',
@@ -751,6 +754,7 @@ const VehiclesRegistration = ({
         
         // Add all non-file fields
         formDataToSend.append('ownership', formData.ownership.trim());
+        formDataToSend.append('vehicle_pool_category', formData.vehicle_pool_category || 'p');
         formDataToSend.append('chassis_no', formData.chassis_no.trim());
         formDataToSend.append('engine_no', formData.engine_no.trim());
         formDataToSend.append('vehicle_no', formData.vehicle_no.trim());
@@ -1219,6 +1223,25 @@ const VehiclesRegistration = ({
             <option value="r">Rented Vehicle</option>
           </select>
         </div>
+        <div className="form-group-assets-reg">
+          <label htmlFor="vehicle_pool_category">Vehicle Category <span className="required-assets-reg">*</span></label>
+          <select
+            id="vehicle_pool_category"
+            name="vehicle_pool_category"
+            value={vehicleFormData.vehicle_pool_category}
+            onChange={(e) => handleInputChange(e, 'vehicles')}
+            required
+          >
+            {VEHICLE_POOL_CATEGORY_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div className="form-row-assets-reg">
         <div className="form-group-assets-reg">
           <label htmlFor="vehicle_no">Vehicle Number <span className="required-assets-reg">*</span></label>
           <input
