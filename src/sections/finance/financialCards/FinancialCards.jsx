@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FaCreditCard, FaPlus, FaEdit, FaTrash, FaArrowUp, FaArrowDown, FaHistory, FaEye, FaFileInvoice, FaPrint, FaUpload, FaCheck } from 'react-icons/fa';
 import {
   useGetUsersQuery,
@@ -53,6 +53,12 @@ const FINANCE_DECLINE_ELIGIBLE_STATUSES = ['not_create', 'declined'];
 
 const SETTLEMENT_PROOF_MAX_BYTES = 10 * 1024 * 1024;
 const SETTLEMENT_PROOF_MAX_LABEL = '10 MB';
+const FINANCIAL_CARDS_REFRESH_MS = 5 * 60 * 1000;
+
+const formatRefreshClock = (value) => {
+  if (!value) return '—';
+  return value.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+};
 
 const formatProofFileSize = (bytes) => {
   if (!bytes) return '0 B';
@@ -228,6 +234,8 @@ const FinancialCards = () => {
   const [physicalApprovalVoucher, setPhysicalApprovalVoucher] = useState(null);
   const [physicalApproverId, setPhysicalApproverId] = useState('');
   const [physicalApprovalImage, setPhysicalApprovalImage] = useState(null);
+  const [lastRefreshedAt, setLastRefreshedAt] = useState(null);
+  const [isRefreshingFinancialCards, setIsRefreshingFinancialCards] = useState(false);
   const [settlementProofPreviewUrl, setSettlementProofPreviewUrl] = useState(null);
   const [detailVoucherId, setDetailVoucherId] = useState(null);
   const { data: voucherDetailData } = useGetFuelTransportVoucherByIdQuery(detailVoucherId, {
@@ -244,6 +252,35 @@ const FinancialCards = () => {
       setDetailVoucherId(null);
     }
   }, [voucherDetailData, generatorVoucherDetailData, detailVoucherId, fuelSettlementSource]);
+
+  const refreshAllFinancialCardsData = useCallback(async ({ showSpinner = true } = {}) => {
+    if (showSpinner) setIsRefreshingFinancialCards(true);
+    try {
+      await Promise.all([
+        refetchCards(),
+        refetchSettlements(),
+        refetchVoucherHistory(),
+        refetchGeneratorVoucherHistory(),
+      ]);
+      setLastRefreshedAt(new Date());
+    } finally {
+      if (showSpinner) setIsRefreshingFinancialCards(false);
+    }
+  }, [refetchCards, refetchSettlements, refetchVoucherHistory, refetchGeneratorVoucherHistory]);
+
+  useEffect(() => {
+    if (lastRefreshedAt) return;
+    if (!cardsLoading && pendingSettlementsData != null) {
+      setLastRefreshedAt(new Date());
+    }
+  }, [cardsLoading, pendingSettlementsData, lastRefreshedAt]);
+
+  useEffect(() => {
+    const timerId = window.setInterval(() => {
+      void refreshAllFinancialCardsData({ showSpinner: false });
+    }, FINANCIAL_CARDS_REFRESH_MS);
+    return () => window.clearInterval(timerId);
+  }, [refreshAllFinancialCardsData]);
 
   const toggleGlobalSelection = (txId) => {
     setSelectedTxIds((prev) =>
@@ -874,6 +911,36 @@ const FinancialCards = () => {
     [activeVoucherHistory]
   );
 
+  const toSettleCount = useMemo(() => fuelSettlementRows.length, [fuelSettlementRows]);
+
+  const voucherHistoryActionCount = useMemo(
+    () =>
+      activeVoucherHistory.filter(
+        (v) => v.status === 'pending' || (v.status === 'approved' && Number(v.settled) !== 1)
+      ).length,
+    [activeVoucherHistory]
+  );
+
+  const pendingPhysicalApprovalCount = useMemo(
+    () => activeVoucherHistory.filter((v) => v.status === 'pending').length,
+    [activeVoucherHistory]
+  );
+
+  const countVoucherHistoryActions = (history = []) =>
+    history.filter(
+      (v) => v.status === 'pending' || (v.status === 'approved' && Number(v.settled) !== 1)
+    ).length;
+
+  const vehicleFuelTypeCount = useMemo(
+    () => vehicleFuelSettlementRows.length + countVoucherHistoryActions(voucherHistory),
+    [vehicleFuelSettlementRows, voucherHistory]
+  );
+
+  const generatorFuelTypeCount = useMemo(
+    () => generatorFuelSettlementRows.length + countVoucherHistoryActions(generatorVoucherHistory),
+    [generatorFuelSettlementRows, generatorVoucherHistory]
+  );
+
   const allApprovedUnsettledVouchers = useMemo(
     () => [
       ...(voucherHistory || []).filter((v) => v.status === 'approved' && Number(v.settled) !== 1),
@@ -1059,6 +1126,7 @@ const FinancialCards = () => {
       } else {
         refetchVoucherHistory();
       }
+      setLastRefreshedAt(new Date());
       toast.success('Physical approval recorded');
     } catch (error) {
       toast.error(error?.data?.message || error?.message || 'Failed to record physical approval');
@@ -1069,11 +1137,26 @@ const FinancialCards = () => {
     <div className="financial-cards-container">
       <div className="financial-cards-header">
         <h1>Financial Cards Management</h1>
-        {activeTab === 'cards' ? (
-          <button className="btn-primary-financial-cards" onClick={() => handleOpenCardModal()}>
-            <FaPlus /> Add New Card
-          </button>
-        ) : null}
+        <div className="financial-cards-header-right">
+          <div className="financial-cards-refresh-meta">
+            <span className="financial-cards-refresh-label">Last updated</span>
+            <span className="financial-cards-refresh-time">{formatRefreshClock(lastRefreshedAt)}</span>
+            <button
+              type="button"
+              className="financial-cards-refresh-btn"
+              onClick={() => void refreshAllFinancialCardsData()}
+              disabled={isRefreshingFinancialCards}
+              title="Refresh data now"
+            >
+              {isRefreshingFinancialCards ? 'Refreshing…' : 'Refresh'}
+            </button>
+          </div>
+          {activeTab === 'cards' ? (
+            <button className="btn-primary-financial-cards" onClick={() => handleOpenCardModal()}>
+              <FaPlus /> Add New Card
+            </button>
+          ) : null}
+        </div>
       </div>
 
       <div className="financial-cards-tabs">
@@ -1309,6 +1392,9 @@ const FinancialCards = () => {
                   }}
                 >
                   Vehicle Fuel
+                  {vehicleFuelTypeCount > 0 ? (
+                    <span className="settlements-tab-pill-badge-financial-cards">{vehicleFuelTypeCount}</span>
+                  ) : null}
                 </button>
                 <button
                   type="button"
@@ -1319,6 +1405,9 @@ const FinancialCards = () => {
                   }}
                 >
                   Generator Fuel
+                  {generatorFuelTypeCount > 0 ? (
+                    <span className="settlements-tab-pill-badge-financial-cards">{generatorFuelTypeCount}</span>
+                  ) : null}
                 </button>
               </div>
             </div>
@@ -1331,6 +1420,9 @@ const FinancialCards = () => {
                   onClick={() => setSettlementsSubTab('pending')}
                 >
                   To Settle
+                  {toSettleCount > 0 ? (
+                    <span className="settlements-tab-pill-badge-financial-cards">{toSettleCount}</span>
+                  ) : null}
                 </button>
                 <button
                   type="button"
@@ -1338,6 +1430,9 @@ const FinancialCards = () => {
                   onClick={() => setSettlementsSubTab('voucher-history')}
                 >
                   Voucher History
+                  {voucherHistoryActionCount > 0 ? (
+                    <span className="settlements-tab-pill-badge-financial-cards">{voucherHistoryActionCount}</span>
+                  ) : null}
                 </button>
               </div>
             </div>
@@ -1493,6 +1588,18 @@ const FinancialCards = () => {
             )
           ) : (
             <div className="settlements-table-container-financial-cards">
+              {pendingPhysicalApprovalCount > 0 ? (
+                <div className="settlements-action-summary-financial-cards">
+                  {pendingPhysicalApprovalCount} voucher{pendingPhysicalApprovalCount === 1 ? '' : 's'} awaiting physical approval
+                  {approvedUnsettledVouchers.length > 0
+                    ? ` · ${approvedUnsettledVouchers.length} approved, not yet settled`
+                    : ''}
+                </div>
+              ) : approvedUnsettledVouchers.length > 0 ? (
+                <div className="settlements-action-summary-financial-cards">
+                  {approvedUnsettledVouchers.length} approved voucher{approvedUnsettledVouchers.length === 1 ? '' : 's'} pending settlement
+                </div>
+              ) : null}
               <table className="voucher-history-table-financial-cards">
                 <thead>
                   <tr>
@@ -1581,7 +1688,12 @@ const FinancialCards = () => {
                             {voucher.status === 'pending' ? (
                               <button
                                 type="button"
-                                className="voucher-action-btn-financial-cards voucher-action-btn-primary-financial-cards"
+                                className={`voucher-physical-approval-btn-financial-cards${
+                                  isRecordingPhysicalApproval && physicalApprovalVoucher?.id === voucher.id
+                                    ? ' is-loading'
+                                    : ''
+                                }`}
+                                disabled={isRecordingPhysicalApproval}
                                 onClick={() => {
                                   setPhysicalApprovalVoucher(voucher);
                                   setPhysicalApproverId('');
@@ -1590,7 +1702,17 @@ const FinancialCards = () => {
                                 title="Upload physical approval"
                                 aria-label="Upload physical approval"
                               >
-                                <FaUpload />
+                                {isRecordingPhysicalApproval && physicalApprovalVoucher?.id === voucher.id ? (
+                                  <>
+                                    <span className="financial-cards-btn-spinner" aria-hidden="true" />
+                                    Saving…
+                                  </>
+                                ) : (
+                                  <>
+                                    <FaUpload />
+                                    Physical Approval
+                                  </>
+                                )}
                               </button>
                             ) : null}
                             {voucher.status === 'approved' && Number(voucher.settled) !== 1 ? (
@@ -2513,11 +2635,18 @@ const FinancialCards = () => {
       ) : null}
 
       {physicalApprovalVoucher ? (
-        <div className="modal-overlay-financial-cards" onClick={() => !recordingPhysicalApproval && setPhysicalApprovalVoucher(null)}>
+        <div className="modal-overlay-financial-cards" onClick={() => !isRecordingPhysicalApproval && setPhysicalApprovalVoucher(null)}>
           <div className="modal-content-financial-cards" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 520 }}>
             <div className="modal-header-financial-cards">
               <h2>Upload Physical Approval</h2>
-              <button type="button" className="modal-close-financial-cards" onClick={() => setPhysicalApprovalVoucher(null)}>×</button>
+              <button
+                type="button"
+                className="modal-close-financial-cards"
+                onClick={() => !isRecordingPhysicalApproval && setPhysicalApprovalVoucher(null)}
+                disabled={isRecordingPhysicalApproval}
+              >
+                ×
+              </button>
             </div>
             <form onSubmit={handlePhysicalApproval}>
               <div className="physical-approval-form-financial-cards">
@@ -2561,13 +2690,27 @@ const FinancialCards = () => {
                 ) : null}
               </div>
               <div className="modal-actions-financial-cards">
-                <button type="button" className="btn-cancel-financial-cards" onClick={() => setPhysicalApprovalVoucher(null)}>Cancel</button>
+                <button
+                  type="button"
+                  className="btn-cancel-financial-cards"
+                  onClick={() => !isRecordingPhysicalApproval && setPhysicalApprovalVoucher(null)}
+                  disabled={isRecordingPhysicalApproval}
+                >
+                  Cancel
+                </button>
                 <button
                   type="submit"
                   className="btn-submit-financial-cards"
-                  disabled={recordingPhysicalApproval || !physicalApproverId || !physicalApprovalImage || mdUsers.length === 0}
+                  disabled={isRecordingPhysicalApproval || !physicalApproverId || !physicalApprovalImage || mdUsers.length === 0}
                 >
-                  {recordingPhysicalApproval ? 'Saving...' : 'Save Approval'}
+                  {isRecordingPhysicalApproval ? (
+                    <>
+                      <span className="financial-cards-btn-spinner financial-cards-btn-spinner-light" aria-hidden="true" />
+                      Saving…
+                    </>
+                  ) : (
+                    'Save Approval'
+                  )}
                 </button>
               </div>
             </form>

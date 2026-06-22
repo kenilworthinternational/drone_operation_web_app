@@ -254,12 +254,16 @@ const LeftNavBar = ({ showSidebar = false, onClose = () => { }, onCollapseChange
         )}
         {categoriesToShow.map((category) => {
           const isStrategicWing = category.title === 'Strategic Planning and Monitoring wing';
-          const showAllStrategicChildren =
-            isStrategicWing &&
+          const isAdministrationWing = category.title === 'Administration Wing';
+          const childHasAllowedPath = (child) =>
+            allowedPaths.includes(child.path) ||
+            (child.subItems || []).some((sub) => allowedPaths.includes(sub.path));
+          const showAllCategoryChildren =
+            (isStrategicWing || isAdministrationWing) &&
             (categoryVisibility[category.title] === true ||
-              category.children.some((c) => allowedPaths.includes(c.path)));
+              category.children.some((c) => childHasAllowedPath(c)));
           const visibleChildren = category.children.filter((child) => {
-            if (showAllStrategicChildren) {
+            if (showAllCategoryChildren) {
               return true;
             }
             if (child.subItems && child.subItems.length > 0) {
@@ -329,7 +333,9 @@ const LeftNavBar = ({ showSidebar = false, onClose = () => { }, onCollapseChange
                   {visibleChildren.map((item) => {
                     const hasSubItems = item.subItems && item.subItems.length > 0;
                     if (hasSubItems) {
-                      const visibleSubItems = item.subItems.filter((sub) => allowedPaths.includes(sub.path));
+                      const visibleSubItems = showAllCategoryChildren
+                        ? item.subItems
+                        : item.subItems.filter((sub) => allowedPaths.includes(sub.path));
                       if (visibleSubItems.length === 0) {
                         return null;
                       }

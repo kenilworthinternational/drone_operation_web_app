@@ -42,6 +42,26 @@ function hasActiveFilters(filters) {
   return Boolean(filters.estateId || filters.missionTypeId || filters.cropTypeId);
 }
 
+const SLOT_CELL_ORDER = { pending: 0, rejected: 1 };
+
+function sortSlotsForCellDisplay(slots) {
+  return [...slots].sort((a, b) => {
+    const ao = SLOT_CELL_ORDER[a.slotStatus] ?? 9;
+    const bo = SLOT_CELL_ORDER[b.slotStatus] ?? 9;
+    if (ao !== bo) return ao - bo;
+    return String(a.slotKey).localeCompare(String(b.slotKey));
+  });
+}
+
+function sortOpenSlotsForDisplay(slots) {
+  return [...slots].sort((a, b) => {
+    const ao = SLOT_CELL_ORDER[a.slotStatus] ?? 9;
+    const bo = SLOT_CELL_ORDER[b.slotStatus] ?? 9;
+    if (ao !== bo) return ao - bo;
+    return String(a.key).localeCompare(String(b.key));
+  });
+}
+
 export default function AcceptMonthlyPlansBoard({
   estates = [],
   missionTypes = [],
@@ -369,7 +389,7 @@ export default function AcceptMonthlyPlansBoard({
               {calendarDays.map((day) => {
                 const dateKey = format(day, 'yyyy-MM-dd');
                 const existing = existingByDate.get(dateKey) || [];
-                const slots = slotsByDate.get(dateKey) || [];
+                const slots = sortSlotsForCellDisplay(slotsByDate.get(dateKey) || []);
                 const inMonth = isSameMonth(day, currentMonth);
                 const dayClasses = [
                   'booking-calender-day',

@@ -204,6 +204,19 @@ export const getAllowedPaths = (visibility = {}, pathPermissions = {}, userData 
     });
   }
 
+  // Administration wing: category visibility (or any child path) unlocks full wing nav, including incident reports
+  const administrationTitle = 'Administration Wing';
+  const administrationPaths = allCategoryPaths[administrationTitle] || [];
+  const hasAdministrationAccess =
+    visibility[administrationTitle] === true ||
+    administrationPaths.some((p) => pathPermissions[p] === true);
+
+  if (hasAdministrationAccess) {
+    administrationPaths.forEach((p) => {
+      if (!allowedPaths.includes(p)) allowedPaths.push(p);
+    });
+  }
+
   const planActivatePath = '/home/planActivateRequests';
   const planActivateApproverRoles = ['md', 'mgr', 'dops'];
   const jobRole = String(userData?.job_role || '').toLowerCase();

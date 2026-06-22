@@ -122,7 +122,7 @@ const navbarCategories = [
       { path: '/home/transport/hr', label: 'T. O. D.', icon: FaTruck },
       { path: '/home/generator-fuel-approvals', label: 'Generator Fuel Approvals', icon: FaTruck },
       { path: '/home/fleet', label: 'Resource Allocation', icon: FaCogs },
-      { path: '/home/accident-reports', label: 'Accident Reports', icon: FaFileAlt },
+      { path: '/home/accident-reports', label: 'Incident Reports', icon: FaFileAlt },
       { path: '/home/maintenance', label: 'Maintenance', icon: FaTools },
       { path: '/home/stock-assets/supplier-registration', label: 'Supplier Management', icon: FaHandshake },
       { path: '/home/stock-assets/inventory-items-registration', label: 'Inventory Items Registration', icon: FaBoxes },
