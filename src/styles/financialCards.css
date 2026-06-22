@@ -2821,3 +2821,140 @@
   }
 }
 
+/* Strategic Finance Approvals (SPM wing) */
+.spm-finance-approvals-page {
+  min-height: 100vh;
+}
+
+.spm-finance-page-subtitle {
+  margin: 0.35rem 0 0;
+  color: #64748b;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  max-width: 640px;
+}
+
+.spm-finance-panel-financial-cards {
+  margin-top: 0;
+}
+
+.spm-finance-panel-intro {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.spm-finance-panel-title {
+  margin: 0;
+  color: #004b71;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.spm-finance-panel-subtitle {
+  margin: 0.35rem 0 0;
+  color: #64748b;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.spm-finance-readonly-note {
+  padding: 0.45rem 0.7rem;
+  border-radius: 8px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  color: #92400e;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.spm-finance-summary-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin-bottom: 0.85rem;
+}
+
+.spm-finance-summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.spm-finance-summary-label {
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.spm-finance-summary-item strong {
+  color: #0f172a;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.spm-finance-search-row {
+  margin-bottom: 0.85rem;
+}
+
+.spm-finance-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  padding: 2.5rem 1rem;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.spm-approve-btn-financial-cards,
+.spm-decline-btn-financial-cards {
+  width: auto;
+  min-width: 88px;
+  height: auto;
+  min-height: 30px;
+  padding: 0.35rem 0.55rem;
+  gap: 0.35rem;
+}
+
+.spm-approve-btn-financial-cards.is-loading,
+.spm-decline-btn-financial-cards.is-loading {
+  opacity: 0.85;
+  cursor: wait;
+}
+
+.spm-action-btn-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.financial-cards-tab:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .spm-finance-summary-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .spm-finance-readonly-note {
+    white-space: normal;
+    width: 100%;
+  }
+}
+

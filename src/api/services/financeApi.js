@@ -63,16 +63,6 @@ export const financeApi = baseApi.injectEndpoints({
       providesTags: ['Brokers'],
     }),
 
-    // Search broker by ID
-    searchBrokerById: builder.query({
-      query: (id) => ({
-        url: 'search_broker_by_id',
-        method: 'POST',
-        body: { id },
-      }),
-      providesTags: (result, error, id) => [{ type: 'Brokers', id }],
-    }),
-
     // Search broker by NIC
     searchBrokerByNIC: builder.query({
       query: (nic) => ({
@@ -121,7 +111,6 @@ export const {
   useGetDefaultPaymentValuesQuery,
   useAddPilotRevenueMutation,
   useGetBrokersQuery,
-  useSearchBrokerByIdQuery,
   useSearchBrokerByNICQuery,
   useAddBrokerMutation,
   useUpdateBrokerMutation,

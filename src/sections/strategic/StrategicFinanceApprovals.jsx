@@ -1,16 +1,12 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Box,
   Button,
-  Card,
-  CardContent,
   CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
-  Tab,
-  Tabs,
   TextField,
   Typography,
 } from '@mui/material';
@@ -48,6 +44,13 @@ import {
 } from '../finance/financialCards/fuelTransportVoucherUi';
 import { resolveVoucherDriverName } from '../finance/financialCards/transportVoucherPrintUtils';
 import '../../styles/financialCards.css';
+
+const FINANCE_APPROVALS_REFRESH_MS = 5 * 60 * 1000;
+
+const formatRefreshClock = (value) => {
+  if (!value) return '—';
+  return value.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+};
 
 const formatDate = (value) => {
   if (!value) return '-';
@@ -98,15 +101,19 @@ const StrategicFinanceApprovals = () => {
   const [printVoucherId, setPrintVoucherId] = useState(null);
   const [settlementProofPreviewUrl, setSettlementProofPreviewUrl] = useState(null);
   const [voucherSearch, setVoucherSearch] = useState('');
+  const [lastRefreshedAt, setLastRefreshedAt] = useState(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [approvingVoucherId, setApprovingVoucherId] = useState(null);
+  const [decliningVoucherId, setDecliningVoucherId] = useState(null);
 
   const { data: transportPending = [], isLoading: transportPendingLoading, refetch: refetchTransportPending } =
-    useGetPendingFuelTransportVouchersQuery(undefined, { skip: fuelSource !== 'vehicle' });
+    useGetPendingFuelTransportVouchersQuery();
   const { data: transportHistory = [], isLoading: transportHistoryLoading, refetch: refetchTransportHistory } =
-    useGetFuelTransportVoucherHistoryQuery(undefined, { skip: fuelSource !== 'vehicle' });
+    useGetFuelTransportVoucherHistoryQuery();
   const { data: generatorPending = [], isLoading: generatorPendingLoading, refetch: refetchGeneratorPending } =
-    useGetPendingFuelGeneratorVouchersQuery(undefined, { skip: fuelSource !== 'generator' });
+    useGetPendingFuelGeneratorVouchersQuery();
   const { data: generatorHistory = [], isLoading: generatorHistoryLoading, refetch: refetchGeneratorHistory } =
-    useGetFuelGeneratorVoucherHistoryQuery(undefined, { skip: fuelSource !== 'generator' });
+    useGetFuelGeneratorVoucherHistoryQuery();
 
   const pending = fuelSource === 'vehicle' ? transportPending : generatorPending;
   const history = fuelSource === 'vehicle' ? transportHistory : generatorHistory;
@@ -145,6 +152,38 @@ const StrategicFinanceApprovals = () => {
 
   const sourceRows = fuelTab === 0 ? pending : history;
   const fuelLoading = fuelTab === 0 ? pendingLoading : historyLoading;
+
+  const vehicleFuelTypeCount = transportPending.length + transportHistory.length;
+  const generatorFuelTypeCount = generatorPending.length + generatorHistory.length;
+
+  const refreshAllData = useCallback(async ({ showSpinner = true } = {}) => {
+    if (showSpinner) setIsRefreshing(true);
+    try {
+      await Promise.all([
+        refetchTransportPending(),
+        refetchTransportHistory(),
+        refetchGeneratorPending(),
+        refetchGeneratorHistory(),
+      ]);
+      setLastRefreshedAt(new Date());
+    } finally {
+      if (showSpinner) setIsRefreshing(false);
+    }
+  }, [refetchTransportPending, refetchTransportHistory, refetchGeneratorPending, refetchGeneratorHistory]);
+
+  useEffect(() => {
+    if (lastRefreshedAt) return;
+    if (!transportPendingLoading && !generatorPendingLoading) {
+      setLastRefreshedAt(new Date());
+    }
+  }, [transportPendingLoading, generatorPendingLoading, lastRefreshedAt]);
+
+  useEffect(() => {
+    const timerId = window.setInterval(() => {
+      void refreshAllData({ showSpinner: false });
+    }, FINANCE_APPROVALS_REFRESH_MS);
+    return () => window.clearInterval(timerId);
+  }, [refreshAllData]);
 
   useEffect(() => {
     setSelectedId(null);
@@ -194,6 +233,7 @@ const StrategicFinanceApprovals = () => {
 
   const submitApprove = async () => {
     if (!approveConfirm) return;
+    setApprovingVoucherId(approveConfirm.id);
     try {
       const approveFn = fuelSource === 'vehicle' ? approveTransportVoucher : approveGeneratorVoucher;
       const result = await approveFn(approveConfirm.id).unwrap();
@@ -202,13 +242,17 @@ const StrategicFinanceApprovals = () => {
       toast.success('Voucher approved');
       refetchPending();
       refetchHistory();
+      setLastRefreshedAt(new Date());
     } catch (e) {
       toast.error(e?.data?.message || 'Failed to approve voucher');
+    } finally {
+      setApprovingVoucherId(null);
     }
   };
 
   const submitDecline = async () => {
     if (!decline?.reason?.trim()) return;
+    setDecliningVoucherId(decline.row.id);
     try {
       const declineFn = fuelSource === 'vehicle' ? declineTransportVoucher : declineGeneratorVoucher;
       await declineFn({ id: decline.row.id, reason: decline.reason.trim() }).unwrap();
@@ -217,8 +261,11 @@ const StrategicFinanceApprovals = () => {
       toast.success('Voucher declined');
       refetchPending();
       refetchHistory();
+      setLastRefreshedAt(new Date());
     } catch (e) {
       toast.error(e?.data?.message || 'Failed to decline voucher');
+    } finally {
+      setDecliningVoucherId(null);
     }
   };
 
@@ -283,21 +330,47 @@ const StrategicFinanceApprovals = () => {
           <>
             <button
               type="button"
-              className="voucher-action-btn-financial-cards voucher-action-btn-success-financial-cards"
+              className={`voucher-action-btn-financial-cards voucher-action-btn-success-financial-cards spm-approve-btn-financial-cards${
+                approving && approvingVoucherId === row.id ? ' is-loading' : ''
+              }`}
               onClick={() => setApproveConfirm(row)}
+              disabled={approving || declining}
               title="Approve voucher"
               aria-label="Approve voucher"
             >
-              <CheckCircleIcon fontSize="small" />
+              {approving && approvingVoucherId === row.id ? (
+                <>
+                  <span className="financial-cards-btn-spinner financial-cards-btn-spinner-light" aria-hidden="true" />
+                  <span className="spm-action-btn-label">Approving…</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircleIcon fontSize="small" />
+                  <span className="spm-action-btn-label">Approve</span>
+                </>
+              )}
             </button>
             <button
               type="button"
-              className="voucher-action-btn-financial-cards voucher-action-btn-danger-financial-cards"
+              className={`voucher-action-btn-financial-cards voucher-action-btn-danger-financial-cards spm-decline-btn-financial-cards${
+                declining && decliningVoucherId === row.id ? ' is-loading' : ''
+              }`}
               onClick={() => setDecline({ row, reason: '' })}
+              disabled={approving || declining}
               title="Decline voucher"
               aria-label="Decline voucher"
             >
-              <CancelIcon fontSize="small" />
+              {declining && decliningVoucherId === row.id ? (
+                <>
+                  <span className="financial-cards-btn-spinner" aria-hidden="true" />
+                  <span className="spm-action-btn-label">Declining…</span>
+                </>
+              ) : (
+                <>
+                  <CancelIcon fontSize="small" />
+                  <span className="spm-action-btn-label">Decline</span>
+                </>
+              )}
             </button>
           </>
         ) : null}
@@ -306,77 +379,143 @@ const StrategicFinanceApprovals = () => {
   );
 
   return (
-    <Box sx={{ p: 3, backgroundColor: '#f3f7fb', minHeight: '100vh' }}>
-      <Card elevation={0} sx={{ mb: 2, border: '1px solid #d9e5ef', borderRadius: 2 }}>
-        <CardContent>
-          <Typography variant="h5" sx={{ fontWeight: 700, color: '#102739' }}>
-            Finance Approvals
-          </Typography>
-          <Typography variant="body2" sx={{ color: '#5f7383', mt: 0.5 }}>
-            Strategic Planning and Monitoring wing — system approvals for finance vouchers.
-          </Typography>
-          <Tabs value={mainTab} onChange={(_, v) => setMainTab(v)} sx={{ mt: 2 }}>
-            <Tab label="Fuel Voucher Approvals" />
-            <Tab label="More approvals (coming soon)" disabled />
-          </Tabs>
-        </CardContent>
-      </Card>
+    <div className="financial-cards-container spm-finance-approvals-page">
+      <div className="financial-cards-header">
+        <div>
+          <h1>Finance Approvals</h1>
+          <p className="spm-finance-page-subtitle">
+            Strategic Planning and Monitoring wing — system approvals for finance vouchers
+          </p>
+        </div>
+        <div className="financial-cards-header-right">
+          <div className="financial-cards-refresh-meta">
+            <span className="financial-cards-refresh-label">Last updated</span>
+            <span className="financial-cards-refresh-time">{formatRefreshClock(lastRefreshedAt)}</span>
+            <button
+              type="button"
+              className="financial-cards-refresh-btn"
+              onClick={() => void refreshAllData()}
+              disabled={isRefreshing}
+              title="Refresh data now"
+            >
+              {isRefreshing ? 'Refreshing…' : 'Refresh'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="financial-cards-tabs">
+        <button type="button" className={`financial-cards-tab${mainTab === 0 ? ' active' : ''}`} onClick={() => setMainTab(0)}>
+          Fuel Voucher Approvals
+          {transportPending.length + generatorPending.length > 0 ? (
+            <span className="financial-cards-tab-badge">{transportPending.length + generatorPending.length}</span>
+          ) : null}
+        </button>
+        <button type="button" className="financial-cards-tab" disabled>
+          More approvals (coming soon)
+        </button>
+      </div>
 
       {mainTab === 0 ? (
-        <Card elevation={0} sx={{ border: '1px solid #d9e5ef', borderRadius: 2 }}>
-          <CardContent>
-            <div className="settlements-tab-nav-financial-cards spm-fuel-header-row-financial-cards">
-              <Box sx={{ flex: 1, minWidth: 0, pr: 2 }}>
-                <Typography variant="h6" sx={{ fontWeight: 700, color: '#102739' }}>
-                  {fuelSourceLabel} Vouchers
-                </Typography>
-                <Typography variant="caption" sx={{ color: '#5f7383', display: 'block', mt: 0.5 }}>
-                  MD system approval for finance-created {isVehicleFuel ? 'vehicle fuel transport' : 'generator fuel'} vouchers.
-                </Typography>
-              </Box>
-              <div className="settlements-tab-group-financial-cards">
-                <span className="settlements-tab-group-label-financial-cards">Fuel type</span>
-                <div className="settlements-tab-pills-financial-cards">
-                  <button
-                    type="button"
-                    className={`settlements-tab-pill-financial-cards${fuelSource === 'vehicle' ? ' active' : ''}`}
-                    onClick={() => setFuelSource('vehicle')}
-                  >
-                    Vehicle Fuel
-                  </button>
-                  <button
-                    type="button"
-                    className={`settlements-tab-pill-financial-cards${fuelSource === 'generator' ? ' active' : ''}`}
-                    onClick={() => setFuelSource('generator')}
-                  >
-                    Generator Fuel
-                  </button>
-                </div>
+        <div className="pending-settlements-section-financial-cards spm-finance-panel-financial-cards">
+          <div className="spm-finance-panel-intro">
+            <div>
+              <h2 className="spm-finance-panel-title">{fuelSourceLabel} Vouchers</h2>
+              <p className="spm-finance-panel-subtitle">
+                MD system approval for finance-created {isVehicleFuel ? 'vehicle fuel transport' : 'generator fuel'} vouchers
+              </p>
+            </div>
+            {!isMd ? (
+              <div className="spm-finance-readonly-note">View only — MD role required to approve or decline</div>
+            ) : null}
+          </div>
+
+          <div className="settlements-tab-nav-financial-cards spm-fuel-header-row-financial-cards">
+            <div className="settlements-tab-group-financial-cards">
+              <span className="settlements-tab-group-label-financial-cards">Fuel type</span>
+              <div className="settlements-tab-pills-financial-cards">
+                <button
+                  type="button"
+                  className={`settlements-tab-pill-financial-cards${fuelSource === 'vehicle' ? ' active' : ''}`}
+                  onClick={() => setFuelSource('vehicle')}
+                >
+                  Vehicle Fuel
+                  {vehicleFuelTypeCount > 0 ? (
+                    <span className="settlements-tab-pill-badge-financial-cards">{vehicleFuelTypeCount}</span>
+                  ) : null}
+                </button>
+                <button
+                  type="button"
+                  className={`settlements-tab-pill-financial-cards${fuelSource === 'generator' ? ' active' : ''}`}
+                  onClick={() => setFuelSource('generator')}
+                >
+                  Generator Fuel
+                  {generatorFuelTypeCount > 0 ? (
+                    <span className="settlements-tab-pill-badge-financial-cards">{generatorFuelTypeCount}</span>
+                  ) : null}
+                </button>
               </div>
             </div>
-
-            <Tabs value={fuelTab} onChange={(_, v) => setFuelTab(v)} sx={{ mb: 1.5 }}>
-              <Tab label={`Pending (${pending.length})`} />
-              <Tab label={`History (${history.length})`} />
-            </Tabs>
-
-            <div className="settlements-filters-financial-cards" style={{ marginBottom: 12 }}>
-              <input
-                type="text"
-                placeholder="Search voucher no, preparer, amount..."
-                value={voucherSearch}
-                onChange={(e) => setVoucherSearch(e.target.value)}
-                className="settlement-search-input-financial-cards"
-              />
+            <div className="settlements-tab-group-financial-cards">
+              <span className="settlements-tab-group-label-financial-cards">View</span>
+              <div className="settlements-tab-pills-financial-cards">
+                <button
+                  type="button"
+                  className={`settlements-tab-pill-financial-cards${fuelTab === 0 ? ' active' : ''}`}
+                  onClick={() => setFuelTab(0)}
+                >
+                  Pending
+                  {pending.length > 0 ? (
+                    <span className="settlements-tab-pill-badge-financial-cards">{pending.length}</span>
+                  ) : null}
+                </button>
+                <button
+                  type="button"
+                  className={`settlements-tab-pill-financial-cards${fuelTab === 1 ? ' active' : ''}`}
+                  onClick={() => setFuelTab(1)}
+                >
+                  History
+                  {history.length > 0 ? (
+                    <span className="settlements-tab-pill-badge-financial-cards">{history.length}</span>
+                  ) : null}
+                </button>
+              </div>
             </div>
+          </div>
 
-            {fuelLoading ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                <CircularProgress size={28} />
-              </Box>
-            ) : (
-              <div className="settlements-table-container-financial-cards">
-                <table className="voucher-history-table-financial-cards">
+          <div className="spm-finance-summary-strip">
+            <div className="spm-finance-summary-item">
+              <span className="spm-finance-summary-label">Pending approval</span>
+              <strong>{pending.length}</strong>
+            </div>
+            <div className="spm-finance-summary-item">
+              <span className="spm-finance-summary-label">History records</span>
+              <strong>{history.length}</strong>
+            </div>
+            <div className="spm-finance-summary-item">
+              <span className="spm-finance-summary-label">Showing</span>
+              <strong>{filteredRows.length}</strong>
+            </div>
+          </div>
+
+          <div className="settlements-filters-financial-cards spm-finance-search-row">
+            <input
+              type="text"
+              placeholder="Search voucher no, preparer, amount..."
+              value={voucherSearch}
+              onChange={(e) => setVoucherSearch(e.target.value)}
+              className="settlement-search-input-financial-cards"
+            />
+          </div>
+
+          {fuelLoading ? (
+            <div className="spm-finance-loading">
+              <CircularProgress size={28} />
+              <span>Loading vouchers…</span>
+            </div>
+          ) : (
+            <div className="settlements-table-container-financial-cards">
+              <table className="voucher-history-table-financial-cards">
                   <thead>
                     <tr>
                       <th>Voucher No</th>
@@ -430,8 +569,7 @@ const StrategicFinanceApprovals = () => {
                 </table>
               </div>
             )}
-          </CardContent>
-        </Card>
+        </div>
       ) : null}
 
       <Dialog open={Boolean(selectedId)} onClose={() => setSelectedId(null)} maxWidth="md" fullWidth>
@@ -685,7 +823,7 @@ const StrategicFinanceApprovals = () => {
       ) : null}
 
       <ToastContainer position="top-right" autoClose={4000} closeOnClick pauseOnHover />
-    </Box>
+    </div>
   );
 };
 

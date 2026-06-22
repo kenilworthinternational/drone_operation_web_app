@@ -12,16 +12,6 @@ export const bookingsApi = baseApi.injectEndpoints({
       providesTags: ['ASCBookings'],
     }),
 
-    // Get missions by requested date (non-plantation)
-    getMissionsByRequestedDate: builder.query({
-      query: (date) => ({
-        url: 'search_mission_by_requested_date',
-        method: 'POST',
-        body: { date },
-      }),
-      providesTags: (result, error, date) => [{ type: 'Missions', id: date }],
-    }),
-
     // Get missions by planned date (ASC)
     getMissionsByPlannedDate: builder.query({
       query: (date) => ({
@@ -104,53 +94,15 @@ export const bookingsApi = baseApi.injectEndpoints({
         'ASCBookings'
       ],
     }),
-
-    // Set team lead for ASC mission
-    setASCTeamLead: builder.mutation({
-      query: (data) => ({
-        url: 'update_mission_team_lead_by_id',
-        method: 'POST',
-        body: data,
-      }),
-      invalidatesTags: (result, error, data) => [
-        { type: 'MissionDetails', id: data.id },
-        'ASCBookings'
-      ],
-    }),
-
-    // Get mission resource allocations (non-plantation)
-    getMissionResourceAllocations: builder.query({
-      query: ({ asc, date }) => ({
-        url: 'display_mission_resource_allocations_by_id',
-        method: 'POST',
-        body: { asc, date },
-      }),
-      providesTags: (result, error, { asc, date }) => [{ type: 'MissionDetails', id: `${asc}-${date}` }],
-    }),
-
-    // Get ASC calendar data
-    getASCCalendarData: builder.query({
-      query: ({ month, year }) => ({
-        url: 'mission_count_by_date_for_month',
-        method: 'POST',
-        body: { year, month },
-      }),
-      providesTags: (result, error, { month, year }) => [{ type: 'Calendar', id: `${year}-${month}` }],
-    }),
   }),
 });
 
 export const {
   useGetASCBookingsByDateRangeQuery,
-  useGetMissionsByRequestedDateQuery,
   useGetMissionsByPlannedDateQuery,
   useCreateMissionMutation,
   useUpdateMissionPlannedDateMutation,
   useUpdateMissionMutation,
   useUpdateMissionStatusMutation,
   useSetASCForMissionMutation,
-  useSetASCTeamLeadMutation,
-  useGetMissionResourceAllocationsQuery,
-  useGetASCCalendarDataQuery,
 } = bookingsApi;
-

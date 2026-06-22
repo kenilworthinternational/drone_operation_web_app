@@ -15,6 +15,7 @@ import {
   useGetASCSQuery,
 } from '../../api/services NodeJs/jdManagementApi';
 import { parseNic } from '../../utils/nic';
+import { EMPLOYEE_DOCUMENT_RESOURCE_TYPES, getResourceUrl } from '../../utils/resourceUrls';
 import '../../styles/employees.css';
 
 const Employees = () => {
@@ -432,55 +433,19 @@ const Employees = () => {
     }
   };
 
-  // Get API base URL
-  const getApiBaseUrl = () => {
-    const hostname = window.location.hostname;
-    
-    if (hostname === 'localhost' || hostname === '127.0.0.1') {
-      return 'https://dsms-web-api-dev.kenilworthinternational.com';
-    }
-    
-    if (hostname.includes('dev')) {
-      return 'https://dsms-web-api-dev.kenilworthinternational.com';
-    }
-    
-    if (hostname.includes('test')) {
-      return 'https://dsms-api-test.kenilworth.international.com';
-    }
-    
-    return 'https://dsms-web-api.kenilworthinternational.com';
-  };
-
-  // Build document URL from filename or use URL if already provided
   const getDocumentUrl = (filename, documentType) => {
     if (!filename) return null;
-    
-    // If it's already a full URL, use it directly (backend should return full URLs)
+
     if (filename.startsWith('http://') || filename.startsWith('https://')) {
       return filename;
     }
-    
-    // Extract just the filename if path is provided
-    let cleanFilename = filename.split('/').pop();
-    
-    // Map document types to folder names (matching backend upload structure)
-    // Format: /documents/employees/{folder}/{filename}
-    const folderMap = {
-      educationCertificates: 'education_certificates',
-      birthCertificate: 'birth_certificate',
-      healthReport: 'health_report',
-      serviceLetters: 'service_letters',
-      marriedCertificate: 'married_certificate',
-      policeReport: 'police_report',
-      gndCertificate: 'gnd_certificate'
-    };
-    
-    const folder = folderMap[documentType] || 'documents';
-    const baseUrl = getApiBaseUrl();
-    
-    // Build URL with correct path structure
-    // Format: https://dsms-web-api-dev.kenilworthinternational.com/documents/employees/{folder}/{filename}
-    return `${baseUrl}/documents/employees/${folder}/${cleanFilename}`;
+
+    const resourceType = EMPLOYEE_DOCUMENT_RESOURCE_TYPES[documentType];
+    if (resourceType) {
+      return getResourceUrl(resourceType, filename);
+    }
+
+    return getResourceUrl('EMPLOYEE_DOCUMENT', filename);
   };
 
   const getStatusBadge = (status) => {

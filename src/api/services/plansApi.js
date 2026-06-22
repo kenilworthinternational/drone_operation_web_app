@@ -32,16 +32,6 @@ export const plansApi = baseApi.injectEndpoints({
       providesTags: (result, error, planId) => [{ type: 'PlanDetails', id: planId }],
     }),
 
-    // Get plan summary
-    getPlanSummary: builder.query({
-      query: (planId) => ({
-        url: 'find_plan_summary',
-        method: 'POST',
-        body: { plan: planId },
-      }),
-      providesTags: (result, error, planId) => [{ type: 'PlanDetails', id: `summary-${planId}` }],
-    }),
-
     // Get plan resource allocation
     getPlanResourceAllocation: builder.query({
       query: (planId) => ({
@@ -76,16 +66,6 @@ export const plansApi = baseApi.injectEndpoints({
       ],
     }),
 
-    // Delete plan
-    deletePlan: builder.mutation({
-      query: (planId) => ({
-        url: 'delete_plan',
-        method: 'POST',
-        body: { plan: planId },
-      }),
-      invalidatesTags: ['Plans', 'Calendar'],
-    }),
-
     // Deactivate/Change plan status
     changePlanStatus: builder.mutation({
       query: ({ planId, status }) => ({
@@ -96,20 +76,6 @@ export const plansApi = baseApi.injectEndpoints({
       invalidatesTags: (result, error, { planId }) => [
         'Plans',
         { type: 'PlanDetails', id: planId }
-      ],
-    }),
-
-    // Update plan date
-    updatePlanDate: builder.mutation({
-      query: ({ planId, date }) => ({
-        url: 'update_plan_date_by_plan_id',
-        method: 'POST',
-        body: { id: planId, date },
-      }),
-      invalidatesTags: (result, error, { planId }) => [
-        'Plans',
-        { type: 'PlanDetails', id: planId },
-        'Calendar'
       ],
     }),
 
@@ -159,18 +125,6 @@ export const plansApi = baseApi.injectEndpoints({
       providesTags: ['Plans'],
     }),
 
-    // Operations approval
-    updateOpsApproval: builder.mutation({
-      query: ({ plan, status }) => ({
-        url: 'update_d_ops_approval_for_plan',
-        method: 'POST',
-        body: { plan, status },
-      }),
-      invalidatesTags: (result, error, { plan }) => [
-        { type: 'PlanDetails', id: plan },
-        'Plans'
-      ],
-    }),
   }),
 });
 
@@ -178,17 +132,13 @@ export const {
   useGetPlansByDateQuery,
   useGetPlansByDateRangeQuery,
   useGetPlanByIdQuery,
-  useGetPlanSummaryQuery,
   useGetPlanResourceAllocationQuery,
   useCreatePlanMutation,
   useUpdatePlanMutation,
-  useDeletePlanMutation,
   useChangePlanStatusMutation,
-  useUpdatePlanDateMutation,
   useUpdateDroneToPlanMutation,
   useUpdatePilotToPlanMutation,
   useGetPlansForUpdateQuery,
   useGetPlansForRescheduleQuery,
-  useUpdateOpsApprovalMutation,
 } = plansApi;
 

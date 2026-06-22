@@ -24,6 +24,7 @@ import {
 } from '../../api/services NodeJs/vehicleAppApi';
 import { useGetDriverFuelCardsQuery } from '../../api/services NodeJs/jdManagementApi';
 import { getNodeBackendUrl } from '../../api/services NodeJs/nodeBackendConfig';
+import { getFilenameResourceUrlCandidates } from '../../utils/resourceUrls';
 import {
   useGetAdvanceRequestsForHrQuery,
   useGetLeaveDaysForHrQuery,
@@ -109,16 +110,14 @@ function resolveMaintenanceImageCandidates(row, type) {
       const parsed = new URL(text);
       const fileName = (parsed.pathname.split('/').pop() || '').trim();
       if (fileName && /\.(jpg|jpeg|png|webp|gif|pdf)$/i.test(fileName)) {
-        candidates.push(`${apiBase}/uploads/maintenance_requests/${fileName}`);
-        candidates.push(`${apiBase}/uploads/vehicle_day/${fileName}`);
-        candidates.push(`${apiBase}/uploads/transactions/${fileName}`);
+        candidates.push(...getFilenameResourceUrlCandidates(fileName));
       }
     } catch (_) {}
     return [...new Set(candidates)];
   }
 
   const normalizedPath = text.startsWith('/') ? text : `/${text}`;
-  if (normalizedPath.startsWith('/uploads/')) {
+  if (normalizedPath.startsWith('/uploads/') || normalizedPath.startsWith('/documents/')) {
     candidates.push(`${apiBase}${normalizedPath}`);
     candidates.push(normalizedPath);
     return [...new Set(candidates)];
@@ -126,12 +125,7 @@ function resolveMaintenanceImageCandidates(row, type) {
 
   const fileName = text.split('/').pop();
   if (fileName && /\.(jpg|jpeg|png|webp|gif|pdf)$/i.test(fileName)) {
-    candidates.push(`${apiBase}/uploads/maintenance_requests/${fileName}`);
-    candidates.push(`${apiBase}/uploads/vehicle_day/${fileName}`);
-    candidates.push(`${apiBase}/uploads/transactions/${fileName}`);
-    candidates.push(`/uploads/maintenance_requests/${fileName}`);
-    candidates.push(`/uploads/vehicle_day/${fileName}`);
-    candidates.push(`/uploads/transactions/${fileName}`);
+    candidates.push(...getFilenameResourceUrlCandidates(fileName));
   }
   return [...new Set(candidates)];
 }

@@ -28,7 +28,7 @@ import {
   useSaveTechnicalEvaluationMutation,
   useUpdateProcurementRequestStatusMutation,
 } from '../../api/services NodeJs/allEndpoints';
-import { getNodeBackendUrl } from '../../api/services NodeJs/nodeBackendConfig';
+import { getResourceUrl } from '../../utils/resourceUrls';
 import { COMPANY } from '../../config/companyConstants';
 import GRNDocument from './GRNDocument';
 
@@ -1493,7 +1493,7 @@ const ProcurementProcess = () => {
               <div>
                 <span className="procurement-process-file-hint">Current document: </span>
                 <a
-                  href={`${getNodeBackendUrl()}/uploads/documents/quotations/${encodeURIComponent(quotationForm.existing_scanned_document)}`}
+                  href={getResourceUrl('QUOTATION_DOCUMENT', quotationForm.existing_scanned_document)}
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{ marginLeft: 4 }}
@@ -1635,7 +1635,7 @@ const ProcurementProcess = () => {
             <tbody>
               {quotations.map((q) => {
                 const docUrl = q.scanned_document
-                  ? `${getNodeBackendUrl()}/uploads/documents/quotations/${encodeURIComponent(q.scanned_document)}`
+                  ? getResourceUrl('QUOTATION_DOCUMENT', q.scanned_document)
                   : null;
                 const isImage = q.scanned_document && /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(q.scanned_document);
                 return (
@@ -1818,20 +1818,20 @@ const ProcurementProcess = () => {
                     <strong>Document:</strong>{' '}
                     {/\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(finalizedQuotationForPo.scanned_document) ? (
                       <a
-                        href={`${getNodeBackendUrl()}/uploads/documents/quotations/${encodeURIComponent(finalizedQuotationForPo.scanned_document)}`}
+                        href={getResourceUrl('QUOTATION_DOCUMENT', finalizedQuotationForPo.scanned_document)}
                         target="_blank"
                         rel="noopener noreferrer"
                         title="View quotation"
                       >
                         <img
-                          src={`${getNodeBackendUrl()}/uploads/documents/quotations/${encodeURIComponent(finalizedQuotationForPo.scanned_document)}`}
+                          src={getResourceUrl('QUOTATION_DOCUMENT', finalizedQuotationForPo.scanned_document)}
                           alt="Quotation"
                           style={{ maxWidth: 80, maxHeight: 60, objectFit: 'contain', verticalAlign: 'middle' }}
                         />
                       </a>
                     ) : (
                       <a
-                        href={`${getNodeBackendUrl()}/uploads/documents/quotations/${encodeURIComponent(finalizedQuotationForPo.scanned_document)}`}
+                        href={getResourceUrl('QUOTATION_DOCUMENT', finalizedQuotationForPo.scanned_document)}
                         target="_blank"
                         rel="noopener noreferrer"
                       >

@@ -8,23 +8,14 @@ const getToken = () => {
   return storedUser?.token || null;
 };
 
-// Base query with auth headers
-const FORM_DATA_ENDPOINTS = ['submitDJIRecord'];
-
 const baseQueryWithAuth = fetchBaseQuery({
   baseUrl: API_BASE_URL,
-  prepareHeaders: (headers, { endpoint }) => {
+  prepareHeaders: (headers) => {
     const token = getToken();
     if (token) {
       headers.set('Authorization', `Bearer ${token}`);
     }
-
-    if (!FORM_DATA_ENDPOINTS.includes(endpoint)) {
-      headers.set('Content-Type', 'application/json');
-    } else {
-      headers.delete('Content-Type');
-    }
-
+    headers.set('Content-Type', 'application/json');
     return headers;
   },
 });

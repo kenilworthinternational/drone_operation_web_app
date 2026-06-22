@@ -615,18 +615,6 @@ const EmployeeRegistration = ({ employeeId = null, embedded = false, onSaved = n
       const departmentObj = wings.find(w => w.id === formData.department);
       const workLocationObj = workLocations.find(wl => wl.id === formData.workLocation);
 
-      // Prepare file paths (for now, store file names - actual upload will be handled separately)
-      const getFilePaths = (files) => {
-        if (!files) return null;
-        if (files instanceof FileList) {
-          return Array.from(files).map(file => `/uploads/employees/${file.name}`);
-        }
-        if (files instanceof File) {
-          return `/uploads/employees/${files.name}`;
-        }
-        return null;
-      };
-
       // Prepare FormData for file uploads
       const formDataToSend = new FormData();
 

@@ -42,16 +42,6 @@ export const summaryApi = baseApi.injectEndpoints({
       providesTags: (result, error, { estateId }) => [{ type: 'Plans', id: `estate-${estateId}` }],
     }),
 
-    // Get all plans summary
-    getAllPlansSummary: builder.query({
-      query: () => ({
-        url: 'find_plan_by_all',
-        method: 'POST',
-        body: {},
-      }),
-      providesTags: ['Plans'],
-    }),
-
     // Get all plans by date range
     getAllPlansByDateRange: builder.query({
       query: ({ startDate, endDate }) => ({
@@ -155,15 +145,6 @@ export const summaryApi = baseApi.injectEndpoints({
       ],
     }),
 
-    // Submit mission resource allocation (non-plantation)
-    submitMissionResourceAllocation: builder.mutation({
-      query: (data) => ({
-        url: 'mission_resource_allocations',
-        method: 'POST',
-        body: data,
-      }),
-      invalidatesTags: ['Missions'],
-    }),
   }),
 });
 
@@ -172,7 +153,6 @@ export const {
   useGetSummaryByPlantationQuery,
   useGetSummaryByRegionQuery,
   useGetSummaryByEstateQuery,
-  useGetAllPlansSummaryQuery,
   useGetAllPlansByDateRangeQuery,
   useGetPlansByGroupQuery,
   useGetPlansByGroupDateRangeQuery,
@@ -183,6 +163,5 @@ export const {
   useGetPlansByEstateQuery,
   useGetPlansByEstateDateRangeWithFieldQuery,
   useSubmitResourceAllocationMutation,
-  useSubmitMissionResourceAllocationMutation,
 } = summaryApi;
 

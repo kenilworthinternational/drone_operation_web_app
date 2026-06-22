@@ -12,16 +12,6 @@ export const teamsApi = baseApi.injectEndpoints({
       providesTags: ['Pilots', 'Drones'],
     }),
 
-    // Get ASC pilots and drones
-    getASCPilotsAndDrones: builder.query({
-      query: () => ({
-        url: 'asc_team_lead_and_pilot_list',
-        method: 'POST',
-        body: {},
-      }),
-      providesTags: ['Pilots', 'Drones'],
-    }),
-
     // Get drones list
     getDronesList: builder.query({
       query: () => ({
@@ -30,16 +20,6 @@ export const teamsApi = baseApi.injectEndpoints({
         body: {},
       }),
       providesTags: ['Drones'],
-    }),
-
-    // Get pilots and drones in teams
-    getPilotsAndDronesInTeams: builder.query({
-      query: () => ({
-        url: 'display_pilots_and_drons_in_teams',
-        method: 'POST',
-        body: {},
-      }),
-      providesTags: ['Teams'],
     }),
 
     // Display all team data
@@ -105,19 +85,6 @@ export const teamsApi = baseApi.injectEndpoints({
       invalidatesTags: (result, error, data) => [
         { type: 'PlanDetails', id: data.plan || data.plan_id },
         'Plans'
-      ],
-    }),
-
-    // Add team to mission (non-plantation)
-    addTeamToMission: builder.mutation({
-      query: ({ planId, teamId }) => ({
-        url: 'add_team_to_mission',
-        method: 'POST',
-        body: { plan_id: planId, team_id: teamId },
-      }),
-      invalidatesTags: (result, error, { planId }) => [
-        { type: 'MissionDetails', id: planId },
-        'Missions'
       ],
     }),
 
@@ -205,16 +172,13 @@ export const teamsApi = baseApi.injectEndpoints({
 
 export const {
   useGetPilotsAndDronesQuery,
-  useGetASCPilotsAndDronesQuery,
   useGetDronesListQuery,
-  useGetPilotsAndDronesInTeamsQuery,
   useGetTeamDataQuery,
   useGetTeamDataNonPlantationQuery,
   useGetPilotsAndDronesWithoutTeamQuery,
   useGetNonPlantationPilotsWithoutTeamQuery,
   useGetPilotDetailsForPlanQuery,
   useAddTeamToPlanMutation,
-  useAddTeamToMissionMutation,
   useAddDroneOrPilotToPoolMutation,
   useAddDroneOrPilotToPoolNonPlantationMutation,
   useUpdateTeamPilotMutation,

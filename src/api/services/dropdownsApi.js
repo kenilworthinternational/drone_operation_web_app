@@ -72,28 +72,7 @@ export const dropdownsApi = baseApi.injectEndpoints({
       providesTags: ['ASC'],
     }),
 
-    // Get reject reasons
-    getRejectReasons: builder.query({
-      query: () => ({
-        url: 'display_reject_reasons',
-        method: 'POST',
-        body: {},
-      }),
-      providesTags: ['Reasons'],
-    }),
-
-    // Get flag reasons
-    getFlagReasons: builder.query({
-      query: () => ({
-        url: 'flag_reasons',
-        method: 'POST',
-        body: {},
-      }),
-      providesTags: ['Reasons'],
-    }),
-
     // Get partial complete reasons (downtime reasons)
-    getPartialCompleteReasons: builder.query({
       query: (flag = 'c') => ({
         url: 'display_partial_complete_reasons',
         method: 'POST',
@@ -112,8 +91,6 @@ export const {
   useGetChemicalTypesQuery,
   useGetStagesQuery,
   useGetASCsQuery,
-  useGetRejectReasonsQuery,
-  useGetFlagReasonsQuery,
   useGetPartialCompleteReasonsQuery,
 } = dropdownsApi;
 
