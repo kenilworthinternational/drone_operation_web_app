@@ -73,6 +73,7 @@ export const dropdownsApi = baseApi.injectEndpoints({
     }),
 
     // Get partial complete reasons (downtime reasons)
+    getPartialCompleteReasons: builder.query({
       query: (flag = 'c') => ({
         url: 'display_partial_complete_reasons',
         method: 'POST',
