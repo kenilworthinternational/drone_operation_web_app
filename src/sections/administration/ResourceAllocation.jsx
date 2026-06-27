@@ -41,15 +41,42 @@ const ResourceAllocation = () => {
 
   // Fetch pilots data first
   const { data: pilotsData, isLoading: loadingPilots, refetch: refetchPilots } = useGetFleetPilotsWithTeamsQuery();
+
+  const pilots = useMemo(() => {
+    const rows = pilotsData?.data || [];
+    const byId = new Map();
+    rows.forEach((row) => {
+      const id = Number(row.id);
+      if (!Number.isFinite(id)) return;
+      const existing = byId.get(id);
+      if (!existing) {
+        byId.set(id, row);
+        return;
+      }
+      if (!existing.team_id && row.team_id) {
+        byId.set(id, row);
+      }
+    });
+    return Array.from(byId.values()).sort((a, b) =>
+      String(a.name || '').localeCompare(String(b.name || ''))
+    );
+  }, [pilotsData?.data]);
+
+  const findPilotById = (pilotId) => {
+    const id = Number(pilotId);
+    if (!Number.isFinite(id)) return null;
+    return pilots.find((p) => Number(p.id) === id) || null;
+  };
+
+  const selectedPilotTeamId = selectedPilotFilter
+    ? findPilotById(selectedPilotFilter)?.team_id
+    : null;
   
   // Fetch team leads and sectors
   const { data: teamLeadsData, isLoading: loadingTeamLeads } = useGetFleetTeamLeadsQuery();
   const { data: sectorsData, isLoading: loadingSectors } = useGetSectorsQuery();
   
   // Fetch equipment data (only for permanent view)
-  const selectedPilotTeamId = selectedPilotFilter && pilotsData?.data 
-    ? pilotsData.data.find(p => p.id === parseInt(selectedPilotFilter))?.team_id 
-    : null;
   const { data: remoteControlsData, isLoading: loadingRC } = useGetFleetRemoteControlsQuery({ 
     available: availabilityStatusFilter === 'not_assigned' ? 'true' : undefined,
     team_id: selectedPilotTeamId || undefined,
@@ -120,8 +147,6 @@ const ResourceAllocation = () => {
   const batteries = isViewingTemp ? (tempAllocationsByMonthData?.data?.batteries || []) : (batteriesData?.data || []);
   const generators = isViewingTemp ? (tempAllocationsByMonthData?.data?.generators || []) : (generatorsData?.data || []);
   const drones = isViewingTemp ? (tempAllocationsByMonthData?.data?.drones || []) : (dronesData?.data || []);
-  // Memoize pilots to prevent infinite loop in useEffect
-  const pilots = useMemo(() => pilotsData?.data || [], [pilotsData?.data]);
   // Handle both response formats: { data: [...] } or { types: [...] }
   const batteryTypes = useMemo(() => {
     if (!batteryTypesData) return [];
@@ -333,14 +358,13 @@ const ResourceAllocation = () => {
   // Handle pilot selection
   useEffect(() => {
     if (selectedPilot) {
-      const pilot = pilots.find(p => p.id === parseInt(selectedPilot));
-      if (pilot && pilot.team_id) {
-        setSelectedTeamId(pilot.team_id);
+      const pilot = findPilotById(selectedPilot);
+      if (pilot?.team_id) {
+        setSelectedTeamId(String(pilot.team_id));
         setShowCreateTeamModal(false);
       } else {
         setSelectedTeamId('');
         setSelectedSerials({});
-        // Show modal if pilot has no team
         if (pilot) {
           setShowCreateTeamModal(true);
         }
@@ -449,8 +473,11 @@ const ResourceAllocation = () => {
       }).unwrap();
 
       if (result.status) {
+        const newTeamId = result.data?.team_id;
+        if (newTeamId) {
+          setSelectedTeamId(String(newTeamId));
+        }
         setTeamCreationStatus('done');
-        // Wait a moment to show "Done!" status
         setTimeout(async () => {
           setShowCreateTeamModal(false);
           setNewTeamName('');
@@ -458,9 +485,15 @@ const ResourceAllocation = () => {
           setSelectedSector('');
           setTeamCreationStatus('');
           setIsCreatingTeam(false);
-          // Refetch pilots to get updated team info
           await refetchPilots();
-          // The useEffect will automatically set the team_id when pilots are refetched
+          if (newTeamId) {
+            setSelectedTeamId(String(newTeamId));
+          } else {
+            const pilot = findPilotById(selectedPilot);
+            if (pilot?.team_id) {
+              setSelectedTeamId(String(pilot.team_id));
+            }
+          }
         }, 1500);
       }
     } catch (error) {

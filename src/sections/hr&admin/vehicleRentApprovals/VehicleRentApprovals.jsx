@@ -86,6 +86,45 @@ function monthEndFromYearMonth(yearMonth) {
   return `${ey}-${em}-${ed}`;
 }
 
+function pauseContinueStops(tripEvents) {
+  if (!Array.isArray(tripEvents)) return { pauses: [], continues: [] };
+  return {
+    pauses: tripEvents.filter((ev) => String(ev?.event_type || '').toLowerCase() === 'pause'),
+    continues: tripEvents.filter((ev) => String(ev?.event_type || '').toLowerCase() === 'continue'),
+  };
+}
+
+function PauseContinueStopsCell({ row, onViewImage, dateLabel }) {
+  const { pauses, continues } = pauseContinueStops(row?.trip_events);
+  if (!pauses.length && !continues.length) return <>-</>;
+
+  const renderStop = (ev, label, key) => (
+    <Box key={key} sx={{ mb: 0.5 }}>
+      <Typography variant="caption" display="block" sx={{ fontWeight: 600, lineHeight: 1.35 }}>
+        {label}: {ev?.meter ?? '-'}
+      </Typography>
+      {nonEmptySrc(ev?.image_url) ? (
+        <Button
+          size="small"
+          variant="text"
+          startIcon={<Visibility sx={{ fontSize: 14 }} />}
+          onClick={() => onViewImage(ev.image_url, `${label} meter - ${dateLabel}`)}
+          sx={{ p: 0, minHeight: 24, textTransform: 'none', justifyContent: 'flex-start' }}
+        >
+          View image
+        </Button>
+      ) : null}
+    </Box>
+  );
+
+  return (
+    <Box>
+      {pauses.map((ev, idx) => renderStop(ev, 'Pause', `pause-${idx}`))}
+      {continues.map((ev, idx) => renderStop(ev, 'Continue', `continue-${idx}`))}
+    </Box>
+  );
+}
+
 /** Stacking above Transport HR detail overlay (z-index 3000) and other app layers */
 const NESTED_OVERLAY_Z_INDEX = 5000;
 
@@ -875,6 +914,7 @@ const VehicleRentApprovals = ({ embedded = false }) => {
                   <TableCell sx={{ fontWeight: 600 }}>Start Meter</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>End Meter</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>Trip Distance</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Pause / Continue</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>Start Image</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>End Image</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>Actions</TableCell>
@@ -898,6 +938,13 @@ const VehicleRentApprovals = ({ embedded = false }) => {
                     <TableCell>{row.start_meter || '-'}</TableCell>
                     <TableCell>{row.end_meter || '-'}</TableCell>
                     <TableCell>{Number(row.trip_distance ?? row.daily_km ?? 0).toFixed(2)}</TableCell>
+                    <TableCell>
+                      <PauseContinueStopsCell
+                        row={row}
+                        onViewImage={openImageDialog}
+                        dateLabel={formatVehicleDate(row.date)}
+                      />
+                    </TableCell>
                     <TableCell>
                       {nonEmptySrc(row.start_image_url) ? (
                         <Button
@@ -1283,6 +1330,7 @@ const VehicleRentApprovals = ({ embedded = false }) => {
                     <TableCell sx={{ fontWeight: 700, backgroundColor: '#f8fafc', whiteSpace: 'nowrap' }}>End Time</TableCell>
                     <TableCell sx={{ fontWeight: 700, backgroundColor: '#f8fafc', whiteSpace: 'nowrap' }}>Duration</TableCell>
                     <TableCell sx={{ fontWeight: 700, backgroundColor: '#f8fafc', whiteSpace: 'nowrap' }}>Daily KM</TableCell>
+                    <TableCell sx={{ fontWeight: 700, backgroundColor: '#f8fafc', whiteSpace: 'nowrap' }}>Pause / Continue</TableCell>
                     <TableCell sx={{ fontWeight: 700, backgroundColor: '#f8fafc', whiteSpace: 'nowrap' }}>Start Image</TableCell>
                     <TableCell sx={{ fontWeight: 700, backgroundColor: '#f8fafc', whiteSpace: 'nowrap' }}>End Image</TableCell>
                     <TableCell sx={{ fontWeight: 700, backgroundColor: '#f8fafc', whiteSpace: 'nowrap' }}>Status</TableCell>
@@ -1299,6 +1347,13 @@ const VehicleRentApprovals = ({ embedded = false }) => {
                       <TableCell>{row.end_time || '-'}</TableCell>
                       <TableCell>{formatDuration(row.duration_minutes)}</TableCell>
                       <TableCell>{Number(row.daily_km || 0).toFixed(2)}</TableCell>
+                      <TableCell>
+                        <PauseContinueStopsCell
+                          row={row}
+                          onViewImage={openImageDialog}
+                          dateLabel={formatVehicleDate(row.date)}
+                        />
+                      </TableCell>
                       <TableCell>
                         {nonEmptySrc(row.start_image_url) ? (
                           <Button

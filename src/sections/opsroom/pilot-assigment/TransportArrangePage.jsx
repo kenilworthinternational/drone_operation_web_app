@@ -10,7 +10,7 @@ import { useGetMyPermissionsQuery } from '../../../api/services NodeJs/featurePe
 import { FEATURE_CODES } from '../../../utils/featurePermissions';
 import { isInternalDeveloper } from '../../../utils/authUtils';
 import TransportAssignmentFields from './TransportAssignmentFields';
-import { formatDriverArrivalTimeForInput } from '../../../utils/transportAssignment';
+import { formatDriverArrivalTimeForInput, formatApiDateYmd, formatTransportTimeDisplay } from '../../../utils/transportAssignment';
 import '../../../styles/pilotAssignment-pilotsassign.css';
 
 /**
@@ -102,7 +102,7 @@ const TransportArrangePage = () => {
   const openTransportDetail = (row) => {
     transportRecommendedAppliedRef.current = false;
     setTransportDetailAssignmentId(row.assignment_id);
-    setTransportDetailYearMonth(row.assignment_day ? row.assignment_day.slice(0, 7) : '');
+    setTransportDetailYearMonth(formatApiDateYmd(row.assignment_day).slice(0, 7));
     setTransportEditable(!!row.editable_transport);
     setTransportForm({
       driver_id: row.driver_id != null ? String(row.driver_id) : '',
@@ -221,7 +221,7 @@ const TransportArrangePage = () => {
                     <div className="pilot-assignment-transport-list-estates-pilotsassign">{row.estate_summary}</div>
                     <div className="pilot-assignment-transport-list-current-pilotsassign">
                       {row.driver_id
-                        ? `Driver: ${row.transport_driver_name || row.driver_id} · Vehicle: ${row.transport_vehicle_no || '—'} · Arrival: ${row.driver_arrival_time || '—'}`
+                        ? `Driver: ${row.transport_driver_name || row.driver_id} · Vehicle: ${row.transport_vehicle_no || '—'} · Arrival: ${formatTransportTimeDisplay(row.driver_arrival_time)}`
                         : 'No driver / vehicle assigned yet.'}
                     </div>
                     {row.lock_reason === 'driver_started_day' ? (
@@ -256,7 +256,7 @@ const TransportArrangePage = () => {
                     <div className="pilot-assignment-transport-list-estates-pilotsassign">{row.estate_summary}</div>
                     <div className="pilot-assignment-transport-list-current-pilotsassign">
                       {row.driver_id
-                        ? `Driver: ${row.transport_driver_name || row.driver_id} · Vehicle: ${row.transport_vehicle_no || '—'} · Arrival: ${row.driver_arrival_time || '—'}`
+                        ? `Driver: ${row.transport_driver_name || row.driver_id} · Vehicle: ${row.transport_vehicle_no || '—'} · Arrival: ${formatTransportTimeDisplay(row.driver_arrival_time)}`
                         : 'No driver / vehicle assigned yet.'}
                     </div>
                   </div>

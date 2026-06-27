@@ -320,6 +320,10 @@
   font-weight: 600;
 }
 
+.item-selected-map-update .item-meta-map-update {
+  color: rgba(255, 255, 255, 0.9);
+}
+
 .item-selected-map-update .item-inactive-tag-map-update {
   background: rgba(255, 255, 255, 0.2);
   color: rgba(255, 255, 255, 0.9);
@@ -423,6 +427,19 @@
   gap: 8px;
   flex: 1;
   min-width: 0;
+}
+
+.item-text-block-map-update {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.item-meta-map-update {
+  font-size: 11px;
+  color: var(--mu-gray-500);
+  line-height: 1.3;
 }
 
 .item-name-map-update {

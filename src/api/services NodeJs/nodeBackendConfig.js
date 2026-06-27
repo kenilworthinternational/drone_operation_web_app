@@ -11,49 +11,34 @@ import { fetchBaseQuery } from '@reduxjs/toolkit/query/react';
  * @returns {string} The backend API base URL
  */
 export const getNodeBackendUrl = () => {
-  // First, check environment variable (set by npm scripts)
-  // This allows testing production APIs locally with npm run start:prod
   const env = process.env.REACT_APP_ENV;
-  
+
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    const isLocalDevServer = hostname === 'localhost' || hostname === '127.0.0.1';
+
+    // Same-origin /api via src/setupProxy.js (no cross-origin CORS on localhost)
+    if (isLocalDevServer) {
+      return '';
+    }
+
+    if (env === 'production') {
+      return 'https://dsms-web-api.kenilworthinternational.com';
+    }
+    if (env === 'development' || hostname.includes('dev')) {
+      return 'https://dsms-web-api-dev.kenilworthinternational.com';
+    }
+    if (hostname.includes('test')) {
+      return 'https://dsms-api-test.kenilworth.international.com';
+    }
+    return 'https://dsms-web-api.kenilworthinternational.com';
+  }
+
+  // Build / SSR (no window)
   if (env === 'production') {
-    const url = 'https://dsms-web-api.kenilworthinternational.com';
-    console.log('[Node Backend Config] Using PRODUCTION API (from REACT_APP_ENV):', url);
-    return url;
+    return 'https://dsms-web-api.kenilworthinternational.com';
   }
-  
-  if (env === 'development') {
-    const url = 'https://dsms-web-api-dev.kenilworthinternational.com';
-    console.log('[Node Backend Config] Using DEVELOPMENT API (from REACT_APP_ENV):', url);
-    return url;
-  }
-  
-  // Fallback to hostname-based detection (only when REACT_APP_ENV is not set)
-  // This is for deployed environments where env var might not be set
-  const hostname = window.location.hostname;
-  
-  if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    // Default to dev when running locally without explicit env
-    const url = 'https://dsms-web-api-dev.kenilworthinternational.com';
-    console.log('[Node Backend Config] Using DEVELOPMENT API (localhost fallback):', url);
-    return url;
-  }
-  
-  if (hostname.includes('dev')) {
-    const url = 'https://dsms-web-api-dev.kenilworthinternational.com';
-    console.log('[Node Backend Config] Using DEVELOPMENT API (hostname contains "dev"):', url);
-    return url;
-  }
-  
-  if (hostname.includes('test')) {
-    const url = 'https://dsms-api-test.kenilworth.international.com';
-    console.log('[Node Backend Config] Using TEST API (hostname contains "test"):', url);
-    return url;
-  }
-  
-  // Default to production for unknown hostnames
-  const url = 'https://dsms-web-api.kenilworthinternational.com';
-  console.log('[Node Backend Config] Using PRODUCTION API (default fallback):', url);
-  return url;
+  return 'https://dsms-web-api-dev.kenilworthinternational.com';
 };
 
 /**

@@ -69,6 +69,37 @@ const StatusBadge = ({ active, label }) => (
   </span>
 );
 
+function formatPlanSizeDisplay(value) {
+  if (value === null || value === undefined || value === '') return '—';
+  const n = Number(value);
+  return Number.isFinite(n) ? n : '—';
+}
+
+function parseOptionalPlanSizeInput(raw) {
+  if (raw === null || raw === undefined || raw === '') return null;
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n < 0) return NaN;
+  return n;
+}
+
+function validateEstatePlanSizes(minRaw, maxRaw) {
+  const minVal = parseOptionalPlanSizeInput(minRaw);
+  if (Number.isNaN(minVal)) return 'Enter a valid min plan size (Ha)';
+  const maxVal = parseOptionalPlanSizeInput(maxRaw);
+  if (Number.isNaN(maxVal)) return 'Enter a valid max plan size (Ha)';
+  if (minVal != null && maxVal != null && minVal > maxVal) {
+    return 'Min plan size cannot exceed max plan size';
+  }
+  return null;
+}
+
+function estatePlanSizeSummary(estate) {
+  const min = formatPlanSizeDisplay(estate?.min_plan_size);
+  const max = formatPlanSizeDisplay(estate?.max_plan_size);
+  if (min === '—' && max === '—') return null;
+  return `Min ${min} Ha · Max ${max} Ha`;
+}
+
 function fieldBlockReasonLabel(field, type, missionReasons) {
   if (type === 'spread') {
     if (field.spread_reason_name) return field.spread_reason_name;
@@ -261,6 +292,13 @@ const MappingUpdatePage = () => {
         createData.group = selectedGroup;
         createData.plantation = selectedPlantation;
         createData.region = selectedRegion;
+        const sizeErr = validateEstatePlanSizes(createData.min_plan_size, createData.max_plan_size);
+        if (sizeErr) {
+          toast.error(sizeErr);
+          return;
+        }
+        createData.min_plan_size = parseOptionalPlanSizeInput(createData.min_plan_size);
+        createData.max_plan_size = parseOptionalPlanSizeInput(createData.max_plan_size);
       }
       if (level === 'division') {
         createData.group = selectedGroup;
@@ -590,20 +628,13 @@ const MappingUpdatePage = () => {
     if (!estatePlanSizeModal) return;
     const minRaw = estatePlanSizeModal.min_plan_size.trim();
     const maxRaw = estatePlanSizeModal.max_plan_size.trim();
-    const minVal = minRaw === '' ? null : parseFloat(minRaw);
-    const maxVal = maxRaw === '' ? null : parseFloat(maxRaw);
-    if (minRaw !== '' && (!Number.isFinite(minVal) || minVal < 0)) {
-      toast.error('Enter a valid min plan size (Ha)');
+    const sizeErr = validateEstatePlanSizes(minRaw, maxRaw);
+    if (sizeErr) {
+      toast.error(sizeErr);
       return;
     }
-    if (maxRaw !== '' && (!Number.isFinite(maxVal) || maxVal < 0)) {
-      toast.error('Enter a valid max plan size (Ha)');
-      return;
-    }
-    if (minVal != null && maxVal != null && minVal > maxVal) {
-      toast.error('Min plan size cannot exceed max plan size');
-      return;
-    }
+    const minVal = parseOptionalPlanSizeInput(minRaw);
+    const maxVal = parseOptionalPlanSizeInput(maxRaw);
     setEstatePlanSizeSaving(true);
     try {
       const result = await setEstatePlanSizes({
@@ -791,7 +822,12 @@ const MappingUpdatePage = () => {
                     onContextMenu={key === 'estate' ? (e) => { e.preventDefault(); const x = e.clientX; const y = e.clientY; setEstateMenuPosition({ left: x, top: y }); setEstateContextMenu({ x, y, estateId: item.id, isFinalized: item.finalized === 1 }); } : undefined}
                   >
                     <div className="item-content-map-update">
-                      <span className="item-name-map-update">{item[nameField]}</span>
+                      <div className="item-text-block-map-update">
+                        <span className="item-name-map-update">{item[nameField]}</span>
+                        {key === 'estate' && estatePlanSizeSummary(item) ? (
+                          <span className="item-meta-map-update">{estatePlanSizeSummary(item)}</span>
+                        ) : null}
+                      </div>
                       {!item.activated && <span className="item-inactive-tag-map-update">Inactive</span>}
                     </div>
                     <div className="item-actions-map-update">

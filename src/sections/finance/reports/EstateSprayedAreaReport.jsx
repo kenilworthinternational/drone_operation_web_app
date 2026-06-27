@@ -116,7 +116,6 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
     const [showInvoiceModal, setShowInvoiceModal] = useState(false);
     const [invoiceWorkSummaryRows, setInvoiceWorkSummaryRows] = useState([]);
     const [localPreviewInvoice, setLocalPreviewInvoice] = useState(null);
-    const saveDraftTimerRef = useRef(null);
     const monthInputRef = useRef(null);
 
     const openMonthPicker = () => {
@@ -156,25 +155,27 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
         };
     }, [selectedPlantation, selectedMonth, selectedEstates, selectedMissionType, periodStart, periodEnd]);
 
+    const buildDraftLineFromRow = (r) => ({
+        plan_id: r.planId,
+        field_id: r.fieldId,
+        estate_id: r.estateId,
+        field_name: r.fieldName,
+        pilot_names: r.pilotNames,
+        plan_date: r.date ? String(r.date).slice(0, 10) : null,
+        mission_type: r.missionType,
+        field_ha: r.landExtent,
+        completed_ha: r.fieldExtent,
+        covered_percent: r.coveredPercent,
+        billing_ha_default: r.landExtent,
+        reason_text: r.comNarration,
+        has_chargeable_reason: 1,
+        is_included: r.billIncluded ? 1 : 0,
+    });
+
     const buildDraftLines = useCallback((rows) => {
         return (rows || [])
             .filter((r) => r.hasChargeableReason && !r.isManagerCanceled)
-            .map((r) => ({
-                    plan_id: r.planId,
-                    field_id: r.fieldId,
-                    estate_id: r.estateId,
-                    field_name: r.fieldName,
-                    pilot_names: r.pilotNames,
-                    plan_date: r.date ? String(r.date).slice(0, 10) : null,
-                    mission_type: r.missionType,
-                    field_ha: r.landExtent,
-                    completed_ha: r.fieldExtent,
-                    covered_percent: r.coveredPercent,
-                    billing_ha_default: r.landExtent,
-                    reason_text: r.comNarration,
-                    has_chargeable_reason: 1,
-                    is_included: r.billIncluded ? 1 : 0,
-                }));
+            .map((r) => buildDraftLineFromRow(r));
     }, []);
 
     const persistBillingDraft = useCallback(async (rows = reportData) => {
@@ -189,13 +190,6 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
             console.error('Failed to save billing draft', e);
         }
     }, [getBillingContext, reportData, buildDraftLines, saveBillingDraft]);
-
-    const schedulePersistBillingDraft = useCallback((rows) => {
-        if (saveDraftTimerRef.current) clearTimeout(saveDraftTimerRef.current);
-        saveDraftTimerRef.current = setTimeout(() => {
-            persistBillingDraft(rows);
-        }, 400);
-    }, [persistBillingDraft]);
 
     const getFilteredRows = () => {
         const rows = Array.isArray(reportData) ? reportData : [];
@@ -228,15 +222,23 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
             );
         });
         try {
+            const ctx = getBillingContext();
             await updatePlanFieldBill({
                 plan_id: planId,
                 field_id: fieldId,
                 bill: nextBillIncluded ? 1 : 0,
+                ...(ctx
+                    ? {
+                          billing_draft: {
+                              plantation_id: ctx.plantation_id,
+                              start_date: ctx.start_date,
+                              end_date: ctx.end_date,
+                              estates: ctx.estates,
+                              line: buildDraftLineFromRow({ ...row, billIncluded: nextBillIncluded }),
+                          },
+                      }
+                    : {}),
             }).unwrap();
-            setReportData((prev) => {
-                schedulePersistBillingDraft(prev);
-                return prev;
-            });
         } catch (e) {
             if (snapshot) setReportData(snapshot);
             console.error('Failed to update bill flag', e);

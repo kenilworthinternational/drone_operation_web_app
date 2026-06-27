@@ -46,30 +46,19 @@ import {
 } from '../../api/services NodeJs/pilotAssignmentApi';
 import TransportAssignmentFields from '../opsroom/pilot-assigment/TransportAssignmentFields';
 import PoolVehicleTasksPanel from './PoolVehicleTasksPanel';
-import { formatDriverArrivalTimeForInput } from '../../utils/transportAssignment';
+import { formatDriverArrivalTimeForInput, formatApiDateYmd, formatTransportTimeDisplay, getColomboYmd } from '../../utils/transportAssignment';
 import '../../styles/transportHrDashboard.css';
 
 function getTodayInfo() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
+  const today = getColomboYmd();
   return {
-    today: `${year}-${month}-${day}`,
-    monthKey: `${year}-${month}`,
+    today,
+    monthKey: today.slice(0, 7),
   };
 }
 
 function toDateOnly(value) {
-  const text = String(value || '').trim();
-  if (!text) return '';
-  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
-  const parsed = new Date(text);
-  if (Number.isNaN(parsed.getTime())) return '';
-  const year = parsed.getFullYear();
-  const month = String(parsed.getMonth() + 1).padStart(2, '0');
-  const day = String(parsed.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  return formatApiDateYmd(value);
 }
 
 /** Last N calendar months (current month first), for filter dropdown */
@@ -588,7 +577,7 @@ function TransportHrDashboard() {
     const worksheet = XLSX.utils.json_to_sheet(flat);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Leave requests');
-    const stamp = new Date().toISOString().slice(0, 10);
+    const stamp = getColomboYmd();
     XLSX.writeFile(workbook, `Driver_leave_requests_${stamp}.xlsx`);
   };
   const pendingMaintenanceCount = useMemo(
@@ -922,7 +911,7 @@ function TransportHrDashboard() {
     () =>
       (kmChartRows || []).map((row) => ({
         ...row,
-        dayLabel: String(row.day || '').replace(/^0/, '') || String(row.date || '').slice(8, 10),
+        dayLabel: String(row.day || '').replace(/^0/, '') || formatApiDateYmd(row.date).slice(8, 10),
       })),
     [kmChartRows]
   );
@@ -931,7 +920,7 @@ function TransportHrDashboard() {
       (kmVehicleChartRows || []).map((row) => ({
         ...row,
         vehicle_no: String(row.vehicle_no || 'Unknown'),
-        dayLabel: String(row.day || '').replace(/^0/, '') || String(row.date || '').slice(8, 10),
+        dayLabel: String(row.day || '').replace(/^0/, '') || formatApiDateYmd(row.date).slice(8, 10),
       })),
     [kmVehicleChartRows]
   );
@@ -1078,7 +1067,7 @@ function TransportHrDashboard() {
                   <tbody>
                     {transportSelectedDateRows.map((row) => (
                       <tr key={`${row.assignment_id}-${row.day_label}`}>
-                        <td>{row.assignment_day || '-'}</td>
+                        <td>{formatApiDateYmd(row.assignment_day) || '-'}</td>
                         <td>
                           <div>{row.assignment_id}</div>
                           <small style={{ color: '#64748b' }}>{row.estate_summary || '-'}</small>
@@ -1086,7 +1075,7 @@ function TransportHrDashboard() {
                         <td>{row.team_name} {row.pilot_names ? `· ${row.pilot_names}` : ''}</td>
                         <td>
                           {row.driver_id
-                            ? `${row.transport_driver_name || row.driver_id} · ${row.transport_vehicle_no || '—'} · ${row.driver_arrival_time || '—'}`
+                            ? `${row.transport_driver_name || row.driver_id} · ${row.transport_vehicle_no || '—'} · ${formatTransportTimeDisplay(row.driver_arrival_time)}`
                             : 'No driver/vehicle assigned'}
                         </td>
                         <td>
@@ -1851,7 +1840,7 @@ function TransportHrDashboard() {
               </div>
               <div className="vehicle-admin-stat-sub-row-transport-hr">
                 <span>Latest pending</span>
-                <strong>{loadingMaintenance ? '-' : latestPendingMaintenance?.date ? String(latestPendingMaintenance.date) : 'None'}</strong>
+                <strong>{loadingMaintenance ? '-' : latestPendingMaintenance?.date ? formatApiDateYmd(latestPendingMaintenance.date) : 'None'}</strong>
               </div>
             </div>
           </button>

@@ -127,6 +127,7 @@ const DayEndProcess = () => {
   const [cancelFieldId, setCancelFieldId] = useState(null);
   const [selectedCancelReason, setSelectedCancelReason] = useState(null);
   const [cancelSubmitting, setCancelSubmitting] = useState(false);
+  const [removeOpsCancelConfirm, setRemoveOpsCancelConfirm] = useState(null);
   // Cancel status map: { task_id: { com_naration, cancel_reason_text } }
   const [taskCancelStatusMap, setTaskCancelStatusMap] = useState({});
   // State for image modal
@@ -161,7 +162,11 @@ const DayEndProcess = () => {
         dayEndProcessApi.endpoints.getTasksCancelStatus.initiate({ planId }, { forceRefetch: true })
       );
       if (result.data) {
-        setTaskCancelStatusMap(result.data);
+        const normalized = {};
+        Object.entries(result.data).forEach(([key, value]) => {
+          normalized[Number(key)] = value;
+        });
+        setTaskCancelStatusMap(normalized);
       }
     } catch (e) {
       console.error('Error fetching cancel status:', e);
@@ -245,20 +250,22 @@ const DayEndProcess = () => {
     }
   };
 
-  const handleRemoveOpsCancel = async () => {
+  const handleRemoveOpsCancelClick = () => {
     if (!cancelTaskId) return;
     const currentReason =
       taskCancelStatusMap[cancelTaskId]?.ops_cancel_reason ||
       getCancelReasonText(taskCancelStatusMap[cancelTaskId]?.ops_cancel_id);
-    const msg = currentReason
-      ? `Remove ops cancel reason?\n\nCurrent: ${currentReason}\n\nThe task will no longer show as ops cancelled.`
-      : 'Remove the ops cancel reason? The task will no longer show as ops cancelled.';
-    if (!window.confirm(msg)) return;
+    setRemoveOpsCancelConfirm({ currentReason: currentReason || null });
+  };
+
+  const confirmRemoveOpsCancel = async () => {
+    if (!cancelTaskId) return;
 
     setCancelSubmitting(true);
     try {
       const res = await clearOpsCancel({ taskId: cancelTaskId }).unwrap();
-      toast.success(res?.message || 'Ops cancel reason removed successfully');
+      toast.success(res?.message || 'Ops cancel reason cleared successfully');
+      setRemoveOpsCancelConfirm(null);
       setShowCancelPopup(false);
       setSelectedCancelReason(null);
       await refreshAfterCancelChange();
@@ -699,7 +706,7 @@ const DayEndProcess = () => {
     const hasSubmittedCancelReason = () => {
       const cancelInfo = taskCancelStatusMap[currentTask?.task_id];
       if (!cancelInfo) return false;
-      return Number(cancelInfo.ops_cancel_id || 0) > 0 || Boolean(String(cancelInfo.cancel_reason_text || '').trim());
+      return Number(cancelInfo.ops_cancel_id || 0) > 0 || Boolean(String(cancelInfo.ops_cancel_reason || '').trim());
     };
 
     const pilotFieldAreaValue = Number(currentTask?.task_fieldArea || currentField?.field_area || 0);
@@ -1644,8 +1651,8 @@ const DayEndProcess = () => {
               </p>
               {isOpsCancelEditMode() ? (
                 <p className="cancel-task-hint">
-                  Change the reason below, or use <strong>Remove cancellation</strong> if this was added by mistake.
-                  Click a selected reason again to deselect before updating.
+                  Change the reason below and click <strong>Update Reason</strong>, or use{' '}
+                  <strong>Remove cancellation</strong> if this was added by mistake.
                 </p>
               ) : cancelPopupMode === 'partial' ? (
                 <p className="cancel-task-hint cancel-task-hint-partial">
@@ -1695,18 +1702,18 @@ const DayEndProcess = () => {
                 )}
               </div>
             </div>
-            <div className={`cancel-task-footer ${isOpsCancelEditMode() ? 'cancel-task-footer-edit' : ''}`}>
-              {isOpsCancelEditMode() ? (
-                <button
-                  type="button"
-                  className="cancel-task-btn-remove"
-                  onClick={handleRemoveOpsCancel}
-                  disabled={cancelSubmitting}
-                >
-                  {cancelSubmitting ? 'Working...' : 'Remove cancellation'}
-                </button>
-              ) : null}
+            <div className="cancel-task-footer">
               <div className="cancel-task-footer-actions">
+                {isOpsCancelEditMode() ? (
+                  <button
+                    type="button"
+                    className="cancel-task-btn-remove"
+                    onClick={handleRemoveOpsCancelClick}
+                    disabled={cancelSubmitting}
+                  >
+                    {cancelSubmitting ? 'Working...' : 'Remove cancellation'}
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   className="cancel-task-btn-secondary"
@@ -1728,6 +1735,45 @@ const DayEndProcess = () => {
                       : 'Confirm Cancel'}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {removeOpsCancelConfirm && createPortal(
+        <div
+          className="dayend-confirm-overlay"
+          onClick={() => !cancelSubmitting && setRemoveOpsCancelConfirm(null)}
+        >
+          <div className="dayend-confirm-modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+            <h4 className="dayend-confirm-title">Remove ops cancel reason?</h4>
+            {removeOpsCancelConfirm.currentReason ? (
+              <p className="dayend-confirm-current">
+                <span className="dayend-confirm-current-label">Current:</span>{' '}
+                {removeOpsCancelConfirm.currentReason}
+              </p>
+            ) : null}
+            <p className="dayend-confirm-message">
+              The task will no longer show as ops cancelled.
+            </p>
+            <div className="dayend-confirm-actions">
+              <button
+                type="button"
+                className="cancel-task-btn-secondary"
+                onClick={() => setRemoveOpsCancelConfirm(null)}
+                disabled={cancelSubmitting}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="cancel-task-btn-danger"
+                onClick={confirmRemoveOpsCancel}
+                disabled={cancelSubmitting}
+              >
+                {cancelSubmitting ? 'Working...' : 'Remove'}
+              </button>
             </div>
           </div>
         </div>,

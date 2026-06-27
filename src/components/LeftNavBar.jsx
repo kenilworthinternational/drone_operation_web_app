@@ -51,7 +51,6 @@ const LeftNavBar = ({ showSidebar = false, onClose = () => { }, onCollapseChange
     return categories.filter((c) => c.title === normalizedWing);
   }, [wingTitle]);
   const [activeLink, setActiveLink] = useState(localStorage.getItem('activeLink') || '/home/create');
-  const [pendingCount, setPendingCount] = useState(0);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [logoErrorCount, setLogoErrorCount] = useState(0);
   const [expandedCategories, setExpandedCategories] = useState(() => {
@@ -106,25 +105,8 @@ const LeftNavBar = ({ showSidebar = false, onClose = () => { }, onCollapseChange
     if (item?.pendingCountKey === 'fieldUnblock') return fieldUnblockPendingCount;
     if (item?.pendingCountKey === 'planActivate') return planActivatePendingCount;
     if (item?.pendingCountKey === 'strategicFinanceApprovals') return strategicFinancePendingCount;
-    if (item?.showPendingCount) return pendingCount;
     return 0;
   };
-
-  useEffect(() => {
-    const fetchPendingCount = async () => {
-      try {
-        const result = await dispatch(baseApi.endpoints.getPendingRescheduleRequests.initiate());
-        const response = result.data;
-        const data = Array.isArray(response) ? response : [];
-        const pending = data.filter((request) => request.status === 'p');
-        setPendingCount(pending.length);
-      } catch (error) {
-        console.error('Error fetching pending requests:', error);
-        setPendingCount(0);
-      }
-    };
-    fetchPendingCount();
-  }, []);
 
   let companyLogo = '';
   let navbarColor = '';

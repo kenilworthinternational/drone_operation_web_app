@@ -64,12 +64,12 @@ export const financeReportApi = baseApi.injectEndpoints({
       },
     }),
     updatePlanFieldBill: builder.mutation({
-      queryFn: async ({ plan_id, field_id, bill }) => {
+      queryFn: async (body) => {
         const result = await nodeBackendBaseQuery(
           {
             url: '/api/finance-report/plan-field-bill',
             method: 'POST',
-            body: { plan_id, field_id, bill: bill ? 1 : 0 },
+            body,
           },
           {},
           {}

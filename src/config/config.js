@@ -30,16 +30,26 @@ const getEnvironment = () => {
 const currentEnv = getEnvironment();
 const isDevelopment = currentEnv === 'development';
 
-// API Configuration
+// API Configuration (legacy PHP / Laravel API)
 export const API_CONFIG = {
   development: 'https://drone-admin-test.kenilworthinternational.com/api/',
   production: 'https://drone-admin.kenilworthinternational.com/api/',
 };
 
+function isLocalDevServer() {
+  if (typeof window === 'undefined') return false;
+  const h = window.location.hostname;
+  return h === 'localhost' || h === '127.0.0.1';
+}
+
 // Get the appropriate API URL based on environment
-export const API_BASE_URL = isDevelopment 
-  ? API_CONFIG.development 
-  : API_CONFIG.production;
+// On localhost, use /php-api/ (proxied by src/setupProxy.js → drone-admin-test or prod)
+export const API_BASE_URL = (() => {
+  if (isLocalDevServer()) {
+    return '/php-api/';
+  }
+  return isDevelopment ? API_CONFIG.development : API_CONFIG.production;
+})();
 
 // Export environment flag for use in other files
 export const IS_DEVELOPMENT = isDevelopment;

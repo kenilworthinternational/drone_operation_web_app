@@ -11,8 +11,9 @@ import {
 } from '../../api/services NodeJs/poolVehicleTaskApi';
 import { useGetWingsQuery } from '../../api/services NodeJs/jdManagementApi';
 import { formatVehicleOwnershipFromRecord } from '../../utils/vehicleOwnership';
+import { formatApiDateYmd, formatTransportTimeDisplay, getColomboYmd } from '../../utils/transportAssignment';
 
-const todayIso = () => new Date().toISOString().slice(0, 10);
+const todayIso = () => getColomboYmd();
 
 const normalizeWings = (wingsData) => {
   if (!wingsData) return [];
@@ -119,8 +120,8 @@ export default function PoolVehicleTasksPanel() {
 
   const formatTaskDateRange = (row) => {
     if (!row) return '—';
-    const start = String(row.task_date || '').slice(0, 10);
-    const end = String(row.task_end_date || row.task_date || '').slice(0, 10);
+    const start = formatApiDateYmd(row.task_date);
+    const end = formatApiDateYmd(row.task_end_date || row.task_date);
     if (end && end !== start) return `${start} → ${end}`;
     return start || '—';
   };
@@ -240,15 +241,18 @@ export default function PoolVehicleTasksPanel() {
               <tr key={row.id}>
                 <td>
                   <div>
-                    {String(row.task_date || '').slice(0, 10)}
+                    {formatApiDateYmd(row.task_date)}
                     {row.task_end_date &&
-                    String(row.task_end_date).slice(0, 10) !== String(row.task_date || '').slice(0, 10)
-                      ? ` → ${String(row.task_end_date).slice(0, 10)}`
+                    formatApiDateYmd(row.task_end_date) !== formatApiDateYmd(row.task_date)
+                      ? ` → ${formatApiDateYmd(row.task_end_date)}`
                       : ''}
                   </div>
                   {(row.required_from_time || row.required_to_time) ? (
                     <small style={{ color: '#64748b' }}>
-                      {[row.required_from_time, row.required_to_time].filter(Boolean).join(' – ')}
+                      {[row.required_from_time, row.required_to_time]
+                        .filter(Boolean)
+                        .map((t) => formatTransportTimeDisplay(t))
+                        .join(' – ')}
                     </small>
                   ) : null}
                 </td>
