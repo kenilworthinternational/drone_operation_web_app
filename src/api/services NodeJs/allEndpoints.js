@@ -33,6 +33,7 @@ import './financeWorkSummaryBillingApi';
 import './opsroomPerformanceSummaryApi';
 import './fuelTransportVoucherApi';
 import './strategicFinanceApprovalsApi';
+import './empOrgStructureApi';
 
 // Export the complete API
 export { baseApi };
@@ -63,6 +64,7 @@ export * from './financeWorkSummaryBillingApi';
 export * from './opsroomPerformanceSummaryApi';
 export * from './fuelTransportVoucherApi';
 export * from './strategicFinanceApprovalsApi';
+export * from './empOrgStructureApi';
 
 /**
  * Node.js Backend Services:

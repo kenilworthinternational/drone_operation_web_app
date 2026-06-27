@@ -4,7 +4,11 @@ import {
   useCreateHrMasterOptionMutation,
   useUpdateHrMasterOptionMutation,
 } from '../../../api/services NodeJs/hrMasterOptionsApi';
-import { HR_MASTER_CATEGORIES, hrMasterCategoryLabel } from '../../../config/hrMasterCategories';
+import {
+  HR_MASTER_CATEGORY_HINTS,
+  groupHrMasterCategories,
+  hrMasterCategoryLabel,
+} from '../../../config/hrMasterCategories';
 
 function emptyDraft(category) {
   return {
@@ -32,6 +36,10 @@ export default function HrMasterOptionsPanel({ onMessage }) {
     () => [...rows].sort((a, b) => (a.sort_order - b.sort_order) || (a.id - b.id)),
     [rows],
   );
+
+  const groupedCategories = useMemo(() => groupHrMasterCategories(), []);
+
+  const categoryHint = HR_MASTER_CATEGORY_HINTS[selectedCategory];
 
   const notify = (type, text) => onMessage?.({ type, text });
 
@@ -96,7 +104,8 @@ export default function HrMasterOptionsPanel({ onMessage }) {
         <div className="master-data-chemicals-head-text-master-data">
           <h3>HR Master Options</h3>
           <p className="vehicle-master-note-master-data">
-            Dropdown values used in Employee Profile (personal, employment, family, qualifications, lifecycle).
+            Dropdown values for Employee Profile — including education (A/L stream, schools, programmes) and
+            employment history (industry).
           </p>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -105,10 +114,14 @@ export default function HrMasterOptionsPanel({ onMessage }) {
             onChange={(e) => setSelectedCategory(e.target.value)}
             className="master-edit-input-master-data"
           >
-            {HR_MASTER_CATEGORIES.map((cat) => (
-              <option key={cat.key} value={cat.key}>
-                {cat.label}
-              </option>
+            {groupedCategories.map(({ group, categories }) => (
+              <optgroup key={group} label={group}>
+                {categories.map((cat) => (
+                  <option key={cat.key} value={cat.key}>
+                    {cat.label}
+                  </option>
+                ))}
+              </optgroup>
             ))}
           </select>
           <button
@@ -123,6 +136,12 @@ export default function HrMasterOptionsPanel({ onMessage }) {
 
       <p className="vehicle-master-note-master-data" style={{ marginTop: 8 }}>
         Category: <strong>{hrMasterCategoryLabel(selectedCategory)}</strong>
+        {categoryHint ? (
+          <>
+            {' '}
+            — {categoryHint}
+          </>
+        ) : null}
       </p>
 
       <div className="vehicle-table-wrap-master-data" style={{ marginTop: 12 }}>
@@ -190,8 +209,12 @@ export default function HrMasterOptionsPanel({ onMessage }) {
                   onChange={(e) => setDraft((p) => ({ ...p, category: e.target.value }))}
                   disabled={!!editRow}
                 >
-                  {HR_MASTER_CATEGORIES.map((cat) => (
-                    <option key={cat.key} value={cat.key}>{cat.label}</option>
+                  {groupedCategories.map(({ group, categories }) => (
+                    <optgroup key={group} label={group}>
+                      {categories.map((cat) => (
+                        <option key={cat.key} value={cat.key}>{cat.label}</option>
+                      ))}
+                    </optgroup>
                   ))}
                 </select>
               </div>

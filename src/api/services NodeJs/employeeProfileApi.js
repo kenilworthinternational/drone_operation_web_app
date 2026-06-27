@@ -100,8 +100,12 @@ export const employeeProfileApi = baseApi.injectEndpoints({
 
     // ---- Organization ----
     getOrgChart: builder.query({
-      queryFn: async () =>
-        nodeBackendBaseQuery({ url: '/api/organization/chart', method: 'POST', body: {} }, {}, {}),
+      queryFn: async (mode = 'mixed') =>
+        nodeBackendBaseQuery(
+          { url: '/api/organization/chart', method: 'POST', body: { mode: mode || 'mixed' } },
+          {},
+          {},
+        ),
       providesTags: ['Organization'],
     }),
     getDepartmentHeadcount: builder.query({

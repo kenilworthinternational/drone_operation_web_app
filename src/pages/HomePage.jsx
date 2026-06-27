@@ -56,6 +56,14 @@ const HomePage = () => {
     location.pathname === '/home/corporate-customers' ||
     location.pathname.endsWith('/corporate-customers');
 
+  /** HRM employee profile / directory: fill viewport; scroll sidebar + tab body only. */
+  const isEmployeeProfileRoute = useMemo(() => {
+    const { pathname } = location;
+    return pathname.includes('/employeeRegistration')
+      || pathname.includes('/employeeProfileDetails')
+      || pathname.includes('/employees');
+  }, [location.pathname]);
+
   // Helper to detect mobile view
   const isMobile = () => window.innerWidth <= 768;
 
@@ -87,7 +95,7 @@ const HomePage = () => {
         />
       )}
       <div 
-        className={`content-dashboard${isWingHubLanding ? ' content-dashboard--wing-hub' : ''}${showCombChrome || isDashboardChartBreakdownRoute || isOdWingShell ? ' content-dashboard--comb' : ''}${isMasterDataUpdateRoute ? ' content-dashboard--master-data-split' : ''}${isCorporateCustomersRoute ? ' content-dashboard--corporate-customers' : ''}`}
+        className={`content-dashboard${isWingHubLanding ? ' content-dashboard--wing-hub' : ''}${showCombChrome || isDashboardChartBreakdownRoute || isOdWingShell ? ' content-dashboard--comb' : ''}${isMasterDataUpdateRoute ? ' content-dashboard--master-data-split' : ''}${isCorporateCustomersRoute ? ' content-dashboard--corporate-customers' : ''}${isEmployeeProfileRoute ? ' content-dashboard--employee-profile' : ''}`}
         style={{
           marginLeft: isExternalUser || fullWidthNoLeftNav ? '0' : '280px',
           width: isExternalUser || fullWidthNoLeftNav ? '100vw' : 'calc(100vw - 280px)',

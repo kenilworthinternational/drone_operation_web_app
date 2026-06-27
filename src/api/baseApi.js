@@ -1,6 +1,7 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { API_BASE_URL } from '../config/config';
 import { logger } from '../utils/logger';
+import { forceLogoutFromApi } from '../utils/sessionUtils';
 
 // Helper function to get token
 const getToken = () => {
@@ -25,6 +26,7 @@ const baseQueryWithLogging = async (args, api, extraOptions) => {
   const result = await baseQueryWithAuth(args, api, extraOptions);
   
   if (result.error) {
+    forceLogoutFromApi(api, result.error);
     logger.error('API Error:', {
       endpoint: typeof args === 'string' ? args : args.url,
       status: result.error.status,
@@ -86,6 +88,7 @@ export const baseApi = createApi({
     'FinancialCards', 'FinancialCardTransactions', 'Transactions', 'FuelApprovals', 'FuelTransportVouchers',
     'GeneratorFuelApprovals', 'FuelGeneratorVouchers', 'FinanceMasterData', 'StrategicFinanceApprovals',
     'VehicleApp', 'PoolVehicleTasks',
+    'EmpOrgStructure',
   ],
   endpoints: () => ({}),
 });

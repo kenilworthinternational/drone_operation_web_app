@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { verifyUserThunk, sendOTPThunk, loginUserThunk, clearError } from '../store/slices/authSlice';
 import '../styles/login.css';
@@ -7,6 +7,7 @@ import '../styles/pageWipe.css';
 import { logger } from '../utils/logger';
 import LiquidEther from '../UI/LiquidEther';
 import { useWipeNavigate } from '../utils/useWipeNavigate';
+import { consumeLogoutReason, logoutReasonMessage } from '../utils/sessionUtils';
 
 const Login = () => {
   const dispatch = useAppDispatch();
@@ -17,7 +18,15 @@ const Login = () => {
   const [canResend, setCanResend] = useState(false);
   const [resendTimer, setResendTimer] = useState(60);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { wipeNavigate, wipeOverlay } = useWipeNavigate();
+  const [sessionNotice, setSessionNotice] = useState('');
+
+  useEffect(() => {
+    const reason = searchParams.get('reason') || consumeLogoutReason();
+    const message = logoutReasonMessage(reason);
+    if (message) setSessionNotice(message);
+  }, [searchParams]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -228,6 +237,7 @@ const Login = () => {
                   </form>
                 )}
 
+                {sessionNotice ? <p className="login-error-msg">{sessionNotice}</p> : null}
                 {error && <p className="login-error-msg">{error}</p>}
 
                 <div className="login-card-footer">

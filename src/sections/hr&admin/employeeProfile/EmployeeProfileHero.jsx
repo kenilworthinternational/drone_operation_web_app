@@ -1,6 +1,12 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useEmployee } from './useEmployee';
 import EmployeePhotoUpload from './EmployeePhotoUpload';
+import EmployeeAvatar from './EmployeeAvatar';
+import {
+  formatProfileDate,
+  EMPLOYEE_CAREER_DATE_FIELDS,
+  splitDate,
+} from './employeeProfileUtils';
 
 function statusTone(status) {
   const s = String(status || '').toLowerCase();
@@ -10,8 +16,20 @@ function statusTone(status) {
   return 'neutral';
 }
 
-export default function EmployeeProfileHero({ employeeId }) {
+export default function EmployeeProfileHero({ employeeId, readOnly = false }) {
   const { employee, isLoading, refetch } = useEmployee(employeeId);
+
+  const careerDates = useMemo(() => {
+    if (!employee) return [];
+    return EMPLOYEE_CAREER_DATE_FIELDS
+      .map(({ key, label }) => ({
+        key,
+        label,
+        display: formatProfileDate(employee[key]),
+        iso: splitDate(employee[key]),
+      }))
+      .filter((item) => item.display);
+  }, [employee]);
 
   if (isLoading || !employee) {
     return (
@@ -36,8 +54,8 @@ export default function EmployeeProfileHero({ employeeId }) {
           <p className="ep-hero-subtitle">
             {employee.empNo || '—'}
             {employee.departmentName ? ` · ${employee.departmentName}` : ''}
-            {(employee.designation || employee.employeeJobRoleName)
-              ? ` · ${employee.designation || employee.employeeJobRoleName}`
+            {(employee.designation_title || employee.designation || employee.employeeJobRoleName)
+              ? ` · ${employee.designation_title || employee.designation || employee.employeeJobRoleName}`
               : ''}
           </p>
           <div className="ep-hero-metrics">
@@ -46,15 +64,27 @@ export default function EmployeeProfileHero({ employeeId }) {
             {employee.emailAddress ? (
               <span><strong>Email:</strong> {employee.emailAddress}</span>
             ) : null}
+            {careerDates.map((item) => (
+              <span key={item.key}>
+                <strong>{item.label}:</strong>{' '}
+                <time dateTime={item.iso}>{item.display}</time>
+              </span>
+            ))}
           </div>
         </div>
       </div>
-      <EmployeePhotoUpload
-        employeeId={employeeId}
-        employee={employee}
-        onUploaded={refetch}
-        size="hero"
-      />
+      {readOnly ? (
+        <div className="ep-photo-upload ep-photo-upload--hero ep-photo-upload--readonly">
+          <EmployeeAvatar employee={employee} name={title} size="lg" className="ep-photo-readonly-avatar" />
+        </div>
+      ) : (
+        <EmployeePhotoUpload
+          employeeId={employeeId}
+          employee={employee}
+          onUploaded={refetch}
+          size="hero"
+        />
+      )}
     </div>
   );
 }

@@ -55,7 +55,7 @@ function SaveBanner({ message }) {
   );
 }
 
-export default function FamilyDependentsSection({ employeeId }) {
+export default function FamilyDependentsSection({ employeeId, readOnly = false }) {
   const { getLabels } = useHrMasterOptions();
   const dependentRelationships = getLabels('dependent_relationship');
   const emergencyRelationships = getLabels('emergency_relationship');
@@ -242,18 +242,29 @@ export default function FamilyDependentsSection({ employeeId }) {
   };
 
   return (
-    <div className="epd-section">
-      <p className="epd-section-intro">
-        Select marital status first. Add each family member once — children, parents, siblings, and spouse only when not Single.
-      </p>
+    <div className={`epd-section${readOnly ? ' ep-tab-readonly' : ''}`}>
+      {!readOnly && (
+        <p className="epd-section-intro">
+          Select marital status first. Add each family member once — children, parents, siblings, and spouse only when not Single.
+        </p>
+      )}
 
       <h4 className="ep-subsection-title">Marital status</h4>
+      {readOnly ? (
+        <div className="ep-readonly-grid ep-readonly-grid--inline">
+          <div className="ep-readonly-item">
+            <span className="ep-readonly-label">Marital status</span>
+            <span className="ep-readonly-value">{meta.maritalStatus || '—'}</span>
+          </div>
+        </div>
+      ) : (
       <div className="epd-form-grid ep-marital-row">
         <div className="epd-field">
           <label>Marital status</label>
           <MasterSelect category="marital_status" name="maritalStatus" value={meta.maritalStatus} onChange={onMetaChange} />
         </div>
       </div>
+      )}
 
       <div className="ep-family-summary">
         {!isSingle && (
@@ -264,6 +275,7 @@ export default function FamilyDependentsSection({ employeeId }) {
       </div>
 
       <h4 className="ep-subsection-title">Family members</h4>
+      {!readOnly && (
       <div className="epd-form-grid">
         <div className="epd-field">
           <label>Relationship</label>
@@ -300,6 +312,8 @@ export default function FamilyDependentsSection({ employeeId }) {
           <input value={draft.school} onChange={(e) => onDraftChange('school', e.target.value)} />
         </div>
       </div>
+      )}
+      {!readOnly && (
       <div className="epd-actions">
         <button
           type="button"
@@ -313,6 +327,7 @@ export default function FamilyDependentsSection({ employeeId }) {
           <button type="button" className="epd-btn" onClick={resetDraft}>Cancel</button>
         )}
       </div>
+      )}
 
       <div className="epd-table-wrap">
         {isLoading ? (
@@ -334,7 +349,7 @@ export default function FamilyDependentsSection({ employeeId }) {
                 <th>Occupation</th>
                 <th>Employer</th>
                 <th>School</th>
-                <th>Actions</th>
+                {!readOnly && <th>Actions</th>}
               </tr>
             </thead>
             <tbody>
@@ -347,10 +362,12 @@ export default function FamilyDependentsSection({ employeeId }) {
                   <td>{row.occupation || '-'}</td>
                   <td>{row.employer || '-'}</td>
                   <td>{row.school || '-'}</td>
+                  {!readOnly && (
                   <td className="epd-row-actions">
                     <button type="button" className="epd-btn epd-btn-sm" onClick={() => startEdit(row)}>Edit</button>
                     <button type="button" className="epd-btn epd-btn-sm epd-btn-danger" onClick={() => handleDelete(row.id)}>Delete</button>
                   </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -360,7 +377,26 @@ export default function FamilyDependentsSection({ employeeId }) {
 
       <hr className="ep-section-divider" />
       <h4 className="ep-subsection-title">Emergency contact</h4>
-      <p className="epd-section-intro">Emergency contact is separate from family members listed above.</p>
+      {!readOnly && (
+        <p className="epd-section-intro">Emergency contact is separate from family members listed above.</p>
+      )}
+      {readOnly ? (
+        <div className="ep-readonly-grid">
+          <div className="ep-readonly-item">
+            <span className="ep-readonly-label">Emergency contact name</span>
+            <span className="ep-readonly-value">{meta.emergencyContactName || '—'}</span>
+          </div>
+          <div className="ep-readonly-item">
+            <span className="ep-readonly-label">Emergency relationship</span>
+            <span className="ep-readonly-value">{meta.emergencyContactRelationship || '—'}</span>
+          </div>
+          <div className="ep-readonly-item">
+            <span className="ep-readonly-label">Emergency contact number</span>
+            <span className="ep-readonly-value">{meta.emergencyContactNumber || '—'}</span>
+          </div>
+        </div>
+      ) : (
+      <>
       <div className="epd-form-grid">
         <div className="epd-field">
           <label>Emergency contact name</label>
@@ -386,6 +422,8 @@ export default function FamilyDependentsSection({ employeeId }) {
           {savingMeta ? 'Saving…' : 'Save status & emergency contact'}
         </button>
       </div>
+      </>
+      )}
     </div>
   );
 }

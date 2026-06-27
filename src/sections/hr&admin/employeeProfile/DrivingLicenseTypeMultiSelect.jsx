@@ -13,10 +13,15 @@ export default function DrivingLicenseTypeMultiSelect({
   onChange,
   licenseTypes = [],
   disabled = false,
+  disabledHint,
 }) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef(null);
   const selected = normalizeIds(value);
+
+  useEffect(() => {
+    if (disabled) setOpen(false);
+  }, [disabled]);
 
   useEffect(() => {
     const onClickOutside = (e) => {
@@ -38,7 +43,8 @@ export default function DrivingLicenseTypeMultiSelect({
     }
   };
 
-  const remove = (licenseId) => {
+  const remove = (e, licenseId) => {
+    e.stopPropagation();
     if (disabled) return;
     onChange(selected.filter((x) => x !== licenseId));
   };
@@ -47,44 +53,56 @@ export default function DrivingLicenseTypeMultiSelect({
     .map((id) => licenseTypes.find((l) => l.id === id || String(l.id) === String(id)))
     .filter(Boolean);
 
+  const toggleOpen = () => {
+    if (!disabled) setOpen((o) => !o);
+  };
+
+  const onTriggerKeyDown = (e) => {
+    if (disabled) return;
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      toggleOpen();
+    }
+    if (e.key === 'Escape') setOpen(false);
+  };
+
   return (
     <div className="ep-license-multi" ref={containerRef}>
-      {selectedLicenses.length > 0 && (
-        <div className="ep-license-tags">
-          {selectedLicenses.map((license) => (
-            <span key={license.id} className="ep-license-tag">
-              {license.licenseCode}
-              {!disabled && (
+      <div
+        role="combobox"
+        tabIndex={disabled ? -1 : 0}
+        aria-expanded={open}
+        aria-disabled={disabled || undefined}
+        aria-haspopup="listbox"
+        className={`ep-license-trigger ${open ? 'ep-license-trigger--open' : ''} ${disabled ? 'ep-license-trigger--disabled' : ''}`}
+        onClick={toggleOpen}
+        onKeyDown={onTriggerKeyDown}
+      >
+        <div className="ep-license-trigger-body">
+          {disabled ? (
+            <span className="ep-license-placeholder">{disabledHint || 'Not applicable'}</span>
+          ) : selectedLicenses.length === 0 ? (
+            <span className="ep-license-placeholder">Select license codes…</span>
+          ) : (
+            selectedLicenses.map((license) => (
+              <span key={license.id} className="ep-license-tag">
+                {license.licenseCode}
                 <button
                   type="button"
                   className="ep-license-tag-remove"
-                  onClick={() => remove(license.id)}
+                  onClick={(e) => remove(e, license.id)}
                   aria-label={`Remove ${license.licenseCode}`}
                 >
                   ×
                 </button>
-              )}
-            </span>
-          ))}
+              </span>
+            ))
+          )}
         </div>
-      )}
-
-      <button
-        type="button"
-        className={`ep-license-trigger ${disabled ? 'ep-license-trigger--disabled' : ''}`}
-        onClick={() => !disabled && setOpen((o) => !o)}
-        disabled={disabled}
-        aria-expanded={open}
-      >
-        <span className="ep-license-trigger-text">
-          {disabled
-            ? 'Not applicable (no driving license)'
-            : selected.length === 0
-              ? 'Select license codes…'
-              : `${selected.length} selected`}
+        <span className={`ep-license-chevron ${open ? 'ep-license-chevron--open' : ''}`} aria-hidden>
+          ▼
         </span>
-        <span className={`ep-license-chevron ${open ? 'ep-license-chevron--open' : ''}`}>▼</span>
-      </button>
+      </div>
 
       {open && !disabled && (
         <div className="ep-license-dropdown" role="listbox" aria-multiselectable="true">
@@ -102,7 +120,7 @@ export default function DrivingLicenseTypeMultiSelect({
                   className={`ep-license-option ${isSelected ? 'ep-license-option--selected' : ''}`}
                   onClick={() => toggle(license.id)}
                 >
-                  <span>{license.licenseCode}</span>
+                  <span className="ep-license-option-code">{license.licenseCode}</span>
                   <span className={`ep-license-check ${isSelected ? 'ep-license-check--on' : ''}`}>
                     {isSelected ? '✓' : ''}
                   </span>

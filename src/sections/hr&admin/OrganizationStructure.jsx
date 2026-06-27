@@ -6,6 +6,10 @@ import {
 } from '../../api/services NodeJs/employeeProfileApi';
 import '../../styles/organizationStructure.css';
 import OrgChartTree from './employeeProfile/OrgChartTree';
+import OrgChartViewport from './employeeProfile/OrgChartViewport';
+import { HeadcountReportViz, VacancyReportViz } from './empOrg/OrgStructureReports';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { withCurrentWingSearch } from '../../config/wingRouteGuard';
 
 function filterTree(nodes, query) {
   if (!query.trim()) return nodes;
@@ -15,9 +19,11 @@ function filterTree(nodes, query) {
     const children = (node.children || []).map(walk).filter(Boolean);
     const selfMatch =
       node.name?.toLowerCase().includes(q)
+      || node.subtitle?.toLowerCase().includes(q)
       || node.designation?.toLowerCase().includes(q)
       || node.jobCategory?.toLowerCase().includes(q)
       || node.departmentName?.toLowerCase().includes(q)
+      || node.nodeType?.toLowerCase().includes(q)
       || String(node.empNo || '').toLowerCase().includes(q);
 
     if (selfMatch || children.length) {
@@ -41,8 +47,26 @@ function countNodes(nodes) {
   return n;
 }
 
+const CHART_MODES = [
+  { id: 'structure', label: 'Structure' },
+  { id: 'mixed', label: 'Mixed' },
+  { id: 'employees', label: 'Employees' },
+];
+
+const CHART_LEGEND = [
+  { type: 'ceo', label: 'CEO' },
+  { type: 'chief', label: 'Chief' },
+  { type: 'department', label: 'Department' },
+  { type: 'hod', label: 'HOD' },
+  { type: 'job_role', label: 'Role' },
+  { type: 'employee', label: 'Staff' },
+];
+
 const OrganizationStructure = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [view, setView] = useState('chart');
+  const [chartMode, setChartMode] = useState('mixed');
   const [search, setSearch] = useState('');
 
   useEffect(() => {
@@ -51,7 +75,7 @@ const OrganizationStructure = () => {
     return () => root?.classList.remove('content-dashboard--organization-structure');
   }, []);
 
-  const { data: chartData, isLoading: loadingChart } = useGetOrgChartQuery();
+  const { data: chartData, isLoading: loadingChart } = useGetOrgChartQuery(chartMode);
   const { data: headcountData, isLoading: loadingHeadcount } = useGetDepartmentHeadcountQuery();
   const { data: vacancyData, isLoading: loadingVacancy } = useGetVacancyReportQuery();
 
@@ -65,32 +89,43 @@ const OrganizationStructure = () => {
 
   const totalDepartments = headcount.length;
   const staffedDepartments = headcount.filter((d) => d.headcount > 0).length;
+  const totalOpenVacancies = useMemo(
+    () => vacancies.reduce((sum, v) => sum + Number(v.vacancies || 0), 0),
+    [vacancies],
+  );
 
   return (
     <div className="org-shell">
-      <header className="org-page-header">
-        <div>
-          <h2 className="org-title">Organization Structure</h2>
-          <p className="org-subtitle">
-            Reporting hierarchy, department headcount, and staffing gaps across wings.
-          </p>
+      <div className="org-shell-top">
+        <div className="org-page-header org-page-header--row">
+          <div>
+            <h1 className="org-title">Organization structure</h1>
+            <p className="org-subtitle">Org chart, department headcount, and vacancy overview.</p>
+          </div>
+          <button
+            type="button"
+            className="org-btn org-btn--primary"
+            onClick={() => navigate(withCurrentWingSearch('/home/empOrgMaster', location.search))}
+          >
+            Employee org master data
+          </button>
         </div>
-      </header>
 
-      <div className="org-stats">
-        <div className="org-stat-card">
-          <span className="org-stat-label">Total employees</span>
-          <strong className="org-stat-value">{totalEmployees}</strong>
-        </div>
-        <div className="org-stat-card">
-          <span className="org-stat-label">Departments</span>
-          <strong className="org-stat-value">{totalDepartments}</strong>
-          <span className="org-stat-hint">{staffedDepartments} with staff</span>
-        </div>
-        <div className="org-stat-card org-stat-card--accent">
-          <span className="org-stat-label">Open gaps</span>
-          <strong className="org-stat-value">{vacancies.length}</strong>
-          <span className="org-stat-hint">Missing HOD or empty dept.</span>
+        <div className="org-stats">
+          <div className="org-stat-card">
+            <span className="org-stat-label">Total employees</span>
+            <strong className="org-stat-value">{totalEmployees}</strong>
+          </div>
+          <div className="org-stat-card">
+            <span className="org-stat-label">Departments</span>
+            <strong className="org-stat-value">{totalDepartments}</strong>
+            <span className="org-stat-hint">{staffedDepartments} with staff</span>
+          </div>
+          <div className="org-stat-card org-stat-card--accent">
+            <span className="org-stat-label">Open vacancies</span>
+            <strong className="org-stat-value">{totalOpenVacancies}</strong>
+            <span className="org-stat-hint">{vacancies.length} role slot{vacancies.length === 1 ? '' : 's'} below max</span>
+          </div>
         </div>
       </div>
 
@@ -108,44 +143,83 @@ const OrganizationStructure = () => {
         </div>
 
         {view === 'chart' && (
-          <div className="org-chart-section">
-            <div className="org-toolbar">
-              <input
-                type="search"
-                className="org-search"
-                placeholder="Search name, EMP no, department, role…"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-            <p className="org-chart-meta">
-              Showing {visibleCount} employee{visibleCount === 1 ? '' : 's'}
-              {search.trim() ? ` matching “${search.trim()}”` : ' in hierarchy'}
-            </p>
-            <div className="org-chart-wrap org-chart-wrap--tree">
-              {loadingChart ? (
-                <p className="org-loading">Loading organization chart…</p>
-              ) : filteredRoots.length === 0 ? (
-                <p className="org-empty">
-                  {roots.length === 0
-                    ? 'No organization data available. Assign reporting officers on employee profiles.'
-                    : 'No employees match your search.'}
+          <div className="org-panel-body">
+            <div className="org-chart-section">
+              <div className="org-chart-controls">
+                <div className="org-toolbar">
+                  <input
+                    type="search"
+                    className="org-search"
+                    placeholder="Search name, department, role, EMP no…"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
+                  <div className="org-toolbar-actions org-chart-mode-toggle org-segment">
+                    {CHART_MODES.map((m) => (
+                      <button
+                        key={m.id}
+                        type="button"
+                        className={`org-btn ${chartMode === m.id ? 'org-btn--active' : ''}`}
+                        onClick={() => setChartMode(m.id)}
+                      >
+                        {m.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <p className="org-chart-meta">
+                  {visibleCount} node{visibleCount === 1 ? '' : 's'}
+                  {search.trim() ? ` · matching “${search.trim()}”` : ''}
+                  {' · '}
+                  {chartMode === 'structure' && 'roles and structure only'}
+                  {chartMode === 'employees' && 'people and reporting lines'}
+                  {chartMode === 'mixed' && 'structure with assigned staff'}
                 </p>
-              ) : (
-                <OrgChartTree roots={filteredRoots} />
-              )}
+              </div>
+              <div className="org-chart-wrap org-chart-wrap--tree">
+                {loadingChart ? (
+                  <p className="org-loading">Loading organization chart…</p>
+                ) : filteredRoots.length === 0 ? (
+                  <p className="org-empty">
+                    {roots.length === 0
+                      ? 'No organization data yet. Configure chief roles and assign employees with departments and reporting officers.'
+                      : 'No nodes match your search.'}
+                  </p>
+                ) : (
+                  <>
+                    <OrgChartViewport
+                      printTitle="Organization structure"
+                      legend={(
+                        <div className="org-chart-legend">
+                          {CHART_LEGEND.map((item) => (
+                            <span key={item.type} className="org-chart-legend-item">
+                              <span className={`org-chart-legend-dot org-chart-legend-dot--${item.type}`} />
+                              {item.label}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    >
+                      <OrgChartTree roots={filteredRoots} />
+                    </OrgChartViewport>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         )}
 
         {view === 'headcount' && (
-          <div className="org-table-section">
+          <div className="org-panel-body">
             {loadingHeadcount ? (
               <p className="org-loading">Loading headcount…</p>
             ) : headcount.length === 0 ? (
               <p className="org-empty">No department data available.</p>
             ) : (
-              <div className="org-table-wrap">
+              <>
+                <HeadcountReportViz rows={headcount} />
+                <h4 className="org-viz-table-title">Department detail</h4>
+                <div className="org-table-wrap">
                 <table className="org-table">
                   <thead>
                     <tr>
@@ -170,48 +244,57 @@ const OrganizationStructure = () => {
                     ))}
                   </tbody>
                 </table>
-              </div>
+                </div>
+              </>
             )}
           </div>
         )}
 
         {view === 'vacancy' && (
-          <div className="org-table-section">
+          <div className="org-panel-body">
             {loadingVacancy ? (
               <p className="org-loading">Loading vacancy report…</p>
             ) : vacancies.length === 0 ? (
-              <p className="org-empty org-empty--ok">All departments have an HOD and at least one employee.</p>
+              <p className="org-empty org-empty--ok">All configured role limits are filled (or no max limits set).</p>
             ) : (
-              <div className="org-table-wrap">
+              <>
+                <VacancyReportViz rows={vacancies} />
+                <h4 className="org-viz-table-title">Vacancy detail</h4>
+                <div className="org-table-wrap">
                 <table className="org-table">
                   <thead>
                     <tr>
                       <th>Department</th>
-                      <th className="org-th-num">Headcount</th>
-                      <th>Missing HOD</th>
-                      <th>Empty department</th>
+                      <th>Job role</th>
+                      <th className="org-th-num">Current</th>
+                      <th className="org-th-num">Max limit</th>
+                      <th className="org-th-num">Open vacancies</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {vacancies.map((d) => (
-                      <tr key={d.departmentCode || d.departmentName}>
-                        <td><strong>{d.departmentName || '—'}</strong></td>
-                        <td className="org-td-num">{d.headcount}</td>
+                    {vacancies.map((v) => (
+                      <tr key={`${v.departmentCode || v.deptId}-${v.jobRoleId}`}>
                         <td>
-                          <span className={`org-yesno ${d.missingHod ? 'org-yesno--yes' : 'org-yesno--no'}`}>
-                            {d.missingHod ? 'Yes' : 'No'}
-                          </span>
+                          <strong>{v.departmentName || '—'}</strong>
+                          {v.departmentCode ? (
+                            <code className="org-code org-code--inline">{v.departmentCode}</code>
+                          ) : null}
                         </td>
                         <td>
-                          <span className={`org-yesno ${d.emptyDepartment ? 'org-yesno--yes' : 'org-yesno--no'}`}>
-                            {d.emptyDepartment ? 'Yes' : 'No'}
-                          </span>
+                          {v.jobRole || '—'}
+                          {v.jrCode ? <span className="org-muted"> ({v.jrCode})</span> : null}
+                        </td>
+                        <td className="org-td-num">{v.currentCount}</td>
+                        <td className="org-td-num">{v.maxLimit}</td>
+                        <td className="org-td-num">
+                          <span className="org-count-pill org-count-pill--vacancy">{v.vacancies}</span>
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
-              </div>
+                </div>
+              </>
             )}
           </div>
         )}

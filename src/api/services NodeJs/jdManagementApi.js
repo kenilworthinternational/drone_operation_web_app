@@ -595,12 +595,15 @@ export const jdManagementApi = baseApi.injectEndpoints({
     // USER JOB DESCRIPTIONS
     // =====================================================
     getUserJobDescriptions: builder.query({
-      queryFn: async (jobRoleId) => {
+      queryFn: async (arg) => {
+        const body = typeof arg === 'object' && arg !== null
+          ? arg
+          : (arg ? { jobRoleId: arg } : {});
         const result = await nodeBackendBaseQuery(
           {
             url: '/api/user-job-descriptions',
             method: 'POST',
-            body: jobRoleId ? { jobRoleId } : {},
+            body,
           },
           {},
           {}
@@ -751,12 +754,12 @@ export const jdManagementApi = baseApi.injectEndpoints({
     // UPDATE TASK ORDERS (for drag and drop)
     // =====================================================
     updateTaskOrders: builder.mutation({
-      queryFn: async ({ jobRoleId, taskOrders }) => {
+      queryFn: async ({ jobRoleId, emp_designation_id, taskOrders }) => {
         const result = await nodeBackendBaseQuery(
           {
             url: '/api/user-job-descriptions/update-orders',
             method: 'POST',
-            body: { jobRoleId, taskOrders },
+            body: { jobRoleId, emp_designation_id, taskOrders },
           },
           {},
           {}
@@ -953,7 +956,7 @@ export const jdManagementApi = baseApi.injectEndpoints({
         );
         return result;
       },
-      invalidatesTags: ['EmployeeAssignment', 'EmployeeRegistrations', 'Users'],
+      invalidatesTags: ['EmployeeAssignment', 'EmployeeRegistrations', 'Users', 'EmpOrgStructure'],
     }),
 
     // =====================================================

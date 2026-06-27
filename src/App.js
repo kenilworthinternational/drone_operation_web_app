@@ -56,6 +56,7 @@ import EmergencyMoving from './sections/opsroom/emergency/EmergencyMoving';
 import FieldSizeAdjustments from './sections/opsroom/fieldSizeAdjustments/FieldSizeAdjustments';
 import EmployeeProfileDetails from './sections/hr&admin/EmployeeProfileDetails';
 import OrganizationStructure from './sections/hr&admin/OrganizationStructure';
+import EmpOrgMasterPage from './sections/hr&admin/EmpOrgMasterPage';
 import Employees from './sections/hr&admin/Employees';
 import JDManagement from './sections/hr&admin/JDManagement';
 import EmployeeAssignment from './sections/hr&admin/EmployeeAssignment';
@@ -97,12 +98,20 @@ import GlobalChartBreakdownPage from './sections/corporate/charts/GlobalChartBre
 import MappingUpdatePage from './sections/geo-spatial/mapping/MappingUpdatePage';
 
 import { useAppSelector } from './store/hooks';
+import SessionWatchdog from './components/SessionWatchdog';
 
 // ProtectedRoute component to check authentication
 const ProtectedRoute = ({ children }) => {
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
 
-  return isAuthenticated ? children : <Navigate to="/login" />;
+  if (!isAuthenticated) return <Navigate to="/login" />;
+
+  return (
+    <>
+      <SessionWatchdog />
+      {children}
+    </>
+  );
 };
 
 
@@ -693,14 +702,6 @@ function App() {
             }
           />
           <Route
-            path="employees"
-            element={
-              <ProtectedRoute>
-                <Employees />
-              </ProtectedRoute>
-            }
-          />
-          <Route
             path="employeeProfileDetails"
             element={
               <ProtectedRoute>
@@ -713,6 +714,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <OrganizationStructure />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="empOrgMaster"
+            element={
+              <ProtectedRoute>
+                <EmpOrgMasterPage />
               </ProtectedRoute>
             }
           />

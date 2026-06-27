@@ -54,6 +54,7 @@ export default function ProfileRecordWithFileSection({
   employeeId,
   fileField,
   intro,
+  readOnly = false,
 }) {
   const { data, isLoading, refetch } = useListEmployeeProfileSectionQuery({ section, employeeId });
   const [saveSection, { isLoading: saving }] = useSaveEmployeeProfileSectionMutation();
@@ -132,41 +133,46 @@ export default function ProfileRecordWithFileSection({
 
   return (
     <div className="epd-section">
-      {intro ? <p className="epd-section-intro">{intro}</p> : null}
-      {message?.text ? (
+      {intro && !readOnly ? <p className="epd-section-intro">{intro}</p> : null}
+      {!readOnly && message?.text ? (
         <p className={`epd-schedule-message epd-schedule-message--${message.type}`}>{message.text}</p>
       ) : null}
 
-      <div className="epd-form-grid">
-        {def.fields.map((f) => (
-          <div className="epd-field" key={f.name}>
-            <label>{f.label}</label>
-            <FieldInput field={f} value={draft[f.name]} onChange={handleChange} />
+      {!readOnly && (
+        <>
+          <div className="epd-form-grid">
+            {def.fields.map((f) => (
+              <div className="epd-field" key={f.name}>
+                <label>{f.label}</label>
+                <FieldInput field={f} value={draft[f.name]} onChange={handleChange} />
+                {f.hint ? <span className="epd-field-hint">{f.hint}</span> : null}
+              </div>
+            ))}
+            <div className="epd-field">
+              <label>{fileField.label}</label>
+              <input
+                type="file"
+                accept={fileField.accept}
+                onChange={(e) => setPendingFile(e.target.files?.[0] || null)}
+              />
+              {pendingFile ? (
+                <span className="epd-field-hint">{pendingFile.name} — saves with record</span>
+              ) : (
+                <span className="epd-field-hint">PDF or image, one file per record</span>
+              )}
+            </div>
           </div>
-        ))}
-        <div className="epd-field">
-          <label>{fileField.label}</label>
-          <input
-            type="file"
-            accept={fileField.accept}
-            onChange={(e) => setPendingFile(e.target.files?.[0] || null)}
-          />
-          {pendingFile ? (
-            <span className="epd-field-hint">{pendingFile.name} — saves with record</span>
-          ) : (
-            <span className="epd-field-hint">PDF or image, one file per record</span>
-          )}
-        </div>
-      </div>
 
-      <div className="epd-actions">
-        <button type="button" className="epd-btn epd-btn-primary" onClick={handleSave} disabled={saving || uploading}>
-          {saving || uploading ? 'Saving…' : (editingId ? 'Update' : 'Add')}
-        </button>
-        {editingId && (
-          <button type="button" className="epd-btn" onClick={resetDraft}>Cancel</button>
-        )}
-      </div>
+          <div className="epd-actions">
+            <button type="button" className="epd-btn epd-btn-primary" onClick={handleSave} disabled={saving || uploading}>
+              {saving || uploading ? 'Saving…' : (editingId ? 'Update' : 'Add')}
+            </button>
+            {editingId && (
+              <button type="button" className="epd-btn" onClick={resetDraft}>Cancel</button>
+            )}
+          </div>
+        </>
+      )}
 
       <div className="epd-table-wrap">
         {isLoading ? (
@@ -179,7 +185,7 @@ export default function ProfileRecordWithFileSection({
               <tr>
                 {def.fields.map((f) => <th key={f.name}>{f.label}</th>)}
                 <th>{fileField.label}</th>
-                <th>Actions</th>
+                {!readOnly && <th>Actions</th>}
               </tr>
             </thead>
             <tbody>
@@ -199,26 +205,32 @@ export default function ProfileRecordWithFileSection({
                       ) : (
                         <span className="epd-empty">—</span>
                       )}
-                      <input
-                        id={inputId}
-                        type="file"
-                        className="ep-doc-file-input"
-                        accept={fileField.accept}
-                        disabled={uploading}
-                        onChange={(e) => {
-                          const f = e.target.files?.[0];
-                          if (f) handleRowFileUpload(row.id, f);
-                          e.target.value = '';
-                        }}
-                      />
-                      <label htmlFor={inputId} className="epd-btn epd-btn-sm">
-                        {fileUrl ? 'Replace' : 'Upload'}
-                      </label>
+                      {!readOnly && (
+                        <>
+                          <input
+                            id={inputId}
+                            type="file"
+                            className="ep-doc-file-input"
+                            accept={fileField.accept}
+                            disabled={uploading}
+                            onChange={(e) => {
+                              const f = e.target.files?.[0];
+                              if (f) handleRowFileUpload(row.id, f);
+                              e.target.value = '';
+                            }}
+                          />
+                          <label htmlFor={inputId} className="epd-btn epd-btn-sm">
+                            {fileUrl ? 'Replace' : 'Upload'}
+                          </label>
+                        </>
+                      )}
                     </td>
+                    {!readOnly && (
                     <td className="epd-row-actions">
                       <button type="button" className="epd-btn epd-btn-sm" onClick={() => startEdit(row)}>Edit</button>
                       <button type="button" className="epd-btn epd-btn-sm epd-btn-danger" onClick={() => handleDelete(row.id)}>Delete</button>
                     </td>
+                    )}
                   </tr>
                 );
               })}

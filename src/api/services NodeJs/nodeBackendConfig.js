@@ -1,4 +1,5 @@
 import { fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { forceLogoutFromApi } from '../../utils/sessionUtils';
 
 /**
  * Node.js Backend Base URL Configuration
@@ -61,7 +62,7 @@ export const getToken = () => {
  * Custom base query for Node.js backend
  * Configures fetchBaseQuery with the correct base URL and authentication headers
  */
-export const nodeBackendBaseQuery = fetchBaseQuery({
+const rawNodeBackendBaseQuery = fetchBaseQuery({
   baseUrl: getNodeBackendUrl(),
   /**
    * Avoid browser HTTP cache returning 304 with an empty body — RTK then has no JSON `data`
@@ -83,3 +84,11 @@ export const nodeBackendBaseQuery = fetchBaseQuery({
     return headers;
   },
 });
+
+export const nodeBackendBaseQuery = async (args, api, extraOptions) => {
+  const result = await rawNodeBackendBaseQuery(args, api, extraOptions);
+  if (result.error) {
+    forceLogoutFromApi(api, result.error);
+  }
+  return result;
+};

@@ -1,354 +1,162 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
-  useGetUserLevelsQuery,
-  useGetUserMemberTypesQuery,
-  useGetUserJobRolesQuery,
   useGetUserJobDescriptionsQuery,
-  useFindDescriptionsByTaskTextQuery,
-  useCreateUserJobRoleMutation,
-  useUpdateUserJobRoleMutation,
-  useDeleteUserJobRoleMutation,
   useCreateUserJobDescriptionMutation,
   useCreateMultipleUserJobDescriptionsMutation,
   useUpdateUserJobDescriptionMutation,
-  useDeleteUserJobDescriptionMutation,
   useUpdateTaskOrdersMutation,
 } from '../../api/services NodeJs/jdManagementApi';
+import {
+  useGetEmpDepartmentsQuery,
+  useGetEmpDesignationsQuery,
+} from '../../api/services NodeJs/empOrgStructureApi';
 import '../../styles/jdManagement.css';
 
+const CHIEF_JR_CODES = new Set(['ceo', 'coo', 'cfo', 'chro']);
+
+function isChiefDesignation(des) {
+  if (!des) return false;
+  if (Number(des.chief) === 1) return true;
+  return CHIEF_JR_CODES.has(String(des.jr_code || '').toLowerCase());
+}
+
 const JDManagement = () => {
-  // API Queries
-  const { data: userLevelsData, isLoading: loadingLevels } = useGetUserLevelsQuery();
-  const { data: userMemberTypesData, isLoading: loadingMemberTypes } = useGetUserMemberTypesQuery();
-  const { data: jobRolesData, isLoading: loadingJobRoles, refetch: refetchJobRoles } = useGetUserJobRolesQuery(undefined, {
-    refetchOnMountOrArgChange: true,
-  });
+  const { data: departments = [], isLoading: loadingDepts } = useGetEmpDepartmentsQuery();
+  const { data: allDesignations = [], isLoading: loadingDes } = useGetEmpDesignationsQuery({ activated: 1 });
   const { data: jobDescriptionsData, refetch: refetchJobDescriptions } = useGetUserJobDescriptionsQuery();
 
-  // Mutations
-  const [createJobRole, { isLoading: creatingJobRole }] = useCreateUserJobRoleMutation();
-  const [updateJobRole, { isLoading: updatingJobRole }] = useUpdateUserJobRoleMutation();
-  const [deleteJobRole, { isLoading: deletingJobRole }] = useDeleteUserJobRoleMutation();
   const [createJobDescription, { isLoading: creatingDescription }] = useCreateUserJobDescriptionMutation();
   const [createMultipleJobDescriptions, { isLoading: creatingMultipleDescriptions }] = useCreateMultipleUserJobDescriptionsMutation();
   const [updateJobDescription, { isLoading: updatingDescription }] = useUpdateUserJobDescriptionMutation();
-  const [deleteJobDescription, { isLoading: deletingDescription }] = useDeleteUserJobDescriptionMutation();
   const [updateTaskOrders, { isLoading: updatingTaskOrders }] = useUpdateTaskOrdersMutation();
 
-  // Get current user ID
   const getCurrentUserId = () => {
     try {
       const userData = JSON.parse(localStorage.getItem('userData') || '{}');
       return userData?.id || null;
-    } catch (error) {
+    } catch {
       return null;
     }
   };
 
-  // State
-  const [jobRoles, setJobRoles] = useState([]);
-  const [selectedJobRole, setSelectedJobRole] = useState(null);
+  const [selectedDesignation, setSelectedDesignation] = useState(null);
   const [jobDescriptions, setJobDescriptions] = useState([]);
-  const [showJobModal, setShowJobModal] = useState(false);
   const [showDescriptionModal, setShowDescriptionModal] = useState(false);
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [jobFormData, setJobFormData] = useState({
-    designation: '',
-    jdCode: '',
-    userLevelId: '',
-    userMemberTypeId: '',
-    status: 1,
-  });
   const [descriptionFormData, setDescriptionFormData] = useState({
     taskDescription: '',
     status: 1,
-    selectedJobRoleIds: [], // For multiple designations
+    selectedDesignationIds: [],
   });
   const [editingTaskId, setEditingTaskId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [jdCodeError, setJdCodeError] = useState(''); // For JD Code duplicate validation
   const [draggedTask, setDraggedTask] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
   const [designationSearch, setDesignationSearch] = useState('');
   const [showDesignationDropdown, setShowDesignationDropdown] = useState(false);
-  const [memberTypeFilter, setMemberTypeFilter] = useState('all'); // 'all', 'internal', 'external'
-  const [statusFilter, setStatusFilter] = useState('all'); // 'all', 'active', 'inactive'
-  const [userLevelFilter, setUserLevelFilter] = useState('all'); // 'all' or userLevelId
+  const [deptFilter, setDeptFilter] = useState('all');
+  const [listSearch, setListSearch] = useState('');
 
-  // Get data from API responses
-  const userLevels = userLevelsData?.data || [];
-  const userMemberTypes = userMemberTypesData?.data || [];
-  const allJobRoles = jobRolesData?.data || [];
   const allJobDescriptions = jobDescriptionsData?.data || [];
+  const prevDescriptionsHashRef = useRef('');
+  const prevSelectedDesIdRef = useRef(null);
 
-  // Use refs to track previous values and prevent infinite loops
-  const prevJobRolesHashRef = useRef('');
-  const prevJobDescriptionsHashRef = useRef('');
-  const prevSelectedJobRoleIdRef = useRef(null);
+  const jdDesignations = useMemo(
+    () => allDesignations.filter((d) => !isChiefDesignation(d)),
+    [allDesignations],
+  );
 
-  // Update job roles when data changes
-  useEffect(() => {
-    // Create a hash of job roles data to detect changes
-    const jobRolesHash = allJobRoles.length > 0
-      ? `${allJobRoles.length}-${allJobRoles.map(r => `${r.id}-${r.designation}-${r.status}`).join(',')}`
-      : '';
-    
-    if (jobRolesHash && prevJobRolesHashRef.current !== jobRolesHash) {
-      setJobRoles(allJobRoles);
-      prevJobRolesHashRef.current = jobRolesHash;
-      
-      // Update selected job role if it exists in the new data
-      if (selectedJobRole) {
-        const updatedRole = allJobRoles.find(r => r.id === selectedJobRole.id);
-        if (updatedRole) {
-          setSelectedJobRole(updatedRole);
-        }
-      } else if (allJobRoles.length > 0) {
-        setSelectedJobRole(allJobRoles[0]);
+  const designationsByDept = useMemo(() => {
+    const map = new Map();
+    departments.forEach((d) => map.set(Number(d.id), { dept: d, items: [] }));
+    jdDesignations.forEach((des) => {
+      const deptId = Number(des.dept_id);
+      if (!map.has(deptId)) {
+        map.set(deptId, { dept: { id: deptId, department_name: des.department_name || 'Other' }, items: [] });
       }
+      map.get(deptId).items.push(des);
+    });
+    return Array.from(map.values())
+      .filter((g) => g.items.length > 0)
+      .sort((a, b) => String(a.dept.department_name).localeCompare(String(b.dept.department_name)));
+  }, [departments, jdDesignations]);
+
+  const flatDesignations = useMemo(() => {
+    let list = jdDesignations.filter((d) => Number(d.activated) === 1);
+    if (deptFilter !== 'all') {
+      list = list.filter((d) => Number(d.dept_id) === Number(deptFilter));
     }
-  }, [allJobRoles, selectedJobRole]);
+    const q = listSearch.trim().toLowerCase();
+    if (q) {
+      list = list.filter((d) =>
+        String(d.designation_title || '').toLowerCase().includes(q)
+        || String(d.des_code || '').toLowerCase().includes(q)
+      );
+    }
+    return list.sort((a, b) => String(a.designation_title).localeCompare(String(b.designation_title)));
+  }, [jdDesignations, deptFilter, listSearch]);
 
-  // Update job descriptions when selected job role or descriptions change
   useEffect(() => {
-    const currentJobRoleId = selectedJobRole?.id;
-    // Create a hash of the descriptions data to detect actual changes
-    const descriptionsHash = allJobDescriptions 
-      ? `${allJobDescriptions.length}-${allJobDescriptions.map(d => d.id).join(',')}`
-      : '';
-    const descriptionsChanged = prevJobDescriptionsHashRef.current !== descriptionsHash;
-    const jobRoleChanged = prevSelectedJobRoleIdRef.current !== currentJobRoleId;
+    if (selectedDesignation && isChiefDesignation(selectedDesignation)) {
+      setSelectedDesignation(null);
+      return;
+    }
+    if (selectedDesignation && !flatDesignations.some((d) => Number(d.id) === Number(selectedDesignation.id))) {
+      setSelectedDesignation(flatDesignations[0] || null);
+      return;
+    }
+    if (!selectedDesignation && flatDesignations.length > 0) {
+      setSelectedDesignation(flatDesignations[0]);
+    }
+  }, [flatDesignations, selectedDesignation]);
 
-    if (descriptionsChanged || jobRoleChanged) {
-      if (currentJobRoleId && allJobDescriptions) {
+  useEffect(() => {
+    const currentId = selectedDesignation?.id;
+    const descriptionsHash = allJobDescriptions
+      ? `${allJobDescriptions.length}-${allJobDescriptions.map((d) => d.id).join(',')}`
+      : '';
+    const descriptionsChanged = prevDescriptionsHashRef.current !== descriptionsHash;
+    const desChanged = prevSelectedDesIdRef.current !== currentId;
+
+    if (descriptionsChanged || desChanged) {
+      if (currentId && allJobDescriptions) {
         const descriptions = allJobDescriptions
-          .filter(desc => desc.jobRoleId === currentJobRoleId)
+          .filter((desc) => Number(desc.emp_designation_id) === Number(currentId))
           .sort((a, b) => {
-            // First sort by status (active first, then inactive)
-            if (a.status !== b.status) {
-              return b.status - a.status; // 1 (active) comes before 0 (inactive)
-            }
-            // Then sort by taskOrder within each status group
+            if (a.status !== b.status) return b.status - a.status;
             return a.taskOrder - b.taskOrder;
           });
         setJobDescriptions(descriptions);
       } else {
         setJobDescriptions([]);
       }
-      prevJobDescriptionsHashRef.current = descriptionsHash;
-      prevSelectedJobRoleIdRef.current = currentJobRoleId;
+      prevDescriptionsHashRef.current = descriptionsHash;
+      prevSelectedDesIdRef.current = currentId;
     }
-  }, [selectedJobRole?.id, allJobDescriptions]);
+  }, [selectedDesignation?.id, allJobDescriptions]);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (showDesignationDropdown && !event.target.closest('.jd-multi-select-container-jd-mgmt')) {
         setShowDesignationDropdown(false);
       }
     };
-
     if (showDesignationDropdown) {
       document.addEventListener('mousedown', handleClickOutside);
-      return () => {
-        document.removeEventListener('mousedown', handleClickOutside);
-      };
+      return () => document.removeEventListener('mousedown', handleClickOutside);
     }
   }, [showDesignationDropdown]);
 
-  // Handle job role selection
-  const handleJobRoleSelect = (jobRole) => {
-    setSelectedJobRole(jobRole);
+  const handleDesignationSelect = (des) => {
+    setSelectedDesignation(des);
     setEditingTaskId(null);
-    
-    // Move selected item to the first position in the list
-    setJobRoles(prevRoles => {
-      const filteredRoles = [...prevRoles];
-      const selectedIndex = filteredRoles.findIndex(r => r.id === jobRole.id);
-      
-      if (selectedIndex > 0) {
-        // Remove the selected item from its current position
-        const [selectedItem] = filteredRoles.splice(selectedIndex, 1);
-        // Add it to the beginning
-        filteredRoles.unshift(selectedItem);
-        return filteredRoles;
-      }
-      
-      return filteredRoles;
-    });
   };
 
-  // Handle add job role
-  const handleAddJob = () => {
-    setJobFormData({
-      designation: '',
-      jdCode: '',
-      userLevelId: '',
-      userMemberTypeId: '',
-      status: 1,
-    });
-    setIsEditMode(false);
-    setShowJobModal(true);
-    setError('');
-    setJdCodeError('');
-  };
-
-  // Handle edit job role
-  const handleEditJob = () => {
-    if (selectedJobRole) {
-      setJobFormData({
-        designation: selectedJobRole.designation || '',
-        jdCode: selectedJobRole.jdCode || '',
-        userLevelId: selectedJobRole.userLevelId || '',
-        userMemberTypeId: selectedJobRole.userMemberTypeId || '',
-        status: selectedJobRole.status || 1,
-      });
-      setIsEditMode(true);
-      setShowJobModal(true);
-      setError('');
-      setJdCodeError('');
-    }
-  };
-
-  // Check if JD Code already exists
-  const checkJdCodeDuplicate = (jdCode) => {
-    if (!jdCode || !jdCode.trim()) {
-      setJdCodeError('');
-      return false;
-    }
-
-    const trimmedCode = jdCode.trim().toLowerCase();
-    
-    // Check if JD Code already exists (case-insensitive)
-    const existingRole = allJobRoles.find(role => 
-      role.jdCode && role.jdCode.toLowerCase() === trimmedCode
-    );
-
-    // If editing, exclude the current role from the check
-    if (isEditMode && selectedJobRole && existingRole) {
-      if (existingRole.id === selectedJobRole.id) {
-        setJdCodeError('');
-        return false;
-      }
-    }
-
-    if (existingRole) {
-      setJdCodeError(`JD Code "${jdCode}" already exists. Please use a different code.`);
-      return true;
-    }
-
-    setJdCodeError('');
-    return false;
-  };
-
-  // Handle JD Code input change
-  const handleJdCodeChange = (e) => {
-    const newJdCode = e.target.value;
-    setJobFormData({ ...jobFormData, jdCode: newJdCode });
-    
-    // Check for duplicate in real-time
-    if (newJdCode.trim()) {
-      checkJdCodeDuplicate(newJdCode);
-    } else {
-      setJdCodeError('');
-    }
-  };
-
-  // Handle save job role
-  const handleSaveJob = async () => {
-    if (!jobFormData.designation.trim()) {
-      setError('Please enter a job designation name');
-      return;
-    }
-
-    if (!jobFormData.jdCode.trim()) {
-      setError('Please enter a JD Code');
-      return;
-    }
-    if (!jobFormData.userMemberTypeId) {
-      setError('Please select Member Type (Internal/External) for this Job Role.');
-      return;
-    }
-    if (!jobFormData.userLevelId) {
-      setError('Please select User Level for this Job Role.');
-      return;
-    }
-
-    // Check for duplicate JD Code before submitting
-    if (checkJdCodeDuplicate(jobFormData.jdCode)) {
-      setError('JD Code already exists. Please use a different code.');
-      return;
-    }
-
-    setLoading(true);
-    setError('');
-    setJdCodeError('');
-
-    try {
-      const userId = getCurrentUserId();
-      const data = {
-        ...jobFormData,
-        userLevelId: jobFormData.userLevelId ? parseInt(jobFormData.userLevelId) : null,
-        userMemberTypeId: jobFormData.userMemberTypeId ? parseInt(jobFormData.userMemberTypeId) : null,
-        createdBy: isEditMode ? undefined : userId,
-        updatedBy: isEditMode ? userId : undefined,
-      };
-
-      if (isEditMode && selectedJobRole) {
-        await updateJobRole({ id: selectedJobRole.id, ...data }).unwrap();
-      } else {
-        await createJobRole(data).unwrap();
-      }
-
-      // Refetch job roles to get updated data
-      const result = await refetchJobRoles();
-      
-      // Force immediate update of jobRoles state and selectedJobRole
-      if (result?.data?.data) {
-        const updatedRoles = result.data.data;
-        setJobRoles(updatedRoles);
-        
-        // Update selected role immediately if editing
-        if (isEditMode && selectedJobRole) {
-          const updatedRole = updatedRoles.find(r => r.id === selectedJobRole.id);
-          if (updatedRole) {
-            setSelectedJobRole(updatedRole);
-          }
-        } else if (!isEditMode && updatedRoles.length > 0) {
-          // If creating new, select the newly created role
-          const newRole = updatedRoles[updatedRoles.length - 1];
-          setSelectedJobRole(newRole);
-        }
-        
-        // Update the hash ref to prevent duplicate updates
-        const jobRolesHash = updatedRoles.length > 0
-          ? `${updatedRoles.length}-${updatedRoles.map(r => `${r.id}-${r.designation}-${r.status}`).join(',')}`
-          : '';
-        prevJobRolesHashRef.current = jobRolesHash;
-      }
-
-      setShowJobModal(false);
-      setJobFormData({
-        designation: '',
-        jdCode: '',
-        userLevelId: '',
-        userMemberTypeId: '',
-        status: 1,
-      });
-    } catch (err) {
-      setError(err?.data?.message || err?.message || 'Failed to save job role');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Handle add description
   const handleAddDescription = () => {
     setDescriptionFormData({
       taskDescription: '',
       status: 1,
-      selectedJobRoleIds: selectedJobRole ? [selectedJobRole.id] : [],
+      selectedDesignationIds: selectedDesignation ? [selectedDesignation.id] : [],
     });
     setEditingTaskId(null);
     setShowDescriptionModal(true);
@@ -357,28 +165,23 @@ const JDManagement = () => {
     setShowDesignationDropdown(false);
   };
 
-  // Handle edit description
   const handleEditDescription = (task) => {
     setDescriptionFormData({
       taskDescription: task.taskDescription || '',
       status: task.status || 1,
-      selectedJobRoleIds: [task.jobRoleId],
+      selectedDesignationIds: [task.emp_designation_id],
     });
     setEditingTaskId(task.id);
     setShowDescriptionModal(true);
     setError('');
-    setDesignationSearch('');
-    setShowDesignationDropdown(false);
   };
 
-  // Handle save description
   const handleSaveDescription = async () => {
     if (!descriptionFormData.taskDescription.trim()) {
       setError('Please enter a task description');
       return;
     }
-
-    if (descriptionFormData.selectedJobRoleIds.length === 0) {
+    if (descriptionFormData.selectedDesignationIds.length === 0) {
       setError('Please select at least one designation');
       return;
     }
@@ -390,98 +193,31 @@ const JDManagement = () => {
       const userId = getCurrentUserId();
 
       if (editingTaskId) {
-        // Update existing task
         await updateJobDescription({
           id: editingTaskId,
           taskDescription: descriptionFormData.taskDescription,
           status: descriptionFormData.status,
           updatedBy: userId,
         }).unwrap();
-        
-        // Immediately update local state for the edited task
-        setJobDescriptions(prevDescriptions => 
-          prevDescriptions.map(desc => 
-            desc.id === editingTaskId
-              ? {
-                  ...desc,
-                  taskDescription: descriptionFormData.taskDescription,
-                  status: descriptionFormData.status,
-                }
-              : desc
-          )
-        );
+      } else if (descriptionFormData.selectedDesignationIds.length === 1) {
+        await createJobDescription({
+          emp_designation_id: descriptionFormData.selectedDesignationIds[0],
+          taskDescription: descriptionFormData.taskDescription,
+          status: descriptionFormData.status,
+          createdBy: userId,
+        }).unwrap();
       } else {
-        // Create new task(s) - support multiple designations
-        let newTaskIds = [];
-        
-        if (descriptionFormData.selectedJobRoleIds.length === 1) {
-          // Single designation
-          const result = await createJobDescription({
-            jobRoleId: descriptionFormData.selectedJobRoleIds[0],
-            taskDescription: descriptionFormData.taskDescription,
-            status: descriptionFormData.status,
-            createdBy: userId,
-          }).unwrap();
-          
-          if (result?.data?.id) {
-            newTaskIds.push(result.data.id);
-          }
-        } else {
-          // Multiple designations
-          const result = await createMultipleJobDescriptions({
-            jobRoleIds: descriptionFormData.selectedJobRoleIds,
-            taskDescription: descriptionFormData.taskDescription,
-            status: descriptionFormData.status,
-            createdBy: userId,
-          }).unwrap();
-          
-          if (result?.data && Array.isArray(result.data)) {
-            newTaskIds = result.data.map(task => task.id).filter(Boolean);
-          }
-        }
-        
-        // If the new task is for the currently selected job role, add it to the list immediately
-        if (selectedJobRole && descriptionFormData.selectedJobRoleIds.includes(selectedJobRole.id)) {
-          // Refetch to get the complete task data with taskOrder
-          const result = await refetchJobDescriptions();
-          if (result?.data?.data) {
-            const updatedDescriptions = result.data.data
-              .filter(desc => desc.jobRoleId === selectedJobRole.id)
-              .sort((a, b) => a.taskOrder - b.taskOrder);
-            setJobDescriptions(updatedDescriptions);
-            
-            // Update hash to prevent duplicate updates
-            const descriptionsHash = updatedDescriptions.length > 0
-              ? `${updatedDescriptions.length}-${updatedDescriptions.map(d => d.id).join(',')}`
-              : '';
-            prevJobDescriptionsHashRef.current = descriptionsHash;
-          }
-        }
+        await createMultipleJobDescriptions({
+          emp_designation_ids: descriptionFormData.selectedDesignationIds,
+          taskDescription: descriptionFormData.taskDescription,
+          status: descriptionFormData.status,
+          createdBy: userId,
+        }).unwrap();
       }
 
-      // Refetch to ensure all data is in sync
-      const result = await refetchJobDescriptions();
-      
-      // Force update if we didn't already update above
-      if (!editingTaskId && result?.data?.data && selectedJobRole) {
-        const updatedDescriptions = result.data.data
-          .filter(desc => desc.jobRoleId === selectedJobRole.id)
-          .sort((a, b) => a.taskOrder - b.taskOrder);
-        setJobDescriptions(updatedDescriptions);
-        
-        // Update hash
-        const descriptionsHash = updatedDescriptions.length > 0
-          ? `${updatedDescriptions.length}-${updatedDescriptions.map(d => d.id).join(',')}`
-          : '';
-        prevJobDescriptionsHashRef.current = descriptionsHash;
-      }
-      
+      await refetchJobDescriptions();
       setShowDescriptionModal(false);
-      setDescriptionFormData({
-        taskDescription: '',
-        status: 1,
-        selectedJobRoleIds: [],
-      });
+      setDescriptionFormData({ taskDescription: '', status: 1, selectedDesignationIds: [] });
       setEditingTaskId(null);
     } catch (err) {
       setError(err?.data?.message || err?.message || 'Failed to save task');
@@ -490,68 +226,39 @@ const JDManagement = () => {
     }
   };
 
-  // Handle toggle job role status
-  const handleToggleJobRoleStatus = async (jobRoleId, currentStatus) => {
+  const handleToggleDescriptionStatus = async (descriptionId, currentStatus) => {
     try {
       const userId = getCurrentUserId();
       const newStatus = currentStatus === 1 ? 0 : 1;
-      
-      // Update local state immediately
-      setJobRoles(prevRoles => 
-        prevRoles.map(role => 
-          role.id === jobRoleId 
-            ? { ...role, status: newStatus }
-            : role
-        )
-      );
-      
-      // Update selected job role if it's the one being toggled
-      if (selectedJobRole?.id === jobRoleId) {
-        setSelectedJobRole(prev => prev ? { ...prev, status: newStatus } : null);
-      }
-      
-      // Update API
-      await updateJobRole({
-        id: jobRoleId,
+      await updateJobDescription({
+        id: descriptionId,
         status: newStatus,
         updatedBy: userId,
       }).unwrap();
-      
-      // Refetch to ensure sync
-      await refetchJobRoles();
+      await refetchJobDescriptions();
     } catch (err) {
       setError(err?.data?.message || err?.message || 'Failed to update status');
-      // Revert on error by refetching
-      await refetchJobRoles();
+      await refetchJobDescriptions();
     }
   };
 
-  // Handle drag start
   const handleDragStart = (e, task, index) => {
     setDraggedTask({ task, index });
     e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/html', e.target.outerHTML);
     e.target.style.opacity = '0.5';
   };
 
-  // Handle drag over
   const handleDragOver = (e, index) => {
     e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
     setDragOverIndex(index);
   };
 
-  // Handle drag leave
-  const handleDragLeave = () => {
-    setDragOverIndex(null);
-  };
+  const handleDragLeave = () => setDragOverIndex(null);
 
-  // Handle drop
   const handleDrop = async (e, dropIndex) => {
     e.preventDefault();
     setDragOverIndex(null);
-
-    if (!draggedTask || draggedTask.index === dropIndex) {
+    if (!draggedTask || draggedTask.index === dropIndex || !selectedDesignation) {
       setDraggedTask(null);
       return;
     }
@@ -560,7 +267,6 @@ const JDManagement = () => {
     const [removed] = newTasks.splice(draggedTask.index, 1);
     newTasks.splice(dropIndex, 0, removed);
 
-    // Update task orders
     const taskOrders = newTasks.map((task, index) => ({
       id: task.id,
       taskOrder: index + 1,
@@ -569,20 +275,12 @@ const JDManagement = () => {
     try {
       setLoading(true);
       await updateTaskOrders({
-        jobRoleId: selectedJobRole.id,
+        emp_designation_id: selectedDesignation.id,
         taskOrders,
       }).unwrap();
-      
-      // Update local state
-      setJobDescriptions(newTasks.map((task, index) => ({
-        ...task,
-        taskOrder: index + 1,
-      })));
-      
-      // Refetch to ensure sync
+      setJobDescriptions(newTasks.map((task, index) => ({ ...task, taskOrder: index + 1 })));
       refetchJobDescriptions();
-    } catch (error) {
-      console.error('Error updating task orders:', error);
+    } catch {
       setError('Failed to update task order. Please try again.');
     } finally {
       setLoading(false);
@@ -590,112 +288,16 @@ const JDManagement = () => {
     }
   };
 
-  // Handle drag end
   const handleDragEnd = (e) => {
     e.target.style.opacity = '1';
     setDraggedTask(null);
     setDragOverIndex(null);
   };
 
-  // Handle toggle description status
-  const handleToggleDescriptionStatus = async (descriptionId, currentStatus) => {
-    try {
-      const userId = getCurrentUserId();
-      const newStatus = currentStatus === 1 ? 0 : 1;
-      
-      // Update local state immediately
-      setJobDescriptions(prevDescriptions => {
-        const updated = prevDescriptions.map(desc => 
-          desc.id === descriptionId 
-            ? { ...desc, status: newStatus }
-            : desc
-        );
-        // Re-sort after status change (active first, then inactive)
-        return updated.sort((a, b) => {
-          if (a.status !== b.status) {
-            return b.status - a.status; // 1 (active) comes before 0 (inactive)
-          }
-          return a.taskOrder - b.taskOrder;
-        });
-      });
-      
-      // Also update allJobDescriptions in the cache by refetching
-      // But first update the local state for immediate feedback
-      const result = await updateJobDescription({
-        id: descriptionId,
-        status: newStatus,
-        updatedBy: userId,
-      }).unwrap();
-      
-      // Refetch to ensure sync with backend
-      await refetchJobDescriptions();
-    } catch (err) {
-      setError(err?.data?.message || err?.message || 'Failed to update status');
-      // Revert on error by refetching
-      await refetchJobDescriptions();
-    }
-  };
-
-  // Handle delete description
-  const handleDeleteDescription = async (descriptionId) => {
-    if (!window.confirm('Are you sure you want to delete this task?')) {
-      return;
-    }
-
-    try {
-      await deleteJobDescription(descriptionId).unwrap();
-      await refetchJobDescriptions();
-    } catch (err) {
-      setError(err?.data?.message || err?.message || 'Failed to delete task');
-    }
-  };
-
-  // Filter job roles based on member type, status, and user level
-  const filteredJobRoles = useMemo(() => {
-    let filtered = jobRoles;
-    
-    // Filter by member type
-    if (memberTypeFilter !== 'all') {
-      filtered = filtered.filter(role => {
-        const memberTypeName = role.memberTypeName?.toLowerCase() || '';
-        if (memberTypeFilter === 'internal') {
-          return memberTypeName === 'internal';
-        } else if (memberTypeFilter === 'external') {
-          return memberTypeName === 'external';
-        }
-        return true;
-      });
-    }
-    
-    // Filter by status
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(role => {
-        if (statusFilter === 'active') {
-          return role.status === 1;
-        } else if (statusFilter === 'inactive') {
-          return role.status === 0;
-        }
-        return true;
-      });
-    }
-    
-    // Filter by user level
-    if (userLevelFilter !== 'all') {
-      filtered = filtered.filter(role => {
-        return role.userLevelId === parseInt(userLevelFilter);
-      });
-    }
-    
-    return filtered;
-  }, [jobRoles, memberTypeFilter, statusFilter, userLevelFilter]);
-
-  const activeJobRoles = jobRoles.filter(role => role.status === 1);
-  const activeDescriptions = jobDescriptions.filter(desc => desc.status === 1);
-
-  if (loadingJobRoles || loadingLevels || loadingMemberTypes) {
+  if (loadingDepts || loadingDes) {
     return (
       <div className="jd-management-container-jd-mgmt">
-        <div style={{ textAlign: 'center', padding: '50px' }}>Loading...</div>
+        <div style={{ textAlign: 'center', padding: '50px' }}>Loading…</div>
       </div>
     );
   }
@@ -703,203 +305,127 @@ const JDManagement = () => {
   return (
     <div className="jd-management-container-jd-mgmt">
       {error && (
-        <div className="jd-error-message-jd-mgmt" style={{ 
-          padding: '10px', 
-          margin: '10px', 
-          backgroundColor: '#fee', 
-          color: '#c00', 
-          borderRadius: '4px' 
+        <div className="jd-error-message-jd-mgmt" style={{
+          padding: '10px', margin: '10px', backgroundColor: '#fee', color: '#c00', borderRadius: '4px',
         }}>
           {error}
         </div>
       )}
 
-      {/* Top Filter Bar */}
       <div className="jd-top-filter-bar-jd-mgmt">
         <div className="jd-filter-group-jd-mgmt">
-          <div className="jd-filter-label-jd-mgmt">Member Type:</div>
-          <div className="jd-filter-buttons-jd-mgmt">
-            <button
-              className={`jd-filter-button-jd-mgmt ${memberTypeFilter === 'all' ? 'active-jd-mgmt' : ''}`}
-              onClick={() => setMemberTypeFilter('all')}
-              title="Show All"
-            >
-              All
-            </button>
-            <button
-              className={`jd-filter-button-jd-mgmt ${memberTypeFilter === 'internal' ? 'active-jd-mgmt' : ''}`}
-              onClick={() => setMemberTypeFilter('internal')}
-              title="Show Internal Only"
-            >
-              Internal
-            </button>
-            <button
-              className={`jd-filter-button-jd-mgmt ${memberTypeFilter === 'external' ? 'active-jd-mgmt' : ''}`}
-              onClick={() => setMemberTypeFilter('external')}
-              title="Show External Only"
-            >
-              External
-            </button>
-          </div>
-        </div>
-        <div className="jd-filter-group-jd-mgmt">
-          <div className="jd-filter-label-jd-mgmt">Status:</div>
-          <div className="jd-filter-buttons-jd-mgmt">
-            <button
-              className={`jd-filter-button-jd-mgmt ${statusFilter === 'all' ? 'active-jd-mgmt' : ''}`}
-              onClick={() => setStatusFilter('all')}
-              title="Show All"
-            >
-              All
-            </button>
-            <button
-              className={`jd-filter-button-jd-mgmt ${statusFilter === 'active' ? 'active-jd-mgmt' : ''}`}
-              onClick={() => setStatusFilter('active')}
-              title="Show Active Only"
-            >
-              Active
-            </button>
-            <button
-              className={`jd-filter-button-jd-mgmt ${statusFilter === 'inactive' ? 'active-jd-mgmt' : ''}`}
-              onClick={() => setStatusFilter('inactive')}
-              title="Show Inactive Only"
-            >
-              Inactive
-            </button>
-          </div>
-        </div>
-        <div className="jd-filter-group-jd-mgmt">
-          <div className="jd-filter-label-jd-mgmt">User Level:</div>
+          <div className="jd-filter-label-jd-mgmt">Department:</div>
           <select
             className="jd-filter-select-jd-mgmt"
-            value={userLevelFilter}
-            onChange={(e) => setUserLevelFilter(e.target.value)}
-            title="Filter by User Level"
+            value={deptFilter}
+            onChange={(e) => setDeptFilter(e.target.value)}
           >
-            <option value="all">All</option>
-            {userLevels.map(level => (
-              <option key={level.id} value={level.id}>
-                {level.userLevel}
-              </option>
+            <option value="all">All departments</option>
+            {departments.map((d) => (
+              <option key={d.id} value={d.id}>{d.department_name}</option>
             ))}
           </select>
+        </div>
+        <div className="jd-filter-group-jd-mgmt">
+          <div className="jd-filter-label-jd-mgmt">Search:</div>
+          <input
+            className="jd-filter-select-jd-mgmt"
+            placeholder="Filter designations…"
+            value={listSearch}
+            onChange={(e) => setListSearch(e.target.value)}
+          />
         </div>
       </div>
 
       <div className="jd-management-content-jd-mgmt">
-        {/* Left Panel - Registered Designations */}
         <div className="jd-left-panel-jd-mgmt">
           <div className="jd-panel-header-jd-mgmt">
-            <h2 className="jd-panel-title-jd-mgmt">Registered Designations</h2>
-            <button 
-              className="jd-add-button-jd-mgmt"
-              onClick={handleAddJob}
-              title="Add New Job"
-            >
-              +
-            </button>
+            <h2 className="jd-panel-title-jd-mgmt">Emp designations</h2>
           </div>
-          
+
           <div className="jd-designations-list-jd-mgmt">
-            {filteredJobRoles.length === 0 ? (
-              <div className="jd-empty-state-jd-mgmt">
-                {jobRoles.length === 0 
-                  ? 'No designations found. Click + to add one.'
-                  : `No ${memberTypeFilter === 'all' ? '' : memberTypeFilter} designations found.`
-                }
-              </div>
+            {flatDesignations.length === 0 ? (
+              <div className="jd-empty-state-jd-mgmt">No designations found. Run org migration and regenerate designations.</div>
             ) : (
-              filteredJobRoles.map(jobRole => (
-                <div
-                  key={jobRole.id}
-                  className={`jd-designation-item-jd-mgmt ${
-                    selectedJobRole?.id === jobRole.id ? 'active-jd-mgmt' : ''
-                  } ${jobRole.status === 1 ? 'status-active-jd-mgmt' : 'status-inactive-jd-mgmt'}`}
-                  onClick={() => handleJobRoleSelect(jobRole)}
-                >
-                  <div className="jd-designation-content-jd-mgmt">
-                    <span className="jd-designation-name-jd-mgmt">{jobRole.designation}</span>
-                    {jobRole.memberTypeName && (
-                      <span className="jd-member-type-jd-mgmt">
-                        {jobRole.memberTypeName}
-                      </span>
-                    )}
-                  </div>
-                  <button
-                    className="jd-toggle-button-jd-mgmt"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleToggleJobRoleStatus(jobRole.id, jobRole.status);
-                    }}
-                    title={jobRole.status === 1 ? 'Deactivate' : 'Activate'}
-                  >
-                    {jobRole.status === 1 ? '✓' : '○'}
-                  </button>
-                </div>
-              ))
+              designationsByDept
+                .filter((g) => deptFilter === 'all' || Number(g.dept.id) === Number(deptFilter))
+                .map((group) => {
+                  const items = group.items.filter((d) => flatDesignations.some((f) => f.id === d.id));
+                  if (items.length === 0) return null;
+                  return (
+                    <div key={group.dept.id}>
+                      <div style={{ padding: '8px 12px', fontWeight: 700, fontSize: '12px', color: '#004B71', background: '#f0f7fa' }}>
+                        {group.dept.department_name}
+                      </div>
+                      {items.map((des) => (
+                        <div
+                          key={des.id}
+                          className={`jd-designation-item-jd-mgmt ${
+                            selectedDesignation?.id === des.id ? 'active-jd-mgmt' : ''
+                          } status-active-jd-mgmt`}
+                          onClick={() => handleDesignationSelect(des)}
+                        >
+                          <div className="jd-designation-content-jd-mgmt">
+                            <span className="jd-designation-name-jd-mgmt">{des.designation_title}</span>
+                            {des.des_code && (
+                              <span className="jd-member-type-jd-mgmt">{des.des_code}</span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })
             )}
           </div>
         </div>
 
-        {/* Divider */}
-        <div className="jd-divider-jd-mgmt"></div>
+        <div className="jd-divider-jd-mgmt" />
 
-        {/* Right Panel - Job Description Details */}
         <div className="jd-right-panel-jd-mgmt">
-          {selectedJobRole ? (
+          {selectedDesignation ? (
             <>
               <div className="jd-details-header-jd-mgmt">
                 <div>
-                  <h2 className="jd-selected-designation-jd-mgmt">{selectedJobRole.designation}</h2>
-                  {selectedJobRole.userLevelName && (
-                    <p style={{ margin: '5px 0', color: '#004B71', fontSize: '14px', fontWeight: '600' }}>
-                      {selectedJobRole.userLevelName} - {selectedJobRole.memberTypeName}
-                    </p>
-                  )}
+                  <h2 className="jd-selected-designation-jd-mgmt">{selectedDesignation.designation_title}</h2>
+                  <p style={{ margin: '5px 0', color: '#004B71', fontSize: '14px', fontWeight: '600' }}>
+                    {selectedDesignation.department_name || ''}
+                    {selectedDesignation.job_role ? ` · ${selectedDesignation.job_role}` : ''}
+                    {selectedDesignation.power != null ? ` · Power ${selectedDesignation.power}` : ''}
+                  </p>
                 </div>
-                <button
-                  className="jd-edit-job-button-jd-mgmt"
-                  onClick={handleEditJob}
-                >
-                  Edit Designation
-                </button>
               </div>
 
               <div className="jd-description-section-jd-mgmt">
                 <div className="jd-description-header-jd-mgmt">
                   <h3 className="jd-description-title-jd-mgmt">Job Description</h3>
-                  <button
-                    className="jd-add-task-button-jd-mgmt"
-                    onClick={handleAddDescription}
-                  >
+                  <button type="button" className="jd-add-task-button-jd-mgmt" onClick={handleAddDescription}>
                     + Add Task
                   </button>
                 </div>
 
                 {jobDescriptions.length === 0 ? (
                   <div className="jd-empty-tasks-jd-mgmt">
-                    No tasks defined. Click "+ Add Task" to add job description tasks.
+                    No tasks defined. Click &quot;+ Add Task&quot; to add job description tasks.
                   </div>
                 ) : (
                   <div className="jd-tasks-list-jd-mgmt">
                     {jobDescriptions.map((task, index) => {
-                      // Find other designations with the same task
                       const sharedDesignations = allJobDescriptions
-                        .filter(desc => 
-                          desc.taskDescription === task.taskDescription && 
-                          desc.id !== task.id &&
-                          desc.status === 1
+                        .filter((desc) =>
+                          desc.taskDescription === task.taskDescription
+                          && desc.id !== task.id
+                          && desc.status === 1
                         )
-                        .map(desc => {
-                          const role = jobRoles.find(r => r.id === desc.jobRoleId);
-                          return role ? role.designation : null;
+                        .map((desc) => {
+                          const des = jdDesignations.find((d) => Number(d.id) === Number(desc.emp_designation_id));
+                          return des?.designation_title || null;
                         })
                         .filter(Boolean);
 
-                      // Calculate task number - only count active tasks for numbering
-                      const activeTasksCount = jobDescriptions.filter(t => t.status === 1).length;
-                      const taskNumber = task.status === 1 
-                        ? index + 1 
+                      const activeTasksCount = jobDescriptions.filter((t) => t.status === 1).length;
+                      const taskNumber = task.status === 1
+                        ? index + 1
                         : activeTasksCount + (index - activeTasksCount + 1);
 
                       return (
@@ -924,48 +450,23 @@ const JDManagement = () => {
                             <div style={{ flex: 1 }}>
                               <span className="jd-task-text-jd-mgmt">{task.taskDescription}</span>
                               {sharedDesignations.length > 0 && task.status === 1 && (
-                                <div style={{ 
-                                  fontSize: '12px', 
-                                  color: '#666', 
-                                  marginTop: '5px',
-                                  fontStyle: 'italic'
-                                }}>
+                                <div style={{ fontSize: '12px', color: '#666', marginTop: '5px', fontStyle: 'italic' }}>
                                   Also used in: {sharedDesignations.join(', ')}
                                 </div>
                               )}
                             </div>
                             {task.status === 1 && (
-                              <span className={`jd-task-status-jd-mgmt ${task.status === 1 ? 'active-task-badge-jd-mgmt' : 'inactive-task-badge-jd-mgmt'}`}>
-                                ACTIVE
-                              </span>
+                              <span className="jd-task-status-jd-mgmt active-task-badge-jd-mgmt">ACTIVE</span>
                             )}
                           </div>
                           <div className="jd-task-actions-jd-mgmt">
                             {task.status === 1 ? (
                               <>
-                                <button
-                                  className="jd-edit-task-button-jd-mgmt"
-                                  onClick={() => handleEditDescription(task)}
-                                  title="Edit Task"
-                                >
-                                  ✎
-                                </button>
-                                <button
-                                  className="jd-toggle-task-button-jd-mgmt"
-                                  onClick={() => handleToggleDescriptionStatus(task.id, task.status)}
-                                  title="Deactivate"
-                                >
-                                  ✓
-                                </button>
+                                <button type="button" className="jd-edit-task-button-jd-mgmt" onClick={() => handleEditDescription(task)} title="Edit Task">✎</button>
+                                <button type="button" className="jd-toggle-task-button-jd-mgmt" onClick={() => handleToggleDescriptionStatus(task.id, task.status)} title="Deactivate">✓</button>
                               </>
                             ) : (
-                              <button
-                                className="jd-toggle-task-button-jd-mgmt"
-                                onClick={() => handleToggleDescriptionStatus(task.id, task.status)}
-                                title="Activate"
-                              >
-                                ○
-                              </button>
+                              <button type="button" className="jd-toggle-task-button-jd-mgmt" onClick={() => handleToggleDescriptionStatus(task.id, task.status)} title="Activate">○</button>
                             )}
                           </div>
                         </div>
@@ -977,128 +478,18 @@ const JDManagement = () => {
             </>
           ) : (
             <div className="jd-no-selection-jd-mgmt">
-              <p>Select a designation from the left panel to view job description details.</p>
+              <p>Select a designation from the left panel to view job description tasks.</p>
             </div>
           )}
         </div>
       </div>
 
-      {/* Add/Edit Job Modal */}
-      {showJobModal && (
-        <div className="jd-modal-overlay-jd-mgmt" onClick={() => setShowJobModal(false)}>
-          <div className="jd-modal-content-jd-mgmt" onClick={(e) => e.stopPropagation()}>
-            <div className="jd-modal-header-jd-mgmt">
-              <h2>{isEditMode ? 'Edit Job Designation' : 'Add New Job Designation'}</h2>
-              <button className="jd-modal-close-jd-mgmt" onClick={() => setShowJobModal(false)}>×</button>
-            </div>
-            <div className="jd-modal-body-jd-mgmt">
-              {error && (
-                <div style={{ padding: '10px', marginBottom: '10px', backgroundColor: '#fee', color: '#c00', borderRadius: '4px' }}>
-                  {error}
-                </div>
-              )}
-              <div className="jd-form-group-jd-mgmt">
-                <label>Designation Name: *</label>
-                <input
-                  type="text"
-                  value={jobFormData.designation}
-                  onChange={(e) => setJobFormData({ ...jobFormData, designation: e.target.value })}
-                  placeholder="Enter job designation name"
-                  autoFocus
-                />
-              </div>
-              <div className="jd-form-group-jd-mgmt">
-                <label>JD Code: *</label>
-                <input
-                  type="text"
-                  value={jobFormData.jdCode}
-                  onChange={handleJdCodeChange}
-                  placeholder="Enter JD code (e.g., md, ceo, fo)"
-                  style={{
-                    borderColor: jdCodeError ? '#dc3545' : undefined,
-                    backgroundColor: jdCodeError ? '#fff5f5' : undefined
-                  }}
-                />
-                {jdCodeError && (
-                  <div style={{ 
-                    color: '#dc3545', 
-                    fontSize: '12px', 
-                    marginTop: '4px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px'
-                  }}>
-                    <span>⚠</span>
-                    <span>{jdCodeError}</span>
-                  </div>
-                )}
-              </div>
-              <div className="jd-form-group-jd-mgmt">
-                <label>User Level: *</label>
-                <select
-                  value={jobFormData.userLevelId}
-                  onChange={(e) => setJobFormData({ ...jobFormData, userLevelId: e.target.value })}
-                >
-                  <option value="">Select User Level</option>
-                  {userLevels.map(level => (
-                    <option key={level.id} value={level.id}>
-                      {level.userLevel}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="jd-form-group-jd-mgmt">
-                <label>Member Type: *</label>
-                <select
-                  value={jobFormData.userMemberTypeId}
-                  onChange={(e) => setJobFormData({ ...jobFormData, userMemberTypeId: e.target.value })}
-                >
-                  <option value="">Select Member Type</option>
-                  {userMemberTypes.map(type => (
-                    <option key={type.id} value={type.id}>
-                      {type.memberType}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="jd-form-group-jd-mgmt">
-                <label className="jd-checkbox-label-jd-mgmt">
-                  <input
-                    type="checkbox"
-                    checked={jobFormData.status === 1}
-                    onChange={(e) => setJobFormData({ ...jobFormData, status: e.target.checked ? 1 : 0 })}
-                  />
-                  <span>Active</span>
-                </label>
-              </div>
-            </div>
-            <div className="jd-modal-footer-jd-mgmt">
-              <button className="jd-btn-cancel-jd-mgmt" onClick={() => setShowJobModal(false)}>
-                Cancel
-              </button>
-              <button 
-                className="jd-btn-save-jd-mgmt" 
-                onClick={handleSaveJob}
-                disabled={loading || creatingJobRole || updatingJobRole || !!jdCodeError}
-                style={{
-                  opacity: jdCodeError ? 0.6 : 1,
-                  cursor: jdCodeError ? 'not-allowed' : 'pointer'
-                }}
-              >
-                {loading || creatingJobRole || updatingJobRole ? 'Saving...' : (isEditMode ? 'Update' : 'Create')}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Add/Edit Description Modal */}
       {showDescriptionModal && (
         <div className="jd-modal-overlay-jd-mgmt" onClick={() => setShowDescriptionModal(false)}>
           <div className="jd-modal-content-jd-mgmt" onClick={(e) => e.stopPropagation()}>
             <div className="jd-modal-header-jd-mgmt">
               <h2>{editingTaskId ? 'Edit Task' : 'Add New Task'}</h2>
-              <button className="jd-modal-close-jd-mgmt" onClick={() => setShowDescriptionModal(false)}>×</button>
+              <button type="button" className="jd-modal-close-jd-mgmt" onClick={() => setShowDescriptionModal(false)}>×</button>
             </div>
             <div className="jd-modal-body-jd-mgmt">
               {error && (
@@ -1108,27 +499,25 @@ const JDManagement = () => {
               )}
               {!editingTaskId && (
                 <div className="jd-form-group-jd-mgmt">
-                  <label>Select Designation(s): *</label>
+                  <label>Select designation(s): *</label>
                   <p style={{ fontSize: '12px', color: '#666', marginBottom: '8px' }}>
-                    You can select multiple designations to add the same task to all of them
+                    Select one or more emp designations to add the same task to all of them.
                   </p>
-                  
-                  {/* Selected Designations Display */}
-                  {descriptionFormData.selectedJobRoleIds.length > 0 && (
+                  {descriptionFormData.selectedDesignationIds.length > 0 && (
                     <div className="jd-selected-designations-jd-mgmt">
-                      {descriptionFormData.selectedJobRoleIds.map(roleId => {
-                        const role = jobRoles.find(r => r.id === roleId);
-                        if (!role) return null;
+                      {descriptionFormData.selectedDesignationIds.map((desId) => {
+                        const des = jdDesignations.find((d) => d.id === desId);
+                        if (!des) return null;
                         return (
-                          <span key={roleId} className="jd-selected-tag-jd-mgmt">
-                            {role.designation} ({role.jdCode})
+                          <span key={desId} className="jd-selected-tag-jd-mgmt">
+                            {des.designation_title}
                             <button
                               type="button"
                               className="jd-remove-tag-jd-mgmt"
                               onClick={() => {
                                 setDescriptionFormData({
                                   ...descriptionFormData,
-                                  selectedJobRoleIds: descriptionFormData.selectedJobRoleIds.filter(id => id !== roleId)
+                                  selectedDesignationIds: descriptionFormData.selectedDesignationIds.filter((id) => id !== desId),
                                 });
                               }}
                             >
@@ -1139,16 +528,11 @@ const JDManagement = () => {
                       })}
                     </div>
                   )}
-
-                  {/* Multi-Select Dropdown */}
                   <div className="jd-multi-select-container-jd-mgmt">
-                    <div 
-                      className="jd-multi-select-input-jd-mgmt"
-                      onClick={() => setShowDesignationDropdown(!showDesignationDropdown)}
-                    >
+                    <div className="jd-multi-select-input-jd-mgmt" onClick={() => setShowDesignationDropdown(!showDesignationDropdown)}>
                       <input
                         type="text"
-                        placeholder="Search and select designations..."
+                        placeholder="Search designations…"
                         value={designationSearch}
                         onChange={(e) => {
                           setDesignationSearch(e.target.value);
@@ -1159,68 +543,50 @@ const JDManagement = () => {
                       />
                       <span className="jd-dropdown-arrow-jd-mgmt">▼</span>
                     </div>
-                    
                     {showDesignationDropdown && (
                       <div className="jd-multi-select-dropdown-jd-mgmt">
-                        {jobRoles
-                          .filter(role => role.status === 1)
-                          .filter(role => 
-                            role.designation.toLowerCase().includes(designationSearch.toLowerCase()) ||
-                            role.jdCode.toLowerCase().includes(designationSearch.toLowerCase())
+                        {jdDesignations
+                          .filter((d) => Number(d.activated) === 1)
+                          .filter((d) =>
+                            String(d.designation_title || '').toLowerCase().includes(designationSearch.toLowerCase())
+                            || String(d.des_code || '').toLowerCase().includes(designationSearch.toLowerCase())
                           )
-                          .map(role => {
-                            const isSelected = descriptionFormData.selectedJobRoleIds.includes(role.id);
+                          .map((des) => {
+                            const isSelected = descriptionFormData.selectedDesignationIds.includes(des.id);
                             return (
                               <div
-                                key={role.id}
+                                key={des.id}
                                 className={`jd-multi-select-option-jd-mgmt ${isSelected ? 'selected-jd-mgmt' : ''}`}
                                 onClick={() => {
-                                  if (isSelected) {
-                                    setDescriptionFormData({
-                                      ...descriptionFormData,
-                                      selectedJobRoleIds: descriptionFormData.selectedJobRoleIds.filter(id => id !== role.id)
-                                    });
-                                  } else {
-                                    setDescriptionFormData({
-                                      ...descriptionFormData,
-                                      selectedJobRoleIds: [...descriptionFormData.selectedJobRoleIds, role.id]
-                                    });
-                                  }
+                                  setDescriptionFormData({
+                                    ...descriptionFormData,
+                                    selectedDesignationIds: isSelected
+                                      ? descriptionFormData.selectedDesignationIds.filter((id) => id !== des.id)
+                                      : [...descriptionFormData.selectedDesignationIds, des.id],
+                                  });
                                 }}
                               >
-                                <input
-                                  type="checkbox"
-                                  checked={isSelected}
-                                  onChange={() => {}}
-                                  className="jd-checkbox-jd-mgmt"
-                                />
+                                <input type="checkbox" checked={isSelected} onChange={() => {}} className="jd-checkbox-jd-mgmt" />
                                 <span className="jd-option-text-jd-mgmt">
-                                  <strong>{role.designation}</strong>
-                                  <span className="jd-option-code-jd-mgmt">({role.jdCode})</span>
+                                  <strong>{des.designation_title}</strong>
+                                  {des.des_code && <span className="jd-option-code-jd-mgmt">({des.des_code})</span>}
                                 </span>
                               </div>
                             );
                           })}
-                        {jobRoles.filter(role => 
-                          role.status === 1 &&
-                          (role.designation.toLowerCase().includes(designationSearch.toLowerCase()) ||
-                           role.jdCode.toLowerCase().includes(designationSearch.toLowerCase()))
-                        ).length === 0 && (
-                          <div className="jd-no-results-jd-mgmt">No designations found</div>
-                        )}
                       </div>
                     )}
                   </div>
                 </div>
               )}
               <div className="jd-form-group-jd-mgmt">
-                <label>Task Description: *</label>
+                <label>Task description: *</label>
                 <textarea
                   value={descriptionFormData.taskDescription}
                   onChange={(e) => setDescriptionFormData({ ...descriptionFormData, taskDescription: e.target.value })}
                   placeholder="Enter task description"
                   rows="4"
-                  autoFocus={editingTaskId}
+                  autoFocus={!!editingTaskId}
                 />
               </div>
               <div className="jd-form-group-jd-mgmt">
@@ -1235,17 +601,14 @@ const JDManagement = () => {
               </div>
             </div>
             <div className="jd-modal-footer-jd-mgmt">
-              <button className="jd-btn-cancel-jd-mgmt" onClick={() => setShowDescriptionModal(false)}>
-                Cancel
-              </button>
-              <button 
-                className="jd-btn-save-jd-mgmt" 
+              <button type="button" className="jd-btn-cancel-jd-mgmt" onClick={() => setShowDescriptionModal(false)}>Cancel</button>
+              <button
+                type="button"
+                className="jd-btn-save-jd-mgmt"
                 onClick={handleSaveDescription}
-                disabled={loading || creatingDescription || updatingDescription || creatingMultipleDescriptions}
+                disabled={loading || creatingDescription || updatingDescription || creatingMultipleDescriptions || updatingTaskOrders}
               >
-                {loading || creatingDescription || updatingDescription || creatingMultipleDescriptions 
-                  ? 'Saving...' 
-                  : (editingTaskId ? 'Update' : 'Add')}
+                {loading || creatingDescription || updatingDescription || creatingMultipleDescriptions ? 'Saving…' : (editingTaskId ? 'Update' : 'Add')}
               </button>
             </div>
           </div>
