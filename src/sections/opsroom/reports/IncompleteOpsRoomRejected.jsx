@@ -174,7 +174,7 @@ const IncompleteOpsRoomRejected = () => {
       {/* Top Section (15%) */}
       <div className="ops6-section">
         <div className="ops6-section-next">
-          <div className="ops6-top">
+          <div className="report-toolbar ops6-top">
             <ReportDateRangePicker
               startDate={startDate}
               endDate={endDate}
@@ -184,9 +184,10 @@ const IncompleteOpsRoomRejected = () => {
               }}
               disabled={loading}
             />
-            <div className="align-items">
-              <label>Pilot </label>
+            <div className="report-toolbar-field">
+              <label htmlFor="incomplete-ops-pilot">Pilot</label>
               <select
+                id="incomplete-ops-pilot"
                 value={pilotFilter}
                 onChange={e => setPilotFilter(e.target.value)}
               >
@@ -196,7 +197,7 @@ const IncompleteOpsRoomRejected = () => {
                 ))}
               </select>
             </div>
-            <div className="align-items">
+            <div className="report-toolbar-actions">
               <button
                 onClick={downloadExcel}
                 className="flex items-center bg-green-500 text-white m-0"

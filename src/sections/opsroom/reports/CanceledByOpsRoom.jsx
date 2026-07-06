@@ -211,7 +211,7 @@ const CanceledByOpsRoom = () => {
     <div className="ops-container6">
       <div className="ops6-section">
         <div className="ops6-section-next">
-          <div className="ops6-top">
+          <div className="report-toolbar ops6-top">
             <ReportDateRangePicker
               startDate={startDate}
               endDate={endDate}
@@ -221,7 +221,7 @@ const CanceledByOpsRoom = () => {
               }}
               disabled={loading}
             />
-            <div className="align-items">
+            <div className="report-toolbar-field">
               <select value={pilotFilter} onChange={(e) => setPilotFilter(e.target.value)}>
                 <option value="">All Pilots</option>
                 {pilotOptions.map((pilot, index) => (
@@ -231,7 +231,7 @@ const CanceledByOpsRoom = () => {
                 ))}
               </select>
             </div>
-            <div className="align-items">
+            <div className="report-toolbar-field">
               <select value={estateFilter} onChange={(e) => setEstateFilter(e.target.value)}>
                 <option value="">All Estates</option>
                 {estateOptions.map((estate, index) => (
@@ -241,7 +241,7 @@ const CanceledByOpsRoom = () => {
                 ))}
               </select>
             </div>
-            <div className="align-items">
+            <div className="report-toolbar-field">
               <select value={reasonFilter} onChange={(e) => setReasonFilter(e.target.value)}>
                 <option value="">All Reasons</option>
                 {reasonOptions.map((reason, index) => (
@@ -251,15 +251,19 @@ const CanceledByOpsRoom = () => {
                 ))}
               </select>
             </div>
-            <div className="align-items">
-              <label>Reason type</label>
-              <select value={reasonFlagFilter} onChange={(e) => setReasonFlagFilter(e.target.value)}>
+            <div className="report-toolbar-field">
+              <label htmlFor="canceled-ops-reason-type">Reason type</label>
+              <select
+                id="canceled-ops-reason-type"
+                value={reasonFlagFilter}
+                onChange={(e) => setReasonFlagFilter(e.target.value)}
+              >
                 <option value="">All</option>
                 <option value="c">Canceled</option>
                 <option value="h">Partially</option>
               </select>
             </div>
-            <div className="align-items">
+            <div className="report-toolbar-actions">
               <button
                 onClick={downloadExcel}
                 className="flex items-center bg-green-500 text-white m-0"

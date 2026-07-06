@@ -198,7 +198,7 @@ const PilotSummaryOpsRoomData = () => {
 
     return (
         <div className="ops-container">
-            <div className="date-filters">
+            <div className="report-toolbar">
                 <ReportDateRangePicker
                     startDate={startDate}
                     endDate={endDate}
@@ -208,20 +208,22 @@ const PilotSummaryOpsRoomData = () => {
                     }}
                     disabled={loading}
                 />
-                <button
-                    onClick={exportToExcel}
-                    className="flex items-center bg-green-500 text-white"
-                >
-                    <FiDownload className="mr-2" />
-                    Excel
-                </button>
-                <button
-                    onClick={exportToPDF}
-                    className="flex items-center bg-red-600 text-white"
-                >
-                    <FiPrinter className="mr-2" />
-                    PDF
-                </button>
+                <div className="report-toolbar-actions">
+                    <button
+                        onClick={exportToExcel}
+                        className="flex items-center bg-green-500 text-white"
+                    >
+                        <FiDownload className="mr-2" />
+                        Excel
+                    </button>
+                    <button
+                        onClick={exportToPDF}
+                        className="flex items-center bg-red-600 text-white"
+                    >
+                        <FiPrinter className="mr-2" />
+                        PDF
+                    </button>
+                </div>
             </div>
 
             <div className="filter-controls">

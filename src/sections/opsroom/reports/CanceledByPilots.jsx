@@ -221,7 +221,7 @@ const CanceledByPilots = () => {
       {/* Top Section (15%) */}
       <div className="ops6-section">
         <div className="ops6-section-next">
-          <div className="ops6-top">
+          <div className="report-toolbar ops6-top">
             <ReportDateRangePicker
               startDate={startDate}
               endDate={endDate}
@@ -231,7 +231,7 @@ const CanceledByPilots = () => {
               }}
               disabled={loading}
             />
-            <div className="align-items">
+            <div className="report-toolbar-field">
               <select
                 value={pilotFilter}
                 onChange={e => setPilotFilter(e.target.value)}
@@ -242,7 +242,7 @@ const CanceledByPilots = () => {
                 ))}
               </select>
             </div>
-            <div className="align-items">
+            <div className="report-toolbar-field">
               <select
                 value={estateFilter}
                 onChange={e => setEstateFilter(e.target.value)}
@@ -253,7 +253,7 @@ const CanceledByPilots = () => {
                 ))}
               </select>
             </div>
-            <div className="align-items">
+            <div className="report-toolbar-field">
               <select
                 value={reasonFilter}
                 onChange={e => setReasonFilter(e.target.value)}
@@ -264,7 +264,7 @@ const CanceledByPilots = () => {
                 ))}
               </select>
             </div>
-            <div className="align-items">
+            <div className="report-toolbar-actions">
               <button
                 onClick={downloadExcel}
                 className="flex items-center bg-green-500 text-white m-0"
