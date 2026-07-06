@@ -279,7 +279,7 @@ const PilotPerformancePilotData = () => {
 
     return (
         <div className="ops-container">
-            <div className="date-filters">
+            <div className="report-toolbar">
                 <ReportDateRangePicker
                     startDate={startDate}
                     endDate={endDate}
@@ -289,7 +289,7 @@ const PilotPerformancePilotData = () => {
                     }}
                     disabled={isLoading}
                 />
-                <div className="export-buttons">
+                <div className="report-toolbar-actions">
                     <button
                         onClick={exportToExcel}
                         className="flex items-center bg-green-500 text-white"

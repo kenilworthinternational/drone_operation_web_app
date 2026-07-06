@@ -283,9 +283,12 @@ div.flex.flex-col.justify-center.items-center div.text-2xl {
 
 /* Top section layout */
 .ops6-top, .button-ops6 {
-  justify-content: space-evenly;
   display: flex;
   flex-direction: row;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 10px 12px;
+  justify-content: flex-start;
 }
 
 .ops6-section, .ops6-section-next {
