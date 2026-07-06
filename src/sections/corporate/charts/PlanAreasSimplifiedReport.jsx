@@ -79,26 +79,22 @@ const ReportPart1 = ({ dateRange }) => {
   // Helper function to process data based on selected type
   const processData = (data, type) => {
     return data.map(item => {
-      let fieldArea, totalPlan, canceledByTeamLead;
+      let fieldArea, totalPlan;
       if (type === 'All') {
         fieldArea = item.field_area_ops_room;
         totalPlan = (item.total_plan_ha || 0) - (item.cancel_fields_in_plans_by_manager_ha || 0);
-        canceledByTeamLead = item.cancel_fields_in_plans_by_team_lead_ha;
       } else if (type === 'Spread') {
         fieldArea = item.spd_field_area_ops_room;
         totalPlan = (item.total_plan_ha_spd || 0) - (item.cancel_fields_in_plans_by_manager_spd_ha || 0);
-        canceledByTeamLead = item.cancel_fields_in_plans_by_team_lead_spd_ha;
       } else if (type === 'Spray') {
         fieldArea = item.spy_field_area_ops_room;
         totalPlan = (item.total_plan_ha_spy || 0) - (item.cancel_fields_in_plans_by_manager_spy_ha || 0);
-        canceledByTeamLead = item.cancel_fields_in_plans_by_team_lead_spy_ha;
       }
       return {
         ...item,
         fieldArea: fieldArea || 0,
         totalPlan: totalPlan || 0,
-        canceledByTeamLead: canceledByTeamLead || 0,
-        remaining_ha: Math.max(0, (totalPlan || 0) - (fieldArea || 0) - (canceledByTeamLead || 0))
+        remaining_ha: Math.max(0, (totalPlan || 0) - (fieldArea || 0))
       };
     }).filter(item => item.totalPlan > 0);
   };
@@ -131,9 +127,6 @@ const ReportPart1 = ({ dateRange }) => {
           <p style={{ color: '#48bb78' }}>
             Field Area Completed: {Number(data.fieldArea).toFixed(2)} Ha
           </p>
-          <p style={{ color: '#f56565' }}>
-            Team Lead Canceled: {Number(data.canceledByTeamLead).toFixed(2)} Ha
-          </p>
         </div>
       );
     }
@@ -152,7 +145,6 @@ const ReportPart1 = ({ dateRange }) => {
       Name: item.group_name || item.plantation_name || item.region_name || item.estate_name,
       'Total Plan Area (Ha)': item.totalPlan ? Number(item.totalPlan).toFixed(2) : 0,
       'Field Area Completed (Ha)': item.fieldArea ? Number(item.fieldArea).toFixed(2) : 0,
-      'Team Lead Canceled (Ha)': item.canceledByTeamLead ? Number(item.canceledByTeamLead).toFixed(2) : 0,
       'Remaining Plan Area (Ha)': item.remaining_ha ? Number(item.remaining_ha).toFixed(2) : 0,
     }));
 
@@ -456,13 +448,6 @@ const ReportPart1 = ({ dateRange }) => {
                   barSize={30}
                 />
                 <Bar
-                  dataKey="canceledByTeamLead"
-                  name="Team Lead Canceled (Ha)"
-                  fill="#f56565"
-                  stackId="a"
-                  barSize={30}
-                />
-                <Bar
                   dataKey="remaining_ha"
                   name="Remaining Plan Area (Ha)"
                   fill="#2c5282"
@@ -543,13 +528,6 @@ const ReportPart1 = ({ dateRange }) => {
                   dataKey="fieldArea"
                   name="Field Area Completed (Ha)"
                   fill="#48bb78"
-                  stackId="a"
-                  barSize={30}
-                />
-                <Bar
-                  dataKey="canceledByTeamLead"
-                  name="Team Lead Canceled (Ha)"
-                  fill="#f56565"
                   stackId="a"
                   barSize={30}
                 />
@@ -638,13 +616,6 @@ const ReportPart1 = ({ dateRange }) => {
                   barSize={30}
                 />
                 <Bar
-                  dataKey="canceledByTeamLead"
-                  name="Team Lead Canceled (Ha)"
-                  fill="#f56565"
-                  stackId="a"
-                  barSize={30}
-                />
-                <Bar
                   dataKey="remaining_ha"
                   name="Remaining Plan Area (Ha)"
                   fill="#2c5282"
@@ -714,13 +685,6 @@ const ReportPart1 = ({ dateRange }) => {
                   dataKey="fieldArea"
                   name="Field Area Completed (Ha)"
                   fill="#48bb78"
-                  stackId="a"
-                  barSize={30}
-                />
-                <Bar
-                  dataKey="canceledByTeamLead"
-                  name="Team Lead Canceled (Ha)"
-                  fill="#f56565"
                   stackId="a"
                   barSize={30}
                 />

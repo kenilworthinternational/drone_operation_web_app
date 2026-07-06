@@ -8,12 +8,9 @@ import PilotPerformancePilotData from '../../opsroom/reports/PilotPerformancePil
 import PilotPerformanceOpsRoomData from '../../opsroom/reports/PilotPerformanceOpsRoomData';
 import PilotSummaryOpsRoomData from '../../opsroom/reports/PilotSummaryOpsRoomData';
 import OperationsReportPlanWise from '../../opsroom/reports/OperationsReportPlanWise';
-import OperationsReportLeaderWise from '../../opsroom/reports/OperationsReportLeaderWise';
 import PilotSummaryPilotData from '../../opsroom/reports/PilotSummaryPilotData';
-import IncompleteFieldsLeaderWise from '../../opsroom/reports/IncompleteFieldsLeaderWise';
 import IncompleteOpsRoomRejected from '../../opsroom/reports/IncompleteOpsRoomRejected';
 import CanceledByPilots from '../../opsroom/reports/CanceledByPilots';
-import CancelledFieldsByTeamLead from '../../opsroom/reports/CancelledFieldsByTeamLead';
 import PilotPerformanceByDateOpsRoom from '../../opsroom/reports/PilotPerformanceByDateOpsRoom';
 import PilotPerformanceByDatePilot from '../../opsroom/reports/PilotPerformanceByDatePilot';
 import PilotFeedbacks from '../../opsroom/reports/PilotFeedbacks';
@@ -161,28 +158,6 @@ const ReportSection = ({ section }) => {
             </div>
 
             <div className="ops-item">
-              <div className="ops-item-header" onClick={() => toggleSubItem('ops', 'leaders')}>
-                <h3>Operations Report (Leader wise)</h3>
-                {expandedItems.ops === 'leaders' ? <FaChevronCircleUp /> : <FaChevronCircleDown />}
-              </div>
-              {expandedItems.ops === 'leaders' && (
-                <div className="ops-sub-content">
-                  {expandedItems.ops === 'leaders' && <OperationsReportLeaderWise />}
-                </div>
-              )}
-            </div>
-            <div className="ops-item">
-              <div className="ops-item-header" onClick={() => toggleSubItem('ops', 'leaders_approve')}>
-                <h3>Incomplete Fields (Leader wise)</h3>
-                {expandedItems.ops === 'leaders_approve' ? <FaChevronCircleUp /> : <FaChevronCircleDown />}
-              </div>
-              {expandedItems.ops === 'leaders_approve' && (
-                <div className="ops-sub-content">
-                  {expandedItems.ops === 'leaders_approve' && <IncompleteFieldsLeaderWise />}
-                </div>
-              )}
-            </div>
-            <div className="ops-item">
               <div className="ops-item-header" onClick={() => toggleSubItem('ops', 'incomplete_subtasks')}>
                 <h3>Incomplete Ops Room Rejected (Pilot wise)</h3>
                 {expandedItems.ops === 'incomplete_subtasks' ? <FaChevronCircleUp /> : <FaChevronCircleDown />}
@@ -201,17 +176,6 @@ const ReportSection = ({ section }) => {
               {expandedItems.ops === 'canceled_pilot' && (
                 <div className="ops-sub-content">
                   {expandedItems.ops === 'canceled_pilot' && <CanceledByPilots />}
-                </div>
-              )}
-            </div>
-            <div className="ops-item">
-              <div className="ops-item-header" onClick={() => toggleSubItem('ops', 'canceled_teamlead')}>
-                <h3>Cancelled Fields by Team Lead</h3>
-                {expandedItems.ops === 'canceled_teamlead' ? <FaChevronCircleUp /> : <FaChevronCircleDown />}
-              </div>
-              {expandedItems.ops === 'canceled_teamlead' && (
-                <div className="ops-sub-content">
-                  {expandedItems.ops === 'canceled_teamlead' && <CancelledFieldsByTeamLead />}
                 </div>
               )}
             </div>

@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
-import DatePicker from 'react-datepicker';
 import { Bars } from 'react-loader-spinner';
 import '../../../styles/ops.css';
-import 'react-datepicker/dist/react-datepicker.css';
+import ReportDateRangePicker from '../../../components/ReportDateRangePicker';
 import { baseApi } from '../../../api/services/allEndpoints';
 import { useAppDispatch } from '../../../store/hooks';
 import * as XLSX from "xlsx";
@@ -200,24 +199,15 @@ const PilotSummaryOpsRoomData = () => {
     return (
         <div className="ops-container">
             <div className="date-filters">
-                <div>
-                    <label>Start Date: </label>
-                    <DatePicker
-                        selected={startDate}
-                        onChange={date => setStartDate(date)}
-                        dateFormat="yyyy-MM-dd"
-                        disabled={loading}
-                    />
-                </div>
-                <div>
-                    <label>End Date: </label>
-                    <DatePicker
-                        selected={endDate}
-                        onChange={date => setEndDate(date)}
-                        dateFormat="yyyy-MM-dd"
-                        disabled={loading}
-                    />
-                </div>
+                <ReportDateRangePicker
+                    startDate={startDate}
+                    endDate={endDate}
+                    onChange={(start, end) => {
+                        setStartDate(start);
+                        setEndDate(end);
+                    }}
+                    disabled={loading}
+                />
                 <button
                     onClick={exportToExcel}
                     className="flex items-center bg-green-500 text-white"

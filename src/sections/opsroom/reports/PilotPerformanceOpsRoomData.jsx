@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
-import DatePicker from 'react-datepicker';
 import '../../../styles/ops.css';
-import 'react-datepicker/dist/react-datepicker.css';
+import ReportDateRangePicker from '../../../components/ReportDateRangePicker';
 import { baseApi } from '../../../api/services/allEndpoints';
 import { useAppDispatch } from '../../../store/hooks';
 import * as XLSX from "xlsx";
@@ -45,6 +44,18 @@ const PilotPerformanceOpsRoomData = () => {
                     endDate: endDate.toLocaleDateString('en-CA')
                 }));
                 const response = result.data;
+                if (!response?.pilots?.length) {
+                    setPilotsData([]);
+                    setFilterOptions({
+                        pilotNames: [],
+                        groups: [],
+                        plantations: [],
+                        regions: [],
+                        estates: []
+                    });
+                    setNoData(true);
+                    return;
+                }
 
                 const transformed = [];
                 const options = {
@@ -56,12 +67,12 @@ const PilotPerformanceOpsRoomData = () => {
                 };
 
                 response.pilots.forEach(pilot => {
-                    options.pilotNames.add(pilot.pilot_name);
+                    if (pilot.pilot_name) options.pilotNames.add(pilot.pilot_name);
                     pilot.plans.forEach(plan => {
-                        options.groups.add(plan.group);
-                        options.plantations.add(plan.plantation);
-                        options.regions.add(plan.region);
-                        options.estates.add(plan.estate);
+                        if (plan.group) options.groups.add(plan.group);
+                        if (plan.plantation) options.plantations.add(plan.plantation);
+                        if (plan.region) options.regions.add(plan.region);
+                        if (plan.estate) options.estates.add(plan.estate);
 
                         plan.fields.forEach(field => {
                             const fieldArea = Number(field.field_area);
@@ -284,24 +295,15 @@ const PilotPerformanceOpsRoomData = () => {
     return (
         <div className="ops-container">
             <div className="date-filters">
-                <div>
-                    <label>Start Date: </label>
-                    <DatePicker
-                        selected={startDate}
-                        onChange={date => setStartDate(date)}
-                        dateFormat="yyyy-MM-dd"
-                        disabled={isLoading}
-                    />
-                </div>
-                <div>
-                    <label>End Date: </label>
-                    <DatePicker
-                        selected={endDate}
-                        onChange={date => setEndDate(date)}
-                        dateFormat="yyyy-MM-dd"
-                        disabled={isLoading}
-                    />
-                </div>
+                <ReportDateRangePicker
+                    startDate={startDate}
+                    endDate={endDate}
+                    onChange={(start, end) => {
+                        setStartDate(start);
+                        setEndDate(end);
+                    }}
+                    disabled={isLoading}
+                />
                 <div className="export-buttons">
                     <button
                         onClick={exportToExcel}
@@ -321,38 +323,58 @@ const PilotPerformanceOpsRoomData = () => {
             </div>
 
             <div className="filter-controls">
-                <select onChange={(e) => handleFilterChange('pilotName', e.target.value)} disabled={isLoading}>
+                <select
+                    value={filters.pilotName}
+                    onChange={(e) => handleFilterChange('pilotName', e.target.value)}
+                    disabled={isLoading}
+                >
                     <option value="">All Pilots</option>
-                    {filterOptions.pilotNames.map(name => (
-                        <option key={name} value={name}>{name}</option>
+                    {filterOptions.pilotNames.map((name, i) => (
+                        <option key={`pilot-${name}-${i}`} value={name}>{name}</option>
                     ))}
                 </select>
 
-                <select onChange={(e) => handleFilterChange('group', e.target.value)} disabled={isLoading}>
+                <select
+                    value={filters.group}
+                    onChange={(e) => handleFilterChange('group', e.target.value)}
+                    disabled={isLoading}
+                >
                     <option value="">All Groups</option>
-                    {filterOptions.groups.map(group => (
-                        <option key={group} value={group}>{group}</option>
+                    {filterOptions.groups.map((group, i) => (
+                        <option key={`group-${group}-${i}`} value={group}>{group}</option>
                     ))}
                 </select>
 
-                <select onChange={(e) => handleFilterChange('plantation', e.target.value)} disabled={isLoading}>
+                <select
+                    value={filters.plantation}
+                    onChange={(e) => handleFilterChange('plantation', e.target.value)}
+                    disabled={isLoading}
+                >
                     <option value="">All Plantations</option>
-                    {filterOptions.plantations.map(plantation => (
-                        <option key={plantation} value={plantation}>{plantation}</option>
+                    {filterOptions.plantations.map((plantation, i) => (
+                        <option key={`plantation-${plantation}-${i}`} value={plantation}>{plantation}</option>
                     ))}
                 </select>
 
-                <select onChange={(e) => handleFilterChange('region', e.target.value)} disabled={isLoading}>
+                <select
+                    value={filters.region}
+                    onChange={(e) => handleFilterChange('region', e.target.value)}
+                    disabled={isLoading}
+                >
                     <option value="">All Regions</option>
-                    {filterOptions.regions.map(region => (
-                        <option key={region} value={region}>{region}</option>
+                    {filterOptions.regions.map((region, i) => (
+                        <option key={`region-${region}-${i}`} value={region}>{region}</option>
                     ))}
                 </select>
 
-                <select onChange={(e) => handleFilterChange('estate', e.target.value)} disabled={isLoading}>
+                <select
+                    value={filters.estate}
+                    onChange={(e) => handleFilterChange('estate', e.target.value)}
+                    disabled={isLoading}
+                >
                     <option value="">All Estates</option>
-                    {filterOptions.estates.map(estate => (
-                        <option key={estate} value={estate}>{estate}</option>
+                    {filterOptions.estates.map((estate, i) => (
+                        <option key={`estate-${estate}-${i}`} value={estate}>{estate}</option>
                     ))}
                 </select>
             </div>
@@ -389,8 +411,8 @@ const PilotPerformanceOpsRoomData = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {filteredData.map((item, index) => (
-                                <tr key={index}>
+                            {filteredData.map((item) => (
+                                <tr key={`${item.date}-${item.pilotName}-${item.estate}-${item.fieldName}-${item.fieldArea}`}>
                                     <td>{item.date}</td>
                                     <td>{item.pilotName}</td>
                                     <td>{item.group}</td>

@@ -1,0 +1,34 @@
+.report-date-range {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.report-date-range-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #374151;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.report-date-range-input {
+  min-width: 220px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  background: #fff;
+}
+
+.report-date-range-input:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.report-date-range-input:focus {
+  outline: none;
+  border-color: #2dd4bf;
+  box-shadow: 0 0 0 2px rgba(45, 212, 191, 0.25);
+}

@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
-import DatePicker from 'react-datepicker';
 import { Bars } from 'react-loader-spinner';
 import '../../../styles/ops6.css';
-import 'react-datepicker/dist/react-datepicker.css';
+import ReportDateRangePicker from '../../../components/ReportDateRangePicker';
 import { baseApi } from '../../../api/services/allEndpoints';
 import { useAppDispatch } from '../../../store/hooks';
 import * as XLSX from "xlsx";
@@ -213,29 +212,15 @@ const CanceledByOpsRoom = () => {
       <div className="ops6-section">
         <div className="ops6-section-next">
           <div className="ops6-top">
-            <div>
-              <label>Start Date</label>
-              <DatePicker
-                selected={startDate}
-                onChange={(date) => setStartDate(date)}
-                selectsStart
-                dateFormat="dd-MM-yyyy"
-                className="react-datepicker__input-container"
-                disabled={loading}
-              />
-            </div>
-            <div>
-              <label>End Date</label>
-              <DatePicker
-                selected={endDate}
-                onChange={(date) => setEndDate(date)}
-                selectsEnd
-                minDate={startDate}
-                dateFormat="dd-MM-yyyy"
-                className="react-datepicker__input-container"
-                disabled={loading}
-              />
-            </div>
+            <ReportDateRangePicker
+              startDate={startDate}
+              endDate={endDate}
+              onChange={(start, end) => {
+                setStartDate(start);
+                setEndDate(end);
+              }}
+              disabled={loading}
+            />
             <div className="align-items">
               <select value={pilotFilter} onChange={(e) => setPilotFilter(e.target.value)}>
                 <option value="">All Pilots</option>

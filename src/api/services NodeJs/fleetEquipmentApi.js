@@ -232,23 +232,6 @@ export const fleetEquipmentApi = baseApi.injectEndpoints({
       providesTags: ['Pilots', 'Teams'],
     }),
 
-    // Get team leads
-    getFleetTeamLeads: builder.query({
-      queryFn: async () => {
-        const result = await nodeBackendBaseQuery(
-          {
-            url: '/api/fleet-equipment/team-leads',
-            method: 'POST',
-            body: {},
-          },
-          {},
-          {}
-        );
-        return result;
-      },
-      providesTags: ['TeamLeads'],
-    }),
-
     // Create team with pilot
     createFleetTeam: builder.mutation({
       queryFn: async (data) => {
@@ -398,7 +381,6 @@ export const {
   useAssignFleetDroneMutation,
   useRemoveFleetDroneMutation,
   useGetFleetPilotsWithTeamsQuery,
-  useGetFleetTeamLeadsQuery,
   useCreateFleetTeamMutation,
   useGetFleetTeamEquipmentQuery,
   // Temporary allocations (unified)

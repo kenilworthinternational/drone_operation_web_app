@@ -17,7 +17,7 @@ export { baseApi } from './baseApi';
 // API Services - Import all hooks
 export * from './services/authApi';
 export * from './services/estatesApi';
-export * from './services/reportsApi';
+export * from './services NodeJs/webReportsApi';
 export * from './services/plansApi';
 export * from './services/dropdownsApi';
 export * from './services/teamsApi';

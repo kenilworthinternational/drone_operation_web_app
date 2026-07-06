@@ -6,7 +6,6 @@ import {
   useGetFleetGeneratorsQuery,
   useGetFleetDronesQuery,
   useGetFleetPilotsWithTeamsQuery,
-  useGetFleetTeamLeadsQuery,
   useCreateFleetTeamMutation,
   useGetFleetTeamEquipmentQuery,
   useGetTempFleetAllocationsByDateQuery,
@@ -34,7 +33,6 @@ const ResourceAllocation = () => {
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM format
   const [showCreateTeamModal, setShowCreateTeamModal] = useState(false);
   const [newTeamName, setNewTeamName] = useState('');
-  const [selectedTeamLead, setSelectedTeamLead] = useState('');
   const [selectedSector, setSelectedSector] = useState('');
   const [isCreatingTeam, setIsCreatingTeam] = useState(false);
   const [teamCreationStatus, setTeamCreationStatus] = useState(''); // 'creating', 'done', ''
@@ -72,8 +70,7 @@ const ResourceAllocation = () => {
     ? findPilotById(selectedPilotFilter)?.team_id
     : null;
   
-  // Fetch team leads and sectors
-  const { data: teamLeadsData, isLoading: loadingTeamLeads } = useGetFleetTeamLeadsQuery();
+  // Fetch sectors
   const { data: sectorsData, isLoading: loadingSectors } = useGetSectorsQuery();
   
   // Fetch equipment data (only for permanent view)
@@ -439,14 +436,7 @@ const ResourceAllocation = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isTempAllocation, formattedAllocationDate, selectedTeamId, tempAllocationsData?.data]);
 
-  // Extract team leads and sectors from API responses
-  const teamLeads = useMemo(() => {
-    if (!teamLeadsData) return [];
-    if (Array.isArray(teamLeadsData)) return teamLeadsData;
-    if (Array.isArray(teamLeadsData.data)) return teamLeadsData.data;
-    return [];
-  }, [teamLeadsData]);
-
+  // Extract sectors from API response
   const sectors = useMemo(() => {
     if (!sectorsData) return [];
     if (Array.isArray(sectorsData)) return sectorsData;
@@ -468,7 +458,6 @@ const ResourceAllocation = () => {
       const result = await createTeam({
         team_name: newTeamName.trim(),
         pilot_id: parseInt(selectedPilot),
-        lead_id: selectedTeamLead ? parseInt(selectedTeamLead) : null,
         sector_id: selectedSector ? parseInt(selectedSector) : null,
       }).unwrap();
 
@@ -481,7 +470,6 @@ const ResourceAllocation = () => {
         setTimeout(async () => {
           setShowCreateTeamModal(false);
           setNewTeamName('');
-          setSelectedTeamLead('');
           setSelectedSector('');
           setTeamCreationStatus('');
           setIsCreatingTeam(false);
@@ -1148,7 +1136,6 @@ const ResourceAllocation = () => {
                 setShowCreateTeamModal(false);
                 setSelectedPilot('');
                 setNewTeamName('');
-                setSelectedTeamLead('');
                 setSelectedSector('');
                 setIsCreatingTeam(false);
                 setTeamCreationStatus('');
@@ -1163,7 +1150,6 @@ const ResourceAllocation = () => {
                       setShowCreateTeamModal(false);
                       setSelectedPilot('');
                       setNewTeamName('');
-                      setSelectedTeamLead('');
                       setSelectedSector('');
                       setIsCreatingTeam(false);
                       setTeamCreationStatus('');
@@ -1194,36 +1180,6 @@ const ResourceAllocation = () => {
                         }
                       }}
                     />
-                  </div>
-                  <div className="create-team-modal-field-fleet">
-                    <label htmlFor="team-lead-input" className="create-team-modal-label-fleet">
-                      Team Lead
-                    </label>
-                    <div className="filter-input-wrapper-fleet filter-select-wrapper-fleet">
-                      <select
-                        id="team-lead-input"
-                        className="filter-select-fleet"
-                        value={selectedTeamLead}
-                        onChange={(e) => setSelectedTeamLead(e.target.value)}
-                        disabled={loadingTeamLeads || isCreatingTeam}
-                      >
-                        <option value="">-- Select Team Lead --</option>
-                        {loadingTeamLeads ? (
-                          <option value="" disabled>Loading team leads...</option>
-                        ) : teamLeads.length === 0 ? (
-                          <option value="" disabled>No team leads available</option>
-                        ) : (
-                          teamLeads.map((lead) => (
-                            <option key={lead.id} value={lead.id}>
-                              {lead.name}
-                            </option>
-                          ))
-                        )}
-                      </select>
-                      <span className="filter-select-icon-fleet" aria-hidden="true">
-                        ˅
-                      </span>
-                    </div>
                   </div>
                   <div className="create-team-modal-field-fleet">
                     <label htmlFor="sector-input" className="create-team-modal-label-fleet">
@@ -1264,7 +1220,6 @@ const ResourceAllocation = () => {
                         setShowCreateTeamModal(false);
                         setSelectedPilot('');
                         setNewTeamName('');
-                        setSelectedTeamLead('');
                         setSelectedSector('');
                         setIsCreatingTeam(false);
                         setTeamCreationStatus('');

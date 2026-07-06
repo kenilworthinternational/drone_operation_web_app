@@ -2,18 +2,6 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { baseApi } from '../../api/services/allEndpoints';
 
 // Specific report thunks using RTK Query
-export const fetchTeamLeadReport = createAsyncThunk(
-  'reports/fetchTeamLeadReport',
-  async ({ startDate, endDate }, { dispatch, rejectWithValue }) => {
-    try {
-      const result = await dispatch(baseApi.endpoints.getTeamLeadReport.initiate({ startDate, endDate }));
-      return { reportName: 'teamLeadReport', data: result.data, startDate, endDate };
-    } catch (error) {
-      return rejectWithValue(error.message || 'Failed to fetch team lead report');
-    }
-  }
-);
-
 export const fetchApprovalCountReport = createAsyncThunk(
   'reports/fetchApprovalCountReport',
   async ({ startDate, endDate }, { dispatch, rejectWithValue }) => {
@@ -199,28 +187,8 @@ const reportsSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    // Team Lead Report
+    // Approval Count Report
     builder
-      .addCase(fetchTeamLeadReport.pending, (state, action) => {
-        const { startDate, endDate } = action.meta.arg;
-        const key = `teamLeadReport_${startDate}_${endDate}`;
-        state.loading[key] = true;
-        state.errors[key] = null;
-      })
-      .addCase(fetchTeamLeadReport.fulfilled, (state, action) => {
-        const { reportName, data, startDate, endDate } = action.payload;
-        const key = `${reportName}_${startDate}_${endDate}`;
-        state.reportData[key] = data;
-        state.loading[key] = false;
-        state.errors[key] = null;
-      })
-      .addCase(fetchTeamLeadReport.rejected, (state, action) => {
-        const { startDate, endDate } = action.meta.arg;
-        const key = `teamLeadReport_${startDate}_${endDate}`;
-        state.loading[key] = false;
-        state.errors[key] = action.payload;
-      })
-      // Approval Count Report
       .addCase(fetchApprovalCountReport.pending, (state, action) => {
         const { startDate, endDate } = action.meta.arg;
         const key = `approvalCountReport_${startDate}_${endDate}`;

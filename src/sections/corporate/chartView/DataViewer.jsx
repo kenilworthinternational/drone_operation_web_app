@@ -6,7 +6,6 @@ import 'react-date-range/dist/theme/default.css';
 import ReportPart1 from '../charts/PlanAreasSimplifiedReport';
 import ReportPart2 from '../charts/CoveredAreasReport';
 import ReportPart3 from '../charts/PilotPerformanceOpsReport';
-import ReportPart4 from '../charts/TeamLeadAssignmentReport';
 import ReportPart5 from '../charts/PilotSummaryReport';
 import ReportPart6 from '../charts/FlightNumbersReport';
 import ReportPart7 from '../charts/PilotPerformancePilotReport';
@@ -124,7 +123,6 @@ const DataViewer = ({ basePath = '/home/dataViewer', variant = 'external' } = {}
     { id: 1, title: 'Plan Areas', component: <ReportPart1 dateRange={formattedDateRange} /> },
     { id: 2, title: 'Covered Areas', component: <ReportPart2 dateRange={formattedDateRange} /> },
     { id: 3, title: 'Pilot Summary', component: <ReportPart5 dateRange={formattedDateRange} /> },
-    { id: 4, title: 'Team Lead Assignment', component: <ReportPart4 dateRange={formattedDateRange} /> },
     { id: 5, title: 'Pilot Performance (Ops)', component: <ReportPart3 dateRange={formattedDateRange} /> },
     { id: 6, title: 'Pilot Performance (Pilot)', component: <ReportPart7 dateRange={formattedDateRange} /> },
   ];

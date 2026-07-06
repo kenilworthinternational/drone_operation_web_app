@@ -10,7 +10,6 @@ import { baseApi } from '../baseApi';
 // Import and inject all service endpoints
 import './authApi';
 import './estatesApi';
-import './reportsApi';
 import './plansApi';
 import './dropdownsApi';
 import './teamsApi';
@@ -32,6 +31,8 @@ import '../services NodeJs/notificationsApi';
 import '../services NodeJs/planActivateRequestsApi';
 import '../services NodeJs/fieldUnblockRequestsApi';
 import '../services NodeJs/planStatusApi';
+import '../services NodeJs/plantationDashboardApi';
+import '../services NodeJs/webReportsApi';
 
 // Export the complete API
 export { baseApi };
@@ -39,7 +40,6 @@ export { baseApi };
 // Re-export all hooks from all services
 export * from './authApi';
 export * from './estatesApi';
-export * from './reportsApi';
 export * from './plansApi';
 export * from './dropdownsApi';
 export * from './teamsApi';
@@ -61,6 +61,7 @@ export * from '../services NodeJs/notificationsApi';
 export * from '../services NodeJs/planActivateRequestsApi';
 export * from '../services NodeJs/fieldUnblockRequestsApi';
 export * from '../services NodeJs/planStatusApi';
+export * from '../services NodeJs/webReportsApi';
 
 /**
  * Total Endpoint Count: 165+

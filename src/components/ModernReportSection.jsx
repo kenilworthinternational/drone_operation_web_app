@@ -11,12 +11,10 @@ import PilotPerformancePilotData from '../sections/opsroom/reports/PilotPerforma
 import PilotPerformanceOpsRoomData from '../sections/opsroom/reports/PilotPerformanceOpsRoomData';
 import PilotSummaryOpsRoomData from '../sections/opsroom/reports/PilotSummaryOpsRoomData';
 import OperationsReportPlanWise from '../sections/opsroom/reports/OperationsReportPlanWise';
-import OperationsReportLeaderWise from '../sections/opsroom/reports/OperationsReportLeaderWise';
 import PilotSummaryPilotData from '../sections/opsroom/reports/PilotSummaryPilotData';
 import IncompleteOpsRoomRejected from '../sections/opsroom/reports/IncompleteOpsRoomRejected';
 import CanceledByPilots from '../sections/opsroom/reports/CanceledByPilots';
 import CanceledByOpsRoom from '../sections/opsroom/reports/CanceledByOpsRoom';
-import CancelledFieldsByTeamLead from '../sections/opsroom/reports/CancelledFieldsByTeamLead';
 import PilotPerformanceByDateOpsRoom from '../sections/opsroom/reports/PilotPerformanceByDateOpsRoom';
 import PilotPerformanceByDatePilot from '../sections/opsroom/reports/PilotPerformanceByDatePilot';
 import PilotFeedbacks from '../sections/opsroom/reports/PilotFeedbacks';
@@ -188,14 +186,6 @@ const ModernReportSection = ({ category = null }) => {
           component: OperationsReportPlanWise,
           metrics: { label: 'Plans', value: 'All' }
         },
-        {
-          id: 'ops_leader',
-          name: 'Operations Report (Leader wise)',
-          description: 'Team leader performance analysis',
-          icon: FaUsers,
-          component: OperationsReportLeaderWise,
-          metrics: { label: 'Leaders', value: 'All' }
-        },
         // {
         //   id: 'incomplete_leader',
         //   name: 'Incomplete Fields (Leader wise)',
@@ -226,14 +216,6 @@ const ModernReportSection = ({ category = null }) => {
           description: 'Tasks canceled by ops room in day end process',
           icon: FaTimesCircle,
           component: CanceledByOpsRoom,
-          metrics: { label: 'Canceled', value: 'Track' }
-        },
-        {
-          id: 'canceled_leader',
-          name: 'Cancelled Fields by Team Lead',
-          description: 'Team lead cancellations',
-          icon: FaTimesCircle,
-          component: CancelledFieldsByTeamLead,
           metrics: { label: 'Canceled', value: 'Track' }
         },
         {

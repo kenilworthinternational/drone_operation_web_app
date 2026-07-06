@@ -29,8 +29,8 @@ const OperationsReportPlanWise = () => {
         const fetchPlantations = async () => {
             try {
                 setLoading(true);
-                const result = await dispatch(baseApi.endpoints.getAllPlantations.initiate());
-                const data = result.data;
+                const result = await dispatch(baseApi.endpoints.getPlantationsList.initiate());
+                const data = result.data?.data || [];
                 setPlantations(data);
                 setError(null);
             } catch (err) {
@@ -48,8 +48,8 @@ const OperationsReportPlanWise = () => {
             if (selectedPlantation) {
                 try {
                     setLoading(true);
-                    const result = await dispatch(baseApi.endpoints.getEstatesByPlantation.initiate(selectedPlantation));
-                    const data = result.data;
+                    const result = await dispatch(baseApi.endpoints.getEstatesList.initiate(selectedPlantation));
+                    const data = result.data?.data || [];
                     setEstates(data);
                     setSelectedEstates([]);
                     setError(null);
