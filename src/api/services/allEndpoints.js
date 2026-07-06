@@ -32,7 +32,7 @@ import '../services NodeJs/planActivateRequestsApi';
 import '../services NodeJs/fieldUnblockRequestsApi';
 import '../services NodeJs/planStatusApi';
 import '../services NodeJs/plantationDashboardApi';
-import '../services NodeJs/webReportsApi';
+import '../services NodeJs/jdManagementApi';
 
 // Export the complete API
 export { baseApi };
@@ -61,6 +61,7 @@ export * from '../services NodeJs/notificationsApi';
 export * from '../services NodeJs/planActivateRequestsApi';
 export * from '../services NodeJs/fieldUnblockRequestsApi';
 export * from '../services NodeJs/planStatusApi';
+export * from '../services NodeJs/jdManagementApi';
 export * from '../services NodeJs/webReportsApi';
 
 /**

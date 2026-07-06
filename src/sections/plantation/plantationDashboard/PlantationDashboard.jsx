@@ -21,7 +21,7 @@ import {
 } from 'react-icons/fa';
 import * as XLSX from 'xlsx';
 import {
-  useGetGroupsQuery,
+  useGetDisplayGroupsQuery,
   useGetAllPlantationsQuery,
   useGetAllEstatesQuery,
 } from '../../../api/services/estatesApi';
@@ -96,7 +96,7 @@ const PlantationDashboard = ({
   }, [closePopup]);
 
   // Fetch hierarchy data for displaying names
-  const { data: groupsData } = useGetGroupsQuery();
+  const { data: groupsData } = useGetDisplayGroupsQuery();
   const { data: plantationsData } = useGetAllPlantationsQuery();
   const { data: estatesData } = useGetAllEstatesQuery();
   const { data: jobRolesData } = useGetUserJobRolesQuery();

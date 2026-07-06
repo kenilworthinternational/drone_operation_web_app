@@ -2,8 +2,8 @@ import { baseApi } from '../baseApi';
 
 export const estatesApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    // Get all groups
-    getGroups: builder.query({
+    // Legacy PHP display_groups (do not share endpoint name with Node /api/groups)
+    getDisplayGroups: builder.query({
       query: () => ({
         url: 'display_groups',
         method: 'POST',
@@ -105,7 +105,7 @@ export const estatesApi = baseApi.injectEndpoints({
 });
 
 export const {
-  useGetGroupsQuery,
+  useGetDisplayGroupsQuery,
   useGetPlantationsByGroupQuery,
   useGetRegionsByPlantationQuery,
   useGetEstatesByRegionQuery,

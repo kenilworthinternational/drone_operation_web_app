@@ -13,7 +13,7 @@ export const fetchBookingDropdownData = createAsyncThunk(
         dispatch(baseApi.endpoints.getTimeSlots.initiate()).then(r => r.data),
         dispatch(baseApi.endpoints.getASCs.initiate()).then(r => r.data),
         dispatch(baseApi.endpoints.getBrokers.initiate()).then(r => r.data),
-        dispatch(baseApi.endpoints.getGroups.initiate()).then(r => r.data),
+        dispatch(baseApi.endpoints.getDisplayGroups.initiate()).then(r => r.data),
       ]);
 
       let processedAsc = [];

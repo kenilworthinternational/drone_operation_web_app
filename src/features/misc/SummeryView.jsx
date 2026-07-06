@@ -96,7 +96,7 @@ const SummeryView = () => {
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
-        const groupsResult = await dispatch(baseApi.endpoints.getGroups.initiate());
+        const groupsResult = await dispatch(baseApi.endpoints.getDisplayGroups.initiate());
         const groups = groupsResult.data;
         setState(prev => ({
           ...prev,

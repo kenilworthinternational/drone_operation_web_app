@@ -60,9 +60,19 @@ export default function UsersDirectory({
   const userLevels = userLevelsData?.data || [];
 
   // External user fields
-  const { data: groupsData } = useGetGroupsQuery();
-  // Handle both wrapped and direct array responses
-  const groups = Array.isArray(groupsData?.data) ? groupsData.data : (Array.isArray(groupsData) ? groupsData : []);
+  const { data: groupsData } = useGetGroupsQuery(undefined, {
+    refetchOnMountOrArgChange: true,
+  });
+  const groups = useMemo(() => {
+    const raw = groupsData?.data ?? groupsData;
+    if (Array.isArray(raw)) return raw;
+    if (Array.isArray(raw?.data)) return raw.data;
+    if (Array.isArray(raw?.groups)) return raw.groups;
+    return [];
+  }, [groupsData]);
+
+  const getGroupLabel = (group) =>
+    group?.group || group?.name || group?.group_name || (group?.id != null ? `Group ${group.id}` : '');
 
   const { data: plantationsData } = useGetPlantationsQuery();
   const plantations = Array.isArray(plantationsData?.data) ? plantationsData.data : (Array.isArray(plantationsData) ? plantationsData : []);
@@ -1286,7 +1296,7 @@ export default function UsersDirectory({
                     <option value="">-- Select Group --</option>
                     {groups.map((group) => (
                       <option key={group.id} value={group.id}>
-                        {group.group}
+                        {getGroupLabel(group)}
                       </option>
                     ))}
                   </select>
@@ -1929,7 +1939,7 @@ export default function UsersDirectory({
                       <option value="">-- Select Group --</option>
                       {groups.map((group) => (
                         <option key={group.id} value={group.id}>
-                          {group.group}
+                          {getGroupLabel(group)}
                         </option>
                       ))}
                     </select>

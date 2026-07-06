@@ -43,7 +43,7 @@ const UpdateServices = () => {
     const fetchInitialData = async () => {
       try {
         const [groupsResult, missionsResult, cropsResult] = await Promise.all([
-          dispatch(baseApi.endpoints.getGroups.initiate()),
+          dispatch(baseApi.endpoints.getDisplayGroups.initiate()),
           dispatch(baseApi.endpoints.getMissionTypes.initiate()),
           dispatch(baseApi.endpoints.getCropTypes.initiate())
         ]);
