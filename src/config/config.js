@@ -30,10 +30,10 @@ const getEnvironment = () => {
 const currentEnv = getEnvironment();
 const isDevelopment = currentEnv === 'development';
 
-// API Configuration (legacy PHP / Laravel API)
+// API Configuration — legacy PHP removed; webapp uses Node `/api/` (see baseApi.js + legacyPhpCompat)
 export const API_CONFIG = {
-  development: 'https://drone-admin-test.kenilworthinternational.com/api/',
-  production: 'https://drone-admin.kenilworthinternational.com/api/',
+  development: '/api/',
+  production: '/api/',
 };
 
 function isLocalDevServer() {
@@ -42,14 +42,8 @@ function isLocalDevServer() {
   return h === 'localhost' || h === '127.0.0.1';
 }
 
-// Get the appropriate API URL based on environment
-// On localhost, use /php-api/ (proxied by src/setupProxy.js → drone-admin-test or prod)
-export const API_BASE_URL = (() => {
-  if (isLocalDevServer()) {
-    return '/php-api/';
-  }
-  return isDevelopment ? API_CONFIG.development : API_CONFIG.production;
-})();
+// Deprecated: kept for any stray imports; always Node proxy path
+export const API_BASE_URL = isLocalDevServer() ? '/api/' : '/api/';
 
 // Export environment flag for use in other files
 export const IS_DEVELOPMENT = isDevelopment;

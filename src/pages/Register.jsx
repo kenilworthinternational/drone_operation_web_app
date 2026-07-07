@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGetRegistrationOptionsQuery } from '../api/services NodeJs/publicRegistrationApi';
-import { API_BASE_URL } from '../config/config';
+import { getNodeBackendUrl } from '../api/services NodeJs/nodeBackendConfig';
 import LiquidEther from '../UI/LiquidEther';
 import { useWipeNavigate } from '../utils/useWipeNavigate';
 import '../styles/register.css';
@@ -181,7 +181,10 @@ const Register = () => {
         formData.append('image', profileImage);
       }
 
-      const response = await fetch(`${API_BASE_URL}create_user`, {
+      const apiRoot = getNodeBackendUrl();
+      const createUserUrl = `${apiRoot}/api/public/create_user`;
+
+      const response = await fetch(createUserUrl, {
         method: 'POST',
         body: formData,
       });

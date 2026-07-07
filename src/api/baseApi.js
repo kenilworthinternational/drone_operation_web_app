@@ -1,7 +1,13 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import { API_BASE_URL } from '../config/config';
+import { getNodeBackendUrl } from './services NodeJs/nodeBackendConfig';
 import { logger } from '../utils/logger';
 import { forceLogoutFromApi } from '../utils/sessionUtils';
+
+/** Legacy PHP-compat paths are served by Node at /api/<path> (see dsms_backend_dev legacyPhpCompat). */
+const LEGACY_API_BASE = (() => {
+  const nodeRoot = getNodeBackendUrl();
+  return nodeRoot ? `${nodeRoot}/api/` : '/api/';
+})();
 
 // Helper function to get token
 const getToken = () => {
@@ -10,7 +16,12 @@ const getToken = () => {
 };
 
 const baseQueryWithAuth = fetchBaseQuery({
-  baseUrl: API_BASE_URL,
+  baseUrl: LEGACY_API_BASE,
+  fetchFn: (input, init) =>
+    fetch(input, {
+      ...init,
+      cache: 'no-store',
+    }),
   prepareHeaders: (headers) => {
     const token = getToken();
     if (token) {
