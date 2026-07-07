@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { getNodeBackendUrl } from '../../api/services NodeJs/nodeBackendConfig';
+import { getNodeBackendUrl } from '../../api/services NodeJs/nodeBackendUrl';
 import { logger } from '../../utils/logger';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));

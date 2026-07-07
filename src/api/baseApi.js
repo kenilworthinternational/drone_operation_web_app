@@ -1,5 +1,5 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import { getNodeBackendUrl } from './services NodeJs/nodeBackendConfig';
+import { getNodeBackendUrl } from './services NodeJs/nodeBackendUrl';
 import { logger } from '../utils/logger';
 import { forceLogoutFromApi } from '../utils/sessionUtils';
 

@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGetRegistrationOptionsQuery } from '../api/services NodeJs/publicRegistrationApi';
-import { getNodeBackendUrl } from '../api/services NodeJs/nodeBackendConfig';
+import { getNodeBackendUrl } from '../api/services NodeJs/nodeBackendUrl';
 import LiquidEther from '../UI/LiquidEther';
 import { useWipeNavigate } from '../utils/useWipeNavigate';
 import '../styles/register.css';

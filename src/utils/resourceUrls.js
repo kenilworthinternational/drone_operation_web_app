@@ -1,4 +1,4 @@
-import { getNodeBackendUrl } from '../api/services NodeJs/nodeBackendConfig';
+import { getNodeBackendUrl } from '../api/services NodeJs/nodeBackendUrl';
 import { ensureHttps } from './urlUtils';
 
 /**
