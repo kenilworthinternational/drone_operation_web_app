@@ -73,7 +73,8 @@ export const bookingCreationApi = baseApi.injectEndpoints({
         const result = await nodePost(`${base}/estates/${estateId}/divisions-fields`, {
           estate: estateId,
         });
-        return result;
+        if (result.error) return result;
+        return { data: result.data || {} };
       },
       providesTags: (result, error, estateId) => [{ type: 'Divisions', id: estateId }],
     }),
@@ -145,6 +146,7 @@ export const {
   useGetBookingCreationGroupsQuery,
   useGetBookingCreationMissionTypesQuery,
   useGetBookingCreationCropTypesQuery,
+  useGetBookingCreationDivisionsByEstateQuery,
   useLazyGetBookingCreationDivisionsByEstateQuery,
   useLazyGetBookingCreationPlansByDateQuery,
   useLazyGetBookingCreationPlansByDateRangeQuery,

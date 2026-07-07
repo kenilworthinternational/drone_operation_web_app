@@ -1,0 +1,926 @@
+{
+  "summary": {
+    "phpEndpointCount": 97,
+    "phpStillUsedInUi": 87,
+    "phpUnusedInUi": 10,
+    "nodeApiFiles": 50
+  },
+  "phpByService": {
+    "assetsApi.js": {
+      "total": 5,
+      "used": 0
+    },
+    "bookingsApi.js": {
+      "total": 7,
+      "used": 7
+    },
+    "dropdownsApi.js": {
+      "total": 8,
+      "used": 8
+    },
+    "estatesApi.js": {
+      "total": 10,
+      "used": 10
+    },
+    "farmersApi.js": {
+      "total": 3,
+      "used": 3
+    },
+    "financeApi.js": {
+      "total": 9,
+      "used": 9
+    },
+    "groupAssignmentsApi.js": {
+      "total": 4,
+      "used": 4
+    },
+    "operatorsApi.js": {
+      "total": 4,
+      "used": 4
+    },
+    "plansApi.js": {
+      "total": 11,
+      "used": 11
+    },
+    "requestsApi.js": {
+      "total": 4,
+      "used": 3
+    },
+    "summaryApi.js": {
+      "total": 14,
+      "used": 10
+    },
+    "tasksApi.js": {
+      "total": 2,
+      "used": 2
+    },
+    "teamsApi.js": {
+      "total": 16,
+      "used": 16
+    }
+  },
+  "phpStillUsed": [
+    {
+      "endpoint": "getASCBookingsByDateRange",
+      "phpUrl": "search_mission_by_requested_date_range",
+      "service": "bookingsApi.js",
+      "screens": [
+        "src/store/slices/bookingsSlice.js"
+      ]
+    },
+    {
+      "endpoint": "getMissionsByPlannedDate",
+      "phpUrl": "search_mission_by_planed_date",
+      "service": "bookingsApi.js",
+      "screens": [
+        "src/sections/opsroom/dayend/DayEndProcessAsc.jsx"
+      ]
+    },
+    {
+      "endpoint": "createMission",
+      "phpUrl": "create_mission",
+      "service": "bookingsApi.js",
+      "screens": [
+        "src/sections/management/bookings/AscBookings.jsx"
+      ]
+    },
+    {
+      "endpoint": "updateMissionPlannedDate",
+      "phpUrl": "update_mission_planned_date_by_id",
+      "service": "bookingsApi.js",
+      "screens": [
+        "src/sections/management/bookings/BookingList.jsx"
+      ]
+    },
+    {
+      "endpoint": "updateMission",
+      "phpUrl": "update_mission_by_id",
+      "service": "bookingsApi.js",
+      "screens": [
+        "src/sections/management/bookings/BookingList.jsx"
+      ]
+    },
+    {
+      "endpoint": "updateMissionStatus",
+      "phpUrl": "update_mission_status_by_id",
+      "service": "bookingsApi.js",
+      "screens": [
+        "src/sections/management/bookings/BookingList.jsx"
+      ]
+    },
+    {
+      "endpoint": "setASCForMission",
+      "phpUrl": "update_mission_asc_by_id",
+      "service": "bookingsApi.js",
+      "screens": [
+        "src/sections/management/bookings/BookingList.jsx"
+      ]
+    },
+    {
+      "endpoint": "getSectors",
+      "phpUrl": "display_sectors",
+      "service": "dropdownsApi.js",
+      "screens": [
+        "src/sections/administration/ResourceAllocation.jsx",
+        "src/sections/management/bookings/AscBookings.jsx",
+        "src/store/slices/bookingsSlice.js"
+      ]
+    },
+    {
+      "endpoint": "getMissionTypes",
+      "phpUrl": "mission_type",
+      "service": "dropdownsApi.js",
+      "screens": [
+        "src/features/misc/UpdateServices.jsx",
+        "src/sections/management/bookings/AscBookings.jsx",
+        "src/sections/opsroom/requests/MonthlyRequestProceed.jsx",
+        "src/sections/plantation/plantationDashboard/components/PlantationCalendar.jsx",
+        "src/sections/plantation/plantationDashboard/pages/PlantationCalendarPage.jsx",
+        "src/store/slices/bookingsSlice.js"
+      ]
+    },
+    {
+      "endpoint": "getCropTypes",
+      "phpUrl": "display_crop_type",
+      "service": "dropdownsApi.js",
+      "screens": [
+        "src/features/misc/UpdateServices.jsx",
+        "src/sections/management/bookings/AscBookings.jsx",
+        "src/sections/opsroom/requests/MonthlyRequestProceed.jsx",
+        "src/sections/plantation/plantationDashboard/components/PlantationCalendar.jsx",
+        "src/sections/plantation/plantationDashboard/pages/PlantationCalendarPage.jsx",
+        "src/store/slices/bookingsSlice.js"
+      ]
+    },
+    {
+      "endpoint": "getTimeSlots",
+      "phpUrl": "time_of_the_day",
+      "service": "dropdownsApi.js",
+      "screens": [
+        "src/sections/management/bookings/AscBookings.jsx",
+        "src/store/slices/bookingsSlice.js"
+      ]
+    },
+    {
+      "endpoint": "getChemicalTypes",
+      "phpUrl": "chemical_type",
+      "service": "dropdownsApi.js",
+      "screens": [
+        "src/sections/management/bookings/AscBookings.jsx",
+        "src/sections/management/bookings/BookingList.jsx"
+      ]
+    },
+    {
+      "endpoint": "getStages",
+      "phpUrl": "display_growth_level",
+      "service": "dropdownsApi.js",
+      "screens": [
+        "src/sections/management/bookings/AscBookings.jsx"
+      ]
+    },
+    {
+      "endpoint": "getASCs",
+      "phpUrl": "display_asc",
+      "service": "dropdownsApi.js",
+      "screens": [
+        "src/sections/management/bookings/AscBookings.jsx",
+        "src/store/slices/bookingsSlice.js"
+      ]
+    },
+    {
+      "endpoint": "getPartialCompleteReasons",
+      "phpUrl": "display_partial_complete_reasons",
+      "service": "dropdownsApi.js",
+      "screens": [
+        "src/store/slices/financeSlice.js"
+      ]
+    },
+    {
+      "endpoint": "getDisplayGroups",
+      "phpUrl": "display_groups",
+      "service": "estatesApi.js",
+      "screens": [
+        "src/features/calendar/CalenderView.jsx",
+        "src/features/misc/SummeryView.jsx",
+        "src/features/misc/UpdateServices.jsx",
+        "src/sections/plantation/plantationDashboard/PlantationDashboard.jsx",
+        "src/store/slices/bookingsSlice.js"
+      ]
+    },
+    {
+      "endpoint": "getPlantationsByGroup",
+      "phpUrl": "display_plantation",
+      "service": "estatesApi.js",
+      "screens": [
+        "src/features/calendar/CalenderView.jsx",
+        "src/features/misc/SummeryView.jsx",
+        "src/features/misc/UpdateServices.jsx"
+      ]
+    },
+    {
+      "endpoint": "getRegionsByPlantation",
+      "phpUrl": "display_region",
+      "service": "estatesApi.js",
+      "screens": [
+        "src/features/calendar/CalenderView.jsx",
+        "src/features/misc/SummeryView.jsx",
+        "src/features/misc/UpdateServices.jsx"
+      ]
+    },
+    {
+      "endpoint": "getEstatesByRegion",
+      "phpUrl": "display_estate",
+      "service": "estatesApi.js",
+      "screens": [
+        "src/features/calendar/CalenderView.jsx",
+        "src/features/misc/SummeryView.jsx",
+        "src/features/misc/UpdateServices.jsx"
+      ]
+    },
+    {
+      "endpoint": "getAllPlantations",
+      "phpUrl": "display_all_plantation",
+      "service": "estatesApi.js",
+      "screens": [
+        "src/components/PlantationEstateSelectWidget.jsx",
+        "src/sections/plantation/plantationDashboard/PlantationDashboard.jsx"
+      ]
+    },
+    {
+      "endpoint": "getAllEstates",
+      "phpUrl": "display_all_estates",
+      "service": "estatesApi.js",
+      "screens": [
+        "src/sections/plantation/plantationDashboard/PlantationDashboard.jsx",
+        "src/sections/plantation/plantationDashboard/pages/ChartBreakdownPage.jsx",
+        "src/store/slices/bookingsSlice.js",
+        "src/store/slices/estatesSlice.js"
+      ]
+    },
+    {
+      "endpoint": "getEstatesByPlantation",
+      "phpUrl": "display_estate_by_plantation",
+      "service": "estatesApi.js",
+      "screens": [
+        "src/components/PlantationEstateSelectWidget.jsx"
+      ]
+    },
+    {
+      "endpoint": "getEstateDetails",
+      "phpUrl": "estate_profile",
+      "service": "estatesApi.js",
+      "screens": [
+        "src/features/calendar/CalenderWidget.jsx",
+        "src/sections/opsroom/manager-approval/ManagerApprovalQueue.jsx",
+        "src/sections/plantation/plantationDashboard/components/PlantationCalendar.jsx",
+        "src/store/slices/estatesSlice.js"
+      ]
+    },
+    {
+      "endpoint": "getDivisionsByEstate",
+      "phpUrl": "display_division_field_by_estate",
+      "service": "estatesApi.js",
+      "screens": [
+        "src/features/calendar/CalenderWidget.jsx",
+        "src/features/misc/UpdateServices.jsx",
+        "src/store/slices/bookingsSlice.js",
+        "src/store/slices/estatesSlice.js"
+      ]
+    },
+    {
+      "endpoint": "getFieldDetails",
+      "phpUrl": "details_by_field",
+      "service": "estatesApi.js",
+      "screens": [
+        "src/store/slices/estatesSlice.js"
+      ]
+    },
+    {
+      "endpoint": "getFarmerByNIC",
+      "phpUrl": "farmer_by_nic",
+      "service": "farmersApi.js",
+      "screens": [
+        "src/sections/management/bookings/AscBookings.jsx"
+      ]
+    },
+    {
+      "endpoint": "addFarmer",
+      "phpUrl": "add_farmer",
+      "service": "farmersApi.js",
+      "screens": [
+        "src/sections/management/bookings/AscBookings.jsx"
+      ]
+    },
+    {
+      "endpoint": "updateFarmer",
+      "phpUrl": "update_farmer",
+      "service": "farmersApi.js",
+      "screens": [
+        "src/sections/management/bookings/AscBookings.jsx"
+      ]
+    },
+    {
+      "endpoint": "getPilotRevenueByDate",
+      "phpUrl": "pilot_daily_covered_area",
+      "service": "financeApi.js",
+      "screens": [
+        "src/store/slices/financeSlice.js"
+      ]
+    },
+    {
+      "endpoint": "getSavedPilotRevenueByDate",
+      "phpUrl": "get_pilot_daily_payment_by_date",
+      "service": "financeApi.js",
+      "screens": [
+        "src/sections/finance/PilotEarnings/Earnings.jsx"
+      ]
+    },
+    {
+      "endpoint": "getDefaultPaymentValues",
+      "phpUrl": "default_values",
+      "service": "financeApi.js",
+      "screens": [
+        "src/store/slices/financeSlice.js"
+      ]
+    },
+    {
+      "endpoint": "addPilotRevenue",
+      "phpUrl": "pilot_daily_payment",
+      "service": "financeApi.js",
+      "screens": [
+        "src/store/slices/financeSlice.js"
+      ]
+    },
+    {
+      "endpoint": "getBrokers",
+      "phpUrl": "view_brokers",
+      "service": "financeApi.js",
+      "screens": [
+        "src/sections/management/bookings/AscBookings.jsx",
+        "src/store/slices/bookingsSlice.js",
+        "src/store/slices/financeSlice.js"
+      ]
+    },
+    {
+      "endpoint": "searchBrokerByNIC",
+      "phpUrl": "search_broker_by_nic",
+      "service": "financeApi.js",
+      "screens": [
+        "src/sections/finance/brokers/BrokerRegistration.jsx"
+      ]
+    },
+    {
+      "endpoint": "addBroker",
+      "phpUrl": "add_broker",
+      "service": "financeApi.js",
+      "screens": [
+        "src/sections/finance/brokers/BrokerRegistration.jsx"
+      ]
+    },
+    {
+      "endpoint": "updateBroker",
+      "phpUrl": "update_broker",
+      "service": "financeApi.js",
+      "screens": [
+        "src/store/slices/financeSlice.js"
+      ]
+    },
+    {
+      "endpoint": "updateBrokerStatus",
+      "phpUrl": "update_broker_status",
+      "service": "financeApi.js",
+      "screens": [
+        "src/store/slices/financeSlice.js"
+      ]
+    },
+    {
+      "endpoint": "getCurrentGroupAssignedMissions",
+      "phpUrl": "display_groups_by_day",
+      "service": "groupAssignmentsApi.js",
+      "screens": [
+        "src/features/nonp/nonpTeamAllocation.jsx"
+      ]
+    },
+    {
+      "endpoint": "createGroupAssignedMissions",
+      "phpUrl": "create_group_assigned_missions",
+      "service": "groupAssignmentsApi.js",
+      "screens": [
+        "src/features/nonp/nonpTeamAllocation.jsx"
+      ]
+    },
+    {
+      "endpoint": "updateGroupAssignedMissions",
+      "phpUrl": "update_group_assigned_to_missions",
+      "service": "groupAssignmentsApi.js",
+      "screens": [
+        "src/features/nonp/nonpTeamAllocation.jsx"
+      ]
+    },
+    {
+      "endpoint": "removeGroupFromMissions",
+      "phpUrl": "remove_group_from_missions",
+      "service": "groupAssignmentsApi.js",
+      "screens": [
+        "src/features/nonp/nonpTeamAllocation.jsx"
+      ]
+    },
+    {
+      "endpoint": "getOperators",
+      "phpUrl": "get_operator",
+      "service": "operatorsApi.js",
+      "screens": [
+        "src/store/slices/operatorsSlice.js"
+      ]
+    },
+    {
+      "endpoint": "assignOperatorToPlan",
+      "phpUrl": "assign_plan_to_operator",
+      "service": "operatorsApi.js",
+      "screens": [
+        "src/store/slices/operatorsSlice.js"
+      ]
+    },
+    {
+      "endpoint": "getAssignedOperator",
+      "phpUrl": "find_plan_operator",
+      "service": "operatorsApi.js",
+      "screens": [
+        "src/store/slices/operatorsSlice.js"
+      ]
+    },
+    {
+      "endpoint": "getPlanOperatorsByDateRange",
+      "phpUrl": "find_plan_operator_date_range",
+      "service": "operatorsApi.js",
+      "screens": [
+        "src/store/slices/operatorsSlice.js"
+      ]
+    },
+    {
+      "endpoint": "getPlansByDate",
+      "phpUrl": "find_plans_by_date",
+      "service": "plansApi.js",
+      "screens": [
+        "src/features/misc/ProceedPlan.jsx",
+        "src/features/misc/teamAllocation.jsx",
+        "src/features/nonp/nonpTeamAllocation.jsx",
+        "src/sections/opsroom/dashboard/WorkflowDashboard.jsx",
+        "src/sections/opsroom/manager-approval/ManagerApprovalQueue.jsx",
+        "src/sections/opsroom/operators/OpsAssign.jsx",
+        "src/sections/opsroom/plans/PlansWithWeather.jsx",
+        "src/store/slices/plansSlice.js"
+      ]
+    },
+    {
+      "endpoint": "getPlansByDateRange",
+      "phpUrl": "find_plans_by_date_range",
+      "service": "plansApi.js",
+      "screens": [
+        "src/store/slices/bookingsSlice.js"
+      ]
+    },
+    {
+      "endpoint": "getPlanById",
+      "phpUrl": "find_plan",
+      "service": "plansApi.js",
+      "screens": [
+        "src/features/calendar/CalenderWidget.jsx",
+        "src/sections/plantation/plantationDashboard/components/PlantationCalendar.jsx",
+        "src/store/slices/plansSlice.js"
+      ]
+    },
+    {
+      "endpoint": "getPlanResourceAllocation",
+      "phpUrl": "get_plan_resource_allocation_details",
+      "service": "plansApi.js",
+      "screens": [
+        "src/features/misc/ProceedPlan.jsx"
+      ]
+    },
+    {
+      "endpoint": "createPlan",
+      "phpUrl": "create_plan",
+      "service": "plansApi.js",
+      "screens": [
+        "src/features/calendar/CalenderWidget.jsx",
+        "src/features/misc/UpdateServices.jsx",
+        "src/store/slices/bookingsSlice.js",
+        "src/store/slices/plansSlice.js"
+      ]
+    },
+    {
+      "endpoint": "updatePlan",
+      "phpUrl": "update_plan",
+      "service": "plansApi.js",
+      "screens": [
+        "src/features/calendar/CalenderWidget.jsx",
+        "src/features/misc/UpdateServices.jsx",
+        "src/store/slices/plansSlice.js"
+      ]
+    },
+    {
+      "endpoint": "changePlanStatus",
+      "phpUrl": "plan_change_status",
+      "service": "plansApi.js",
+      "screens": [
+        "src/features/calendar/CalenderWidget.jsx"
+      ]
+    },
+    {
+      "endpoint": "updateDroneToPlan",
+      "phpUrl": "change_drone_to_plan",
+      "service": "plansApi.js",
+      "screens": [
+        "src/features/misc/teamAllocationBottom.jsx"
+      ]
+    },
+    {
+      "endpoint": "updatePilotToPlan",
+      "phpUrl": "change_pilot_to_plan",
+      "service": "plansApi.js",
+      "screens": [
+        "src/features/misc/teamAllocationBottom.jsx"
+      ]
+    },
+    {
+      "endpoint": "getPlansForUpdate",
+      "phpUrl": "display_for_update_plan",
+      "service": "plansApi.js",
+      "screens": [
+        "src/features/calendar/CalenderWidget.jsx",
+        "src/features/misc/UpdateServices.jsx"
+      ]
+    },
+    {
+      "endpoint": "getPlansForReschedule",
+      "phpUrl": "display_for_reschedulr_plan",
+      "service": "plansApi.js",
+      "screens": [
+        "src/features/calendar/CalenderWidget.jsx"
+      ]
+    },
+    {
+      "endpoint": "getPendingAdHocRequests",
+      "phpUrl": "display_adhoc_plan_request_by_manager_app_pending",
+      "service": "requestsApi.js",
+      "screens": [
+        "src/sections/opsroom/monitoring/MonitoringDashboard.jsx"
+      ]
+    },
+    {
+      "endpoint": "getPendingRescheduleRequestsByManager",
+      "phpUrl": "display_reschedule_date_for_plan_by_manager_pending",
+      "service": "requestsApi.js",
+      "screens": [
+        "src/sections/opsroom/monitoring/MonitoringDashboard.jsx"
+      ]
+    },
+    {
+      "endpoint": "getPendingNonPlantationMissions",
+      "phpUrl": "search_pending_mission",
+      "service": "requestsApi.js",
+      "screens": [
+        "src/sections/opsroom/requests/RequestsQueueMain.jsx"
+      ]
+    },
+    {
+      "endpoint": "getSummaryByGroup",
+      "phpUrl": "get_plan_resource_allocation_details_by_group_and_date_range",
+      "service": "summaryApi.js",
+      "screens": [
+        "src/features/misc/SummeryView.jsx"
+      ]
+    },
+    {
+      "endpoint": "getSummaryByPlantation",
+      "phpUrl": "get_plan_resource_allocation_details_by_plantation_and_date_range",
+      "service": "summaryApi.js",
+      "screens": [
+        "src/features/misc/SummeryView.jsx"
+      ]
+    },
+    {
+      "endpoint": "getSummaryByRegion",
+      "phpUrl": "get_plan_resource_allocation_details_by_region_and_date_range",
+      "service": "summaryApi.js",
+      "screens": [
+        "src/features/misc/SummeryView.jsx"
+      ]
+    },
+    {
+      "endpoint": "getSummaryByEstate",
+      "phpUrl": "get_plan_resource_allocation_details_by_estate_and_date_range",
+      "service": "summaryApi.js",
+      "screens": [
+        "src/features/misc/SummeryView.jsx"
+      ]
+    },
+    {
+      "endpoint": "getAllPlansByDateRange",
+      "phpUrl": "find_plan_by_all_date_range",
+      "service": "summaryApi.js",
+      "screens": [
+        "src/features/calendar/CalenderView.jsx"
+      ]
+    },
+    {
+      "endpoint": "getPlansByGroupDateRange",
+      "phpUrl": "find_plan_by_group_date_range",
+      "service": "summaryApi.js",
+      "screens": [
+        "src/features/calendar/CalenderView.jsx"
+      ]
+    },
+    {
+      "endpoint": "getPlansByPlantationDateRange",
+      "phpUrl": "find_plan_by_plantation_date_range",
+      "service": "summaryApi.js",
+      "screens": [
+        "src/features/calendar/CalenderView.jsx"
+      ]
+    },
+    {
+      "endpoint": "getPlansByRegionDateRange",
+      "phpUrl": "find_plan_by_region_date_range",
+      "service": "summaryApi.js",
+      "screens": [
+        "src/features/calendar/CalenderView.jsx"
+      ]
+    },
+    {
+      "endpoint": "getPlansByEstateDateRangeWithField",
+      "phpUrl": "find_plan_by_estate_date_range_with_field",
+      "service": "summaryApi.js",
+      "screens": [
+        "src/features/calendar/CalenderView.jsx"
+      ]
+    },
+    {
+      "endpoint": "submitResourceAllocation",
+      "phpUrl": "plan_resource_allocations",
+      "service": "summaryApi.js",
+      "screens": [
+        "src/features/misc/ProceedPlan.jsx"
+      ]
+    },
+    {
+      "endpoint": "getPilotPlansAndSubtasks",
+      "phpUrl": "pilots_plans_tasks_by_date_range_and_estates",
+      "service": "tasksApi.js",
+      "screens": [
+        "src/features/pilots/PilotMappingDetails.jsx"
+      ]
+    },
+    {
+      "endpoint": "getSubmissionData",
+      "phpUrl": "display_pilot_field_sub_task",
+      "service": "tasksApi.js",
+      "screens": [
+        "src/features/pilots/PilotMappingDetails.jsx"
+      ]
+    },
+    {
+      "endpoint": "getPilotsAndDrones",
+      "phpUrl": "team_lead_and_pilot_list",
+      "service": "teamsApi.js",
+      "screens": [
+        "src/features/misc/ProceedPlan.jsx",
+        "src/features/misc/teamAllocationBottom.jsx"
+      ]
+    },
+    {
+      "endpoint": "getDronesList",
+      "phpUrl": "drone_list",
+      "service": "teamsApi.js",
+      "screens": [
+        "src/features/misc/ProceedPlan.jsx",
+        "src/features/misc/teamAllocationBottom.jsx"
+      ]
+    },
+    {
+      "endpoint": "getTeamData",
+      "phpUrl": "display_all_team_pilot_drone",
+      "service": "teamsApi.js",
+      "screens": [
+        "src/features/misc/teamAllocation.jsx",
+        "src/features/misc/teamAllocationBottom.jsx",
+        "src/store/slices/teamsSlice.js"
+      ]
+    },
+    {
+      "endpoint": "getTeamDataNonPlantation",
+      "phpUrl": "display_all_non_plantaion_team_pilot_drone",
+      "service": "teamsApi.js",
+      "screens": [
+        "src/features/nonp/nonpTeamAllocation.jsx",
+        "src/features/nonp/nonpTeamAllocationBottom.jsx"
+      ]
+    },
+    {
+      "endpoint": "getPilotsAndDronesWithoutTeam",
+      "phpUrl": "pilots_and_drones_without_team",
+      "service": "teamsApi.js",
+      "screens": [
+        "src/features/misc/teamAllocationBottom.jsx"
+      ]
+    },
+    {
+      "endpoint": "getNonPlantationPilotsWithoutTeam",
+      "phpUrl": "non_plantaion_pilots_and_drones_without_team",
+      "service": "teamsApi.js",
+      "screens": [
+        "src/features/nonp/nonpTeamAllocationBottom.jsx"
+      ]
+    },
+    {
+      "endpoint": "getPilotDetailsForPlan",
+      "phpUrl": "plan_team_drone_by_plan_id",
+      "service": "teamsApi.js",
+      "screens": [
+        "src/features/calendar/CalenderWidget.jsx",
+        "src/sections/plantation/plantationDashboard/components/PlantationCalendar.jsx"
+      ]
+    },
+    {
+      "endpoint": "addTeamToPlan",
+      "phpUrl": "add_team_to_plan",
+      "service": "teamsApi.js",
+      "screens": [
+        "src/features/misc/teamAllocation.jsx",
+        "src/store/slices/teamsSlice.js"
+      ]
+    },
+    {
+      "endpoint": "addDroneOrPilotToPool",
+      "phpUrl": "add_team_pilot_drone",
+      "service": "teamsApi.js",
+      "screens": [
+        "src/features/misc/teamAllocationBottom.jsx"
+      ]
+    },
+    {
+      "endpoint": "addDroneOrPilotToPoolNonPlantation",
+      "phpUrl": "add_non_plantaion_team_pilot_drone",
+      "service": "teamsApi.js",
+      "screens": [
+        "src/features/nonp/nonpTeamAllocationBottom.jsx"
+      ]
+    },
+    {
+      "endpoint": "updateTeamPilot",
+      "phpUrl": "update_team_pilot",
+      "service": "teamsApi.js",
+      "screens": [
+        "src/features/misc/teamAllocationBottom.jsx"
+      ]
+    },
+    {
+      "endpoint": "updateTeamPilotNonPlantation",
+      "phpUrl": "update_non_plantaion_team_pilot",
+      "service": "teamsApi.js",
+      "screens": [
+        "src/features/nonp/nonpTeamAllocationBottom.jsx"
+      ]
+    },
+    {
+      "endpoint": "updateTeamDrone",
+      "phpUrl": "update_team_drone",
+      "service": "teamsApi.js",
+      "screens": [
+        "src/features/misc/teamAllocationBottom.jsx"
+      ]
+    },
+    {
+      "endpoint": "updateTeamDroneNonPlantation",
+      "phpUrl": "update_non_plantaion_team_drone",
+      "service": "teamsApi.js",
+      "screens": [
+        "src/features/nonp/nonpTeamAllocationBottom.jsx"
+      ]
+    },
+    {
+      "endpoint": "getTeamPlannedData",
+      "phpUrl": "plan_team_drone_by_date",
+      "service": "teamsApi.js",
+      "screens": [
+        "src/features/misc/SummeryView.jsx",
+        "src/features/misc/teamAllocation.jsx",
+        "src/features/misc/teamAllocationBottom.jsx",
+        "src/store/slices/teamsSlice.js"
+      ]
+    },
+    {
+      "endpoint": "getTeamPlannedDataNonPlantation",
+      "phpUrl": "plan_non_plantaion_team_drone_by_date",
+      "service": "teamsApi.js",
+      "screens": [
+        "src/features/nonp/nonpTeamAllocation.jsx"
+      ]
+    }
+  ],
+  "phpUnused": [
+    {
+      "endpoint": "updateAssetsSectorDrone",
+      "phpUrl": "update_assets_sector_drone",
+      "service": "assetsApi.js"
+    },
+    {
+      "endpoint": "updateAssetsSectorVehicle",
+      "phpUrl": "update_assets_sector_vehicle",
+      "service": "assetsApi.js"
+    },
+    {
+      "endpoint": "updateAssetsSectorGenerator",
+      "phpUrl": "update_assets_sector_generator",
+      "service": "assetsApi.js"
+    },
+    {
+      "endpoint": "updateAssetsSectorRemoteControl",
+      "phpUrl": "update_assets_sector_remote_control",
+      "service": "assetsApi.js"
+    },
+    {
+      "endpoint": "updateAssetsSectorBattery",
+      "phpUrl": "update_assets_sector_battery",
+      "service": "assetsApi.js"
+    },
+    {
+      "endpoint": "getPendingRescheduleRequests",
+      "phpUrl": "find_all_pending_request_reschedule",
+      "service": "requestsApi.js"
+    },
+    {
+      "endpoint": "getPlansByGroup",
+      "phpUrl": "find_plan_by_group",
+      "service": "summaryApi.js"
+    },
+    {
+      "endpoint": "getPlansByPlantation",
+      "phpUrl": "find_plan_by_plantation",
+      "service": "summaryApi.js"
+    },
+    {
+      "endpoint": "getPlansByRegion",
+      "phpUrl": "find_plan_by_region",
+      "service": "summaryApi.js"
+    },
+    {
+      "endpoint": "getPlansByEstate",
+      "phpUrl": "find_plan_by_estate",
+      "service": "summaryApi.js"
+    }
+  ],
+  "nodeApiModules": [
+    "accidentReportsApi",
+    "appVersionsApi",
+    "bookingCreationApi",
+    "centralProcurementApi",
+    "chemicalsApi",
+    "dayEndProcessApi",
+    "djiImagesApi",
+    "emergencyMovingApi",
+    "empOrgStructureApi",
+    "employeeProfileApi",
+    "featurePermissionsApi",
+    "fieldHistoryApi",
+    "fieldSizeAdjustmentsApi",
+    "fieldUnblockRequestsApi",
+    "financeReportApi",
+    "financeWorkSummaryBillingApi",
+    "financialCardsApi",
+    "fleetEquipmentApi",
+    "fuelApprovalsApi",
+    "fuelGeneratorVoucherApi",
+    "fuelTransportVoucherApi",
+    "generatorFuelApprovalsApi",
+    "hrLeaveApi",
+    "hrMasterOptionsApi",
+    "ictDevelopmentApi",
+    "jdManagementApi",
+    "logsReportApi",
+    "maintenanceApi",
+    "mappingHierarchyApi",
+    "missionApi",
+    "monitoringDashboardApi",
+    "monthlyPlantationReportApi",
+    "nodeBackendConfig",
+    "notificationsApi",
+    "opsroomPerformanceSummaryApi",
+    "opsroomPlanCalendarApi",
+    "pilotAssignmentApi",
+    "planActivateRequestsApi",
+    "planStatusApi",
+    "plantationDashboardApi",
+    "plantationInvoiceApi",
+    "poolVehicleTaskApi",
+    "publicRegistrationApi",
+    "reasonsApi",
+    "stockAssetsApi",
+    "strategicFinanceApprovalsApi",
+    "timeOfDaysApi",
+    "vehicleAppApi",
+    "vehicleRentApi",
+    "webReportsApi"
+  ]
+}

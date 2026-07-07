@@ -13,8 +13,8 @@ import {
   useUpdateDjiImageMutation,
   useDeleteDjiImageMutation 
 } from '../../../api/services NodeJs/djiImagesApi';
-import { useGetAllEstatesQuery } from '../../../api/services/estatesApi';
-import { useGetDivisionsByEstateQuery } from '../../../api/services/estatesApi';
+import { useGetEstatesQuery } from '../../../api/services NodeJs/jdManagementApi';
+import { useGetBookingCreationDivisionsByEstateQuery } from '../../../api/services NodeJs/bookingCreationApi';
 import '../../../styles/djiMapUpload.css';
 import '../../../styles/vehicleProfile.css';
 import ProfileImageUploadCard from '../../../components/ProfileImageUploadCard';
@@ -111,23 +111,28 @@ const DjiMapUpload = () => {
   
   const images = imagesData?.data || [];
   
-  // Get estates
-  const { data: estatesData } = useGetAllEstatesQuery();
-  const estates = estatesData || [];
+  // Get estates (Node — legacy PHP display_all_estates caused CORS on production)
+  const { data: estatesData } = useGetEstatesQuery();
+  const estates = Array.isArray(estatesData) ? estatesData : [];
   
   // Get fields for selected estate (use editForm estateId when in edit mode, otherwise plantationForm)
   const estateIdForFields = isEditMode && editForm.isPlantation ? editForm.estateId : plantationForm.estateId;
-  const { data: fieldsData } = useGetDivisionsByEstateQuery(estateIdForFields, {
+  const { data: fieldsData } = useGetBookingCreationDivisionsByEstateQuery(estateIdForFields, {
     skip: !estateIdForFields
   });
   
-  // Get all fields from all divisions
-  const allFields = fieldsData ? Object.values(fieldsData).flatMap(division => 
-    (division.fields || []).map(field => ({
-      ...field,
-      divisionName: division.division_name
-    }))
-  ) : [];
+  // Get all fields from all divisions (skip min/max plan size keys from booking-creation payload)
+  const allFields = fieldsData
+    ? Object.values(fieldsData).flatMap((division) => {
+        if (!division || typeof division !== 'object' || !Array.isArray(division.fields)) {
+          return [];
+        }
+        return division.fields.map((field) => ({
+          ...field,
+          divisionName: division.division_name,
+        }));
+      })
+    : [];
   
   // Upload mutation
   const [uploadImage, { isLoading: uploading }] = useUploadDjiImageMutation();
