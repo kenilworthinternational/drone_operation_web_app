@@ -779,6 +779,7 @@
   margin-bottom: 0;
 }
 
+.ep-al-subject-row--major .ep-al-major-fields,
 .ep-al-subject-row--third .ep-al-third-fields {
   display: flex;
   flex-wrap: wrap;
@@ -793,6 +794,8 @@
 }
 
 .ep-al-grade-select,
+.ep-al-major-select,
+.ep-al-major-other,
 .ep-al-third-select,
 .ep-al-third-other {
   min-width: 120px;
@@ -803,9 +806,16 @@
   background: #fff;
 }
 
+.ep-al-major-other,
 .ep-al-third-other {
   flex: 1;
   min-width: 160px;
+}
+
+.ep-ol-category-help {
+  margin: 8px 0 6px;
+  font-size: 12px;
+  color: #64748b;
 }
 
 .ep-al-subjects--readonly .ep-al-subject-value {

@@ -5,6 +5,7 @@ import {
   downloadWorkSummaryPdfFromSnapshot,
   getWorkSummaryPdfFileName,
   formatPeriodRange,
+  formatWorkSummaryTitle,
   normalizeRowForPdf,
 } from './workSummaryPdfExport';
 
@@ -46,6 +47,7 @@ export default function WorkSummaryPdfDetailModal({ document: payload, onClose }
   const doc = payload.document;
   const lines = payload.lines || [];
   const pdfId = doc.pdf_id ?? doc.id;
+  const summaryTitle = formatWorkSummaryTitle(doc.period_start, pdfId);
   const pdfFileName = getWorkSummaryPdfFileName(pdfId);
 
   const handleDownloadPdf = () => {
@@ -74,11 +76,10 @@ export default function WorkSummaryPdfDetailModal({ document: payload, onClose }
       >
         <header className="plantation-invoice-modal-header">
           <div>
-            <h3 style={{ margin: 0 }}>Work summary snapshot</h3>
+            <h3 style={{ margin: 0 }}>{summaryTitle}</h3>
             <p style={{ margin: '4px 0 0', fontSize: 13, color: '#64748b' }}>
-              PDF ID {pdfId}
-              {doc.plantation_name ? ` · ${doc.plantation_name}` : ''}
-              {' · '}
+              {doc.plantation_name ? doc.plantation_name : ''}
+              {doc.plantation_name ? ' · ' : ''}
               {formatPeriodRange(doc.period_start, doc.period_end)}
             </p>
           </div>
@@ -98,7 +99,7 @@ export default function WorkSummaryPdfDetailModal({ document: payload, onClose }
                 disabled={downloading || lines.length === 0}
                 title={`Download ${pdfFileName}`}
               >
-                {downloading ? 'Generating…' : `Download PDF #${pdfId}`}
+                {downloading ? 'Generating…' : summaryTitle}
               </button>
               <span className="work-summary-pdf-detail-filename">{pdfFileName}</span>
             </div>
@@ -135,7 +136,7 @@ export default function WorkSummaryPdfDetailModal({ document: payload, onClose }
           </div>
 
           <p style={{ fontSize: 13, color: '#64748b', margin: '0 0 12px' }}>
-            Full PDF table as exported. Use <strong>Download PDF #{pdfId}</strong> to get the same file again.
+            Full PDF table as exported. Use <strong>{summaryTitle}</strong> to download the same file again.
           </p>
 
           {lines.length === 0 ? (
@@ -191,7 +192,7 @@ export default function WorkSummaryPdfDetailModal({ document: payload, onClose }
             onClick={handleDownloadPdf}
             disabled={downloading || lines.length === 0}
           >
-            {downloading ? 'Generating…' : `Download PDF #${pdfId}`}
+            {downloading ? 'Generating…' : summaryTitle}
           </button>
         </footer>
       </div>

@@ -40,6 +40,24 @@ function formatMonthYearFromPeriod(periodStart) {
   return `${d.toLocaleString('default', { month: 'long' })} - ${d.getFullYear()}`;
 }
 
+/** Display title for work summary UI and PDF headers. */
+export function formatWorkSummaryTitle(periodStart, pdfId = null) {
+  const base = `${formatMonthYearFromPeriod(periodStart)} Work Summary`;
+  if (pdfId != null && pdfId !== '') {
+    return `${base} (PDF-${pdfId})`;
+  }
+  return base;
+}
+
+/** Compact label for history action buttons, e.g. "26/01 - pdf 15". */
+export function formatWorkSummaryShortLabel(periodStart, pdfId) {
+  const d = parsePeriodDate(periodStart);
+  if (!d || pdfId == null || pdfId === '') return '—';
+  const yy = String(d.getFullYear()).slice(-2);
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  return `${yy}/${mm} - pdf ${pdfId}`;
+}
+
 function formatPlanDateDisplay(val) {
   if (!val) return 'Invalid Date';
   const d = parsePeriodDate(val);
@@ -124,6 +142,7 @@ export function buildWorkSummaryPdfDocument({
   estateNames,
   periodStart,
   rows,
+  pdfId = null,
 }) {
   const normalized = (rows || []).map(normalizeRowForPdf);
   const doc = new jsPDF('p', 'mm', 'a4');
@@ -150,7 +169,7 @@ export function buildWorkSummaryPdfDocument({
   currentY += estateWrapped.length * 5;
   doc.text(`Month: ${monthYear}`, marginX, currentY);
   currentY += 7;
-  doc.text(`${monthYear} Work Summary`, pageWidth / 2, currentY, { align: 'center' });
+  doc.text(formatWorkSummaryTitle(periodStart, pdfId), pageWidth / 2, currentY, { align: 'center' });
 
   const tableData = normalized.map((row) => {
     const planLines = [
@@ -254,6 +273,7 @@ export function downloadWorkSummaryPdfFromSnapshot({ document, lines }) {
     estateNames: document.estate_names || '',
     periodStart: document.period_start,
     rows: lines,
+    pdfId,
   });
 
   doc.save(getWorkSummaryPdfFileName(pdfId));

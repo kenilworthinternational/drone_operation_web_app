@@ -2,10 +2,15 @@ export const AL_QUALIFICATION_TYPE = 'Advanced Level (A/L)';
 
 export const AL_RESULT_GRADES = ['A', 'B', 'C', 'S', 'F'];
 
-export const AL_THIRD_SUBJECT_OTHER = '__other__';
+export const AL_MAJOR_SUBJECT_COUNT = 3;
 
-/** Common A/L main subjects (third subject slot — user can pick Other and type freely). */
-export const AL_THIRD_SUBJECT_OPTIONS = [
+export const AL_MAJOR_SUBJECT_OTHER = '__other__';
+
+/** @deprecated use AL_MAJOR_SUBJECT_OTHER */
+export const AL_THIRD_SUBJECT_OTHER = AL_MAJOR_SUBJECT_OTHER;
+
+/** Common A/L main subjects — user can pick Other and type freely. */
+export const AL_MAJOR_SUBJECT_OPTIONS = [
   { value: 'Combined Mathematics', label: 'Combined Mathematics' },
   { value: 'Physics', label: 'Physics' },
   { value: 'Chemistry', label: 'Chemistry' },
@@ -21,16 +26,25 @@ export const AL_THIRD_SUBJECT_OPTIONS = [
   { value: 'Geography', label: 'Geography' },
   { value: 'History', label: 'History' },
   { value: 'Logic & Scientific Method', label: 'Logic & Scientific Method' },
-  { value: AL_THIRD_SUBJECT_OTHER, label: 'Other (type subject name)' },
+  { value: AL_MAJOR_SUBJECT_OTHER, label: 'Other (type subject name)' },
 ];
+
+export const AL_MAJOR_SUBJECT_FALLBACK_OPTIONS = AL_MAJOR_SUBJECT_OPTIONS.filter(
+  (item) => item.value !== AL_MAJOR_SUBJECT_OTHER,
+);
+
+/** @deprecated use AL_MAJOR_SUBJECT_OPTIONS */
+export const AL_THIRD_SUBJECT_OPTIONS = AL_MAJOR_SUBJECT_OPTIONS;
+
+export function emptyMajorSubject() {
+  return { subjectKey: '', subjectOther: '', grade: '' };
+}
 
 export function emptyAlSubjectResults() {
   return {
     english: '',
     generalTest: '',
-    thirdSubjectKey: '',
-    thirdSubjectOther: '',
-    thirdGrade: '',
+    majorSubjects: Array.from({ length: AL_MAJOR_SUBJECT_COUNT }, () => emptyMajorSubject()),
   };
 }
 
@@ -38,15 +52,29 @@ export function isAlQualificationType(type) {
   return String(type || '').trim() === AL_QUALIFICATION_TYPE;
 }
 
-function thirdSubjectLabel(data) {
-  if (!data) return '';
-  if (data.thirdSubjectKey === AL_THIRD_SUBJECT_OTHER) {
-    return String(data.thirdSubjectOther || '').trim();
+function majorSubjectLabel(entry) {
+  if (!entry) return '';
+  if (entry.subjectKey === AL_MAJOR_SUBJECT_OTHER) {
+    return String(entry.subjectOther || '').trim();
   }
-  return String(data.thirdSubjectKey || '').trim();
+  return String(entry.subjectKey || '').trim();
 }
 
-/** Parse stored row → editor state (JSON in field_of_study, or legacy plain text). */
+function normalizeMajorSubjects(raw) {
+  const base = emptyAlSubjectResults().majorSubjects;
+  if (!Array.isArray(raw)) return base;
+
+  return base.map((empty, index) => {
+    const item = raw[index] || {};
+    return {
+      subjectKey: String(item.subjectKey || '').trim(),
+      subjectOther: String(item.subjectOther || '').trim(),
+      grade: String(item.grade || '').trim(),
+    };
+  });
+}
+
+/** Parse stored row → editor state (JSON in field_of_study, or legacy plain text / single third subject). */
 export function parseAlSubjectResults(row) {
   const empty = emptyAlSubjectResults();
   if (!row) return empty;
@@ -55,21 +83,36 @@ export function parseAlSubjectResults(row) {
   if (raw && String(raw).trim().startsWith('{')) {
     try {
       const parsed = JSON.parse(raw);
-      return {
-        english: parsed.english || '',
-        generalTest: parsed.generalTest || '',
-        thirdSubjectKey: parsed.thirdSubjectKey || '',
-        thirdSubjectOther: parsed.thirdSubjectOther || '',
-        thirdGrade: parsed.thirdGrade || '',
-      };
+      if (Array.isArray(parsed.majorSubjects)) {
+        return {
+          english: parsed.english || '',
+          generalTest: parsed.generalTest || '',
+          majorSubjects: normalizeMajorSubjects(parsed.majorSubjects),
+        };
+      }
+
+      // Legacy single third-subject JSON
+      if (parsed.thirdSubjectKey || parsed.thirdGrade || parsed.thirdSubjectOther) {
+        const legacy = emptyMajorSubject();
+        legacy.subjectKey = parsed.thirdSubjectKey || '';
+        legacy.subjectOther = parsed.thirdSubjectOther || '';
+        legacy.grade = parsed.thirdGrade || '';
+        empty.majorSubjects[0] = legacy;
+        empty.english = parsed.english || '';
+        empty.generalTest = parsed.generalTest || '';
+        return empty;
+      }
     } catch {
       /* fall through */
     }
   }
 
   if (raw && String(raw).trim()) {
-    empty.thirdSubjectKey = AL_THIRD_SUBJECT_OTHER;
-    empty.thirdSubjectOther = String(raw).trim();
+    empty.majorSubjects[0] = {
+      subjectKey: AL_MAJOR_SUBJECT_OTHER,
+      subjectOther: String(raw).trim(),
+      grade: '',
+    };
   }
 
   return empty;
@@ -90,10 +133,14 @@ export function formatAlSubjectResultsSummary(data) {
   const parts = [];
   const eng = formatAlResultLine('English', data.english);
   const gt = formatAlResultLine('General Test', data.generalTest);
-  const third = formatAlResultLine(thirdSubjectLabel(data), data.thirdGrade);
   if (eng) parts.push(eng);
   if (gt) parts.push(gt);
-  if (third) parts.push(third);
+
+  (data.majorSubjects || []).forEach((entry) => {
+    const line = formatAlResultLine(majorSubjectLabel(entry), entry?.grade);
+    if (line) parts.push(line);
+  });
+
   return parts.join(' · ');
 }
 
@@ -102,9 +149,11 @@ export function serializeAlSubjectResults(alData) {
   const payload = {
     english: String(alData.english || '').trim(),
     generalTest: String(alData.generalTest || '').trim(),
-    thirdSubjectKey: String(alData.thirdSubjectKey || '').trim(),
-    thirdSubjectOther: String(alData.thirdSubjectOther || '').trim(),
-    thirdGrade: String(alData.thirdGrade || '').trim(),
+    majorSubjects: normalizeMajorSubjects(alData.majorSubjects).map((entry) => ({
+      subjectKey: String(entry.subjectKey || '').trim(),
+      subjectOther: String(entry.subjectOther || '').trim(),
+      grade: String(entry.grade || '').trim(),
+    })),
   };
 
   return {
@@ -114,19 +163,29 @@ export function serializeAlSubjectResults(alData) {
 }
 
 export function validateAlSubjectResults(alData) {
-  const thirdName = thirdSubjectLabel(alData);
-  const hasAny = alData.english || alData.generalTest || thirdName || alData.thirdGrade;
+  const majors = normalizeMajorSubjects(alData?.majorSubjects);
+  const hasMajor = majors.some((entry) => majorSubjectLabel(entry) || entry.grade);
+  const hasAny = alData?.english || alData?.generalTest || hasMajor;
+
   if (!hasAny) {
-    return 'Enter at least one A/L subject result (English, General Test, or third subject).';
+    return 'Enter at least one A/L result (English, General Test, or a major subject).';
   }
-  if (alData.thirdSubjectKey === AL_THIRD_SUBJECT_OTHER && alData.thirdGrade && !thirdName) {
-    return 'Type the third subject name when using Other.';
+
+  for (let i = 0; i < majors.length; i += 1) {
+    const entry = majors[i];
+    const name = majorSubjectLabel(entry);
+    const slot = i + 1;
+
+    if (entry.subjectKey === AL_MAJOR_SUBJECT_OTHER && entry.grade && !name) {
+      return `Type the major subject ${slot} name when using Other.`;
+    }
+    if (name && !entry.grade) {
+      return `Select a result grade for major subject ${slot}.`;
+    }
+    if (entry.grade && !name) {
+      return `Select or type the major subject ${slot} name.`;
+    }
   }
-  if (thirdName && !alData.thirdGrade) {
-    return 'Select a result grade for the third subject.';
-  }
-  if (alData.thirdGrade && !thirdName) {
-    return 'Select or type the third subject name.';
-  }
+
   return null;
 }

@@ -16,6 +16,7 @@ export const EDUCATION_FIELD_DEFS = {
   completion_date: { name: 'completion_date', label: 'Completion Date', type: DATE },
   grade: { name: 'grade', label: 'Grade / Class / GPA' },
   al_subject_results: { name: 'al_subject_results', label: 'A/L subject results', type: 'al_subjects' },
+  ol_subject_results: { name: 'ol_subject_results', label: 'O/L subject results', type: 'ol_subjects' },
 };
 
 const DEGREE_MASTERS = {
@@ -44,14 +45,11 @@ export const EDUCATION_QUALIFICATION_CONFIG = {
     },
   },
   'Ordinary Level (O/L)': {
-    fields: ['qualification_type', 'institution', 'completion_date', 'grade'],
+    fields: ['qualification_type', 'institution', 'ol_subject_results', 'completion_date'],
     labels: {
       institution: 'School',
+      ol_subject_results: 'Subject results',
       completion_date: 'Exam year',
-      grade: 'Results (passes / distinctions)',
-    },
-    hints: {
-      grade: 'e.g. 6 passes, 2 distinctions',
     },
   },
   'Advanced Level (A/L)': {
@@ -224,13 +222,13 @@ export function getEducationFieldsForType(qualificationType) {
     const base = EDUCATION_FIELD_DEFS[name];
     if (!base) return null;
     const masterCategory = config.masterCategories?.[name] || base.masterCategory;
-    const isAlSubjects = base.type === 'al_subjects';
+    const isSpecialSubjects = base.type === 'al_subjects' || base.type === 'ol_subjects';
     return {
       ...base,
       label: config.labels?.[name] || base.label,
       hint: config.hints?.[name] || base.hint,
-      masterCategory: isAlSubjects ? undefined : masterCategory,
-      type: isAlSubjects ? 'al_subjects' : (masterCategory ? SELECT : base.type),
+      masterCategory: isSpecialSubjects ? undefined : masterCategory,
+      type: isSpecialSubjects ? base.type : (masterCategory ? SELECT : base.type),
     };
   }).filter(Boolean);
 }
@@ -247,9 +245,12 @@ export const EDUCATION_TABLE_COLUMNS = [
 
 export function isEducationFieldVisible(qualificationType, fieldName) {
   if (fieldName === 'qualification_type') return true;
-  if (fieldName === 'al_subject_results') return false;
+  if (fieldName === 'al_subject_results' || fieldName === 'ol_subject_results') return false;
   const type = String(qualificationType || '').trim();
   if (type === 'Advanced Level (A/L)' && (fieldName === 'field_of_study' || fieldName === 'grade')) {
+    return true;
+  }
+  if (type === 'Ordinary Level (O/L)' && (fieldName === 'field_of_study' || fieldName === 'grade')) {
     return true;
   }
   const fields = getEducationFieldsForType(qualificationType);

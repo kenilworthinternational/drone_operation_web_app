@@ -822,8 +822,12 @@ export function SecurityTab({ employeeId, readOnly = false }) {
   const [form, setForm] = useState(null);
 
   const { data: provincesData } = useGetProvincesQuery();
-  const { data: districtsData } = useGetDistrictsQuery();
-  const { data: dscsData } = useGetDSCSQuery();
+  const { data: districtsData } = useGetDistrictsQuery(
+    form?.province ? { provinceId: form.province } : undefined
+  );
+  const { data: dscsData } = useGetDSCSQuery(
+    form?.district ? { districtId: form.district } : undefined
+  );
   const provinces = provincesData?.data || provincesData || [];
   const districts = districtsData?.data || districtsData || [];
   const dscs = dscsData?.data || dscsData || [];
@@ -833,6 +837,20 @@ export function SecurityTab({ employeeId, readOnly = false }) {
     { skip: !form?.district && !form?.divisionalSecretariats },
   );
   const ascs = ascsData?.data || ascsData || [];
+  const filteredDistricts = useMemo(() => {
+    if (!form?.province) return districts;
+    return (Array.isArray(districts) ? districts : []).filter((d) => {
+      const pid = d.province_id ?? d.provinceId ?? d.province;
+      return pid == null ? true : String(pid) === String(form.province);
+    });
+  }, [districts, form?.province]);
+  const filteredDscs = useMemo(() => {
+    if (!form?.district) return dscs;
+    return (Array.isArray(dscs) ? dscs : []).filter((d) => {
+      const did = d.district_id ?? d.districtId ?? d.district;
+      return did == null ? true : String(did) === String(form.district);
+    });
+  }, [dscs, form?.district]);
 
   useEffect(() => {
     if (!employee || Number(employee.id) !== Number(employeeId)) {
@@ -920,7 +938,7 @@ export function SecurityTab({ employeeId, readOnly = false }) {
         <Field label="District">
           <select name="district" value={str(form.district)} onChange={onChange}>
             <option value="">-- Select --</option>
-            {(Array.isArray(districts) ? districts : []).map((d) => (
+            {(Array.isArray(filteredDistricts) ? filteredDistricts : []).map((d) => (
               <option key={d.id} value={d.id}>{d.district}</option>
             ))}
           </select>
@@ -928,7 +946,7 @@ export function SecurityTab({ employeeId, readOnly = false }) {
         <Field label="Divisional secretariat">
           <select name="divisionalSecretariats" value={str(form.divisionalSecretariats)} onChange={onChange}>
             <option value="">-- Select --</option>
-            {(Array.isArray(dscs) ? dscs : []).map((d) => (
+            {(Array.isArray(filteredDscs) ? filteredDscs : []).map((d) => (
               <option key={d.id} value={d.id}>{d.dse}</option>
             ))}
           </select>

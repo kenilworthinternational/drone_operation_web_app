@@ -261,12 +261,13 @@ export const jdManagementApi = baseApi.injectEndpoints({
     // DSCS (DIVISIONAL SECRETARIATS)
     // =====================================================
     getDSCS: builder.query({
-      queryFn: async () => {
+      queryFn: async (arg) => {
+        const filters = arg || {};
         const result = await nodeBackendBaseQuery(
           {
             url: '/api/dscs',
             method: 'POST',
-            body: {},
+            body: filters,
           },
           {},
           {}
@@ -285,6 +286,21 @@ export const jdManagementApi = baseApi.injectEndpoints({
         return result;
       },
       providesTags: ['DSCS'],
+    }),
+    saveDSCS: builder.mutation({
+      queryFn: async (data) => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: '/api/jd-management/dscs/save',
+            method: 'POST',
+            body: data,
+          },
+          {},
+          {}
+        );
+        return result;
+      },
+      invalidatesTags: ['DSCS'],
     }),
 
     // =====================================================
@@ -314,17 +330,33 @@ export const jdManagementApi = baseApi.injectEndpoints({
       },
       providesTags: ['Provinces'],
     }),
+    saveProvince: builder.mutation({
+      queryFn: async (data) => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: '/api/jd-management/provinces/save',
+            method: 'POST',
+            body: data,
+          },
+          {},
+          {}
+        );
+        return result;
+      },
+      invalidatesTags: ['Provinces'],
+    }),
 
     // =====================================================
     // DISTRICTS
     // =====================================================
     getDistricts: builder.query({
-      queryFn: async () => {
+      queryFn: async (arg) => {
+        const filters = arg || {};
         const result = await nodeBackendBaseQuery(
           {
             url: '/api/districts',
             method: 'POST',
-            body: {},
+            body: filters,
           },
           {},
           {}
@@ -341,6 +373,21 @@ export const jdManagementApi = baseApi.injectEndpoints({
         return result;
       },
       providesTags: ['Districts'],
+    }),
+    saveDistrict: builder.mutation({
+      queryFn: async (data) => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: '/api/jd-management/districts/save',
+            method: 'POST',
+            body: data,
+          },
+          {},
+          {}
+        );
+        return result;
+      },
+      invalidatesTags: ['Districts'],
     }),
 
     // =====================================================
@@ -506,6 +553,21 @@ export const jdManagementApi = baseApi.injectEndpoints({
         return result;
       },
       providesTags: ['ASCS'],
+    }),
+    saveASCS: builder.mutation({
+      queryFn: async (data) => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: '/api/jd-management/ascs/save',
+            method: 'POST',
+            body: data,
+          },
+          {},
+          {}
+        );
+        return result;
+      },
+      invalidatesTags: ['ASCS'],
     }),
 
     // =====================================================
@@ -1203,9 +1265,13 @@ export const {
   useGetWorkLocationsQuery,
   useSaveWorkLocationMutation,
   useGetDSCSQuery,
+  useSaveDSCSMutation,
   useGetProvincesQuery,
+  useSaveProvinceMutation,
   useGetDistrictsQuery,
+  useSaveDistrictMutation,
   useGetASCSQuery,
+  useSaveASCSMutation,
   useGetGroupsQuery,
   useGetPlantationsQuery,
   useGetRegionsQuery,

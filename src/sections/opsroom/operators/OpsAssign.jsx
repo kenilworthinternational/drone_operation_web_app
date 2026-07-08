@@ -129,25 +129,10 @@ const OpsAssign = () => {
         
         // Handle different response formats
         if (response && response.status === 'true') {
-          // If response has operator property
-          if (response.operator) {
-            setAssignedPlans(response.operator);
-          } 
-          // If response is an array directly
-          else if (Array.isArray(response)) {
-            setAssignedPlans(response);
-          }
-          // If response is an object with data property
-          else if (response.data) {
-            setAssignedPlans(response.data);
-          }
-          // If response is an object but no specific structure, try to find plans
-          else {
-            const plans = Object.values(response).filter(item => 
-              item && typeof item === 'object' && (item.plan_id || item.estate_name)
-            );
-            setAssignedPlans(plans.length > 0 ? plans : []);
-          }
+          const plansArray = Object.keys(response)
+            .filter((key) => key !== 'status' && key !== 'count' && !Number.isNaN(Number(key)))
+            .map((key) => response[key]);
+          setAssignedPlans(plansArray);
         } else if (Array.isArray(response)) {
           // Direct array response
           setAssignedPlans(response);
@@ -167,9 +152,22 @@ const OpsAssign = () => {
     }
   };
 
+  const normalizeOperatorId = (value) => {
+    if (value == null || value === '') return null;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+  };
+
+  const findOperatorById = (operatorId) => {
+    const normalizedId = normalizeOperatorId(operatorId);
+    if (!normalizedId) return null;
+    return operators.find((op) => Number(op.id) === normalizedId) || null;
+  };
+
   const handleOperatorChange = async (planId, operatorId) => {
     try {
-      const result = await dispatch(assignOperatorToPlan({ planId, operatorId }));
+      const normalizedOperatorId = normalizeOperatorId(operatorId);
+      const result = await dispatch(assignOperatorToPlan({ planId, operatorId: normalizedOperatorId }));
       
       if (assignOperatorToPlan.fulfilled.match(result)) {
         setSuccessMessage('Operator assigned successfully!');
@@ -180,7 +178,11 @@ const OpsAssign = () => {
         setPlans(prevPlans => 
           prevPlans.map(plan => 
             plan.id === planId 
-              ? { ...plan, operator: operatorId, operator_name: operators.find(op => op.id === operatorId)?.name || '' }
+              ? {
+                  ...plan,
+                  operator: normalizedOperatorId,
+                  operator_name: findOperatorById(normalizedOperatorId)?.name || '',
+                }
               : plan
           )
         );
@@ -438,13 +440,13 @@ const OpsAssign = () => {
                             <label className="operator-label">Assign Operator: 🔽</label>
                             <select
                               className="operator-select"
-                              value={plan.operator || ''}
+                              value={plan.operator != null && plan.operator !== '' ? String(plan.operator) : ''}
                               onChange={(e) => handleOperatorChange(plan.id, e.target.value)}
                               disabled={plan.activated === 0}
                             >
                               <option value="">Select Operator</option>
                               {operators.map((operator) => (
-                                <option key={operator.id} value={operator.id}>
+                                <option key={operator.id} value={String(operator.id)}>
                                   {operator.name}
                                 </option>
                               ))}

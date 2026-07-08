@@ -10,6 +10,9 @@ import {
   downloadWorkSummaryPdfFromSnapshot,
   getWorkSummaryPdfFileName,
   formatPeriodRange,
+  formatWorkSummaryTitle,
+  formatWorkSummaryShortLabel,
+  normalizeRowForPdf,
 } from './workSummaryPdfExport';
 
 const formatMoney = (n) =>
@@ -77,6 +80,8 @@ export default function WorkSummaryPdfHistory({ onPdfPreview }) {
         doc.id,
         doc.pdf_id,
         doc.pdf_file_name,
+        formatWorkSummaryTitle(doc.period_start, doc.pdf_id ?? doc.id),
+        formatWorkSummaryShortLabel(doc.period_start, doc.pdf_id ?? doc.id),
         doc.plantation_name,
         doc.created_by_name,
         doc.period_start,
@@ -141,7 +146,7 @@ export default function WorkSummaryPdfHistory({ onPdfPreview }) {
               type="search"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="PDF ID, plantation, creator…"
+              placeholder="Month, plantation, creator…"
               autoComplete="off"
             />
           </div>
@@ -167,7 +172,7 @@ export default function WorkSummaryPdfHistory({ onPdfPreview }) {
           <table className="finance-report-table plantation-invoice-history-table">
             <thead>
               <tr>
-                <th>PDF ID</th>
+                <th>Work Summary</th>
                 <th>Plantation</th>
                 <th>Period</th>
                 <th>Billing (Ha)</th>
@@ -179,9 +184,13 @@ export default function WorkSummaryPdfHistory({ onPdfPreview }) {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((row) => (
+              {filtered.map((row) => {
+                const pdfId = row.pdf_id ?? row.id;
+                const title = formatWorkSummaryTitle(row.period_start, pdfId);
+                const actionLabel = formatWorkSummaryShortLabel(row.period_start, pdfId);
+                return (
                 <tr key={row.id}>
-                  <td>{row.pdf_id ?? row.id}</td>
+                  <td>{title}</td>
                   <td>{row.plantation_name || '—'}</td>
                   <td>{formatPeriodRange(row.period_start, row.period_end)}</td>
                   <td>{formatMoney(row.total_billing_ha)}</td>
@@ -192,23 +201,24 @@ export default function WorkSummaryPdfHistory({ onPdfPreview }) {
                   <td className="work-summary-pdf-history-actions">
                     <button
                       type="button"
-                      className="plantation-invoice-btn plantation-invoice-btn-link"
+                      className="plantation-invoice-btn plantation-invoice-btn-link work-summary-pdf-history-btn"
                       disabled={loadingOne}
-                      onClick={() => openDocument(row.pdf_id ?? row.id)}
+                      onClick={() => openDocument(pdfId)}
                     >
                       View
                     </button>
                     <button
                       type="button"
-                      className="plantation-invoice-btn plantation-invoice-btn-link"
+                      className="plantation-invoice-btn plantation-invoice-btn-link work-summary-pdf-history-btn work-summary-pdf-history-btn-download"
                       disabled={loadingOne}
-                      onClick={(e) => downloadPdf(row.pdf_id ?? row.id, e)}
+                      onClick={(e) => downloadPdf(pdfId, e)}
+                      title={title}
                     >
-                      PDF #{row.pdf_id ?? row.id}
+                      {actionLabel}
                     </button>
                   </td>
                 </tr>
-              ))}
+              );})}
             </tbody>
           </table>
         </div>

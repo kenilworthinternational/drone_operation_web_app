@@ -59,6 +59,7 @@ import {
   useUpdateTimeOfDayMutation,
 } from '../../../api/services NodeJs/timeOfDaysApi';
 import HrMasterOptionsPanel from './HrMasterOptionsPanel';
+import LocationHierarchyPanel from './LocationHierarchyPanel';
 import { useSendMessageMutation } from '../../../api/services/authApi';
 import {
   useGetInvoiceOrganizationsQuery,
@@ -1001,6 +1002,7 @@ const MasterData = ({ mode = 'full' }) => {
               { key: 'chemicals', label: 'Chemicals' },
               { key: 'workingTimes', label: 'Working Times' },
               { key: 'hrMasterOptions', label: 'HR Master Options' },
+              { key: 'locationHierarchy', label: 'Province/District/DS/ASC Hierarchy' },
               { key: 'reasons', label: 'Reasons' },
               { key: 'invoiceOrganizations', label: 'Invoice Organizations' },
               { key: 'invoiceTaxes', label: 'Invoice Tax Types' },
@@ -1414,6 +1416,10 @@ const MasterData = ({ mode = 'full' }) => {
 
             {selectedMasterModule === 'hrMasterOptions' && (
               <HrMasterOptionsPanel onMessage={setQuickMessage} />
+            )}
+
+            {selectedMasterModule === 'locationHierarchy' && (
+              <LocationHierarchyPanel onMessage={setQuickMessage} />
             )}
 
             {selectedMasterModule === 'reasons' && (

@@ -20,6 +20,7 @@ import {
     buildWorkSummaryPdfDocument,
     buildPdfSnapshotLines,
     getWorkSummaryPdfFileName,
+    formatWorkSummaryTitle,
 } from './workSummaryPdfExport';
 
 /** Same 2dp rounding as the table; avoids false "issue" rows when floats differ only below display precision. */
@@ -564,7 +565,7 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
                 }).unwrap();
                 savedPdfId = docMeta?.pdf_id ?? null;
                 if (savedPdfId) {
-                    toast.info(`Work summary PDF record #${savedPdfId} saved`);
+                    toast.info(formatWorkSummaryTitle(periodStart, savedPdfId));
                 }
             } catch (e) {
                 toast.warn('PDF will download, but billing history was not saved');
@@ -577,6 +578,7 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
             estateNames: selectedEstateNames,
             periodStart,
             rows: filteredData,
+            pdfId: savedPdfId,
         });
 
         const formatDateForPdf = (date) => {
@@ -831,10 +833,10 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
                                     onClick={hasIssues ? undefined : exportPdf}
                                     disabled={filteredRows.length === 0 || hasIssues}
                                     className="flex items-center bg-red-600 text-white"
-                                    title={hasIssues ? 'Cannot download work summary while there are issue rows' : 'Download work summary'}
+                                    title={hasIssues ? 'Cannot download work summary while there are issue rows' : formatWorkSummaryTitle(periodStart)}
                                 >
                                     <FiPrinter className="mr-2" />
-                                    Work Summary
+                                    {formatWorkSummaryTitle(periodStart)}
                                 </button>
                             )}
                             {filteredRows.length > 0 && hasIssues && (

@@ -7,6 +7,7 @@ import {
 } from '../../../api/services NodeJs/employeeProfileApi';
 import MasterSelect from './MasterSelect';
 import AlSubjectResultsEditor from './AlSubjectResultsEditor';
+import OlSubjectResultsEditor from './OlSubjectResultsEditor';
 import {
   emptyAlSubjectResults,
   formatAlSubjectResultsSummary,
@@ -15,6 +16,14 @@ import {
   serializeAlSubjectResults,
   validateAlSubjectResults,
 } from './alSubjectResults';
+import {
+  emptyOlSubjectResults,
+  formatOlSubjectResultsSummary,
+  isOlQualificationType,
+  parseOlSubjectResults,
+  serializeOlSubjectResults,
+  validateOlSubjectResults,
+} from './olSubjectResults';
 import {
   EDUCATION_FIELD_DEFS,
   EDUCATION_TABLE_COLUMNS,
@@ -30,15 +39,27 @@ function emptyEducationRow() {
     row[EDUCATION_FIELD_DEFS[key].name] = '';
   });
   row._alSubjects = emptyAlSubjectResults();
+  row._olSubjects = emptyOlSubjectResults();
   return row;
 }
 
-function FieldInput({ field, value, onChange, alSubjects, onAlSubjectsChange, readOnly }) {
+function FieldInput({
+  field, value, onChange, alSubjects, onAlSubjectsChange, olSubjects, onOlSubjectsChange, readOnly,
+}) {
   if (field.type === 'al_subjects') {
     return (
       <AlSubjectResultsEditor
         value={alSubjects}
         onChange={onAlSubjectsChange}
+        readOnly={readOnly}
+      />
+    );
+  }
+  if (field.type === 'ol_subjects') {
+    return (
+      <OlSubjectResultsEditor
+        value={olSubjects}
+        onChange={onOlSubjectsChange}
         readOnly={readOnly}
       />
     );
@@ -92,6 +113,9 @@ export default function EducationSection({ employeeId, readOnly = false }) {
         if (!isAlQualificationType(value)) {
           next._alSubjects = emptyAlSubjectResults();
         }
+        if (!isOlQualificationType(value)) {
+          next._olSubjects = emptyOlSubjectResults();
+        }
       }
       return next;
     });
@@ -118,6 +142,9 @@ export default function EducationSection({ employeeId, readOnly = false }) {
     next._alSubjects = isAlQualificationType(row.qualification_type)
       ? parseAlSubjectResults(row)
       : emptyAlSubjectResults();
+    next._olSubjects = isOlQualificationType(row.qualification_type)
+      ? parseOlSubjectResults(row)
+      : emptyOlSubjectResults();
     setDraft(next);
     setEditingId(row.id);
     setPendingFile(null);
@@ -149,6 +176,16 @@ export default function EducationSection({ employeeId, readOnly = false }) {
         return;
       }
       const serialized = serializeAlSubjectResults(draft._alSubjects);
+      body.field_of_study = serialized.field_of_study;
+      body.grade = serialized.grade;
+    }
+    if (isOlQualificationType(draft.qualification_type)) {
+      const olError = validateOlSubjectResults(draft._olSubjects);
+      if (olError) {
+        setMessage({ type: 'error', text: olError });
+        return;
+      }
+      const serialized = serializeOlSubjectResults(draft._olSubjects);
       body.field_of_study = serialized.field_of_study;
       body.grade = serialized.grade;
     }
@@ -198,8 +235,15 @@ export default function EducationSection({ employeeId, readOnly = false }) {
       const summary = formatAlSubjectResultsSummary(parseAlSubjectResults(row));
       return summary || '—';
     }
+    if (col.name === 'field_of_study' && isOlQualificationType(row.qualification_type)) {
+      const summary = formatOlSubjectResultsSummary(parseOlSubjectResults(row));
+      return summary || '—';
+    }
     if (col.name === 'grade' && isAlQualificationType(row.qualification_type)) {
       return row.grade || formatAlSubjectResultsSummary(parseAlSubjectResults(row)) || '—';
+    }
+    if (col.name === 'grade' && isOlQualificationType(row.qualification_type)) {
+      return row.grade || formatOlSubjectResultsSummary(parseOlSubjectResults(row)) || '—';
     }
     let v = row[col.name];
     if (col.type === DATE && v) v = String(v).split('T')[0];
@@ -210,11 +254,12 @@ export default function EducationSection({ employeeId, readOnly = false }) {
     <div className="epd-section">
       {!readOnly && (
         <p className="epd-section-intro">
-          Select qualification type first. School name is free text. A/L uses English, General Test, and a third
-          subject with individual grades. Other qualification types may use
+          Select qualification type first. School name is free text. O/L supports core subjects + Category I/II/III,
+          and A/L supports English, General Test, and three major subjects. Subject lists are editable in
           {' '}
           <strong>Master Data Update → HR Master Options</strong>
           {' '}
+          (qualification categories). Other qualification types may use
           for stream / programme / institution.
         </p>
       )}
@@ -237,6 +282,8 @@ export default function EducationSection({ employeeId, readOnly = false }) {
                   onChange={handleChange}
                   alSubjects={draft._alSubjects}
                   onAlSubjectsChange={handleAlSubjectsChange}
+                  olSubjects={draft._olSubjects}
+                  onOlSubjectsChange={(olData) => setDraft((prev) => ({ ...prev, _olSubjects: olData }))}
                 />
                 {f.hint ? <span className="epd-field-hint">{f.hint}</span> : null}
               </div>
