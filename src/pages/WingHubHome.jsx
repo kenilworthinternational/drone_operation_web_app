@@ -115,6 +115,10 @@ const WingHubHome = () => {
       navigate(`/home/workflowDashboard?wing=${q}`);
       return;
     }
+    if (title === 'Geo Spatial Management') {
+      navigate(`/home/geo-spatial/dashboard?wing=${q}`);
+      return;
+    }
     if (isForecastAllowedWing(title)) {
       navigate(`/home/create?wing=${q}`);
       return;

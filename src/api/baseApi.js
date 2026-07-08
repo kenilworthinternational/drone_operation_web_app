@@ -56,7 +56,7 @@ export const baseApi = createApi({
     // Authentication
     'Auth',
     // Estates & Geography
-    'Groups', 'Plantations', 'Regions', 'Estates', 'Divisions', 'Fields',
+    'Groups', 'Plantations', 'Regions', 'Estates', 'Divisions', 'Fields', 'MappingDashboard',
     // Plans & Missions
     'Plans', 'Missions', 'PlanDetails', 'MissionDetails',
     // Teams & Resources

@@ -168,6 +168,7 @@ const navbarCategories = [
     title: 'Geo Spatial Management',
     icon: FaMap,
     children: [
+      { path: '/home/geo-spatial/dashboard', label: 'Dashboard', icon: FaTachometerAlt },
       { path: '/home/geo-spatial/mapping-update', label: 'Mapping Update', icon: FaMap },
       {
         path: '/home/geo-spatial/field-unblock-requests',

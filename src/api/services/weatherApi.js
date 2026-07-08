@@ -71,6 +71,8 @@ export function summarizeHourlyWeatherForDate(weatherData, selectedDateYmd) {
     temperatureMax: max(temp2m),
     rainSum: sum(rain),
     precipitationSum: sum(precipitation),
+    windSpeedMin: min(windSpeed),
+    windSpeedAvg: avg(windSpeed),
     windSpeedMax: max(windSpeed),
     windDirectionAvg: avg(windDirection),
     humidityAvg: avg(humidity),

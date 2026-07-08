@@ -6,6 +6,7 @@ export const FORECAST_ALLOWED_WING_TITLES = [
   'Strategic Planning and Monitoring wing',
   'Field Operations Wing',
   'Operation Digitalization & Digital Monitoring & Evaluation Wing',
+  'Geo Spatial Management',
 ];
 
 export const FORECAST_PATH = '/home/create';
@@ -35,19 +36,28 @@ export function hasForecastWingAccess(visibility = {}, pathPermissions = {}, all
 
 /**
  * Wings that may use Plan calendar (/home/opsroomPlanCalendar) and the Calendar left-nav item.
+ * Geo Spatial Management is intentionally excluded.
  */
 export const CALENDAR_ALLOWED_WING_TITLES = [
-  ...FORECAST_ALLOWED_WING_TITLES,
+  'Strategic Planning and Monitoring wing',
+  'Field Operations Wing',
+  'Operation Digitalization & Digital Monitoring & Evaluation Wing',
   'Human Resource Management',
   'Administration Wing',
 ];
 
 export const CALENDAR_PATH = '/home/opsroomPlanCalendar';
+export const GEO_SPATIAL_WING_TITLE = 'Geo Spatial Management';
+export const GEO_SPATIAL_DASHBOARD_PATH = '/home/geo-spatial/dashboard';
 
 export function isCalendarAllowedWing(wingTitle) {
   const normalized = normalizeWingTitle(wingTitle);
   if (!normalized) return false;
   return CALENDAR_ALLOWED_WING_TITLES.includes(normalized);
+}
+
+export function isGeoSpatialWing(wingTitle) {
+  return normalizeWingTitle(wingTitle) === GEO_SPATIAL_WING_TITLE;
 }
 
 export function hasCalendarWingAccess(visibility = {}, pathPermissions = {}, allCategoryPaths = {}) {

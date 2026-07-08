@@ -4,6 +4,25 @@ import { nodeBackendBaseQuery, getNodeBackendUrl, getToken } from './nodeBackend
 export const mappingHierarchyApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     // =====================================================
+    // DASHBOARD
+    // =====================================================
+    getMappingDashboardStats: builder.query({
+      queryFn: async () => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: '/api/mapping-hierarchy/dashboard-stats',
+            method: 'POST',
+            body: {},
+          },
+          {},
+          {}
+        );
+        return result;
+      },
+      providesTags: ['MappingDashboard'],
+    }),
+
+    // =====================================================
     // GROUPS
     // =====================================================
     getMappingGroups: builder.query({
@@ -752,6 +771,8 @@ export const mappingHierarchyApi = baseApi.injectEndpoints({
 
 // Export hooks for usage in functional components
 export const {
+  // Dashboard
+  useGetMappingDashboardStatsQuery,
   // Groups
   useGetMappingGroupsQuery,
   useGetMappingGroupQuery,

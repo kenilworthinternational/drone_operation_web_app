@@ -7,6 +7,7 @@ import {
   FaCloudSunRain,
   FaCalendarAlt,
   FaArrowLeft,
+  FaTachometerAlt,
 } from 'react-icons/fa';
 import navbarCategories from '../config/navbarCategories';
 import '../styles/css-navbar.css';
@@ -20,8 +21,10 @@ import {
 } from '../utils/authUtils';
 import { getGroupLogoBaseUrl } from '../utils/resourceUrls';
 import {
+  GEO_SPATIAL_DASHBOARD_PATH,
   isCalendarAllowedWing,
   isForecastAllowedWing,
+  isGeoSpatialWing,
   normalizeWingTitle,
 } from '../config/wingHubDisplay';
 import { useNavbarPermissions } from '../hooks/useNavbarPermissions';
@@ -42,6 +45,8 @@ const LeftNavBar = ({ showSidebar = false, onClose = () => { }, onCollapseChange
   const normalizedWingTitle = normalizeWingTitle(wingTitle);
   const showForecastNav = isForecastAllowedWing(normalizedWingTitle);
   const showCalendarNav = isCalendarAllowedWing(normalizedWingTitle);
+  const isGeoSpatial = isGeoSpatialWing(normalizedWingTitle);
+  const showGeoDashboardFirst = isGeoSpatial;
   /** Keep ?wing= on every in-app nav link so the sidebar stays filtered to one wing. */
   const withWingSearch = (pathname) => ({ pathname, search: location.search });
   const categoriesToShow = useMemo(() => {
@@ -210,6 +215,18 @@ const LeftNavBar = ({ showSidebar = false, onClose = () => { }, onCollapseChange
         )}
       </div>
       <ul className="nav-list">
+        {showGeoDashboardFirst && (
+          <li className="nav-item">
+            <Link
+              to={withWingSearch(GEO_SPATIAL_DASHBOARD_PATH)}
+              className={`nav-link ${activeLink === GEO_SPATIAL_DASHBOARD_PATH ? 'active' : ''}`}
+              title="Dashboard"
+            >
+              <FaTachometerAlt className="nav-icon" />
+              <span className="nav-text">Dashboard</span>
+            </Link>
+          </li>
+        )}
         {showForecastNav && (
           <li className="nav-item">
             <Link
@@ -245,6 +262,10 @@ const LeftNavBar = ({ showSidebar = false, onClose = () => { }, onCollapseChange
             (categoryVisibility[category.title] === true ||
               category.children.some((c) => childHasAllowedPath(c)));
           const visibleChildren = category.children.filter((child) => {
+            // When Dashboard is pinned at top for Geo Spatial, hide the duplicate under the wing.
+            if (showGeoDashboardFirst && child.path === GEO_SPATIAL_DASHBOARD_PATH) {
+              return false;
+            }
             if (showAllCategoryChildren) {
               return true;
             }

@@ -8,21 +8,47 @@ const PlanWeatherCard = ({ plan }) => {
   const daily = weather?.daily || {};
   const current = weather?.current || null;
   const hourlyRows = Array.isArray(weather?.hourly) ? weather.hourly : [];
-  const tempMin = daily?.temperature_2m_min;
-  const tempMax = daily?.temperature_2m_max;
-  const rainSum = Number(daily?.rain_sum || 0);
-  const precipitationSum = Number(daily?.precipitation_sum || 0);
-  const windSpeed = daily?.wind_speed_10m_max;
-  const windDirection = daily?.wind_direction_10m_dominant;
-  const humidity = weather?.summary?.humidityAvg;
-  const weatherCode = daily?.weather_code;
-  const hasWeatherData = Boolean(daily && daily.date);
   const [showDetails, setShowDetails] = useState(false);
 
   const toNumber = (v) => {
     const n = Number(v);
     return Number.isFinite(n) ? n : null;
   };
+
+  const tempMin = daily?.temperature_2m_min;
+  const tempMax = daily?.temperature_2m_max;
+  const rainSum = Number(daily?.rain_sum || 0);
+  const precipitationSum = Number(daily?.precipitation_sum || 0);
+  const precipProbabilityMax = toNumber(daily?.precipitation_probability_max);
+  const summary = weather?.summary || {};
+  const humidity = summary?.humidityAvg;
+  const weatherCode = daily?.weather_code;
+  const hasWeatherData = Boolean(daily && daily.date);
+
+  const hourlyWindStats = useMemo(() => {
+    const speeds = hourlyRows
+      .map((row) => toNumber(row?.wind_speed_10m))
+      .filter((n) => n != null);
+    if (!speeds.length) {
+      return {
+        min: toNumber(summary?.windSpeedMin),
+        avg: toNumber(summary?.windSpeedAvg),
+        max: toNumber(summary?.windSpeedMax ?? daily?.wind_speed_10m_max),
+      };
+    }
+    const sum = speeds.reduce((acc, v) => acc + v, 0);
+    return {
+      min: Math.min(...speeds),
+      avg: sum / speeds.length,
+      max: Math.max(...speeds),
+    };
+  }, [hourlyRows, summary, daily]);
+
+  const windMin = hourlyWindStats.min;
+  const windAvg = hourlyWindStats.avg;
+  const windMax = hourlyWindStats.max;
+  const windDirection = daily?.wind_direction_10m_dominant ?? summary?.windDirectionAvg;
+  const hasWindStats = windAvg != null || windMin != null || windMax != null;
 
   const formatHour = (iso) => {
     if (!iso) return 'N/A';
@@ -138,7 +164,9 @@ const PlanWeatherCard = ({ plan }) => {
                 <div><strong>Precip sum:</strong> {toNumber(daily.precipitation_sum)?.toFixed(1)} mm</div>
                 <div><strong>Rain level:</strong> {dailyRainLabel}</div>
                 <div><strong>Precip chance max:</strong> {toNumber(daily.precipitation_probability_max)?.toFixed(0)}%</div>
-                <div><strong>Wind max:</strong> {toNumber(daily.wind_speed_10m_max)?.toFixed(1)} km/h</div>
+                <div><strong>Wind min:</strong> {windMin != null ? `${windMin.toFixed(1)} km/h` : '—'}</div>
+                <div><strong>Wind avg:</strong> {windAvg != null ? `${windAvg.toFixed(1)} km/h` : '—'}</div>
+                <div><strong>Wind max:</strong> {windMax != null ? `${windMax.toFixed(1)} km/h` : `${toNumber(daily.wind_speed_10m_max)?.toFixed(1) ?? '—'} km/h`}</div>
                 <div><strong>Gust max:</strong> {toNumber(daily.wind_gusts_10m_max)?.toFixed(1)} km/h</div>
               </div>
             ) : (
@@ -226,12 +254,27 @@ const PlanWeatherCard = ({ plan }) => {
           </div>
         )}
 
-        {/* Wind */}
-        {windSpeed !== undefined && (
+        {/* Precipitation probability */}
+        {precipProbabilityMax != null && (
+          <div className="plan-card-detail-item">
+            <span className="detail-label">Precip chance:</span>
+            <span className="detail-value">{Math.round(precipProbabilityMax)}%</span>
+          </div>
+        )}
+
+        {/* Wind — avg / min / max from hourly for selected day */}
+        {hasWindStats && (
           <div className="plan-card-detail-item">
             <span className="detail-label">Wind:</span>
             <span className="detail-value">
-              <span>{Math.round(windSpeed)} km/h</span>
+              <span>
+                {windAvg != null ? `Avg ${Math.round(windAvg)}` : 'Avg —'}
+                {' / '}
+                {windMin != null ? `Min ${Math.round(windMin)}` : 'Min —'}
+                {' / '}
+                {windMax != null ? `Max ${Math.round(windMax)}` : 'Max —'}
+                {' km/h'}
+              </span>
               {windDirection != null && (
                 <span className="detail-subvalue">Dir: {Math.round(windDirection)}°</span>
               )}
@@ -254,6 +297,12 @@ const PlanWeatherCard = ({ plan }) => {
           <span className="plan-info-label">Area:</span>
           <span className="plan-info-value">{plan.area || 0} ha</span>
         </div>
+        {plan.active_fields_count != null && (
+          <div className="plan-info-row">
+            <span className="plan-info-label">Fields:</span>
+            <span className="plan-info-value">{plan.active_fields_count}</span>
+          </div>
+        )}
         <div className="plan-info-row">
           <span className="plan-info-label">Type:</span>
           <span className="plan-info-value">{getTypeDisplayName(plan.type)}</span>

@@ -713,7 +713,18 @@ const PilotAssignment = () => {
                       <div className="pilot-assignment-plan-content-pilotsassign">
                         <div className="pilot-assignment-plan-info-pilotsassign">
                           <span className="pilot-assignment-plan-id-pilotsassign">
-                            {plan.plan_display_name || plan.estate_name || (plan.id ? `Plan ${plan.id}` : 'Plan')}
+                            {plan.estate_name || (plan.id ? `Plan ${plan.id}` : 'Plan')}
+                          </span>
+                          <span className="pilot-assignment-plan-ha-pilotsassign">
+                            {Number(plan.plan_active_ha ?? 0).toLocaleString(undefined, {
+                              maximumFractionDigits: 2,
+                            })}{' '}
+                            ha
+                            {plan.plan_active_fields_count != null
+                              ? ` · ${Number(plan.plan_active_fields_count)} field${
+                                  Number(plan.plan_active_fields_count) === 1 ? '' : 's'
+                                }`
+                              : ''}
                           </span>
                           {(plan.is_assigned === 1 || plan.is_assigned === true) && plan.assigned_pilot_name && (
                             <span className="pilot-assignment-plan-pilot-pilotsassign">Assigned: {plan.assigned_pilot_name}</span>

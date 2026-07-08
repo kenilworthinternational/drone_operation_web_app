@@ -90,7 +90,7 @@ const FieldUnblockRequestQueue = () => {
       <ToastContainer position="top-right" autoClose={4000} />
       <header className="header-fur-queue">
         <div className="header-start-fur-queue">
-          <button type="button" className="back-btn-fur-queue" onClick={() => go('/home/geo-spatial/mapping-update')}>
+          <button type="button" className="back-btn-fur-queue" onClick={() => go('/home/geo-spatial/dashboard')}>
             <FaArrowLeft /> Back
           </button>
           <h1 className="title-fur-queue">Field unblock requests</h1>
