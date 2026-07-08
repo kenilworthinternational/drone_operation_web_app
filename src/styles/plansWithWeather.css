@@ -452,6 +452,128 @@
   color: #f39c12;
 }
 
+.plan-card-actions {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.plan-card-more-btn {
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 7px 12px;
+  cursor: pointer;
+}
+
+.plan-card-more-btn:hover {
+  background: #dbeafe;
+}
+
+.plan-weather-detail-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.plan-weather-detail-modal {
+  width: min(1100px, 95vw);
+  max-height: 90vh;
+  overflow: auto;
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.25);
+}
+
+.plan-weather-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 18px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.plan-weather-detail-header h4 {
+  margin: 0;
+  font-size: 18px;
+  color: #0f172a;
+}
+
+.plan-weather-detail-close {
+  border: none;
+  background: transparent;
+  font-size: 24px;
+  color: #64748b;
+  cursor: pointer;
+}
+
+.plan-weather-detail-sections {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 14px 18px;
+}
+
+.plan-weather-detail-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px;
+  background: #f8fafc;
+}
+
+.plan-weather-detail-card h5,
+.plan-weather-detail-hourly h5 {
+  margin: 0 0 8px 0;
+  color: #1e293b;
+}
+
+.plan-weather-kv-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 12px;
+  font-size: 13px;
+  color: #334155;
+}
+
+.plan-weather-detail-hourly {
+  padding: 0 18px 18px;
+}
+
+.plan-weather-hourly-table-wrap {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  overflow: auto;
+  max-height: 44vh;
+}
+
+.plan-weather-hourly-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.plan-weather-hourly-table th,
+.plan-weather-hourly-table td {
+  border-bottom: 1px solid #e2e8f0;
+  padding: 8px 10px;
+  text-align: left;
+}
+
+.plan-weather-hourly-table thead th {
+  position: sticky;
+  top: 0;
+  background: #f1f5f9;
+  color: #334155;
+}
+
 /* Subtasks */
 .plan-card-subtasks {
   margin-top: 15px;

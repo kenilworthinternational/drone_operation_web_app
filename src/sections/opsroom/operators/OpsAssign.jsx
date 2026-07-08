@@ -8,6 +8,8 @@ import {
   assignOperatorToPlan,
   fetchPlanOperatorsByDateRange,
   selectOperators,
+  parsePhpNumericList,
+  formatLocalDateYmd,
 } from '../../../store/slices/operatorsSlice';
 import {
   fetchPlansByDate,
@@ -56,9 +58,17 @@ const OpsAssign = () => {
   // Operator name filter state
   const [operatorNameFilter, setOperatorNameFilter] = useState('all');
 
+  const isPlanAssigned = (plan) => {
+    const operatorId = plan.operator_id ?? (typeof plan.operator === 'number' ? plan.operator : null);
+    return operatorId != null && operatorId !== '' && Number(operatorId) !== 0;
+  };
+
+  const getOperatorDisplayName = (plan) =>
+    plan.operator_name || (typeof plan.operator === 'string' ? plan.operator : '') || '';
+
   // Get unique operator names for filter dropdown
   const operatorNameOptions = Array.from(
-    new Set(assignedPlans.filter(p => p.operator).map(p => p.operator))
+    new Set(assignedPlans.filter(isPlanAssigned).map(getOperatorDisplayName).filter(Boolean))
   );
 
   // Load operators on component mount
@@ -97,7 +107,7 @@ const OpsAssign = () => {
     setError(null);
     
     try {
-      const formattedDate = date.toISOString().split('T')[0];
+      const formattedDate = formatLocalDateYmd(date);
       const result = await dispatch(baseApi.endpoints.getPlansByDate.initiate(formattedDate));
       const response = result.data;
       
@@ -126,21 +136,10 @@ const OpsAssign = () => {
       
       if (fetchPlanOperatorsByDateRange.fulfilled.match(result)) {
         const response = result.payload.data;
-        
-        // Handle different response formats
-        if (response && response.status === 'true') {
-          const plansArray = Object.keys(response)
-            .filter((key) => key !== 'status' && key !== 'count' && !Number.isNaN(Number(key)))
-            .map((key) => response[key]);
-          setAssignedPlans(plansArray);
-        } else if (Array.isArray(response)) {
-          // Direct array response
-          setAssignedPlans(response);
-        } else {
-          setAssignedPlans([]);
-        }
+        const plansArray = Array.isArray(response) ? response : parsePhpNumericList(response);
+        setAssignedPlans(plansArray);
       } else {
-        setError('Failed to load assigned plans for the selected date range');
+        setError(result.payload || 'Failed to load assigned plans for the selected date range');
         setAssignedPlans([]);
       }
     } catch (error) {
@@ -240,10 +239,10 @@ const OpsAssign = () => {
       'Planned Date': plan.date ? formatDate(plan.date) : 'N/A',
       'Estate': plan.estate_name,
       'Area (ha)': plan.area,
-      'Operator': plan.operator || 'Unassigned',
+      'Operator': getOperatorDisplayName(plan) || 'Unassigned',
       'Operator Mobile': plan.mobile || 'N/A',
       'Assigned Time': plan.operator_date_time ? formatDateTime(plan.operator_date_time) : 'N/A',
-      'Status': plan.operator_id && plan.operator ? 'Assigned' : 'Unassigned'
+      'Status': isPlanAssigned(plan) ? 'Assigned' : 'Unassigned'
     }));
 
     // Create worksheet
@@ -283,29 +282,31 @@ const OpsAssign = () => {
     
     let filtered = plans;
     if (filterType === 'assigned') {
-      filtered = plans.filter(plan => plan.operator_id && plan.operator_id !== 0 && plan.operator);
+      filtered = plans.filter(isPlanAssigned);
     } else if (filterType === 'unassigned') {
-      filtered = plans.filter(plan => !plan.operator_id || plan.operator_id === 0 || !plan.operator);
+      filtered = plans.filter((plan) => !isPlanAssigned(plan));
     }
     if (operatorNameFilter !== 'all') {
-      filtered = filtered.filter(plan => plan.operator === operatorNameFilter);
+      filtered = filtered.filter((plan) => getOperatorDisplayName(plan) === operatorNameFilter);
     }
     // Group assigned
     const grouped = filtered.reduce((acc, plan) => {
-      if (plan.operator_id && plan.operator_id !== 0 && plan.operator) {
-        if (!acc[plan.operator_id]) {
-          acc[plan.operator_id] = {
-            operator: plan.operator,
+      if (isPlanAssigned(plan)) {
+        const operatorId = plan.operator_id ?? plan.operator;
+        const operatorName = getOperatorDisplayName(plan);
+        if (!acc[operatorId]) {
+          acc[operatorId] = {
+            operator: operatorName,
             mobile: plan.mobile,
             plans: []
           };
         }
-        acc[plan.operator_id].plans.push(plan);
+        acc[operatorId].plans.push(plan);
       }
       return acc;
     }, {});
     // Group unassigned
-    const unassigned = filtered.filter(plan => !plan.operator_id || plan.operator_id === 0 || !plan.operator);
+    const unassigned = filtered.filter((plan) => !isPlanAssigned(plan));
     if (filterType === 'assigned') return grouped;
     if (filterType === 'unassigned') return { unassigned: { operator: 'Unassigned Plans', mobile: '', plans: unassigned } };
     return {
@@ -596,8 +597,8 @@ const OpsAssign = () => {
                                   {plan.operator_date_time ? formatDateTime(plan.operator_date_time) : 'N/A'}
                                 </td>
                                 <td className="status-cell">
-                                  <span className={`status-badge-assign ${plan.operator_id && plan.operator ? 'active' : 'inactive'}`}>
-                                    {plan.operator_id && plan.operator ? 'Assigned' : 'Unassigned'}
+                                  <span className={`status-badge-assign ${isPlanAssigned(plan) ? 'active' : 'inactive'}`}>
+                                    {isPlanAssigned(plan) ? 'Assigned' : 'Unassigned'}
                                   </span>
                                 </td>
                               </tr>

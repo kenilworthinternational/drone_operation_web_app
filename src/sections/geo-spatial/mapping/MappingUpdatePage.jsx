@@ -2,12 +2,14 @@ import React, { useState, useEffect, useLayoutEffect, useMemo, useRef } from 're
 import { useNavigate } from 'react-router-dom';
 import {
   FaMapMarkedAlt, FaPlus, FaEdit, FaSave, FaTimes, FaToggleOn, FaToggleOff,
-  FaSearch, FaChevronRight, FaChevronDown, FaLayerGroup, FaSeedling,
+  FaSearch, FaChevronRight, FaChevronDown, FaLayerGroup, FaSeedling, FaMap, FaSlidersH, FaMapMarkerAlt, FaCheck, FaTimesCircle,
   FaGlobeAmericas, FaBuilding, FaProjectDiagram, FaLeaf, FaCheckCircle,
-  FaTimesCircle, FaSpinner, FaInbox, FaCubes, FaFileExcel
+  FaSpinner, FaInbox, FaCubes, FaFileExcel
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import * as XLSX from 'xlsx';
+import { CircleMarker, MapContainer, TileLayer, useMapEvents } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
 import '../../../styles/mappingUpdatePage.css';
 import {
   useGetMappingGroupsQuery,
@@ -23,6 +25,7 @@ import {
   useCreateMappingEstateMutation,
   useCreateMappingDivisionMutation,
   useCreateMappingFieldMutation,
+  useUpdateMappingEstateMutation,
   useUpdateMappingFieldMutation,
   useToggleMappingGroupActivationMutation,
   useToggleMappingPlantationActivationMutation,
@@ -100,6 +103,36 @@ function estatePlanSizeSummary(estate) {
   return `Min ${min} Ha · Max ${max} Ha`;
 }
 
+function parseOptionalCoordinateInput(raw, min, max) {
+  if (raw === null || raw === undefined || raw === '') return null;
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n < min || n > max) return NaN;
+  return n;
+}
+
+function validateEstateCoordinates(latitudeRaw, longitudeRaw) {
+  const lat = parseOptionalCoordinateInput(latitudeRaw, -90, 90);
+  if (Number.isNaN(lat)) return 'Enter a valid latitude between -90 and 90';
+  const lon = parseOptionalCoordinateInput(longitudeRaw, -180, 180);
+  if (Number.isNaN(lon)) return 'Enter a valid longitude between -180 and 180';
+  return null;
+}
+
+function estateCoordinateSummary(estate) {
+  const lat = estate?.latitude;
+  const lon = estate?.longitude;
+  if (lat === null || lat === undefined || lat === '' || lon === null || lon === undefined || lon === '') {
+    return null;
+  }
+  return `Lat ${Number(lat).toFixed(5)} · Lon ${Number(lon).toFixed(5)}`;
+}
+
+function estateCoordinatesMissing(estate) {
+  const lat = estate?.latitude;
+  const lon = estate?.longitude;
+  return lat === null || lat === undefined || lat === '' || lon === null || lon === undefined || lon === '';
+}
+
 function fieldBlockReasonLabel(field, type, missionReasons) {
   if (type === 'spread') {
     if (field.spread_reason_name) return field.spread_reason_name;
@@ -136,6 +169,60 @@ const AvailabilityCell = ({ field, type, missionReasons, onEdit }) => {
   );
 };
 
+const DEFAULT_MAP_CENTER = [7.6140783, 80.6616211];
+const SRI_LANKA_BOUNDS = [
+  [5.7, 79.4],   // south-west
+  [10.1, 82.1],  // north-east
+];
+
+const EstateCoordinateMapPicker = ({ latitude, longitude, onPick }) => {
+  const parsedLat = Number(latitude);
+  const parsedLon = Number(longitude);
+  const hasValidCoordinate = Number.isFinite(parsedLat) && Number.isFinite(parsedLon);
+  const center = DEFAULT_MAP_CENTER;
+
+  const ClickHandler = () => {
+    useMapEvents({
+      click: (event) => {
+        const { lat, lng } = event.latlng;
+        onPick(lat, lng);
+      },
+    });
+    return null;
+  };
+
+  return (
+    <div className="estate-coordinate-map-wrap-map-update">
+      <MapContainer
+        center={center}
+        zoom={7}
+        minZoom={6}
+        maxZoom={18}
+        maxBounds={SRI_LANKA_BOUNDS}
+        maxBoundsViscosity={1.0}
+        scrollWheelZoom
+        className="estate-coordinate-map-map-update"
+      >
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+        <ClickHandler />
+        {hasValidCoordinate ? (
+          <CircleMarker
+            center={[parsedLat, parsedLon]}
+            radius={8}
+            pathOptions={{ color: '#0d9488', fillColor: '#14b8a6', fillOpacity: 0.9, weight: 2 }}
+          />
+        ) : null}
+      </MapContainer>
+      <p className="form-hint-map-update">
+        Click anywhere on the map to pick location coordinates.
+      </p>
+    </div>
+  );
+};
+
 const MappingUpdatePage = () => {
   const navigate = useNavigate();
 
@@ -161,7 +248,9 @@ const MappingUpdatePage = () => {
   const [estateMenuPosition, setEstateMenuPosition] = useState({ left: 0, top: 0 });
   const estateMenuRef = useRef(null);
   const [estatePlanSizeModal, setEstatePlanSizeModal] = useState(null);
+  const [estateCoordinateModal, setEstateCoordinateModal] = useState(null);
   const [estatePlanSizeSaving, setEstatePlanSizeSaving] = useState(false);
+  const [estateCoordinateSaving, setEstateCoordinateSaving] = useState(false);
 
   const [expandedLevels, setExpandedLevels] = useState({ group: true });
 
@@ -191,6 +280,7 @@ const MappingUpdatePage = () => {
   const [createEstate] = useCreateMappingEstateMutation();
   const [createDivision] = useCreateMappingDivisionMutation();
   const [createField] = useCreateMappingFieldMutation();
+  const [updateEstate] = useUpdateMappingEstateMutation();
   const [updateField] = useUpdateMappingFieldMutation();
   const [toggleFieldActivation] = useToggleMappingFieldActivationMutation();
   const [setEstateFinalized] = useSetMappingEstateFinalizedMutation();
@@ -606,6 +696,7 @@ const MappingUpdatePage = () => {
     setEditingField(null);
     setEstateContextMenu(null);
     setEstatePlanSizeModal(null);
+    setEstateCoordinateModal(null);
     setAvailabilityModal(null);
     setReasonManageOpen(false);
     setEditingReasonRow(null);
@@ -620,6 +711,18 @@ const MappingUpdatePage = () => {
         est?.min_plan_size != null && est?.min_plan_size !== '' ? String(est.min_plan_size) : '',
       max_plan_size:
         est?.max_plan_size != null && est?.max_plan_size !== '' ? String(est.max_plan_size) : '',
+    });
+    setEstateContextMenu(null);
+  };
+
+  const openEstateCoordinateModal = (estateId) => {
+    const est = estates.find((e) => e.id === estateId);
+    setEstateCoordinateModal({
+      estateId,
+      estateName: est?.estate || `Estate #${estateId}`,
+      latitude: est?.latitude != null && est?.latitude !== '' ? String(est.latitude) : '',
+      longitude: est?.longitude != null && est?.longitude !== '' ? String(est.longitude) : '',
+      showMap: false,
     });
     setEstateContextMenu(null);
   };
@@ -667,6 +770,38 @@ const MappingUpdatePage = () => {
       toast.error(error?.data?.message || error?.message || 'Failed to update finalized status');
     }
     setEstateContextMenu(null);
+  };
+
+  const handleSaveEstateCoordinates = async () => {
+    if (!estateCoordinateModal) return;
+    const latRaw = estateCoordinateModal.latitude.trim();
+    const lonRaw = estateCoordinateModal.longitude.trim();
+    const coordErr = validateEstateCoordinates(latRaw, lonRaw);
+    if (coordErr) {
+      toast.error(coordErr);
+      return;
+    }
+    const latitude = parseOptionalCoordinateInput(latRaw, -90, 90);
+    const longitude = parseOptionalCoordinateInput(lonRaw, -180, 180);
+
+    setEstateCoordinateSaving(true);
+    try {
+      const result = await updateEstate({
+        id: estateCoordinateModal.estateId,
+        latitude,
+        longitude,
+      }).unwrap();
+      if (result?.status) {
+        toast.success(result.message || 'Estate coordinates updated');
+        setEstateCoordinateModal(null);
+      } else {
+        toast.error(result?.message || 'Failed to update estate coordinates');
+      }
+    } catch (error) {
+      toast.error(error?.data?.message || error?.message || 'Failed to update estate coordinates');
+    } finally {
+      setEstateCoordinateSaving(false);
+    }
   };
 
   useLayoutEffect(() => {
@@ -817,7 +952,7 @@ const MappingUpdatePage = () => {
                 {data.map(item => (
                   <div
                     key={item.id}
-                    className={`item-map-update ${selectedId === item.id ? 'item-selected-map-update' : ''} ${!item.activated ? 'item-disabled-map-update' : ''} ${key === 'estate' ? (item.finalized === 1 ? 'item-estate-finalized-map-update' : 'item-estate-not-finalized-map-update') : ''}`}
+                    className={`item-map-update ${selectedId === item.id ? 'item-selected-map-update' : ''} ${!item.activated ? 'item-disabled-map-update' : ''} ${key === 'estate' ? (item.finalized === 1 ? 'item-estate-finalized-map-update' : 'item-estate-not-finalized-map-update') : ''} ${key === 'estate' && estateCoordinatesMissing(item) ? 'item-estate-missing-coords-map-update' : ''}`}
                     onClick={() => selectHandlers[key](item.id)}
                     onContextMenu={key === 'estate' ? (e) => { e.preventDefault(); const x = e.clientX; const y = e.clientY; setEstateMenuPosition({ left: x, top: y }); setEstateContextMenu({ x, y, estateId: item.id, isFinalized: item.finalized === 1 }); } : undefined}
                   >
@@ -826,6 +961,12 @@ const MappingUpdatePage = () => {
                         <span className="item-name-map-update">{item[nameField]}</span>
                         {key === 'estate' && estatePlanSizeSummary(item) ? (
                           <span className="item-meta-map-update">{estatePlanSizeSummary(item)}</span>
+                        ) : null}
+                        {key === 'estate' && estateCoordinateSummary(item) ? (
+                          <span className="item-meta-map-update">{estateCoordinateSummary(item)}</span>
+                        ) : null}
+                        {key === 'estate' && estateCoordinatesMissing(item) ? (
+                          <span className="item-meta-map-update item-meta-missing-coords-map-update">Coordinates missing</span>
                         ) : null}
                       </div>
                       {!item.activated && <span className="item-inactive-tag-map-update">Inactive</span>}
@@ -871,16 +1012,27 @@ const MappingUpdatePage = () => {
               className="estate-context-menu-item-map-update"
               onClick={() => openEstatePlanSizeModal(estateContextMenu.estateId)}
             >
+              <FaSlidersH className="estate-context-menu-item-icon-map-update" />
               Update min / max plan size (Ha)
+            </button>
+            <button
+              type="button"
+              className="estate-context-menu-item-map-update"
+              onClick={() => openEstateCoordinateModal(estateContextMenu.estateId)}
+            >
+              <FaMapMarkerAlt className="estate-context-menu-item-icon-map-update" />
+              Update latitude / longitude
             </button>
             <div className="estate-context-menu-divider-map-update" />
             <div className="estate-context-menu-title-map-update">Finalized status</div>
             {estateContextMenu.isFinalized ? (
               <button type="button" className="estate-context-menu-item-map-update" onClick={() => handleSetEstateFinalized(estateContextMenu.estateId, 0)}>
+                <FaTimesCircle className="estate-context-menu-item-icon-map-update" />
                 Set as Not Finalized
               </button>
             ) : (
               <button type="button" className="estate-context-menu-item-map-update" onClick={() => handleSetEstateFinalized(estateContextMenu.estateId, 1)}>
+                <FaCheck className="estate-context-menu-item-icon-map-update" />
                 Set as Finalized
               </button>
             )}
@@ -1226,6 +1378,101 @@ const MappingUpdatePage = () => {
                 disabled={estatePlanSizeSaving}
               >
                 <FaSave /> {estatePlanSizeSaving ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== ESTATE COORDINATE MODAL ===== */}
+      {estateCoordinateModal && (
+        <div className="modal-overlay-map-update" onClick={closeModal}>
+          <div className="modal-map-update modal-map-coordinate-large-map-update" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header-map-update">
+              <h3 className="modal-title-map-update">
+                <FaEdit className="modal-title-icon-map-update" />
+                Estate coordinates — {estateCoordinateModal.estateName}
+              </h3>
+              <button type="button" onClick={closeModal} className="modal-close-map-update">
+                <FaTimes />
+              </button>
+            </div>
+            <div className="modal-body-map-update">
+              <div className="form-row-two-map-update">
+                <div className="form-group-map-update">
+                  <label className="label-map-update">Latitude</label>
+                  <input
+                    type="number"
+                    min="-90"
+                    max="90"
+                    step="0.0000001"
+                    className="input-map-update"
+                    placeholder="e.g. 6.8747931"
+                    value={estateCoordinateModal.latitude}
+                    onChange={(e) =>
+                      setEstateCoordinateModal({ ...estateCoordinateModal, latitude: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="form-group-map-update">
+                  <label className="label-map-update">Longitude</label>
+                  <input
+                    type="number"
+                    min="-180"
+                    max="180"
+                    step="0.0000001"
+                    className="input-map-update"
+                    placeholder="e.g. 79.8887541"
+                    value={estateCoordinateModal.longitude}
+                    onChange={(e) =>
+                      setEstateCoordinateModal({ ...estateCoordinateModal, longitude: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+              <div className="estate-coordinate-actions-map-update">
+                <button
+                  type="button"
+                  className="btn-map-toggle-map-update"
+                  onClick={() =>
+                    setEstateCoordinateModal((prev) => ({ ...prev, showMap: !prev.showMap }))
+                  }
+                >
+                  <FaMap />
+                  {estateCoordinateModal.showMap ? 'Hide Map Picker' : 'Open Map Picker'}
+                </button>
+                <span className="form-hint-map-update">
+                  Picked: {estateCoordinateModal.latitude || '—'}, {estateCoordinateModal.longitude || '—'}
+                </span>
+              </div>
+              {estateCoordinateModal.showMap ? (
+                <EstateCoordinateMapPicker
+                  latitude={estateCoordinateModal.latitude}
+                  longitude={estateCoordinateModal.longitude}
+                  onPick={(lat, lon) =>
+                    setEstateCoordinateModal((prev) => ({
+                      ...prev,
+                      latitude: lat.toFixed(7),
+                      longitude: lon.toFixed(7),
+                    }))
+                  }
+                />
+              ) : null}
+              <p className="form-hint-map-update">
+                Leave empty to clear coordinates. Weather forecast uses these values for this estate.
+              </p>
+            </div>
+            <div className="modal-footer-map-update">
+              <button type="button" onClick={closeModal} className="btn-ghost-map-update">
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveEstateCoordinates}
+                className="btn-primary-map-update"
+                disabled={estateCoordinateSaving}
+              >
+                <FaSave /> {estateCoordinateSaving ? 'Saving...' : 'Save'}
               </button>
             </div>
           </div>

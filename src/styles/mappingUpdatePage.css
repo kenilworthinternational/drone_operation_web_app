@@ -351,6 +351,15 @@
   background: #fecaca;
 }
 
+.item-estate-missing-coords-map-update {
+  box-shadow: inset 3px 0 0 var(--mu-warning);
+}
+
+.item-meta-missing-coords-map-update {
+  color: #92400e;
+  font-weight: 600;
+}
+
 /* Estate context menu (right-click) */
 .estate-context-menu-backdrop-map-update {
   position: fixed;
@@ -363,45 +372,72 @@
 .estate-context-menu-map-update {
   position: fixed;
   z-index: 9999;
-  min-width: 200px;
-  padding: 0;
+  min-width: 250px;
+  max-width: 265px;
+  padding: 6px;
   background: #fff;
   border: 1px solid var(--mu-gray-200);
-  border-radius: var(--mu-radius);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  border-radius: 12px;
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.18);
 }
 
 .estate-context-menu-title-map-update {
-  padding: 10px 14px 8px;
-  font-size: 11px;
+  padding: 8px 10px 6px;
+  font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.08em;
   color: var(--mu-gray-500);
-  border-bottom: 1px solid var(--mu-gray-100);
+  border-bottom: 1px solid #eef2f7;
 }
 
 .estate-context-menu-item-map-update {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
   width: 100%;
-  padding: 10px 14px;
+  padding: 10px 12px;
   text-align: left;
-  border: none;
-  background: none;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: #fff;
   font-size: 13px;
-  color: var(--mu-gray-800);
+  font-weight: 500;
+  color: #1f2937;
+  white-space: nowrap;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: all 0.15s ease;
+}
+
+.page-map-update .estate-context-menu-item-map-update {
+  justify-content: flex-start;
+  text-align: left;
 }
 
 .estate-context-menu-item-map-update:hover {
-  background: var(--mu-gray-100);
+  background: #f8fafc;
+  border-color: #dbeafe;
+  color: #1d4ed8;
+}
+
+.estate-context-menu-item-icon-map-update {
+  width: 14px;
+  min-width: 14px;
+  text-align: center;
+  font-size: 13px;
+  color: #64748b;
+  flex-shrink: 0;
+}
+
+.estate-context-menu-item-map-update:hover .estate-context-menu-item-icon-map-update {
+  color: #1d4ed8;
 }
 
 .estate-context-menu-divider-map-update {
   height: 1px;
-  margin: 6px 0;
-  background: var(--mu-gray-200);
+  margin: 8px 2px;
+  background: #e2e8f0;
 }
 
 .form-row-two-map-update {
@@ -1668,6 +1704,112 @@
 .reason-list-flag-map-update {
   font-size: 12px;
   color: var(--mu-gray-500);
+}
+
+.estate-coordinate-actions-map-update {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.btn-map-toggle-map-update {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: #f8fafc;
+  color: var(--mu-primary);
+  border: 1px solid #cbd5e1;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+  transition: all var(--mu-transition);
+}
+
+.btn-map-toggle-map-update:hover {
+  background: #eef2ff;
+  border-color: #93c5fd;
+  color: #1d4ed8;
+  box-shadow: 0 2px 6px rgba(29, 78, 216, 0.16);
+}
+
+.btn-map-toggle-map-update:active {
+  background: #e2e8f0;
+}
+
+.btn-map-toggle-map-update svg {
+  font-size: 12px;
+}
+
+.estate-coordinate-map-wrap-map-update {
+  border: 1px solid var(--mu-gray-200);
+  border-radius: var(--mu-radius-sm);
+  overflow: hidden;
+  background: #fff;
+}
+
+.estate-coordinate-map-map-update {
+  width: 100%;
+  height: 420px;
+}
+
+.modal-map-coordinate-large-map-update {
+  width: 85vw;
+  height: 95vh;
+  max-width: 85vw;
+  max-height: 95vh;
+}
+
+.modal-map-coordinate-large-map-update .modal-body-map-update {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  padding: 10px 14px;
+  gap: 10px;
+}
+
+.modal-map-coordinate-large-map-update .modal-header-map-update {
+  padding: 10px 14px;
+}
+
+.modal-map-coordinate-large-map-update .modal-title-map-update {
+  font-size: 14px;
+}
+
+.modal-map-coordinate-large-map-update .label-map-update {
+  font-size: 10px;
+  margin-bottom: 2px;
+}
+
+.modal-map-coordinate-large-map-update .input-map-update {
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+.modal-map-coordinate-large-map-update .form-hint-map-update {
+  font-size: 11px;
+  line-height: 1.25;
+}
+
+.modal-map-coordinate-large-map-update .modal-footer-map-update {
+  padding: 10px 14px;
+}
+
+.modal-map-coordinate-large-map-update .estate-coordinate-map-wrap-map-update {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-map-coordinate-large-map-update .estate-coordinate-map-map-update {
+  flex: 1;
+  height: auto;
+  min-height: 68vh;
 }
 
 @media (max-width: 600px) {

@@ -5,8 +5,12 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useAppDispatch } from '../../../store/hooks';
 import { baseApi } from '../../../api/services/allEndpoints';
-import { getWeatherForCity } from '../../../api/services/weatherApi';
-import { enrichPlanWithCity } from '../../../utils/estateCityMapping';
+import {
+  clampDateWithinForecastWindow,
+  getTodayYmd,
+  getWeatherByCoordinates,
+} from '../../../api/services/weatherApi';
+import { useGetMappingEstatesQuery } from '../../../api/services NodeJs/mappingHierarchyApi';
 import PlanWeatherCard from './PlanWeatherCard';
 import { useNavbarPermissions } from '../../../hooks/useNavbarPermissions';
 import {
@@ -16,31 +20,13 @@ import {
 } from '../../../config/wingHubDisplay';
 import '../../../styles/plansWithWeather.css';
 
-const extractWeatherForDate = (weatherData, date) => {
-  if (!weatherData?.daily?.time || !date) {
-    return weatherData;
-  }
-
-  const index = weatherData.daily.time.findIndex((time) => time === date);
-  if (index === -1) {
-    return weatherData;
-  }
-
-  const narrowedDaily = {};
-  Object.keys(weatherData.daily).forEach((key) => {
-    const values = weatherData.daily[key];
-    if (Array.isArray(values)) {
-      narrowedDaily[key] = [values[index]];
-    } else {
-      narrowedDaily[key] = values;
-    }
-  });
-
-  return {
-    ...weatherData,
-    daily: narrowedDaily,
-  };
+const MAX_WINDOW_DAYS = 15;
+const DAY_MS = 24 * 60 * 60 * 1000;
+const dateFromYmd = (ymd) => {
+  const [y, m, d] = String(ymd).split('-').map(Number);
+  return new Date(y, (m || 1) - 1, d || 1);
 };
+const toYmd = (date) => date.toLocaleDateString('en-CA');
 
 const PlansWithWeather = () => {
   const dispatch = useAppDispatch();
@@ -77,13 +63,22 @@ const PlansWithWeather = () => {
     }
   }, [wingParam, allowedPaths, loadingPermissions, navigate]);
 
-  // Get today's date as default
-  const getTodayDate = () => {
-    const today = new Date();
-    return today.toISOString().split('T')[0]; // Format: YYYY-MM-DD
-  };
-
-  const [selectedDate, setSelectedDate] = useState(getTodayDate());
+  const todayYmd = getTodayYmd();
+  const todayDate = dateFromYmd(todayYmd);
+  const minDate = useMemo(() => {
+    const d = new Date(todayDate);
+    d.setDate(d.getDate() - MAX_WINDOW_DAYS);
+    return toYmd(d);
+  }, [todayYmd]);
+  const maxDate = useMemo(() => {
+    const d = new Date(todayDate);
+    d.setDate(d.getDate() + MAX_WINDOW_DAYS);
+    return toYmd(d);
+  }, [todayYmd]);
+  const [selectedDate, setSelectedDate] = useState(todayYmd);
+  const safeSelectedDate = clampDateWithinForecastWindow(selectedDate);
+  const { data: estatesResponse = {} } = useGetMappingEstatesQuery({});
+  const estates = estatesResponse?.data || [];
 
   const openNativeDatePicker = (event) => {
     const input = event?.currentTarget;
@@ -93,77 +88,93 @@ const PlansWithWeather = () => {
     }
   };
 
+  useEffect(() => {
+    if (selectedDate !== safeSelectedDate) {
+      setSelectedDate(safeSelectedDate);
+    }
+  }, [selectedDate, safeSelectedDate]);
+
   // Fetch plans for the selected date
   const { data: plansData, isLoading: plansLoading, error: plansError } = useQuery({
-    queryKey: ['plansByDate', selectedDate],
+    queryKey: ['plansByDate', safeSelectedDate],
     queryFn: async () => {
       const result = await dispatch(
-        baseApi.endpoints.getPlansByDate.initiate(selectedDate)
+        baseApi.endpoints.getPlansByDate.initiate(safeSelectedDate)
       );
       return result.data;
     },
-    enabled: !!selectedDate,
+    enabled: !!safeSelectedDate,
     staleTime: 1 * 60 * 1000, // 1 minute
     refetchOnWindowFocus: false,
   });
 
-  // Process plans and enrich with city information
-  const enrichedPlans = useMemo(() => {
+  const estatesById = useMemo(() => {
+    const map = {};
+    estates.forEach((estate) => {
+      map[Number(estate.id)] = estate;
+    });
+    return map;
+  }, [estates]);
+
+  // Process plans and enrich with estate coordinates
+  const plansWithEstateCoordinates = useMemo(() => {
     if (!plansData || plansData.status !== 'true') return [];
-    
     const plans = [];
-    // Extract plans from the response (plans are indexed as "0", "1", "2", etc.)
     Object.keys(plansData).forEach((key) => {
       if (!isNaN(key) && plansData[key]) {
-        plans.push(enrichPlanWithCity(plansData[key]));
+        const plan = plansData[key];
+        const estate = estatesById[Number(plan.estate_id)];
+        const latitude = estate?.latitude != null && estate?.latitude !== '' ? Number(estate.latitude) : null;
+        const longitude = estate?.longitude != null && estate?.longitude !== '' ? Number(estate.longitude) : null;
+        const hasCoordinates = Number.isFinite(latitude) && Number.isFinite(longitude);
+        plans.push({
+          ...plan,
+          latitude: hasCoordinates ? latitude : null,
+          longitude: hasCoordinates ? longitude : null,
+          hasCoordinates,
+          coordinateKey: hasCoordinates ? `${latitude.toFixed(6)},${longitude.toFixed(6)}` : null,
+        });
       }
     });
-    
     return plans;
-  }, [plansData]);
+  }, [plansData, estatesById]);
 
-  // Get unique cities from plans
-  const uniqueCities = useMemo(() => {
-    const cities = new Set();
-    enrichedPlans.forEach(plan => {
-      if (plan.city) {
-        cities.add(plan.city);
+  const uniqueCoordinateEntries = useMemo(() => {
+    const map = new Map();
+    plansWithEstateCoordinates.forEach((plan) => {
+      if (plan.hasCoordinates && plan.coordinateKey && !map.has(plan.coordinateKey)) {
+        map.set(plan.coordinateKey, {
+          key: plan.coordinateKey,
+          latitude: plan.latitude,
+          longitude: plan.longitude,
+        });
       }
     });
-    return Array.from(cities);
-  }, [enrichedPlans]);
+    return Array.from(map.values());
+  }, [plansWithEstateCoordinates]);
 
-  // Fetch weather for each unique city
+  // Fetch weather for each unique coordinate pair
   const weatherQueries = useQuery({
-    queryKey: ['weatherForCities', uniqueCities, selectedDate],
+    queryKey: ['weatherByCoordinates', uniqueCoordinateEntries, safeSelectedDate],
     queryFn: async () => {
-      // Fetch weather for all cities in parallel
-      const weatherPromises = uniqueCities.map(city => 
-        getWeatherForCity(city, 1, selectedDate, selectedDate)
-          .then(result => {
-            // Narrow the weather response down to the selected date (single-day)
-            const narrowedWeather = extractWeatherForDate(result.weather, selectedDate);
-            return { ...result, weather: narrowedWeather };
-          })
-          .catch(error => {
-            console.error(`Error fetching weather for ${city}:`, error);
-            return { city, error: true };
+      const weatherPromises = uniqueCoordinateEntries.map((entry) =>
+        getWeatherByCoordinates(entry.latitude, entry.longitude, safeSelectedDate)
+          .then((result) => ({ ...entry, weather: result }))
+          .catch((error) => {
+            console.error(`Error fetching weather for ${entry.key}:`, error);
+            return { ...entry, error: true };
           })
       );
-      
       const weatherResults = await Promise.all(weatherPromises);
-      
-      // Create a map of city to weather data
       const weatherMap = {};
-      weatherResults.forEach(result => {
-        if (result && !result.error && result.city && result.weather) {
-          weatherMap[result.city] = result.weather;
+      weatherResults.forEach((result) => {
+        if (result && !result.error && result.key && result.weather) {
+          weatherMap[result.key] = result.weather;
         }
       });
-      
       return weatherMap;
     },
-    enabled: uniqueCities.length > 0,
+    enabled: uniqueCoordinateEntries.length > 0,
     staleTime: 10 * 60 * 1000, // 10 minutes - weather doesn't change that often
     refetchOnWindowFocus: false,
     retry: 2,
@@ -174,33 +185,30 @@ const PlansWithWeather = () => {
 
   // Combine plans with weather data
   const plansWithWeather = useMemo(() => {
-    return enrichedPlans.map(plan => ({
+    return plansWithEstateCoordinates.map((plan) => ({
       ...plan,
-      weather: weatherData[plan.city] || null,
+      weather: plan.coordinateKey ? weatherData[plan.coordinateKey] || null : null,
+      weatherUnavailableReason: plan.hasCoordinates ? null : 'Weather unavailable until coordinates are set',
     }));
-  }, [enrichedPlans, weatherData]);
+  }, [plansWithEstateCoordinates, weatherData]);
 
   const isLoading = plansLoading || weatherQueries.isLoading;
   const hasError = plansError || weatherQueries.error;
 
   // Check if selected date is today
   const isToday = () => {
-    const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
-    return selectedDate === todayStr;
+    return safeSelectedDate === todayYmd;
   };
 
   // Check if selected date is tomorrow
   const isTomorrow = () => {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowStr = tomorrow.toISOString().split('T')[0];
-    return selectedDate === tomorrowStr;
+    const tomorrow = new Date(todayDate.getTime() + DAY_MS);
+    return safeSelectedDate === toYmd(tomorrow);
   };
 
   // Get formatted date display (always show full date)
   const getFormattedDate = () => {
-    const date = new Date(selectedDate);
+    const date = dateFromYmd(safeSelectedDate);
     return date.toLocaleDateString('en-US', { 
       weekday: 'long', 
       year: 'numeric', 
@@ -234,9 +242,9 @@ const PlansWithWeather = () => {
         <div className="plans-weather-header-left">
           <h1 className="plans-weather-title">{getHeaderTitle()}</h1>
           <p className="plans-weather-date-display">{getFormattedDate()}</p>
-          {!isLoading && !hasError && enrichedPlans.length > 0 && (
+          {!isLoading && !hasError && plansWithEstateCoordinates.length > 0 && (
             <p className="plans-weather-count">
-              {enrichedPlans.length} {enrichedPlans.length === 1 ? 'Plan' : 'Plans'} Scheduled
+              {plansWithEstateCoordinates.length} {plansWithEstateCoordinates.length === 1 ? 'Plan' : 'Plans'} Scheduled
             </p>
           )}
         </div>
@@ -245,8 +253,10 @@ const PlansWithWeather = () => {
           <input
             id="plan-date"
             type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
+            value={safeSelectedDate}
+            min={minDate}
+            max={maxDate}
+            onChange={(e) => setSelectedDate(clampDateWithinForecastWindow(e.target.value))}
             onClick={openNativeDatePicker}
             onKeyDown={(event) => {
               if (event.key === 'Enter' || event.key === ' ') {

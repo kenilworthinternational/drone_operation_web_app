@@ -1,6 +1,19 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { baseApi } from '../../api/services/allEndpoints';
 
+function formatLocalDateYmd(date) {
+  if (date == null) return '';
+  if (typeof date === 'string') return date.slice(0, 10);
+  return date.toLocaleDateString('en-CA');
+}
+
+function parsePhpNumericList(response) {
+  if (!response || response.status !== 'true') return [];
+  return Object.keys(response)
+    .filter((key) => key !== 'status' && key !== 'count' && !Number.isNaN(Number(key)))
+    .map((key) => response[key]);
+}
+
 // Async thunks using RTK Query
 export const fetchOperators = createAsyncThunk(
   'operators/fetchOperators',
@@ -40,9 +53,19 @@ export const fetchPlanOperatorsByDateRange = createAsyncThunk(
   'operators/fetchPlanOperatorsByDateRange',
   async ({ startDate, endDate }, { dispatch, rejectWithValue }) => {
     try {
-      const formattedStart = typeof startDate === 'string' ? startDate : startDate.toISOString().split('T')[0];
-      const formattedEnd = typeof endDate === 'string' ? endDate : endDate.toISOString().split('T')[0];
-      const result = await dispatch(baseApi.endpoints.getPlanOperatorsByDateRange.initiate({ startDate: formattedStart, endDate: formattedEnd }));
+      const formattedStart = formatLocalDateYmd(startDate);
+      const formattedEnd = formatLocalDateYmd(endDate);
+      const result = await dispatch(
+        baseApi.endpoints.getPlanOperatorsByDateRange.initiate(
+          { startDate: formattedStart, endDate: formattedEnd },
+          { subscribe: false }
+        )
+      );
+      if (result.error) {
+        return rejectWithValue(
+          result.error.data?.message || result.error.error || 'Failed to fetch plan operators'
+        );
+      }
       return { startDate: formattedStart, endDate: formattedEnd, data: result.data };
     } catch (error) {
       return rejectWithValue(error.message || 'Failed to fetch plan operators');
@@ -156,11 +179,13 @@ export const selectSelectedOperator = (state) => state.operators.selectedOperato
 export const selectAssignedOperatorByPlan = (state, planId) =>
   state.operators.assignedOperators[planId] || null;
 export const selectPlanOperatorsByDateRange = (state, startDate, endDate) => {
-  const formattedStart = typeof startDate === 'string' ? startDate : startDate.toISOString().split('T')[0];
-  const formattedEnd = typeof endDate === 'string' ? endDate : endDate.toISOString().split('T')[0];
+  const formattedStart = formatLocalDateYmd(startDate);
+  const formattedEnd = formatLocalDateYmd(endDate);
   const key = `${formattedStart}_${formattedEnd}`;
   return state.operators.planOperatorsByDateRange[key] || null;
 };
+
+export { formatLocalDateYmd, parsePhpNumericList };
 
 export default operatorsSlice.reducer;
 
