@@ -175,11 +175,18 @@ const SRI_LANKA_BOUNDS = [
   [10.1, 82.1],  // north-east
 ];
 
+const MAP_STREET_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+const MAP_SATELLITE_URL =
+  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+const MAP_SATELLITE_LABELS_URL =
+  'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}';
+
 const EstateCoordinateMapPicker = ({ latitude, longitude, onPick }) => {
   const parsedLat = Number(latitude);
   const parsedLon = Number(longitude);
   const hasValidCoordinate = Number.isFinite(parsedLat) && Number.isFinite(parsedLon);
   const center = DEFAULT_MAP_CENTER;
+  const [satelliteEnabled, setSatelliteEnabled] = useState(false);
 
   const ClickHandler = () => {
     useMapEvents({
@@ -193,6 +200,17 @@ const EstateCoordinateMapPicker = ({ latitude, longitude, onPick }) => {
 
   return (
     <div className="estate-coordinate-map-wrap-map-update">
+      <div className="estate-coordinate-map-toolbar-map-update">
+        <button
+          type="button"
+          className={`btn-satellite-toggle-map-update${satelliteEnabled ? ' is-active' : ''}`}
+          onClick={() => setSatelliteEnabled((prev) => !prev)}
+          title={satelliteEnabled ? 'Switch to street map' : 'Switch to satellite'}
+        >
+          <FaGlobeAmericas />
+          {satelliteEnabled ? 'Satellite: On' : 'Satellite: Off'}
+        </button>
+      </div>
       <MapContainer
         center={center}
         zoom={7}
@@ -203,10 +221,26 @@ const EstateCoordinateMapPicker = ({ latitude, longitude, onPick }) => {
         scrollWheelZoom
         className="estate-coordinate-map-map-update"
       >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
+        {satelliteEnabled ? (
+          <>
+            <TileLayer
+              attribution='Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics'
+              url={MAP_SATELLITE_URL}
+              maxZoom={18}
+            />
+            <TileLayer
+              attribution=""
+              url={MAP_SATELLITE_LABELS_URL}
+              maxZoom={18}
+              opacity={0.9}
+            />
+          </>
+        ) : (
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            url={MAP_STREET_URL}
+          />
+        )}
         <ClickHandler />
         {hasValidCoordinate ? (
           <CircleMarker
