@@ -665,11 +665,13 @@ const PlanCalendar = () => {
                     <div
                       key={p.id}
                       className={`item-booking-calendar ${planTypeClass}`}
-                      title={`${p.estate} - #${p.id}`}
+                      title={`${p.estate} · ${p.area || 0} Ha · #${p.id}`}
                       onClick={() => setSelectedPlan(p)}
                     >
                       <span className="item-status-dot" style={{ background: statusColor }} />
-                      <span className="item-text-booking-calendar">{p.estate} · {p.id}</span>
+                      <span className="item-text-booking-calendar">
+                        {p.estate} · {p.area || 0} Ha
+                      </span>
                     </div>
                   );
                 })}

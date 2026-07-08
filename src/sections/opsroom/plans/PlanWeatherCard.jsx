@@ -125,6 +125,12 @@ const PlanWeatherCard = ({ plan }) => {
     return type; // Return original if no mapping found
   };
 
+  const isManagerApproved =
+    plan?.manager_approval === true ||
+    plan?.manager_approval === 1 ||
+    plan?.manager_approval === '1' ||
+    Number(plan?.manager_approval) === 1;
+
   if (!plan) return null;
 
   const detailsModal = showDetails ? (
@@ -315,11 +321,11 @@ const PlanWeatherCard = ({ plan }) => {
           <span className="plan-info-label">Operator:</span>
           <span className="plan-info-value">{plan.operator_name || 'N/A'}</span>
         </div>
-        {plan.manager_approval !== undefined && (
+        {plan.manager_approval !== undefined && plan.manager_approval !== null && (
           <div className="plan-info-row">
             <span className="plan-info-label">Approval:</span>
-            <span className={`plan-info-value ${plan.manager_approval === 1 ? 'approved' : 'pending'}`}>
-              {plan.manager_approval === 1 ? '✓ Approved' : '⏳ Pending'}
+            <span className={`plan-info-value ${isManagerApproved ? 'approved' : 'pending'}`}>
+              {isManagerApproved ? '✓ Approved' : '⏳ Pending'}
             </span>
           </div>
         )}
