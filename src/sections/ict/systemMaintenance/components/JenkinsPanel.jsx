@@ -9,10 +9,7 @@ function badgeForStatus(status) {
 }
 
 const JenkinsPanel = ({ jenkins, errors }) => {
-  if (!jenkins?.enabled) {
-    return null;
-  }
-
+  const notConfigured = !jenkins?.enabled;
   const err = jenkins?.error || errors?.find((e) => e.section === 'jenkins')?.message;
 
   return (
@@ -23,8 +20,15 @@ const JenkinsPanel = ({ jenkins, errors }) => {
           <a href={jenkins.url} target="_blank" rel="noreferrer">{jenkins.url}</a>
         </p>
       )}
+      {notConfigured && (
+        <p className="sysmaint-hint">
+          Jenkins integration is not configured. Set
+          {' '}<code>SYSTEM_MAINTENANCE_JENKINS_URL</code>{' '}
+          and optional Jenkins auth variables in API env.
+        </p>
+      )}
       {err && <p className="sysmaint-error">{err}</p>}
-      {!err && (jenkins?.jobs || []).length === 0 && (
+      {!notConfigured && !err && (jenkins?.jobs || []).length === 0 && (
         <p className="sysmaint-hint">No Jenkins jobs configured.</p>
       )}
       <div className="sysmaint-jenkins-list">

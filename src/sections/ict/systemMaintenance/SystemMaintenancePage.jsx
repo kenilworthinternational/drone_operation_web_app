@@ -47,6 +47,7 @@ const SystemMaintenancePage = () => {
   const [logAppName, setLogAppName] = useState(null);
   const [actionMessage, setActionMessage] = useState(null);
   const [backupPolling, setBackupPolling] = useState(false);
+  const [queuedRefresh, setQueuedRefresh] = useState(false);
 
   const isDisabled = error?.status === 503 || error?.status === 403;
   const capabilities = overview?.capabilities;
@@ -94,6 +95,20 @@ const SystemMaintenancePage = () => {
       clearTimeout(stop);
     };
   }, [backupPolling, refetch, refetchBackupStatus]);
+
+  const handleRefresh = useCallback(() => {
+    if (isFetching) {
+      setQueuedRefresh(true);
+      return;
+    }
+    refetch();
+  }, [isFetching, refetch]);
+
+  useEffect(() => {
+    if (!queuedRefresh || isFetching) return;
+    setQueuedRefresh(false);
+    refetch();
+  }, [queuedRefresh, isFetching, refetch]);
 
   if (isLoading) {
     return (
@@ -157,9 +172,10 @@ const SystemMaintenancePage = () => {
             Last updated: {formatCollectedAt(overview?.collectedAt)}
             {isFetching && ' (refreshing…)'}
           </span>
-          <button type="button" className="sysmaint-btn-secondary" onClick={() => refetch()}>
+          <button type="button" className="sysmaint-btn-secondary" onClick={handleRefresh}>
             <FaSync /> Refresh
           </button>
+          {queuedRefresh && <span className="sysmaint-hint">Another refresh queued…</span>}
         </div>
       </header>
 
