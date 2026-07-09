@@ -94,6 +94,20 @@
     overflow: visible;
     max-height: none;
   }
+
+  .weather-pred-report,
+  .weather-pred-report-content {
+    overflow: visible;
+  }
+
+  .weather-pred-section--hourly {
+    flex: none;
+    max-height: none;
+  }
+
+  .weather-pred-table-wrap--scroll {
+    max-height: 18rem;
+  }
 }
 
 .weather-pred-panel {
@@ -349,20 +363,25 @@
   gap: 0.45rem;
   min-height: 0;
   height: 100%;
-  overflow-x: hidden;
-  overflow-y: auto;
+  overflow: hidden;
   padding-right: 0.15rem;
-  scrollbar-width: thin;
-  scrollbar-color: #cbd5e1 transparent;
 }
 
-.weather-pred-main::-webkit-scrollbar {
-  width: 6px;
+.weather-pred-report {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
-.weather-pred-main::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 999px;
+.weather-pred-report-content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  overflow: hidden;
 }
 
 .weather-pred-date-bar {
@@ -513,6 +532,19 @@
   border: 1px solid var(--wp-line);
   border-radius: 0.55rem;
   overflow: hidden;
+  flex-shrink: 0;
+}
+
+.weather-pred-section--hourly {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.weather-pred-section--daily-scroll .weather-pred-table-wrap {
+  max-height: 11rem;
+  overflow: auto;
 }
 
 .weather-pred-section-header {
@@ -536,6 +568,32 @@
 
 .weather-pred-table-wrap {
   overflow-x: auto;
+}
+
+.weather-pred-table-wrap--scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+.weather-pred-table-wrap--scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.weather-pred-table-wrap--scroll::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+}
+
+.weather-pred-table-wrap--scroll .weather-pred-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #fafbfc;
+  box-shadow: 0 1px 0 var(--wp-line);
 }
 
 .weather-pred-table {

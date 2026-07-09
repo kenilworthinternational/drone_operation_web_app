@@ -432,7 +432,7 @@ const WeatherPredictionPage = () => {
     const current = weatherResult.current;
 
     return (
-      <>
+      <div className="weather-pred-report-content">
         {showCurrent && current ? (
           <section className="weather-pred-section">
             <div className="weather-pred-section-header">Current conditions</div>
@@ -469,7 +469,9 @@ const WeatherPredictionPage = () => {
           </section>
         ) : null}
 
-        <section className="weather-pred-section">
+        <section
+          className={`weather-pred-section${dailyRows.length > 6 ? ' weather-pred-section--daily-scroll' : ''}`}
+        >
           <div className="weather-pred-section-header">
             {dateMode === 'single' ? 'Daily summary' : 'Daily range'}
           </div>
@@ -527,7 +529,7 @@ const WeatherPredictionPage = () => {
           </div>
         </section>
 
-        <section className="weather-pred-section">
+        <section className="weather-pred-section weather-pred-section--hourly">
           <div className="weather-pred-section-header">
             Hourly (06:00–18:00) — {formatDateLabel(hourlySelectedDate)}
             {dateMode === 'range' ? (
@@ -536,7 +538,7 @@ const WeatherPredictionPage = () => {
               </span>
             ) : null}
           </div>
-          <div className="weather-pred-table-wrap">
+          <div className="weather-pred-table-wrap weather-pred-table-wrap--scroll">
             <table className="weather-pred-table">
               <thead>
                 <tr>
@@ -581,7 +583,7 @@ const WeatherPredictionPage = () => {
             </table>
           </div>
         </section>
-      </>
+      </div>
     );
   };
 
@@ -668,7 +670,7 @@ const WeatherPredictionPage = () => {
               {loading ? 'Fetching…' : 'Fetch'}
             </button>
           </div>
-          {renderReport()}
+          <div className="weather-pred-report">{renderReport()}</div>
         </div>
       </div>
 

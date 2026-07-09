@@ -456,15 +456,15 @@ const GeoSpatialDashboard = () => {
               subtitle="Click Spray or Spread bar to download cannot (blocked) Excel with reason"
             >
               <div className={`geo-dash-chart${exportingMission ? ' is-exporting' : ''}`}>
-                <ResponsiveContainer width="100%" height={250}>
+                <ResponsiveContainer width="100%" height={190}>
                   <BarChart
                     data={fieldMissionChartData}
-                    margin={{ top: 12, right: 8, left: -8, bottom: 0 }}
+                    margin={{ top: 6, right: 6, left: -12, bottom: 0 }}
                     style={{ cursor: exportingMission ? 'wait' : 'pointer' }}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke="#e8eef5" vertical={false} />
-                    <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} />
-                    <YAxis allowDecimals={false} tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                    <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                    <YAxis allowDecimals={false} tick={{ fontSize: 10, fill: '#64748b' }} axisLine={false} tickLine={false} />
                     <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(15, 118, 110, 0.04)' }} />
                     <Legend iconType="circle" />
                     <Bar
@@ -472,7 +472,7 @@ const GeoSpatialDashboard = () => {
                       stackId="mission"
                       fill={FIELD_COLORS.can}
                       radius={[0, 0, 0, 0]}
-                      maxBarSize={64}
+                      maxBarSize={48}
                       cursor="pointer"
                       onClick={(data) => handleMissionBarClick(data)}
                     />
@@ -481,7 +481,7 @@ const GeoSpatialDashboard = () => {
                       stackId="mission"
                       fill={FIELD_COLORS.blocked}
                       radius={[8, 8, 0, 0]}
-                      maxBarSize={64}
+                      maxBarSize={48}
                       cursor="pointer"
                       onClick={(data) => handleMissionBarClick(data)}
                     />
