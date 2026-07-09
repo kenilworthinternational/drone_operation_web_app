@@ -26,6 +26,7 @@ import {
   useCreateMappingDivisionMutation,
   useCreateMappingFieldMutation,
   useUpdateMappingEstateMutation,
+  useUpdateMappingDivisionMutation,
   useUpdateMappingFieldMutation,
   useToggleMappingGroupActivationMutation,
   useToggleMappingPlantationActivationMutation,
@@ -285,6 +286,11 @@ const MappingUpdatePage = () => {
   const [estateCoordinateModal, setEstateCoordinateModal] = useState(null);
   const [estatePlanSizeSaving, setEstatePlanSizeSaving] = useState(false);
   const [estateCoordinateSaving, setEstateCoordinateSaving] = useState(false);
+  const [divisionContextMenu, setDivisionContextMenu] = useState(null);
+  const [divisionMenuPosition, setDivisionMenuPosition] = useState({ left: 0, top: 0 });
+  const divisionMenuRef = useRef(null);
+  const [divisionCoordinateModal, setDivisionCoordinateModal] = useState(null);
+  const [divisionCoordinateSaving, setDivisionCoordinateSaving] = useState(false);
 
   const [expandedLevels, setExpandedLevels] = useState({ group: true });
 
@@ -315,6 +321,7 @@ const MappingUpdatePage = () => {
   const [createDivision] = useCreateMappingDivisionMutation();
   const [createField] = useCreateMappingFieldMutation();
   const [updateEstate] = useUpdateMappingEstateMutation();
+  const [updateDivision] = useUpdateMappingDivisionMutation();
   const [updateField] = useUpdateMappingFieldMutation();
   const [toggleFieldActivation] = useToggleMappingFieldActivationMutation();
   const [setEstateFinalized] = useSetMappingEstateFinalizedMutation();
@@ -731,6 +738,8 @@ const MappingUpdatePage = () => {
     setEstateContextMenu(null);
     setEstatePlanSizeModal(null);
     setEstateCoordinateModal(null);
+    setDivisionContextMenu(null);
+    setDivisionCoordinateModal(null);
     setAvailabilityModal(null);
     setReasonManageOpen(false);
     setEditingReasonRow(null);
@@ -759,6 +768,50 @@ const MappingUpdatePage = () => {
       showMap: false,
     });
     setEstateContextMenu(null);
+  };
+
+  const openDivisionCoordinateModal = (divisionId) => {
+    const div = divisions.find((d) => d.id === divisionId);
+    setDivisionCoordinateModal({
+      divisionId,
+      divisionName: div?.division || `Division #${divisionId}`,
+      latitude: div?.latitude != null && div?.latitude !== '' ? String(div.latitude) : '',
+      longitude: div?.longitude != null && div?.longitude !== '' ? String(div.longitude) : '',
+      showMap: false,
+    });
+    setDivisionContextMenu(null);
+  };
+
+  const handleSaveDivisionCoordinates = async () => {
+    if (!divisionCoordinateModal) return;
+    const latRaw = divisionCoordinateModal.latitude.trim();
+    const lonRaw = divisionCoordinateModal.longitude.trim();
+    const coordErr = validateEstateCoordinates(latRaw, lonRaw);
+    if (coordErr) {
+      toast.error(coordErr);
+      return;
+    }
+    const latitude = parseOptionalCoordinateInput(latRaw, -90, 90);
+    const longitude = parseOptionalCoordinateInput(lonRaw, -180, 180);
+
+    setDivisionCoordinateSaving(true);
+    try {
+      const result = await updateDivision({
+        id: divisionCoordinateModal.divisionId,
+        latitude,
+        longitude,
+      }).unwrap();
+      if (result?.status) {
+        toast.success(result.message || 'Division coordinates updated');
+        setDivisionCoordinateModal(null);
+      } else {
+        toast.error(result?.message || 'Failed to update division coordinates');
+      }
+    } catch (error) {
+      toast.error(error?.data?.message || error?.message || 'Failed to update division coordinates');
+    } finally {
+      setDivisionCoordinateSaving(false);
+    }
   };
 
   const handleSaveEstatePlanSizes = async () => {
@@ -851,12 +904,32 @@ const MappingUpdatePage = () => {
     setEstateMenuPosition({ left, top });
   }, [estateContextMenu]);
 
+  useLayoutEffect(() => {
+    if (!divisionContextMenu || !divisionMenuRef.current) return;
+    const rect = divisionMenuRef.current.getBoundingClientRect();
+    const padding = 8;
+    let left = divisionContextMenu.x;
+    let top = divisionContextMenu.y;
+    if (left + rect.width + padding > window.innerWidth) left = window.innerWidth - rect.width - padding;
+    if (top + rect.height + padding > window.innerHeight) top = window.innerHeight - rect.height - padding;
+    if (left < padding) left = padding;
+    if (top < padding) top = padding;
+    setDivisionMenuPosition({ left, top });
+  }, [divisionContextMenu]);
+
   useEffect(() => {
     if (!estateContextMenu) return;
     const close = () => setEstateContextMenu(null);
     window.addEventListener('click', close);
     return () => window.removeEventListener('click', close);
   }, [estateContextMenu]);
+
+  useEffect(() => {
+    if (!divisionContextMenu) return;
+    const close = () => setDivisionContextMenu(null);
+    window.addEventListener('click', close);
+    return () => window.removeEventListener('click', close);
+  }, [divisionContextMenu]);
 
   const handleDownloadExcel = () => {
     if (!filteredFields.length) return;
@@ -986,9 +1059,27 @@ const MappingUpdatePage = () => {
                 {data.map(item => (
                   <div
                     key={item.id}
-                    className={`item-map-update ${selectedId === item.id ? 'item-selected-map-update' : ''} ${!item.activated ? 'item-disabled-map-update' : ''} ${key === 'estate' ? (item.finalized === 1 ? 'item-estate-finalized-map-update' : 'item-estate-not-finalized-map-update') : ''} ${key === 'estate' && estateCoordinatesMissing(item) ? 'item-estate-missing-coords-map-update' : ''}`}
+                    className={`item-map-update ${selectedId === item.id ? 'item-selected-map-update' : ''} ${!item.activated ? 'item-disabled-map-update' : ''} ${key === 'estate' ? (item.finalized === 1 ? 'item-estate-finalized-map-update' : 'item-estate-not-finalized-map-update') : ''} ${key === 'estate' && estateCoordinatesMissing(item) ? 'item-estate-missing-coords-map-update' : ''} ${key === 'division' && estateCoordinatesMissing(item) ? 'item-division-missing-coords-map-update' : ''}`}
                     onClick={() => selectHandlers[key](item.id)}
-                    onContextMenu={key === 'estate' ? (e) => { e.preventDefault(); const x = e.clientX; const y = e.clientY; setEstateMenuPosition({ left: x, top: y }); setEstateContextMenu({ x, y, estateId: item.id, isFinalized: item.finalized === 1 }); } : undefined}
+                    onContextMenu={
+                      key === 'estate'
+                        ? (e) => {
+                            e.preventDefault();
+                            const x = e.clientX;
+                            const y = e.clientY;
+                            setEstateMenuPosition({ left: x, top: y });
+                            setEstateContextMenu({ x, y, estateId: item.id, isFinalized: item.finalized === 1 });
+                          }
+                        : key === 'division'
+                          ? (e) => {
+                              e.preventDefault();
+                              const x = e.clientX;
+                              const y = e.clientY;
+                              setDivisionMenuPosition({ left: x, top: y });
+                              setDivisionContextMenu({ x, y, divisionId: item.id });
+                            }
+                          : undefined
+                    }
                   >
                     <div className="item-content-map-update">
                       <div className="item-text-block-map-update">
@@ -1000,6 +1091,12 @@ const MappingUpdatePage = () => {
                           <span className="item-meta-map-update">{estateCoordinateSummary(item)}</span>
                         ) : null}
                         {key === 'estate' && estateCoordinatesMissing(item) ? (
+                          <span className="item-meta-map-update item-meta-missing-coords-map-update">Coordinates missing</span>
+                        ) : null}
+                        {key === 'division' && estateCoordinateSummary(item) ? (
+                          <span className="item-meta-map-update">{estateCoordinateSummary(item)}</span>
+                        ) : null}
+                        {key === 'division' && estateCoordinatesMissing(item) ? (
                           <span className="item-meta-map-update item-meta-missing-coords-map-update">Coordinates missing</span>
                         ) : null}
                       </div>
@@ -1070,6 +1167,31 @@ const MappingUpdatePage = () => {
                 Set as Finalized
               </button>
             )}
+          </div>
+        </>
+      )}
+      {divisionContextMenu && (
+        <>
+          <div
+            className="estate-context-menu-backdrop-map-update"
+            onClick={() => setDivisionContextMenu(null)}
+            aria-hidden
+          />
+          <div
+            ref={divisionMenuRef}
+            className="estate-context-menu-map-update"
+            style={{ left: divisionMenuPosition.left, top: divisionMenuPosition.top }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="estate-context-menu-title-map-update">Division options</div>
+            <button
+              type="button"
+              className="estate-context-menu-item-map-update"
+              onClick={() => openDivisionCoordinateModal(divisionContextMenu.divisionId)}
+            >
+              <FaMapMarkerAlt className="estate-context-menu-item-icon-map-update" />
+              Update latitude / longitude
+            </button>
           </div>
         </>
       )}
@@ -1507,6 +1629,101 @@ const MappingUpdatePage = () => {
                 disabled={estateCoordinateSaving}
               >
                 <FaSave /> {estateCoordinateSaving ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== DIVISION COORDINATE MODAL ===== */}
+      {divisionCoordinateModal && (
+        <div className="modal-overlay-map-update" onClick={closeModal}>
+          <div className="modal-map-update modal-map-coordinate-large-map-update" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header-map-update">
+              <h3 className="modal-title-map-update">
+                <FaEdit className="modal-title-icon-map-update" />
+                Division coordinates — {divisionCoordinateModal.divisionName}
+              </h3>
+              <button type="button" onClick={closeModal} className="modal-close-map-update">
+                <FaTimes />
+              </button>
+            </div>
+            <div className="modal-body-map-update">
+              <div className="form-row-two-map-update">
+                <div className="form-group-map-update">
+                  <label className="label-map-update">Latitude</label>
+                  <input
+                    type="number"
+                    min="-90"
+                    max="90"
+                    step="0.0000001"
+                    className="input-map-update"
+                    placeholder="e.g. 6.8747931"
+                    value={divisionCoordinateModal.latitude}
+                    onChange={(e) =>
+                      setDivisionCoordinateModal({ ...divisionCoordinateModal, latitude: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="form-group-map-update">
+                  <label className="label-map-update">Longitude</label>
+                  <input
+                    type="number"
+                    min="-180"
+                    max="180"
+                    step="0.0000001"
+                    className="input-map-update"
+                    placeholder="e.g. 79.8887541"
+                    value={divisionCoordinateModal.longitude}
+                    onChange={(e) =>
+                      setDivisionCoordinateModal({ ...divisionCoordinateModal, longitude: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+              <div className="estate-coordinate-actions-map-update">
+                <button
+                  type="button"
+                  className="btn-map-toggle-map-update"
+                  onClick={() =>
+                    setDivisionCoordinateModal((prev) => ({ ...prev, showMap: !prev.showMap }))
+                  }
+                >
+                  <FaMap />
+                  {divisionCoordinateModal.showMap ? 'Hide Map Picker' : 'Open Map Picker'}
+                </button>
+                <span className="form-hint-map-update">
+                  Picked: {divisionCoordinateModal.latitude || '—'}, {divisionCoordinateModal.longitude || '—'}
+                </span>
+              </div>
+              {divisionCoordinateModal.showMap ? (
+                <EstateCoordinateMapPicker
+                  latitude={divisionCoordinateModal.latitude}
+                  longitude={divisionCoordinateModal.longitude}
+                  onPick={(lat, lon) =>
+                    setDivisionCoordinateModal((prev) => ({
+                      ...prev,
+                      latitude: lat.toFixed(7),
+                      longitude: lon.toFixed(7),
+                    }))
+                  }
+                />
+              ) : null}
+              <p className="form-hint-map-update">
+                Leave empty to clear coordinates. Weather prediction uses these values for this division.
+              </p>
+            </div>
+            <div className="modal-footer-map-update">
+              <button type="button" onClick={closeModal} className="btn-ghost-map-update">
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveDivisionCoordinates}
+                className="btn-primary-map-update"
+                disabled={divisionCoordinateSaving}
+              >
+                <FaSave /> {divisionCoordinateSaving ? 'Saving...' : 'Save'}
               </button>
             </div>
           </div>

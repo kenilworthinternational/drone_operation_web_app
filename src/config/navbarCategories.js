@@ -30,6 +30,7 @@ import {
   FaClock,
   FaCheck,
   FaTachometerAlt,
+  FaCloudSunRain,
 } from 'react-icons/fa';
 
 const navbarCategories = [
@@ -169,6 +170,7 @@ const navbarCategories = [
     icon: FaMap,
     children: [
       { path: '/home/geo-spatial/dashboard', label: 'Dashboard', icon: FaTachometerAlt },
+      { path: '/home/geo-spatial/weather-prediction', label: 'Weather Prediction', icon: FaCloudSunRain },
       { path: '/home/geo-spatial/mapping-update', label: 'Mapping Update', icon: FaMap },
       {
         path: '/home/geo-spatial/field-unblock-requests',

@@ -18,9 +18,15 @@ const ReportDateRangePicker = ({
   wrapperClassName = '',
   dateFormat = 'dd-MM-yyyy',
   maxDate = new Date(),
+  minDate = null,
   placeholderText = 'Select date range',
   popperPlacement = 'bottom-start',
   showLabel = true,
+  shouldCloseOnSelect = false,
+  readOnly = false,
+  calendarClassName = '',
+  popperClassName = '',
+  openToDate = null,
 }) => {
   const handleChange = (dates) => {
     const [start, end] = dates ?? [];
@@ -44,7 +50,13 @@ const ReportDateRangePicker = ({
         className={inputClassName}
         wrapperClassName={wrapperClassName || undefined}
         maxDate={maxDate}
+        minDate={minDate ?? undefined}
+        openToDate={openToDate ?? startDate ?? undefined}
         isClearable={false}
+        shouldCloseOnSelect={shouldCloseOnSelect}
+        readOnly={readOnly}
+        calendarClassName={calendarClassName || undefined}
+        popperClassName={popperClassName || undefined}
         popperPlacement={popperPlacement}
       />
     </div>

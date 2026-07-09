@@ -15,8 +15,8 @@ const PlanWeatherCard = ({ plan }) => {
     return Number.isFinite(n) ? n : null;
   };
 
-  const tempMin = daily?.temperature_2m_min;
-  const tempMax = daily?.temperature_2m_max;
+  const tempMin = summary?.temperatureMin ?? daily?.temperature_2m_min;
+  const tempMax = summary?.temperatureMax ?? daily?.temperature_2m_max;
   const rainSum = Number(daily?.rain_sum || 0);
   const precipitationSum = Number(daily?.precipitation_sum || 0);
   const precipProbabilityMax = toNumber(daily?.precipitation_probability_max);
@@ -33,7 +33,7 @@ const PlanWeatherCard = ({ plan }) => {
       return {
         min: toNumber(summary?.windSpeedMin),
         avg: toNumber(summary?.windSpeedAvg),
-        max: toNumber(summary?.windSpeedMax ?? daily?.wind_speed_10m_max),
+        max: toNumber(summary?.windSpeedMax),
       };
     }
     const sum = speeds.reduce((acc, v) => acc + v, 0);
@@ -172,7 +172,7 @@ const PlanWeatherCard = ({ plan }) => {
                 <div><strong>Precip chance max:</strong> {toNumber(daily.precipitation_probability_max)?.toFixed(0)}%</div>
                 <div><strong>Wind min:</strong> {windMin != null ? `${windMin.toFixed(1)} km/h` : '—'}</div>
                 <div><strong>Wind avg:</strong> {windAvg != null ? `${windAvg.toFixed(1)} km/h` : '—'}</div>
-                <div><strong>Wind max:</strong> {windMax != null ? `${windMax.toFixed(1)} km/h` : `${toNumber(daily.wind_speed_10m_max)?.toFixed(1) ?? '—'} km/h`}</div>
+                <div><strong>Wind max:</strong> {windMax != null ? `${windMax.toFixed(1)} km/h` : '—'}</div>
                 <div><strong>Gust max:</strong> {toNumber(daily.wind_gusts_10m_max)?.toFixed(1)} km/h</div>
               </div>
             ) : (
@@ -182,7 +182,7 @@ const PlanWeatherCard = ({ plan }) => {
         </div>
 
         <div className="plan-weather-detail-hourly">
-          <h5>Hourly (Selected Day)</h5>
+          <h5>Hourly (06:00–18:00)</h5>
           <div className="plan-weather-hourly-table-wrap">
             <table className="plan-weather-hourly-table">
               <thead>

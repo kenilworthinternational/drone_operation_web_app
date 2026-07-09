@@ -350,6 +350,14 @@ const GeoSpatialDashboard = () => {
                 onAction={() => go('/home/geo-spatial/mapping-update')}
               />
               <AttentionCard
+                icon={FaCloudSunRain}
+                label="Divisions missing lat/lon"
+                value={stats.divisions?.missingCoordinates}
+                tone="blue"
+                actionLabel="Update coordinates"
+                onAction={() => go('/home/geo-spatial/mapping-update')}
+              />
+              <AttentionCard
                 icon={FaExclamationTriangle}
                 label="Fields blocked (spray / spread)"
                 value={(stats.fields?.sprayBlocked || 0) + (stats.fields?.spreadBlocked || 0)}
@@ -387,11 +395,11 @@ const GeoSpatialDashboard = () => {
 
           <section className="geo-dash-chart-grid">
             <Panel
-              title="Estate readiness"
-              subtitle="Finalization and weather coordinates"
+              title="Estate & division readiness"
+              subtitle="Finalization, estate forecast coords, and division weather coords"
               action={
                 <button type="button" className="geo-dash-link-btn" onClick={() => go('/home/geo-spatial/mapping-update')}>
-                  Manage estates <FaArrowRight />
+                  Manage mapping <FaArrowRight />
                 </button>
               }
             >
@@ -404,11 +412,18 @@ const GeoSpatialDashboard = () => {
                   detail={`${formatCount(stats.estates?.notFinalized)} still need finalization`}
                 />
                 <ProgressMeter
-                  label="Latitude / longitude set"
+                  label="Estate latitude / longitude set"
                   value={stats.estates?.withCoordinates}
                   total={stats.estates?.total}
                   tone="blue"
-                  detail={`${formatCount(stats.estates?.missingCoordinates)} estates need coordinates for forecast`}
+                  detail={`${formatCount(stats.estates?.missingCoordinates)} estates need coordinates for plan forecast`}
+                />
+                <ProgressMeter
+                  label="Division latitude / longitude set"
+                  value={stats.divisions?.withCoordinates}
+                  total={stats.divisions?.total}
+                  tone="amber"
+                  detail={`${formatCount(stats.divisions?.missingCoordinates)} divisions need coordinates for weather prediction`}
                 />
               </div>
               <div className="geo-dash-mini-kpi-row">
@@ -422,8 +437,15 @@ const GeoSpatialDashboard = () => {
                 <div className="geo-dash-mini-kpi">
                   <FaMapMarkerAlt />
                   <div>
-                    <span>Coords ready</span>
+                    <span>Estate coords</span>
                     <strong>{formatCount(stats.estates?.withCoordinates)}</strong>
+                  </div>
+                </div>
+                <div className="geo-dash-mini-kpi">
+                  <FaCloudSunRain />
+                  <div>
+                    <span>Division coords</span>
+                    <strong>{formatCount(stats.divisions?.withCoordinates)}</strong>
                   </div>
                 </div>
               </div>

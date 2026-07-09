@@ -351,7 +351,8 @@
   background: #fecaca;
 }
 
-.item-estate-missing-coords-map-update {
+.item-estate-missing-coords-map-update,
+.item-division-missing-coords-map-update {
   box-shadow: inset 3px 0 0 var(--mu-warning);
 }
 

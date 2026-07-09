@@ -2,6 +2,26 @@
 const MAX_FORECAST_WINDOW_DAYS = 15;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+/** Plantation working hours: hourly rows and derived min/avg/max use this window only. */
+export const HOURLY_DAY_START_HOUR = 6;
+export const HOURLY_DAY_END_HOUR = 18;
+
+function getHourFromIsoTimestamp(timestamp) {
+  if (!timestamp) return null;
+  const str = String(timestamp);
+  const match = str.match(/T(\d{2}):/);
+  if (match) return Number(match[1]);
+  const date = new Date(str);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.getHours();
+}
+
+export function isWithinDaylightWorkingHours(timestamp) {
+  const hour = getHourFromIsoTimestamp(timestamp);
+  if (hour == null) return false;
+  return hour >= HOURLY_DAY_START_HOUR && hour <= HOURLY_DAY_END_HOUR;
+}
+
 function toLocalDateOnly(date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
@@ -29,6 +49,13 @@ export function clampDateWithinForecastWindow(selectedDateYmd) {
   return selected.toLocaleDateString('en-CA');
 }
 
+export function clampDateRangeWithinForecastWindow(startYmd, endYmd) {
+  const startDate = clampDateWithinForecastWindow(startYmd);
+  const endDate = clampDateWithinForecastWindow(endYmd);
+  if (startDate > endDate) return { startDate: endDate, endDate: startDate };
+  return { startDate, endDate };
+}
+
 function calculatePastAndForecastDays(selectedDateYmd) {
   const today = toLocalDateOnly(new Date());
   const selected = toLocalDateOnly(parseYmdLocal(selectedDateYmd) || today);
@@ -39,13 +66,52 @@ function calculatePastAndForecastDays(selectedDateYmd) {
   return { past_days: Math.min(MAX_FORECAST_WINDOW_DAYS, Math.abs(dayDiff)), forecast_days: 1 };
 }
 
+export function calculatePastAndForecastDaysForRange(startYmd, endYmd) {
+  const today = toLocalDateOnly(new Date());
+  const start = toLocalDateOnly(parseYmdLocal(startYmd) || today);
+  const end = toLocalDateOnly(parseYmdLocal(endYmd) || today);
+  const startDiff = Math.round((start.getTime() - today.getTime()) / DAY_MS);
+  const endDiff = Math.round((end.getTime() - today.getTime()) / DAY_MS);
+  const past_days = startDiff < 0 ? Math.min(MAX_FORECAST_WINDOW_DAYS, Math.abs(startDiff)) : 0;
+  const forecast_days =
+    endDiff >= 0
+      ? Math.min(MAX_FORECAST_WINDOW_DAYS, endDiff + 1)
+      : 1;
+  return { past_days, forecast_days };
+}
+
+function buildWeatherApiParams(latitude, longitude, past_days, forecast_days) {
+  return new URLSearchParams({
+    latitude: String(latitude),
+    longitude: String(longitude),
+    daily:
+      'temperature_2m_max,weather_code,rain_sum,wind_speed_10m_max,wind_gusts_10m_max,wind_direction_10m_dominant,daylight_duration,temperature_2m_min,precipitation_hours,precipitation_probability_max,precipitation_sum',
+    hourly:
+      'temperature_2m,relative_humidity_2m,rain,precipitation,precipitation_probability,wind_speed_10m,wind_direction_10m,temperature_80m',
+    current: 'precipitation,rain,wind_speed_10m,wind_direction_10m,temperature_2m,is_day',
+    timezone: 'auto',
+    past_days: String(past_days),
+    forecast_days: String(Math.max(1, forecast_days)),
+  });
+}
+
+async function fetchOpenMeteoForecast(latitude, longitude, past_days, forecast_days) {
+  const params = buildWeatherApiParams(latitude, longitude, past_days, forecast_days);
+  const response = await fetch(`https://api.open-meteo.com/v1/forecast?${params.toString()}`);
+  if (!response.ok) throw new Error(`Weather API error: ${response.status}`);
+  return response.json();
+}
+
 export function summarizeHourlyWeatherForDate(weatherData, selectedDateYmd) {
   const hourly = weatherData?.hourly;
   if (!hourly?.time || !Array.isArray(hourly.time)) return null;
 
   const indices = [];
   for (let i = 0; i < hourly.time.length; i += 1) {
-    if (String(hourly.time[i]).startsWith(selectedDateYmd)) indices.push(i);
+    const timestamp = String(hourly.time[i]);
+    if (!timestamp.startsWith(selectedDateYmd)) continue;
+    if (!isWithinDaylightWorkingHours(timestamp)) continue;
+    indices.push(i);
   }
   if (!indices.length) return null;
 
@@ -79,14 +145,10 @@ export function summarizeHourlyWeatherForDate(weatherData, selectedDateYmd) {
   };
 }
 
-function extractDailyWeatherForDate(raw, selectedDateYmd) {
-  const daily = raw?.daily;
-  if (!daily?.time || !Array.isArray(daily.time)) return null;
-  const index = daily.time.findIndex((d) => d === selectedDateYmd);
-  if (index < 0) return null;
+function extractDailyRowAtIndex(daily, index) {
   const valueAt = (arr) => (Array.isArray(arr) && arr[index] != null ? arr[index] : null);
   return {
-    date: selectedDateYmd,
+    date: daily.time[index],
     weather_code: valueAt(daily.weather_code),
     temperature_2m_min: valueAt(daily.temperature_2m_min),
     temperature_2m_max: valueAt(daily.temperature_2m_max),
@@ -100,13 +162,35 @@ function extractDailyWeatherForDate(raw, selectedDateYmd) {
   };
 }
 
-function extractHourlyWeatherForDate(raw, selectedDateYmd) {
+function extractDailyWeatherForDate(raw, selectedDateYmd) {
+  const daily = raw?.daily;
+  if (!daily?.time || !Array.isArray(daily.time)) return null;
+  const index = daily.time.findIndex((d) => d === selectedDateYmd);
+  if (index < 0) return null;
+  return extractDailyRowAtIndex(daily, index);
+}
+
+export function extractDailyWeatherForRange(raw, startYmd, endYmd) {
+  const daily = raw?.daily;
+  if (!daily?.time || !Array.isArray(daily.time)) return [];
+  const rows = [];
+  for (let i = 0; i < daily.time.length; i += 1) {
+    const date = daily.time[i];
+    if (date >= startYmd && date <= endYmd) {
+      rows.push(extractDailyRowAtIndex(daily, i));
+    }
+  }
+  return rows;
+}
+
+export function extractHourlyWeatherForDate(raw, selectedDateYmd) {
   const hourly = raw?.hourly;
   if (!hourly?.time || !Array.isArray(hourly.time)) return [];
   const rows = [];
   for (let i = 0; i < hourly.time.length; i += 1) {
     const timestamp = String(hourly.time[i]);
     if (!timestamp.startsWith(selectedDateYmd)) continue;
+    if (!isWithinDaylightWorkingHours(timestamp)) continue;
     rows.push({
       time: timestamp,
       temperature_2m: hourly.temperature_2m?.[i] ?? null,
@@ -126,21 +210,7 @@ export const getWeatherByCoordinates = async (latitude, longitude, selectedDateY
   try {
     const safeDate = clampDateWithinForecastWindow(selectedDateYmd);
     const { past_days, forecast_days } = calculatePastAndForecastDays(safeDate);
-    const params = new URLSearchParams({
-      latitude: String(latitude),
-      longitude: String(longitude),
-      daily:
-        'temperature_2m_max,weather_code,rain_sum,wind_speed_10m_max,wind_gusts_10m_max,wind_direction_10m_dominant,daylight_duration,temperature_2m_min,precipitation_hours,precipitation_probability_max,precipitation_sum',
-      hourly:
-        'temperature_2m,relative_humidity_2m,rain,precipitation,precipitation_probability,wind_speed_10m,wind_direction_10m,temperature_80m',
-      current: 'precipitation,rain,wind_speed_10m,wind_direction_10m,temperature_2m,is_day',
-      timezone: 'auto',
-      past_days: String(past_days),
-      forecast_days: String(Math.max(1, forecast_days)),
-    });
-    const response = await fetch(`https://api.open-meteo.com/v1/forecast?${params.toString()}`);
-    if (!response.ok) throw new Error(`Weather API error: ${response.status}`);
-    const raw = await response.json();
+    const raw = await fetchOpenMeteoForecast(latitude, longitude, past_days, forecast_days);
     const daily = extractDailyWeatherForDate(raw, safeDate);
     const hourlyRows = extractHourlyWeatherForDate(raw, safeDate);
     const hourlySummary = summarizeHourlyWeatherForDate(raw, safeDate);
@@ -159,6 +229,27 @@ export const getWeatherByCoordinates = async (latitude, longitude, selectedDateY
     };
   } catch (error) {
     console.error('Error fetching weather by coordinates:', error);
+    throw error;
+  }
+};
+
+export const getWeatherByCoordinatesForRange = async (latitude, longitude, startYmd, endYmd) => {
+  try {
+    const { startDate, endDate } = clampDateRangeWithinForecastWindow(startYmd, endYmd);
+    const { past_days, forecast_days } = calculatePastAndForecastDaysForRange(startDate, endDate);
+    const raw = await fetchOpenMeteoForecast(latitude, longitude, past_days, forecast_days);
+    const daily = extractDailyWeatherForRange(raw, startDate, endDate);
+    const today = getTodayYmd();
+    const includesToday = startDate <= today && endDate >= today;
+    return {
+      raw,
+      startDate,
+      endDate,
+      daily,
+      current: includesToday ? raw?.current || null : null,
+    };
+  } catch (error) {
+    console.error('Error fetching weather by coordinates for range:', error);
     throw error;
   }
 };

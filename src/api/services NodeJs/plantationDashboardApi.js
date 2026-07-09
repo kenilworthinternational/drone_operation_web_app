@@ -93,6 +93,7 @@ export const plantationDashboardApi = baseApi.injectEndpoints({
         return result;
       },
       providesTags: ['PlantationCharts'],
+      keepUnusedDataFor: 300,
     }),
 
     // Get Tea Revenue vs Sprayed chart data
@@ -110,6 +111,7 @@ export const plantationDashboardApi = baseApi.injectEndpoints({
         return result;
       },
       providesTags: ['PlantationCharts'],
+      keepUnusedDataFor: 300,
     }),
 
     // Get completed mission reports
@@ -194,6 +196,7 @@ export const plantationDashboardApi = baseApi.injectEndpoints({
         return result;
       },
       providesTags: ['PlantationCharts'],
+      keepUnusedDataFor: 300,
     }),
 
     // Get dashboard summary (6 metric cards for main page)
@@ -226,6 +229,7 @@ export const plantationDashboardApi = baseApi.injectEndpoints({
         return result;
       },
       providesTags: ['PlantationDashboardSummary'],
+      keepUnusedDataFor: 120,
     }),
 
     // Global chart data (no user hierarchy filter - for corporate DataViewer)

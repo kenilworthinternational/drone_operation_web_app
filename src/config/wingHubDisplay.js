@@ -49,6 +49,7 @@ export const CALENDAR_ALLOWED_WING_TITLES = [
 export const CALENDAR_PATH = '/home/opsroomPlanCalendar';
 export const GEO_SPATIAL_WING_TITLE = 'Geo Spatial Management';
 export const GEO_SPATIAL_DASHBOARD_PATH = '/home/geo-spatial/dashboard';
+export const GEO_SPATIAL_WEATHER_PREDICTION_PATH = '/home/geo-spatial/weather-prediction';
 
 export function isCalendarAllowedWing(wingTitle) {
   const normalized = normalizeWingTitle(wingTitle);

@@ -97,6 +97,7 @@ import ChartBreakdownPage from './sections/plantation/plantationDashboard/pages/
 import GlobalChartBreakdownPage from './sections/corporate/charts/GlobalChartBreakdownPage';
 import MappingUpdatePage from './sections/geo-spatial/mapping/MappingUpdatePage';
 import GeoSpatialDashboard from './sections/geo-spatial/dashboard/GeoSpatialDashboard';
+import WeatherPredictionPage from './sections/geo-spatial/weather/WeatherPredictionPage';
 
 import { useAppSelector } from './store/hooks';
 import SessionWatchdog from './components/SessionWatchdog';
@@ -307,6 +308,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <GeoSpatialDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="geo-spatial/weather-prediction"
+            element={
+              <ProtectedRoute>
+                <WeatherPredictionPage />
               </ProtectedRoute>
             }
           />
