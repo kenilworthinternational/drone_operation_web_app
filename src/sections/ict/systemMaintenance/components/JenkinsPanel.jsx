@@ -13,7 +13,7 @@ const JenkinsPanel = ({ jenkins, errors }) => {
   const err = jenkins?.error || errors?.find((e) => e.section === 'jenkins')?.message;
 
   return (
-    <div className="sysmaint-panel">
+    <div className="sysmaint-panel ictg-jenkins-panel">
       <h3 className="sysmaint-panel-title">Jenkins</h3>
       {jenkins?.url && (
         <p className="sysmaint-panel-subtitle">
@@ -31,14 +31,14 @@ const JenkinsPanel = ({ jenkins, errors }) => {
       {!notConfigured && !err && (jenkins?.jobs || []).length === 0 && (
         <p className="sysmaint-hint">No Jenkins jobs configured.</p>
       )}
-      <div className="sysmaint-jenkins-list">
+      <div className="sysmaint-jenkins-list ictg-jenkins-list">
         {(jenkins?.jobs || []).map((job) => (
-          <div className="sysmaint-jenkins-item" key={job.name}>
+          <div className="sysmaint-jenkins-item ictg-jenkins-item" key={job.name}>
             <div>
               <strong>{job.name}</strong>
               {job.number != null && <span className="sysmaint-hint">#{job.number}</span>}
             </div>
-            <span className={`sysmaint-badge ${badgeForStatus(job.status)}`}>{job.status}</span>
+            <span className={`sysmaint-badge ictg-chip ${badgeForStatus(job.status)}`}>{job.status}</span>
           </div>
         ))}
       </div>

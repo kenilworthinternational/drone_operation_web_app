@@ -76,6 +76,7 @@ function isDevOrQaRole(role) {
 function ExtraWorkQueue() {
   const routerLocation = useLocation();
   const navigate = useNavigate();
+  const devBgUrl = `${process.env.PUBLIC_URL || ''}/assets/images/bg.jpg`;
   const [projectId, setProjectId] = useState('');
   const [status, setStatus] = useState('');
   const [dueMonth, setDueMonth] = useState(getCurrentMonthValue());
@@ -199,7 +200,10 @@ function ExtraWorkQueue() {
 
   if (!isDevOrQaUser) {
     return (
-      <div className="ict-dev-page ict-dev-stack">
+      <div
+        className="ict-dev-page ict-dev-stack"
+        style={{ '--ict-dev-bg-url': `url("${devBgUrl}")` }}
+      >
         <div className="ict-dev-card">
           <h3 className="ict-dev-section-title">Access Restricted</h3>
           <p className="ict-dev-meta">This page is available only for developer and QA users.</p>
@@ -209,7 +213,10 @@ function ExtraWorkQueue() {
   }
 
   return (
-    <div className="ict-dev-page ict-dev-stack">
+    <div
+      className="ict-dev-page ict-dev-stack"
+      style={{ '--ict-dev-bg-url': `url("${devBgUrl}")` }}
+    >
       <div className="ict-dev-page-header ict-dev-page-header-balanced">
         <div className="ict-dev-page-actions">
           <button className="ict-dev-btn-secondary" type="button" onClick={() => navigate({ pathname: '/home/ict/development/dev-center', search: routerLocation.search })}>

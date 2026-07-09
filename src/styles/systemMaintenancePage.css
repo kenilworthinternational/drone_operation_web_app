@@ -3,6 +3,36 @@
   max-width: 1400px;
   margin: 0 auto;
   color: #202124;
+  background: #f5f7fb;
+}
+
+.page-sysmaint--glass {
+  position: relative;
+  min-height: 100vh;
+  max-width: none;
+  margin: 0;
+  padding: 20px 24px 28px;
+  overflow: hidden;
+}
+
+.sysmaint-bg-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background-image:
+    radial-gradient(circle at 15% 20%, rgba(28, 210, 220, 0.22), transparent 34%),
+    radial-gradient(circle at 85% 18%, rgba(141, 214, 255, 0.16), transparent 38%),
+    linear-gradient(145deg, rgba(7, 21, 29, 0.84), rgba(11, 33, 44, 0.82)),
+    var(--sysmaint-bg-url);
+  background-size: cover;
+  background-position: center;
+}
+
+.sysmaint-shell {
+  position: relative;
+  z-index: 1;
+  max-width: 1500px;
+  margin: 0 auto;
 }
 
 .sysmaint-header {
@@ -12,6 +42,122 @@
   align-items: flex-start;
   gap: 16px;
   margin-bottom: 24px;
+}
+
+.sysmaint-hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 18px;
+  padding: 18px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(21, 43, 57, 0.52), rgba(28, 54, 70, 0.36));
+  border: 1px solid rgba(186, 230, 244, 0.28);
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  overflow: hidden;
+}
+
+.sysmaint-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), transparent 42%);
+}
+
+.sysmaint-hero-main {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sysmaint-hero-main .sysmaint-title {
+  color: #ebfbff;
+  margin-bottom: 2px;
+  letter-spacing: 0.01em;
+}
+
+.sysmaint-hero-main .sysmaint-subtitle {
+  color: #cae8ef;
+}
+
+.sysmaint-hero-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.sysmaint-hero .sysmaint-updated {
+  color: #c8e5ee;
+}
+
+.sysmaint-hero-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sysmaint-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.77rem;
+  font-weight: 700;
+  color: #e9fbff;
+  border: 1px solid rgba(193, 238, 248, 0.32);
+  background: rgba(239, 255, 255, 0.14);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24);
+}
+
+.sysmaint-pill--ok {
+  background: rgba(42, 156, 85, 0.2);
+  border-color: rgba(103, 221, 154, 0.4);
+}
+
+.sysmaint-pill--warn {
+  background: rgba(179, 127, 35, 0.22);
+  border-color: rgba(240, 186, 94, 0.46);
+}
+
+.sysmaint-pill--bad {
+  background: rgba(166, 56, 56, 0.24);
+  border-color: rgba(247, 124, 124, 0.46);
+}
+
+.sysmaint-pill--muted {
+  background: rgba(203, 228, 236, 0.16);
+  border-color: rgba(205, 237, 245, 0.36);
+}
+
+.sysmaint-grid-main {
+  display: grid;
+  grid-template-columns: minmax(320px, 1fr) minmax(520px, 2fr);
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.sysmaint-panel-wrap {
+  background: rgba(19, 38, 51, 0.34);
+  border: 1px solid rgba(188, 230, 242, 0.2);
+  border-radius: 16px;
+  padding: 14px 16px;
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.24);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.sysmaint-latest-action {
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  color: #d7f6ff;
+  background: rgba(23, 52, 67, 0.4);
+  border: 1px solid rgba(174, 230, 242, 0.26);
 }
 
 .sysmaint-title {
@@ -98,6 +244,7 @@
   border-radius: 8px;
   margin-bottom: 20px;
   font-size: 0.875rem;
+  border: 1px solid #e2e8f0;
 }
 
 .sysmaint-warnings {
@@ -127,16 +274,17 @@
 
 .sysmaint-pm2-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 16px;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  max-width: 420px;
 }
 
 .sysmaint-pm2-card {
   background: #fff;
-  border: 1px solid #dadce0;
+  border: 1px solid #e2e8f0;
   border-radius: 10px;
   padding: 16px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
 }
 
 .sysmaint-pm2-card--current {
@@ -190,6 +338,19 @@
 }
 
 @media (max-width: 960px) {
+  .sysmaint-grid-main {
+    grid-template-columns: 1fr;
+  }
+
+  .sysmaint-hero {
+    flex-direction: column;
+  }
+
+  .sysmaint-hero-side {
+    width: 100%;
+    align-items: flex-start;
+  }
+
   .sysmaint-split {
     grid-template-columns: 1fr;
   }
@@ -197,10 +358,80 @@
 
 .sysmaint-panel {
   background: #fff;
-  border: 1px solid #dadce0;
+  border: 1px solid #e2e8f0;
   border-radius: 10px;
   padding: 20px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
+}
+
+.sysmaint-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  align-items: stretch;
+}
+
+.sysmaint-summary-card {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 14px;
+  box-shadow: 0 12px 22px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.sysmaint-summary-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 28px rgba(0, 0, 0, 0.26);
+}
+
+.sysmaint-summary-card--ok {
+  border-left: 4px solid #16a34a;
+}
+
+.sysmaint-summary-card--warn {
+  border-left: 4px solid #d97706;
+}
+
+.sysmaint-summary-card--bad {
+  border-left: 4px solid #dc2626;
+}
+
+.sysmaint-summary-card--muted {
+  border-left: 4px solid #64748b;
+}
+
+.sysmaint-summary-icon {
+  font-size: 1rem;
+  color: #e5fbff;
+  margin-top: 1px;
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(239, 255, 255, 0.16);
+  border: 1px solid rgba(186, 230, 244, 0.28);
+}
+
+.sysmaint-summary-title {
+  margin: 0;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #c7e6ee;
+  font-weight: 700;
+}
+
+.sysmaint-summary-value {
+  margin: 4px 0 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #f0fcff;
 }
 
 .sysmaint-panel-title {
@@ -367,7 +598,7 @@
 .sysmaint-table-wrap {
   overflow-x: auto;
   border: 1px solid #dadce0;
-  border-radius: 8px;
+  border-radius: 12px;
 }
 
 .sysmaint-table {
@@ -541,4 +772,300 @@
 .sysmaint-log-pre--compact {
   max-height: 160px;
   font-size: 0.7rem;
+}
+
+.page-sysmaint--glass .sysmaint-section-title,
+.page-sysmaint--glass .sysmaint-panel-title {
+  color: #e8fbff;
+}
+
+.page-sysmaint--glass .sysmaint-summary-card,
+.page-sysmaint--glass .sysmaint-panel,
+.page-sysmaint--glass .sysmaint-pm2-card,
+.page-sysmaint--glass .sysmaint-api-self,
+.page-sysmaint--glass .sysmaint-table-wrap,
+.page-sysmaint--glass .sysmaint-toast,
+.page-sysmaint--glass .sysmaint-inline-confirm,
+.page-sysmaint--glass .sysmaint-modal {
+  background: linear-gradient(135deg, rgba(238, 253, 255, 0.18), rgba(227, 247, 252, 0.1));
+  border: 1px solid rgba(175, 228, 240, 0.32);
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.24);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+/* Flatten nested "box inside box" visuals for cleaner glass hierarchy */
+.page-sysmaint--glass .sysmaint-panel-wrap > .sysmaint-split > .sysmaint-panel {
+  background: rgba(235, 250, 255, 0.08);
+  border: 1px solid rgba(170, 220, 235, 0.2);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+.page-sysmaint--glass .sysmaint-panel-wrap .sysmaint-service-item,
+.page-sysmaint--glass .sysmaint-panel-wrap .sysmaint-task-item,
+.page-sysmaint--glass .sysmaint-panel-wrap .sysmaint-jenkins-item {
+  background: rgba(236, 252, 255, 0.09);
+  border-color: rgba(171, 225, 238, 0.22);
+}
+
+.page-sysmaint--glass .sysmaint-pm2-card {
+  background: rgba(235, 251, 255, 0.12);
+}
+
+.page-sysmaint--glass .sysmaint-pm2-card-header h4,
+.page-sysmaint--glass .sysmaint-pm2-card .sysmaint-metric-value,
+.page-sysmaint--glass .sysmaint-pm2-card .sysmaint-hint,
+.page-sysmaint--glass .sysmaint-pm2-card .sysmaint-metric-label {
+  color: #f2fcff !important;
+}
+
+.page-sysmaint--glass .sysmaint-pm2-card .sysmaint-badge--ok {
+  background: rgba(82, 198, 125, 0.28);
+  color: #e9fff0;
+  border: 1px solid rgba(141, 241, 175, 0.55);
+}
+
+.page-sysmaint--glass .sysmaint-jenkins-item {
+  background: rgba(17, 43, 56, 0.34) !important;
+  border: 1px solid rgba(171, 225, 238, 0.32) !important;
+}
+
+.page-sysmaint--glass .sysmaint-jenkins-item strong {
+  color: #f3fcff;
+}
+
+.page-sysmaint--glass .sysmaint-panel-subtitle a {
+  color: #bff4ff !important;
+  text-decoration: underline;
+}
+
+.page-sysmaint--glass .sysmaint-summary-card {
+  background: rgba(236, 252, 255, 0.16);
+}
+
+.page-sysmaint--glass .sysmaint-summary-grid {
+  gap: 16px;
+  margin: 6px 0 4px;
+}
+
+@media (max-width: 1280px) {
+  .sysmaint-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .sysmaint-summary-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.page-sysmaint--glass .sysmaint-summary-card .sysmaint-hint {
+  margin-top: 2px;
+}
+
+.page-sysmaint--glass .sysmaint-summary-card {
+  background: rgba(26, 52, 67, 0.42) !important;
+  border: 1px solid rgba(178, 229, 241, 0.32) !important;
+}
+
+.page-sysmaint--glass .sysmaint-summary-title,
+.page-sysmaint--glass .sysmaint-hint,
+.page-sysmaint--glass .sysmaint-metric-label,
+.page-sysmaint--glass .sysmaint-panel-subtitle,
+.page-sysmaint--glass .sysmaint-updated {
+  color: rgba(241, 251, 255, 0.9);
+}
+
+.page-sysmaint--glass .sysmaint-summary-value,
+.page-sysmaint--glass .sysmaint-metric-value,
+.page-sysmaint--glass .sysmaint-title {
+  color: #ffffff;
+}
+
+.page-sysmaint--glass .sysmaint-subtitle,
+.page-sysmaint--glass .sysmaint-panel,
+.page-sysmaint--glass .sysmaint-panel *:not(button):not(svg),
+.page-sysmaint--glass .sysmaint-table td,
+.page-sysmaint--glass .sysmaint-table th,
+.page-sysmaint--glass .sysmaint-latest-action {
+  color: rgba(245, 252, 255, 0.96);
+}
+
+.page-sysmaint--glass .sysmaint-section-title,
+.page-sysmaint--glass .sysmaint-panel-title {
+  color: #ffffff;
+}
+
+.page-sysmaint--glass h1,
+.page-sysmaint--glass h2,
+.page-sysmaint--glass h3,
+.page-sysmaint--glass h4,
+.page-sysmaint--glass .sysmaint-title,
+.page-sysmaint--glass .sysmaint-section-title,
+.page-sysmaint--glass .sysmaint-panel-title,
+.page-sysmaint--glass .sysmaint-summary-title {
+  color: #ffffff !important;
+}
+
+.page-sysmaint--glass .sysmaint-warnings {
+  background: rgba(182, 129, 47, 0.22);
+  border: 1px solid rgba(242, 192, 112, 0.46);
+  color: #fceccc;
+}
+
+.page-sysmaint--glass .sysmaint-error {
+  color: #ffd1d1;
+}
+
+.page-sysmaint--glass .sysmaint-btn-secondary {
+  background: rgba(233, 252, 255, 0.2);
+  color: #d7f8ff;
+  border: 1px solid rgba(179, 236, 247, 0.32);
+}
+
+.page-sysmaint--glass .sysmaint-btn-secondary:hover:not(:disabled) {
+  background: rgba(233, 252, 255, 0.3);
+}
+
+.page-sysmaint--glass .sysmaint-input {
+  background: rgba(244, 254, 255, 0.16);
+  border: 1px solid rgba(174, 225, 238, 0.36);
+  color: #e8fcff;
+}
+
+.page-sysmaint--glass .sysmaint-table th,
+.page-sysmaint--glass .sysmaint-table td {
+  color: #dcf8ff;
+  border-bottom-color: rgba(166, 220, 233, 0.2);
+}
+
+.page-sysmaint--glass .sysmaint-table th {
+  background: rgba(229, 252, 255, 0.18);
+}
+
+.page-sysmaint--glass .sysmaint-log-pre {
+  background: rgba(7, 25, 34, 0.58);
+  border: 1px solid rgba(137, 208, 223, 0.28);
+}
+
+.page-sysmaint--glass .sysmaint-progress {
+  background: rgba(205, 235, 243, 0.24);
+}
+
+.page-sysmaint--glass .sysmaint-progress-fill {
+  background: linear-gradient(90deg, #2ab9d1, #66dff1);
+}
+
+.page-sysmaint--glass .sysmaint-service-item,
+.page-sysmaint--glass .sysmaint-task-item,
+.page-sysmaint--glass .sysmaint-jenkins-item {
+  background: rgba(235, 253, 255, 0.12);
+  border: 1px solid rgba(171, 225, 238, 0.28);
+}
+
+/* Remove light solid badge backgrounds in glass mode */
+.page-sysmaint--glass .sysmaint-badge {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border: 1px solid rgba(197, 236, 245, 0.28);
+  color: #f3fcff !important;
+}
+
+.page-sysmaint--glass .sysmaint-badge--ok {
+  background: rgba(64, 158, 104, 0.26) !important;
+  border-color: rgba(120, 219, 165, 0.45) !important;
+  color: #ecfff4 !important;
+}
+
+.page-sysmaint--glass .sysmaint-badge--warn {
+  background: rgba(176, 126, 49, 0.28) !important;
+  border-color: rgba(243, 193, 113, 0.44) !important;
+  color: #fff5df !important;
+}
+
+.page-sysmaint--glass .sysmaint-badge--bad {
+  background: rgba(165, 72, 72, 0.3) !important;
+  border-color: rgba(245, 131, 131, 0.44) !important;
+  color: #ffe8e8 !important;
+}
+
+.page-sysmaint--glass .sysmaint-badge--muted {
+  background: rgba(175, 210, 221, 0.2) !important;
+  border-color: rgba(197, 236, 245, 0.36) !important;
+  color: #e8f8fc !important;
+}
+
+/* Unique classname scoped styles to avoid collisions */
+.page-sysmaint--glass .ictg-chip {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border: 1px solid rgba(197, 236, 245, 0.28) !important;
+  color: #f3fcff !important;
+}
+
+.page-sysmaint--glass .ictg-chip.sysmaint-badge--ok {
+  background: rgba(64, 158, 104, 0.26) !important;
+  border-color: rgba(120, 219, 165, 0.45) !important;
+  color: #ecfff4 !important;
+}
+
+.page-sysmaint--glass .ictg-chip.sysmaint-badge--warn {
+  background: rgba(176, 126, 49, 0.28) !important;
+  border-color: rgba(243, 193, 113, 0.44) !important;
+  color: #fff5df !important;
+}
+
+.page-sysmaint--glass .ictg-chip.sysmaint-badge--bad {
+  background: rgba(165, 72, 72, 0.3) !important;
+  border-color: rgba(245, 131, 131, 0.44) !important;
+  color: #ffe8e8 !important;
+}
+
+.page-sysmaint--glass .ictg-chip.sysmaint-badge--muted {
+  background: rgba(175, 210, 221, 0.2) !important;
+  border-color: rgba(197, 236, 245, 0.36) !important;
+  color: #e8f8fc !important;
+}
+
+.page-sysmaint--glass .ictg-pm2-card {
+  background: rgba(235, 251, 255, 0.12) !important;
+}
+
+.page-sysmaint--glass .ictg-pm2-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 10px;
+}
+
+.page-sysmaint--glass .ictg-pm2-header h4,
+.page-sysmaint--glass .ictg-pm2-card .sysmaint-metric-value,
+.page-sysmaint--glass .ictg-pm2-card .sysmaint-hint,
+.page-sysmaint--glass .ictg-pm2-card .sysmaint-metric-label {
+  color: #f2fcff !important;
+}
+
+.page-sysmaint--glass .ictg-jenkins-item {
+  background: rgba(17, 43, 56, 0.34) !important;
+  border: 1px solid rgba(171, 225, 238, 0.32) !important;
+}
+
+.page-sysmaint--glass .ictg-jenkins-item strong {
+  color: #f3fcff !important;
+}
+
+.page-sysmaint--glass .ictg-jenkins-panel {
+  background: rgba(18, 44, 58, 0.48) !important;
+  border: 1px solid rgba(171, 225, 238, 0.34) !important;
+}
+
+.page-sysmaint--glass .ictg-jenkins-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.page-sysmaint--glass .ictg-jenkins-item {
+  border-radius: 8px;
+  padding: 10px 12px;
 }

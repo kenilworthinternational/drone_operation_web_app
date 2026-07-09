@@ -3,6 +3,7 @@ import { FaPlus } from 'react-icons/fa';
 import { Bars } from 'react-loader-spinner';
 import UsersDirectory from './Users';
 import '../../../styles/userManagement.css';
+import '../../../styles/ictUsersManagement.css';
 
 const LazyUsersRegisterForm = lazy(() => import('./Users'));
 
@@ -40,13 +41,13 @@ export default function IctUserManagement() {
 
   return (
     <>
-      <div className={`user-mgmt-shell${mgmtProfileActive ? ' user-mgmt-shell--profile' : ''}`}>
+      <div className={`user-mgmt-shell ictum-shell${mgmtProfileActive ? ' user-mgmt-shell--profile' : ''}`}>
         <header className="user-mgmt-header user-mgmt-header-row">
-          <div className="user-mgmt-header-start">
+          <div className="user-mgmt-header-start ictumx-header-start">
             {mgmtProfileActive ? (
               <button
                 type="button"
-                className="user-mgmt-back-btn user-mgmt-back-btn--muted"
+                className="user-mgmt-back-btn user-mgmt-back-btn--muted ictumx-back-btn"
                 onClick={() => profileBackRef.current?.()}
               >
                 ← Users
@@ -59,7 +60,7 @@ export default function IctUserManagement() {
               Click a user row to open their profile. Use Add to register a new account.
             </p>
           </div>
-          <div className="user-mgmt-header-end">
+          <div className="user-mgmt-header-end ictumx-header-end">
             <button
               type="button"
               className="user-mgmt-add-btn"
@@ -94,34 +95,34 @@ export default function IctUserManagement() {
 
       {showRegisterModal ? (
         <div
-          className="user-register-modal-overlay"
+          className="user-register-modal-overlay ictumx-register-modal-overlay"
           role="presentation"
           onClick={(e) => {
             if (e.target === e.currentTarget) closeRegisterModal();
           }}
         >
           <div
-            className="user-register-modal-card"
+            className="user-register-modal-card ictumx-register-modal-card"
             role="dialog"
             aria-modal="true"
             aria-labelledby="user-register-modal-title"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="user-register-modal-header">
+            <div className="user-register-modal-header ictumx-register-modal-header">
               <h3 id="user-register-modal-title">Register new user</h3>
               <button
                 type="button"
-                className="user-register-modal-close"
+                className="user-register-modal-close ictumx-register-modal-close"
                 onClick={closeRegisterModal}
                 aria-label="Close"
               >
                 ×
               </button>
             </div>
-            <div className="user-register-modal-body">
+            <div className="user-register-modal-body ictumx-register-modal-body">
               {registerFormLoading ? (
-                <div className="user-register-modal-loading" aria-live="polite">
-                  <Bars color="#004B71" height={48} width={48} />
+                <div className="user-register-modal-loading ictumx-register-modal-loading" aria-live="polite">
+                  <Bars color="#9dd4ff" height={48} width={48} />
                   <p>Loading registration form…</p>
                 </div>
               ) : null}

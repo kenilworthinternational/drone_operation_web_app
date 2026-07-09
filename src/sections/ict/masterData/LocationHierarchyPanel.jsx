@@ -166,7 +166,7 @@ export default function LocationHierarchyPanel({ onMessage }) {
   };
 
   return (
-    <div className="lhp-root">
+    <div className="lhp-root ictmdx-lhp-shell">
       <div className="lhp-filters">
         <div className="lhp-field">
           <label>Province</label>

@@ -1,0 +1,571 @@
+.ictlrx-shell {
+  background: transparent !important;
+  color: #f4f9ff !important;
+}
+
+.ictlrx-shell .header-logs-report,
+.ictlrx-shell .breadcrumb-logs-report,
+.ictlrx-shell .stats-bar-logs-report,
+.ictlrx-shell .category-card-logs-report,
+.ictlrx-shell .files-section-logs-report,
+.ictlrx-shell .file-row-logs-report,
+.ictlrx-shell .data-section-logs-report,
+.ictlrx-shell .table-wrapper-logs-report {
+  background:
+    linear-gradient(145deg, rgba(7, 18, 34, 0.66), rgba(10, 24, 45, 0.5)) !important;
+  border: 1px solid rgba(188, 220, 255, 0.24) !important;
+  box-shadow: 0 16px 38px rgba(2, 8, 22, 0.34) !important;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.ictlrx-shell .header-title-logs-report,
+.ictlrx-shell .files-title-logs-report,
+.ictlrx-shell .data-title-logs-report,
+.ictlrx-shell .category-name-logs-report,
+.ictlrx-shell .stat-value-logs-report,
+.ictlrx-shell .empty-title-logs-report {
+  color: #ffffff !important;
+}
+
+.ictlrx-shell .header-subtitle-logs-report,
+.ictlrx-shell .category-meta-logs-report,
+.ictlrx-shell .file-size-logs-report,
+.ictlrx-shell .data-count-logs-report,
+.ictlrx-shell .stat-label-logs-report,
+.ictlrx-shell .empty-text-logs-report,
+.ictlrx-shell .loading-logs-report,
+.ictlrx-shell .breadcrumb-link-logs-report,
+.ictlrx-shell .breadcrumb-active-logs-report {
+  color: rgba(225, 238, 255, 0.9) !important;
+}
+
+.ictlrx-shell .table-logs-report thead th {
+  background: rgba(172, 209, 255, 0.14) !important;
+  color: #f5fbff !important;
+  border-bottom: 1px solid rgba(188, 220, 255, 0.28) !important;
+}
+
+.ictlrx-shell .table-logs-report tbody tr,
+.ictlrx-shell .table-logs-report tbody tr:nth-child(even) {
+  background: rgba(12, 28, 49, 0.34) !important;
+}
+
+.ictlrx-shell .table-logs-report tbody tr:hover,
+.ictlrx-shell .table-logs-report tbody tr:nth-child(even):hover {
+  background: rgba(130, 194, 255, 0.12) !important;
+}
+
+.ictlrx-shell .table-logs-report tbody td,
+.ictlrx-shell .file-date-logs-report {
+  color: #f4faff !important;
+}
+
+.ictlrx-shell .action-badge-logs-report {
+  border: 1px solid rgba(188, 220, 255, 0.26);
+}
+
+.ictlrx-shell .search-input-logs-report {
+  background:
+    linear-gradient(155deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.03)),
+    rgba(8, 20, 38, 0.62) !important;
+  border: 1px solid rgba(181, 214, 255, 0.4) !important;
+  color: #f6faff !important;
+}
+
+.ictlrx-shell .search-input-logs-report::placeholder {
+  color: rgba(226, 238, 255, 0.72) !important;
+}
+
+.ictlrx-shell .btn-refresh-logs-report,
+.ictlrx-shell .btn-back-logs-report,
+.ictlrx-shell .btn-view-logs-report,
+.ictlrx-shell .btn-download-logs-report,
+.ictlrx-shell .btn-download-excel-logs-report {
+  border: 1px solid rgba(188, 220, 255, 0.34) !important;
+  background:
+    linear-gradient(150deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.04)),
+    rgba(10, 24, 43, 0.58) !important;
+  color: #f6faff !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    0 10px 24px rgba(2, 8, 22, 0.28) !important;
+}
+
+.ictlrx-shell .btn-refresh-logs-report:hover,
+.ictlrx-shell .btn-back-logs-report:hover,
+.ictlrx-shell .btn-view-logs-report:hover,
+.ictlrx-shell .btn-download-logs-report:hover,
+.ictlrx-shell .btn-download-excel-logs-report:hover {
+  background:
+    linear-gradient(150deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.06)),
+    rgba(13, 31, 55, 0.68) !important;
+  color: #ffffff !important;
+}
+
+.ictlrx-shell .ictlrx-header-left,
+.ictlrx-shell .header-left-logs-report {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.ictlrx-shell .ictlrx-header-shell,
+.ictlrx-shell .ictlrx-header-shell-user-maintain {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  background:
+    linear-gradient(145deg, rgba(7, 18, 34, 0.72), rgba(10, 24, 45, 0.6)) !important;
+  border: 1px solid rgba(188, 220, 255, 0.24) !important;
+  box-shadow: 0 18px 40px rgba(2, 8, 22, 0.36) !important;
+}
+
+.ictlrx-shell .ictlrx-header-title,
+.ictlrx-shell .ictlrx-header-title-user-maintain {
+  color: #ffffff !important;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.28);
+}
+
+.ictlrx-shell .ictlrx-header-subtitle,
+.ictlrx-shell .ictlrx-header-subtitle-user-maintain {
+  color: rgba(225, 238, 255, 0.9) !important;
+}
+
+.ictlrx-shell .ictlrx-header-text-wrap,
+.ictlrx-shell .ictlrx-header-text-wrap-user-maintain {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.ictlrx-shell .ictlrx-header-icon,
+.ictlrx-shell .ictlrx-header-icon-user-maintain {
+  color: #f4f9ff !important;
+  fill: #f4f9ff !important;
+  opacity: 0.95 !important;
+}
+
+.ictlrx-shell .ictlrx-category-header,
+.ictlrx-shell .ictlrx-category-header-user-maintain {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.ictlrx-shell .ictlrx-files-header,
+.ictlrx-shell .ictlrx-files-header-user-maintain {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.ictmdx-shell {
+  background: transparent !important;
+  color: #f4f9ff !important;
+}
+
+.ictmdx-shell .vehicle-admin-header-master-data,
+.ictmdx-shell .vehicle-admin-card-master-data,
+.ictmdx-shell .masters-picker-master-data,
+.ictmdx-shell .masters-workspace-master-data,
+.ictmdx-shell .master-row-master-data,
+.ictmdx-shell .vehicle-tree-category-master-data,
+.ictmdx-shell .vehicle-tree-model-row-master-data,
+.ictmdx-shell .vehicle-table-wrap-master-data,
+.ictmdx-shell .update-popup-card-master-data {
+  background:
+    linear-gradient(145deg, rgba(7, 18, 34, 0.66), rgba(10, 24, 45, 0.5)) !important;
+  border: 1px solid rgba(188, 220, 255, 0.24) !important;
+  box-shadow: 0 16px 38px rgba(2, 8, 22, 0.34) !important;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.ictmdx-shell h1,
+.ictmdx-shell h2,
+.ictmdx-shell h3,
+.ictmdx-shell h4,
+.ictmdx-shell .master-label-master-data,
+.ictmdx-shell .metric-row-master-data strong {
+  color: #ffffff !important;
+}
+
+.ictmdx-shell p,
+.ictmdx-shell span,
+.ictmdx-shell .vehicle-master-note-master-data,
+.ictmdx-shell .metric-row-master-data {
+  color: rgba(225, 238, 255, 0.9) !important;
+}
+
+.ictmdx-shell .vehicle-admin-tabs-master-data button,
+.ictmdx-shell .masters-picker-item-master-data,
+.ictmdx-shell .master-edit-btn-master-data,
+.ictmdx-shell .action-btn-master-data,
+.ictmdx-shell .btn-search-master-data,
+.ictmdx-shell .btn-submit-master-data,
+.ictmdx-shell .inline-form-master-data button,
+.ictmdx-shell .vehicle-form-grid-master-data button,
+.ictmdx-shell .actions-master-data button {
+  border: 1px solid rgba(188, 220, 255, 0.34) !important;
+  background:
+    linear-gradient(150deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.04)),
+    rgba(10, 24, 43, 0.58) !important;
+  color: #f6faff !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    0 10px 24px rgba(2, 8, 22, 0.28) !important;
+}
+
+.ictmdx-shell .vehicle-admin-tabs-master-data button.active-master-data,
+.ictmdx-shell .masters-picker-item-master-data.active-master-data {
+  background:
+    linear-gradient(160deg, rgba(157, 212, 255, 0.3), rgba(109, 184, 246, 0.16)),
+    rgba(18, 42, 70, 0.72) !important;
+  border-color: rgba(205, 229, 255, 0.46) !important;
+  color: #ffffff !important;
+}
+
+.ictmdx-shell input,
+.ictmdx-shell select,
+.ictmdx-shell textarea,
+.ictmdx-shell .master-edit-input-master-data,
+.ictmdx-shell .vehicle-admin-month-master-data,
+.ictmdx-shell .reasons-filter-master-data {
+  background:
+    linear-gradient(155deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.03)),
+    rgba(8, 20, 38, 0.62) !important;
+  border: 1px solid rgba(181, 214, 255, 0.4) !important;
+  color: #f6faff !important;
+}
+
+.ictmdx-shell input::placeholder,
+.ictmdx-shell textarea::placeholder {
+  color: rgba(226, 238, 255, 0.72) !important;
+}
+
+.ictmdx-shell .vehicle-table-master-data {
+  background: transparent !important;
+}
+
+.ictmdx-shell .vehicle-table-master-data th {
+  background: rgba(172, 209, 255, 0.14) !important;
+  color: #f5fbff !important;
+  border-bottom: 1px solid rgba(188, 220, 255, 0.28) !important;
+}
+
+.ictmdx-shell .vehicle-table-master-data td {
+  background: rgba(12, 28, 49, 0.34) !important;
+  color: #f4faff !important;
+  border-bottom: 1px solid rgba(188, 220, 255, 0.16) !important;
+}
+
+/* Vehicle Master Data — category / make / model cards */
+.ictmdx-shell .ictmdx-vehicle-master-forms {
+  gap: 12px;
+}
+
+.ictmdx-shell .ictmdx-vehicle-master-card,
+.ictmdx-shell .vehicle-master-form-card-master-data {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 108px;
+  padding: 16px 14px !important;
+  border: 1px solid rgba(188, 220, 255, 0.24) !important;
+  border-radius: 12px !important;
+  background:
+    linear-gradient(145deg, rgba(12, 28, 50, 0.58), rgba(8, 20, 38, 0.44)) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 12px 28px rgba(2, 8, 22, 0.26) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.ictmdx-shell .ictmdx-vehicle-master-card-title,
+.ictmdx-shell .vehicle-master-form-card-master-data h4 {
+  margin: 0 !important;
+  width: 100%;
+  text-align: center;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(198, 220, 255, 0.88) !important;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(188, 220, 255, 0.2);
+}
+
+.ictmdx-shell .ictmdx-vehicle-master-card-btn {
+  width: 100%;
+  max-width: 180px;
+  background:
+    linear-gradient(160deg, rgba(157, 212, 255, 0.3), rgba(109, 184, 246, 0.16)),
+    rgba(18, 42, 70, 0.72) !important;
+  border-color: rgba(205, 229, 255, 0.46) !important;
+  color: #ffffff !important;
+}
+
+.ictmdx-shell .ictmdx-vehicle-master-card-btn:hover:not(:disabled) {
+  background:
+    linear-gradient(160deg, rgba(175, 220, 255, 0.38), rgba(125, 196, 252, 0.22)),
+    rgba(22, 48, 78, 0.78) !important;
+}
+
+.ictmdx-shell .vehicle-master-note-master-data {
+  color: rgba(198, 218, 245, 0.82) !important;
+}
+
+.ictmdx-shell .master-label-make-master-data {
+  color: rgba(198, 218, 245, 0.9) !important;
+  font-weight: 500 !important;
+}
+
+.ictmdx-shell .master-label-model-master-data {
+  color: rgba(175, 205, 235, 0.82) !important;
+  font-weight: 500 !important;
+}
+
+.ictmdx-shell .vehicle-tree-make-wrap-master-data {
+  border-left-color: rgba(188, 220, 255, 0.28) !important;
+}
+
+.ictmdx-shell .vehicle-tree-model-row-master-data {
+  border-top-color: rgba(188, 220, 255, 0.16) !important;
+  background:
+    linear-gradient(145deg, rgba(10, 24, 45, 0.42), rgba(8, 20, 38, 0.3)) !important;
+}
+
+.ictmdx-shell .ictmdx-status-chip,
+.ictmdx-shell .status-chip-master-data {
+  display: inline-flex !important;
+  align-items: center !important;
+  border-radius: 999px !important;
+  padding: 4px 10px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+}
+
+.ictmdx-shell .ictmdx-status-chip--active,
+.ictmdx-shell .ictmdx-status-chip--approved,
+.ictmdx-shell .status-chip-master-data.active-master-data,
+.ictmdx-shell .status-chip-master-data.approved-master-data {
+  background: rgba(72, 187, 120, 0.22) !important;
+  border: 1px solid rgba(134, 239, 172, 0.48) !important;
+  color: #d9ffe8 !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+}
+
+.ictmdx-shell .ictmdx-status-chip--inactive,
+.ictmdx-shell .ictmdx-status-chip--declined,
+.ictmdx-shell .status-chip-master-data.inactive-master-data,
+.ictmdx-shell .status-chip-master-data.declined-master-data {
+  background: rgba(220, 90, 90, 0.22) !important;
+  border: 1px solid rgba(252, 153, 153, 0.48) !important;
+  color: #ffe8e8 !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+}
+
+/* Province / District / DS / ASC hierarchy */
+.ictmdx-shell .ictmdx-lhp-shell,
+.ictmdx-shell .lhp-root {
+  background:
+    linear-gradient(145deg, rgba(7, 18, 34, 0.66), rgba(10, 24, 45, 0.5)) !important;
+  border: 1px solid rgba(188, 220, 255, 0.24) !important;
+  box-shadow: 0 16px 38px rgba(2, 8, 22, 0.34) !important;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.ictmdx-shell .lhp-card-head,
+.ictmdx-shell .lhp-filters,
+.ictmdx-shell .lhp-modal-head,
+.ictmdx-shell .lhp-modal-actions {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.ictmdx-shell .lhp-card {
+  background:
+    linear-gradient(145deg, rgba(8, 21, 38, 0.68), rgba(12, 28, 49, 0.52)) !important;
+  border: 1px solid rgba(188, 220, 255, 0.24) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+}
+
+.ictmdx-shell .lhp-card-title,
+.ictmdx-shell .lhp-row-name,
+.ictmdx-shell .lhp-modal-title {
+  color: #ffffff !important;
+}
+
+.ictmdx-shell .lhp-field label,
+.ictmdx-shell .lhp-count,
+.ictmdx-shell .lhp-empty,
+.ictmdx-shell .lhp-active-filters {
+  color: rgba(225, 238, 255, 0.9) !important;
+}
+
+.ictmdx-shell .lhp-active-filters strong {
+  color: #f4f9ff !important;
+}
+
+.ictmdx-shell .lhp-input {
+  background:
+    linear-gradient(155deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.03)),
+    rgba(8, 20, 38, 0.62) !important;
+  border: 1px solid rgba(181, 214, 255, 0.4) !important;
+  color: #f6faff !important;
+}
+
+.ictmdx-shell .lhp-row {
+  background: rgba(12, 28, 49, 0.42) !important;
+  border: 1px solid rgba(188, 220, 255, 0.2) !important;
+}
+
+.ictmdx-shell .lhp-btn {
+  border: 1px solid rgba(188, 220, 255, 0.34) !important;
+  background:
+    linear-gradient(150deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.04)),
+    rgba(10, 24, 43, 0.58) !important;
+  color: #f6faff !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    0 8px 18px rgba(2, 8, 22, 0.24) !important;
+}
+
+.ictmdx-shell .lhp-btn-primary {
+  background:
+    linear-gradient(160deg, rgba(157, 212, 255, 0.3), rgba(109, 184, 246, 0.16)),
+    rgba(18, 42, 70, 0.72) !important;
+  border-color: rgba(205, 229, 255, 0.46) !important;
+  color: #ffffff !important;
+}
+
+.ictmdx-shell .lhp-btn:hover {
+  background:
+    linear-gradient(150deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.06)),
+    rgba(13, 31, 55, 0.68) !important;
+  opacity: 1 !important;
+}
+
+.ictmdx-shell .lhp-overlay {
+  background: rgba(3, 12, 24, 0.62) !important;
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+
+.ictmdx-shell .lhp-modal {
+  background:
+    linear-gradient(145deg, rgba(7, 18, 34, 0.78), rgba(10, 24, 45, 0.66)) !important;
+  border: 1px solid rgba(188, 220, 255, 0.28) !important;
+  box-shadow: 0 22px 52px rgba(2, 8, 22, 0.5) !important;
+}
+
+/* Security Codes — Master Data Update */
+.ictmdx-shell .ictmdx-security-shell {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+.ictmdx-shell .ictmdx-security-note,
+.ictmdx-shell .vehicle-admin-note-master-data.ictmdx-security-note {
+  margin: 0 0 14px !important;
+  padding: 12px 14px !important;
+  border: 1px solid rgba(188, 220, 255, 0.22) !important;
+  border-radius: 12px !important;
+  background:
+    linear-gradient(145deg, rgba(12, 28, 50, 0.62), rgba(8, 20, 38, 0.48)) !important;
+  color: rgba(220, 235, 255, 0.92) !important;
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 10px 24px rgba(2, 8, 22, 0.22) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.ictmdx-shell .ictmdx-security-list {
+  display: grid;
+  gap: 10px;
+}
+
+.ictmdx-shell .ictmdx-security-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  padding: 12px 14px !important;
+  border-radius: 12px !important;
+  background:
+    linear-gradient(145deg, rgba(7, 18, 34, 0.66), rgba(10, 24, 45, 0.5)) !important;
+  border: 1px solid rgba(188, 220, 255, 0.24) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 12px 28px rgba(2, 8, 22, 0.28) !important;
+}
+
+.ictmdx-shell .ictmdx-security-row-main {
+  flex: 1;
+  min-width: 260px;
+}
+
+.ictmdx-shell .ictmdx-security-label {
+  display: block;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  color: #ffffff !important;
+  letter-spacing: 0.01em;
+}
+
+.ictmdx-shell .ictmdx-security-meta {
+  margin-top: 6px;
+  font-size: 0.82em;
+  line-height: 1.45;
+  color: rgba(198, 218, 245, 0.82) !important;
+}
+
+.ictmdx-shell .ictmdx-security-empty {
+  color: rgba(198, 218, 245, 0.75) !important;
+  font-size: 14px;
+}
+
+.ictmdx-shell .ictmdx-security-reset-btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+  min-width: 148px;
+  background:
+    linear-gradient(160deg, rgba(157, 212, 255, 0.3), rgba(109, 184, 246, 0.16)),
+    rgba(18, 42, 70, 0.72) !important;
+  border-color: rgba(205, 229, 255, 0.46) !important;
+  color: #ffffff !important;
+}
+
+.ictmdx-shell .ictmdx-security-reset-btn:hover:not(:disabled) {
+  background:
+    linear-gradient(160deg, rgba(175, 220, 255, 0.38), rgba(125, 196, 252, 0.22)),
+    rgba(22, 48, 78, 0.78) !important;
+}
+
+.ictmdx-shell.vehicle-admin-page-master-data--split-scroll .masters-picker-master-data .masters-picker-item-master-data {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    0 4px 12px rgba(2, 8, 22, 0.18) !important;
+}
+
+.ictmdx-shell.vehicle-admin-page-master-data--split-scroll .masters-picker-master-data .masters-picker-item-master-data:last-child {
+  margin-bottom: 2px;
+}

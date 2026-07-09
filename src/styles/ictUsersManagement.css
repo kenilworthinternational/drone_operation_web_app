@@ -1,0 +1,618 @@
+.ictum-shell .user-mgmt-title,
+.ictum-shell .user-mgmt-hint,
+.ictum-shell .section-title,
+.ictum-shell .users-manage-header-row .section-title,
+.ictum-shell .user-profile-title,
+.ictum-shell .user-profile-subtitle,
+.ictum-shell .user-profile-header-hint,
+.ictum-shell .user-profile-badge,
+.ictum-shell .user-register-modal-header h3,
+.ictum-shell .users-table th,
+.ictum-shell .users-table td,
+.ictum-shell label,
+.ictum-shell p,
+.ictum-shell span,
+.ictum-shell strong,
+.ictum-shell .message {
+  color: #f4f9ff !important;
+}
+
+.ictum-shell .user-mgmt-title {
+  font-size: 1.28rem;
+  font-weight: 700;
+}
+
+.ictum-shell .user-mgmt-hint {
+  color: rgba(223, 237, 255, 0.88) !important;
+  font-size: 12px;
+}
+
+.ictum-shell .user-mgmt-header,
+.ictum-shell .users-mgmt-toolbar,
+.ictum-shell .users-table-wrapper.users-mgmt-table-scroll,
+.ictum-shell .user-profile-header,
+.ictum-shell .user-profile-edit-host--mgmt .user-profile-edit-card,
+.ictum-shell .user-register-modal-card,
+.ictum-shell .update-popup-card {
+  background: linear-gradient(145deg, rgba(7, 18, 34, 0.66), rgba(10, 24, 45, 0.5)) !important;
+  border: 1px solid rgba(188, 220, 255, 0.24) !important;
+  box-shadow: 0 18px 40px rgba(2, 8, 22, 0.36) !important;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.ictum-shell .user-mgmt-header {
+  padding: 8px 12px;
+  border-radius: 12px;
+}
+
+.ictum-shell .user-profile-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 88px;
+  gap: 16px;
+  align-items: center;
+  padding: 14px 16px;
+  border-radius: 12px;
+}
+
+.ictum-shell .user-profile-header-main {
+  min-width: 0;
+}
+
+.ictum-shell .user-profile-title {
+  margin: 0 0 6px 0;
+  font-size: 1.45rem;
+  line-height: 1.2;
+  color: #ffffff !important;
+}
+
+.ictum-shell .user-profile-subtitle {
+  margin: 0;
+  color: rgba(225, 238, 255, 0.88) !important;
+}
+
+.ictum-shell .user-profile-hero-photo {
+  width: 84px;
+  height: 84px;
+  border-radius: 14px;
+  border: 1px solid rgba(188, 220, 255, 0.38);
+  background: rgba(7, 20, 36, 0.45);
+  box-shadow: 0 10px 22px rgba(2, 8, 22, 0.3);
+}
+
+.ictum-shell .user-profile-hero-photo img {
+  object-fit: cover;
+}
+
+.ictum-shell .user-profile-header-hint {
+  margin: 0 0 12px 0 !important;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(158, 202, 232, 0.22) !important;
+  border: 1px solid rgba(188, 220, 255, 0.32);
+  color: #f3f9ff !important;
+}
+
+.ictum-shell .user-profile-badge {
+  background: rgba(167, 220, 255, 0.18) !important;
+  border: 1px solid rgba(188, 220, 255, 0.36);
+  color: #eef8ff !important;
+}
+
+.ictum-shell .user-profile-badge--inactive {
+  background: rgba(190, 87, 87, 0.22) !important;
+  border-color: rgba(252, 153, 153, 0.42) !important;
+}
+
+.ictum-shell .users-table-wrapper.users-mgmt-table-scroll .users-table thead th {
+  background: rgba(172, 209, 255, 0.14) !important;
+  color: rgba(227, 240, 255, 0.95) !important;
+  box-shadow: 0 1px 0 rgba(188, 220, 255, 0.24);
+}
+
+.ictum-shell .users-table tbody tr.users-table-row-clickable:hover {
+  background: rgba(172, 209, 255, 0.1) !important;
+}
+
+.ictum-shell .users-table tbody tr.users-table-row-clickable.selected-row {
+  background: rgba(125, 196, 255, 0.16) !important;
+}
+
+.ictum-shell input,
+.ictum-shell select,
+.ictum-shell textarea {
+  background:
+    linear-gradient(155deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.03)),
+    rgba(8, 20, 38, 0.62) !important;
+  border: 1px solid rgba(181, 214, 255, 0.4) !important;
+  color: #f6faff !important;
+}
+
+.ictum-shell input::placeholder,
+.ictum-shell textarea::placeholder {
+  color: rgba(226, 238, 255, 0.72) !important;
+}
+
+.ictum-shell .btn-submit,
+.ictum-shell .btn-search,
+.ictum-shell .user-mgmt-add-btn,
+.ictum-shell .user-mgmt-back-btn {
+  color: #f6faff !important;
+}
+
+.ictum-shell .user-mgmt-add-btn,
+.ictum-shell .users-download-excel-btn,
+.ictum-shell .btn-search,
+.ictum-shell .btn-submit {
+  border: 1px solid rgba(188, 220, 255, 0.34) !important;
+  background:
+    linear-gradient(150deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.04)),
+    rgba(10, 24, 43, 0.58) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    0 10px 24px rgba(2, 8, 22, 0.28) !important;
+}
+
+.ictum-shell .user-mgmt-back-btn {
+  border: 1px solid rgba(188, 220, 255, 0.34) !important;
+  background:
+    linear-gradient(150deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04)),
+    rgba(10, 24, 43, 0.58) !important;
+}
+
+.ictum-shell .user-mgmt-back-btn--muted {
+  border: 1px solid rgba(188, 220, 255, 0.34) !important;
+  background:
+    linear-gradient(150deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04)),
+    rgba(10, 24, 43, 0.58) !important;
+  color: #f6faff !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 10px 24px rgba(2, 8, 22, 0.28) !important;
+}
+
+.ictum-shell .user-mgmt-back-btn--muted:hover:not(:disabled) {
+  background:
+    linear-gradient(150deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.06)),
+    rgba(13, 31, 55, 0.68) !important;
+  border-color: rgba(205, 229, 255, 0.46) !important;
+  color: #ffffff !important;
+}
+
+.ictum-shell .user-profile-wrap--mgmt-scroll .user-profile-header,
+.ictum-shell .user-profile-header {
+  background:
+    linear-gradient(145deg, rgba(8, 21, 38, 0.68), rgba(12, 28, 49, 0.52)) !important;
+  border: 1px solid rgba(188, 220, 255, 0.24) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 18px 40px rgba(2, 8, 22, 0.34) !important;
+}
+
+.ictum-shell .user-profile-wrap--mgmt-scroll .user-profile-badge,
+.ictum-shell .user-profile-badge {
+  background: rgba(167, 220, 255, 0.16) !important;
+  border: 1px solid rgba(188, 220, 255, 0.34) !important;
+  box-shadow: none !important;
+}
+
+.ictum-shell .ictumx-back-btn,
+.ictum-shell .ictumx-back-btn-user-maintain {
+  border: 1px solid rgba(188, 220, 255, 0.34) !important;
+  background:
+    linear-gradient(150deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04)),
+    rgba(10, 24, 43, 0.58) !important;
+  color: #f6faff !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 10px 24px rgba(2, 8, 22, 0.28) !important;
+}
+
+.ictum-shell .ictumx-back-btn:hover:not(:disabled),
+.ictum-shell .ictumx-back-btn-user-maintain:hover:not(:disabled) {
+  background:
+    linear-gradient(150deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.06)),
+    rgba(13, 31, 55, 0.68) !important;
+  border-color: rgba(205, 229, 255, 0.46) !important;
+  color: #ffffff !important;
+}
+
+.ictum-shell .ictumx-profile-header,
+.ictum-shell .ictumx-profile-header-user-maintain {
+  background:
+    linear-gradient(145deg, rgba(8, 21, 38, 0.7), rgba(12, 28, 49, 0.54)) !important;
+  border: 1px solid rgba(188, 220, 255, 0.24) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 18px 40px rgba(2, 8, 22, 0.34) !important;
+}
+
+.ictum-shell .ictumx-profile-main,
+.ictum-shell .ictumx-profile-main-user-maintain,
+.ictum-shell .user-profile-header-main,
+.ictum-shell .user-profile-header-main-user-maintain {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.ictum-shell .ictumx-header-start,
+.ictum-shell .ictumx-header-start-user-maintain,
+.ictum-shell .user-mgmt-header-start,
+.ictum-shell .user-mgmt-header-start-user-maintain {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: 0 !important;
+}
+
+.ictum-shell .ictumx-header-end,
+.ictum-shell .ictumx-header-end-user-maintain,
+.ictum-shell .user-mgmt-header-end,
+.ictum-shell .user-mgmt-header-end-user-maintain {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: 0 !important;
+}
+
+.ictum-shell .user-mgmt-add-btn:hover:not(:disabled),
+.ictum-shell .users-download-excel-btn:hover:not(:disabled),
+.ictum-shell .btn-search:hover:not(:disabled),
+.ictum-shell .btn-submit:hover:not(:disabled) {
+  background:
+    linear-gradient(150deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.06)),
+    rgba(13, 31, 55, 0.68) !important;
+  transform: translateY(-1px);
+}
+
+/* Register-user modal (rendered outside .ictum-shell) */
+.ictumx-register-modal-overlay {
+  background: rgba(3, 12, 24, 0.62) !important;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.ictumx-register-modal-card {
+  background:
+    linear-gradient(145deg, rgba(7, 18, 34, 0.82), rgba(10, 24, 45, 0.72)) !important;
+  border: 1px solid rgba(188, 220, 255, 0.28) !important;
+  box-shadow: 0 24px 56px rgba(2, 8, 22, 0.52) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  color: #f4f9ff;
+}
+
+.ictumx-register-modal-header {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(188, 220, 255, 0.2) !important;
+  padding: 16px 20px !important;
+}
+
+.ictumx-register-modal-header h3 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #ffffff !important;
+}
+
+.ictumx-register-modal-close {
+  border: 1px solid rgba(188, 220, 255, 0.34) !important;
+  background:
+    linear-gradient(150deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04)),
+    rgba(10, 24, 43, 0.58) !important;
+  color: #f6faff !important;
+  border-radius: 8px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 8px 18px rgba(2, 8, 22, 0.24) !important;
+}
+
+.ictumx-register-modal-close:hover {
+  background:
+    linear-gradient(150deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.06)),
+    rgba(13, 31, 55, 0.68) !important;
+  border-color: rgba(205, 229, 255, 0.46) !important;
+}
+
+.ictumx-register-modal-body {
+  overflow-x: hidden !important;
+  overflow-y: auto;
+  padding: 16px 20px 28px !important;
+  scroll-padding-bottom: 20px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(157, 212, 255, 0.45) rgba(8, 20, 38, 0.35);
+}
+
+.ictumx-register-modal-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.ictumx-register-modal-body::-webkit-scrollbar-track {
+  background: rgba(8, 20, 38, 0.35);
+  border-radius: 8px;
+}
+
+.ictumx-register-modal-body::-webkit-scrollbar-thumb {
+  background: rgba(157, 212, 255, 0.42);
+  border-radius: 8px;
+}
+
+.ictumx-register-modal-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(175, 220, 255, 0.55);
+}
+
+.ictumx-register-modal-loading {
+  color: rgba(210, 228, 248, 0.88) !important;
+}
+
+.ictumx-register-modal-loading p {
+  color: rgba(210, 228, 248, 0.88) !important;
+}
+
+.ictumx-register-modal-form .registration-form-content {
+  background: transparent !important;
+  padding: 0 !important;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.ictumx-register-modal-form .form-section {
+  margin-bottom: 16px !important;
+  padding: 14px 16px 18px !important;
+  border: 1px solid rgba(188, 220, 255, 0.2) !important;
+  border-radius: 12px !important;
+  background:
+    linear-gradient(145deg, rgba(12, 28, 50, 0.52), rgba(8, 20, 38, 0.38)) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 10px 24px rgba(2, 8, 22, 0.2) !important;
+}
+
+.ictumx-register-modal-form .form-section:last-child {
+  margin-bottom: 0 !important;
+}
+
+.ictumx-register-modal-form .section-title {
+  color: #ffffff !important;
+  font-size: 1.05rem !important;
+  margin-bottom: 16px !important;
+  padding-bottom: 10px !important;
+  border-bottom: 2px solid rgba(125, 196, 255, 0.42) !important;
+}
+
+.ictumx-register-modal-form .form-row {
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.ictumx-register-modal-form .form-group {
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+.ictumx-register-modal-form label,
+.ictumx-register-modal-form .form-group label {
+  color: rgba(225, 238, 255, 0.92) !important;
+}
+
+.ictumx-register-modal-form input,
+.ictumx-register-modal-form select,
+.ictumx-register-modal-form textarea {
+  background:
+    linear-gradient(155deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.03)),
+    rgba(8, 20, 38, 0.62) !important;
+  border: 1px solid rgba(181, 214, 255, 0.4) !important;
+  color: #f6faff !important;
+  border-radius: 8px !important;
+}
+
+.ictumx-register-modal-form input::placeholder,
+.ictumx-register-modal-form textarea::placeholder {
+  color: rgba(226, 238, 255, 0.62) !important;
+}
+
+.ictumx-register-modal-form input[readonly],
+.ictumx-register-modal-form input:disabled,
+.ictumx-register-modal-form select:disabled {
+  background: rgba(8, 20, 38, 0.42) !important;
+  color: rgba(210, 228, 248, 0.82) !important;
+  cursor: not-allowed !important;
+}
+
+.ictumx-register-modal-form select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23c8e4ff' d='M6 9L1 4h10z'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 12px center !important;
+  padding-right: 35px !important;
+}
+
+.ictumx-register-modal-form input:focus,
+.ictumx-register-modal-form select:focus,
+.ictumx-register-modal-form textarea:focus {
+  outline: none !important;
+  border-color: rgba(157, 212, 255, 0.72) !important;
+  box-shadow: 0 0 0 2px rgba(125, 196, 255, 0.22) !important;
+}
+
+.ictumx-register-modal-form .field-error-emp-reg {
+  color: #ffb4b4 !important;
+}
+
+.ictumx-register-modal-form .form-buttons {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(188, 220, 255, 0.2) !important;
+}
+
+.ictumx-register-modal-form .btn-submit,
+.ictumx-register-modal-form .btn-search {
+  border: 1px solid rgba(188, 220, 255, 0.34) !important;
+  background:
+    linear-gradient(160deg, rgba(157, 212, 255, 0.3), rgba(109, 184, 246, 0.16)),
+    rgba(18, 42, 70, 0.72) !important;
+  color: #ffffff !important;
+  border-radius: 8px !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    0 10px 24px rgba(2, 8, 22, 0.28) !important;
+}
+
+.ictumx-register-modal-form .btn-submit:hover:not(:disabled),
+.ictumx-register-modal-form .btn-search:hover:not(:disabled) {
+  background:
+    linear-gradient(160deg, rgba(175, 220, 255, 0.38), rgba(125, 196, 252, 0.22)),
+    rgba(22, 48, 78, 0.78) !important;
+}
+
+.ictumx-register-modal-form .btn-submit:disabled,
+.ictumx-register-modal-form .btn-search:disabled {
+  opacity: 0.55 !important;
+  cursor: not-allowed !important;
+}
+
+.ictumx-register-modal-form .password-inline-action {
+  color: rgba(175, 220, 255, 0.92) !important;
+}
+
+.ictumx-register-modal-form .password-visibility-btn {
+  border: 1px solid rgba(181, 214, 255, 0.4) !important;
+  background: rgba(8, 20, 38, 0.62) !important;
+  color: #f6faff !important;
+}
+
+.ictumx-register-modal-form .message.success {
+  background: rgba(72, 187, 120, 0.18) !important;
+  color: #d7ffe8 !important;
+  border: 1px solid rgba(134, 239, 172, 0.35) !important;
+}
+
+.ictumx-register-modal-form .message.error {
+  background: rgba(220, 38, 38, 0.16) !important;
+  color: #ffd0d0 !important;
+  border: 1px solid rgba(252, 165, 165, 0.35) !important;
+}
+
+.ictumx-register-modal-form .employee-info-box {
+  background: rgba(125, 196, 255, 0.12) !important;
+  border-left: 4px solid rgba(157, 212, 255, 0.55) !important;
+  color: rgba(225, 238, 255, 0.9) !important;
+}
+
+.ictumx-register-modal-form .employee-info-box p {
+  color: rgba(225, 238, 255, 0.9) !important;
+}
+
+.ictumx-register-modal-form .employee-estate-like-suggestions-user-reg-ict,
+.ictumx-register-modal-form .employee-suggestion-panel-user-reg-ict {
+  background:
+    linear-gradient(145deg, rgba(8, 21, 38, 0.95), rgba(12, 28, 49, 0.92)) !important;
+  border: 1px solid rgba(188, 220, 255, 0.32) !important;
+  box-shadow: 0 12px 28px rgba(2, 8, 22, 0.4) !important;
+}
+
+.ictumx-register-modal-form .employee-estate-like-item-user-reg-ict,
+.ictumx-register-modal-form .employee-suggestion-item-user-reg-ict {
+  background: transparent !important;
+  color: #f4f9ff !important;
+  border-bottom: 1px solid rgba(188, 220, 255, 0.12) !important;
+}
+
+.ictumx-register-modal-form .employee-estate-like-item-user-reg-ict:hover,
+.ictumx-register-modal-form .employee-suggestion-item-user-reg-ict:hover {
+  background: rgba(125, 196, 255, 0.14) !important;
+}
+
+.ictumx-register-modal-form .employee-estate-like-title-user-reg-ict {
+  color: #ffffff !important;
+}
+
+.ictumx-register-modal-form .employee-estate-like-meta-user-reg-ict,
+.ictumx-register-modal-form .employee-estate-like-empty-user-reg-ict,
+.ictumx-register-modal-form .employee-suggestion-meta-user-reg-ict,
+.ictumx-register-modal-form .employee-suggestion-info-user-reg-ict {
+  color: rgba(198, 218, 245, 0.82) !important;
+}
+
+.ictumx-register-modal-form .employee-estate-like-indicator-user-reg-ict {
+  color: rgba(175, 220, 255, 0.9) !important;
+}
+
+.ictumx-register-modal-form .vehicle-profile-gallery-card {
+  border: 1px solid rgba(188, 220, 255, 0.24) !important;
+  background:
+    linear-gradient(145deg, rgba(12, 28, 50, 0.52), rgba(8, 20, 38, 0.38)) !important;
+  border-radius: 12px !important;
+  overflow: hidden;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 12px 24px rgba(2, 8, 22, 0.24) !important;
+}
+
+.ictumx-register-modal-form .vehicle-profile-gallery-preview {
+  background: rgba(6, 16, 30, 0.55) !important;
+}
+
+.ictumx-register-modal-form .vehicle-profile-gallery-empty {
+  color: rgba(198, 218, 245, 0.75) !important;
+}
+
+.ictumx-register-modal-form .vehicle-profile-gallery-label {
+  color: rgba(225, 238, 255, 0.9) !important;
+}
+
+.ictumx-register-modal-form .vehicle-profile-gallery-upload-btn {
+  border: 1px solid rgba(188, 220, 255, 0.34) !important;
+  background:
+    linear-gradient(150deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04)),
+    rgba(10, 24, 43, 0.58) !important;
+  color: #f6faff !important;
+}
+
+.ictumx-register-modal-form .vehicle-profile-gallery-upload-btn:hover {
+  background:
+    linear-gradient(150deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.06)),
+    rgba(13, 31, 55, 0.68) !important;
+}
+
+.ictumx-register-modal-form .profile-image-upload-gallery {
+  max-width: 208px;
+}
+
+.ictumx-register-modal-form .vehicle-profile-gallery-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  padding: 8px 10px 12px !important;
+  background: rgba(7, 18, 34, 0.42);
+  border-top: 1px solid rgba(188, 220, 255, 0.14);
+}
+
+.ictumx-register-modal-form .profile-image-upload-clear-btn {
+  border: 1px solid rgba(252, 165, 165, 0.42) !important;
+  border-radius: 8px !important;
+  background:
+    linear-gradient(150deg, rgba(255, 205, 205, 0.16), rgba(255, 190, 190, 0.06)),
+    rgba(74, 22, 22, 0.38) !important;
+  color: #ffd2d2 !important;
+  padding: 8px 10px !important;
+  line-height: 1.2;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.ictumx-register-modal-form .profile-image-upload-clear-btn:hover:not(:disabled) {
+  text-decoration: none;
+  border-color: rgba(252, 165, 165, 0.58) !important;
+  background:
+    linear-gradient(150deg, rgba(255, 214, 214, 0.22), rgba(255, 198, 198, 0.1)),
+    rgba(92, 28, 28, 0.46) !important;
+  color: #ffe2e2 !important;
+}
+
+.ictumx-register-modal-form .profile-image-upload-clear-btn:disabled {
+  opacity: 0.55 !important;
+  cursor: not-allowed !important;
+}
+
+.ictumx-register-modal-form small {
+  color: rgba(198, 218, 245, 0.78) !important;
+}

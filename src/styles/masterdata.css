@@ -126,14 +126,17 @@
 }
 
 .vehicle-admin-page-master-data--split-scroll .masters-picker-master-data {
-  /* Row is 1fr tall; without this, the picker stretches to full row height and leaves empty space under the buttons */
-  align-self: start;
+  align-self: stretch;
   width: 100%;
   min-height: 0;
-  max-height: 100%;
+  height: 100%;
+  max-height: none;
   overflow-x: hidden;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  box-sizing: border-box;
+  padding-bottom: 28px;
+  scroll-padding-bottom: 20px;
 }
 
 .masters-picker-item-master-data {
@@ -182,6 +185,9 @@
   -webkit-overflow-scrolling: touch;
   overflow-wrap: anywhere;
   word-break: break-word;
+  box-sizing: border-box;
+  padding-bottom: 28px;
+  scroll-padding-bottom: 20px;
 }
 
 .vehicle-master-forms-master-data {

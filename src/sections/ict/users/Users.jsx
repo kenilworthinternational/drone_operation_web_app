@@ -1404,7 +1404,7 @@ export default function UsersDirectory({
 
   if (isMgmtAdd && registerInModal) {
     return (
-      <div className="user-register-modal-form" ref={rootRef}>
+      <div className="user-register-modal-form ictumx-register-modal-form" ref={rootRef}>
         {registerFormContent}
       </div>
     );
@@ -1422,15 +1422,15 @@ export default function UsersDirectory({
     <div
       className={
         isMgmtProfile
-          ? 'user-profile-wrap user-profile-wrap--mgmt-scroll user-registration-profile-flow'
-          : `user-registration-container${embeddedTransportDriver ? ' user-registration-embedded-transport-hr' : ''}${isMgmtList ? ' user-registration-container--mgmt-list' : ''}`
+          ? 'user-profile-wrap user-profile-wrap--mgmt-scroll user-registration-profile-flow ictum-scope'
+          : `user-registration-container${embeddedTransportDriver ? ' user-registration-embedded-transport-hr' : ''}${isMgmtList ? ' user-registration-container--mgmt-list' : ''}${embeddedInUserManagement ? ' ictum-scope' : ''}`
       }
       ref={rootRef}
     >
       {isMgmtProfile && (
         <>
-          <div className="user-profile-header">
-            <div className="user-profile-header-main">
+          <div className="user-profile-header ictumx-profile-header">
+            <div className="user-profile-header-main ictumx-profile-main">
               <h2 className="user-profile-title">{profileUser?.name || 'User profile'}</h2>
               <p className="user-profile-subtitle">
                 User ID {mgmtProfileUserId}

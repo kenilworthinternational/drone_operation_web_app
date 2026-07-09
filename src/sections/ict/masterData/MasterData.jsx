@@ -68,6 +68,7 @@ import {
   useSaveInvoiceTaxTypeMutation,
 } from '../../../api/services NodeJs/plantationInvoiceApi';
 import '../../../styles/masterdata.css';
+import '../../../styles/ictLogsMasterGlass.css';
 
 const TAB_CONFIG = {
   full: ['overview', 'masters', 'vehicles', 'maintenance'],
@@ -903,7 +904,7 @@ const MasterData = ({ mode = 'full' }) => {
 
   return (
     <div
-      className={`vehicle-admin-page-master-data ${mode === 'masters' ? 'vehicle-admin-page-master-data--split-scroll' : ''}`}
+      className={`vehicle-admin-page-master-data ictmdx-shell ${mode === 'masters' ? 'vehicle-admin-page-master-data--split-scroll' : ''}`}
     >
       <div className="vehicle-admin-header-master-data">
         <div>
@@ -1024,18 +1025,18 @@ const MasterData = ({ mode = 'full' }) => {
               <div className="vehicle-admin-card-master-data">
                 <h3>Vehicle Master Data</h3>
                 <p className="vehicle-master-note-master-data">Manage category, make and model in one place with clear hierarchy.</p>
-                <div className="vehicle-master-forms-master-data">
-                  <div className="vehicle-master-form-card-master-data">
-                    <h4>Category</h4>
-                    <button className="btn-submit-master-data" onClick={() => openAddModal('vehicleCategory')}>Add Category</button>
+                <div className="vehicle-master-forms-master-data ictmdx-vehicle-master-forms">
+                  <div className="vehicle-master-form-card-master-data ictmdx-vehicle-master-card">
+                    <h4 className="ictmdx-vehicle-master-card-title">Category</h4>
+                    <button className="btn-submit-master-data ictmdx-vehicle-master-card-btn" onClick={() => openAddModal('vehicleCategory')}>Add Category</button>
                   </div>
-                  <div className="vehicle-master-form-card-master-data">
-                    <h4>Make</h4>
-                    <button className="btn-submit-master-data" onClick={() => openAddModal('vehicleMake')}>Add Make</button>
+                  <div className="vehicle-master-form-card-master-data ictmdx-vehicle-master-card">
+                    <h4 className="ictmdx-vehicle-master-card-title">Make</h4>
+                    <button className="btn-submit-master-data ictmdx-vehicle-master-card-btn" onClick={() => openAddModal('vehicleMake')}>Add Make</button>
                   </div>
-                  <div className="vehicle-master-form-card-master-data">
-                    <h4>Model</h4>
-                    <button className="btn-submit-master-data" onClick={() => openAddModal('vehicleModel')}>Add Model</button>
+                  <div className="vehicle-master-form-card-master-data ictmdx-vehicle-master-card">
+                    <h4 className="ictmdx-vehicle-master-card-title">Model</h4>
+                    <button className="btn-submit-master-data ictmdx-vehicle-master-card-btn" onClick={() => openAddModal('vehicleModel')}>Add Model</button>
                   </div>
                 </div>
                 <div className="master-list-master-data vehicle-master-tree-master-data vehicle-master-tree-board-master-data">
@@ -1329,8 +1330,8 @@ const MasterData = ({ mode = 'full' }) => {
                               <span
                                 className={
                                   Number(row.activated) === 1
-                                    ? 'status-chip-master-data active-master-data'
-                                    : 'status-chip-master-data inactive-master-data'
+                                    ? 'status-chip-master-data active-master-data ictmdx-status-chip ictmdx-status-chip--active'
+                                    : 'status-chip-master-data inactive-master-data ictmdx-status-chip ictmdx-status-chip--inactive'
                                 }
                               >
                                 {Number(row.activated) === 1 ? 'Active' : 'Inactive'}
@@ -1390,8 +1391,8 @@ const MasterData = ({ mode = 'full' }) => {
                             <span
                               className={
                                 Number(row.activated) === 1
-                                  ? 'status-chip-master-data active-master-data'
-                                  : 'status-chip-master-data inactive-master-data'
+                                  ? 'status-chip-master-data active-master-data ictmdx-status-chip ictmdx-status-chip--active'
+                                  : 'status-chip-master-data inactive-master-data ictmdx-status-chip ictmdx-status-chip--inactive'
                               }
                             >
                               {Number(row.activated) === 1 ? 'Active' : 'Inactive'}
@@ -1494,8 +1495,8 @@ const MasterData = ({ mode = 'full' }) => {
                             <span
                               className={
                                 Number(row.activated) === 1
-                                  ? 'status-chip-master-data active-master-data'
-                                  : 'status-chip-master-data inactive-master-data'
+                                  ? 'status-chip-master-data active-master-data ictmdx-status-chip ictmdx-status-chip--active'
+                                  : 'status-chip-master-data inactive-master-data ictmdx-status-chip ictmdx-status-chip--inactive'
                               }
                             >
                               {Number(row.activated) === 1 ? 'Active' : 'Inactive'}
@@ -1580,8 +1581,8 @@ const MasterData = ({ mode = 'full' }) => {
                             <span
                               className={
                                 Number(row.activated) === 1
-                                  ? 'status-chip-master-data active-master-data'
-                                  : 'status-chip-master-data inactive-master-data'
+                                  ? 'status-chip-master-data active-master-data ictmdx-status-chip ictmdx-status-chip--active'
+                                  : 'status-chip-master-data inactive-master-data ictmdx-status-chip ictmdx-status-chip--inactive'
                               }
                             >
                               {Number(row.activated) === 1 ? 'Active' : 'Inactive'}
@@ -1647,8 +1648,8 @@ const MasterData = ({ mode = 'full' }) => {
                             <span
                               className={
                                 Number(row.activated) === 1
-                                  ? 'status-chip-master-data active-master-data'
-                                  : 'status-chip-master-data inactive-master-data'
+                                  ? 'status-chip-master-data active-master-data ictmdx-status-chip ictmdx-status-chip--active'
+                                  : 'status-chip-master-data inactive-master-data ictmdx-status-chip ictmdx-status-chip--inactive'
                               }
                             >
                               {Number(row.activated) === 1 ? 'Active' : 'Inactive'}
@@ -1720,8 +1721,8 @@ const MasterData = ({ mode = 'full' }) => {
                         <span
                           className={
                             Number(row.activated) === 1
-                              ? 'status-chip-master-data active-master-data'
-                              : 'status-chip-master-data inactive-master-data'
+                              ? 'status-chip-master-data active-master-data ictmdx-status-chip ictmdx-status-chip--active'
+                              : 'status-chip-master-data inactive-master-data ictmdx-status-chip ictmdx-status-chip--inactive'
                           }
                         >
                           {Number(row.activated) === 1 ? 'Active' : 'Inactive'}
@@ -1786,8 +1787,8 @@ const MasterData = ({ mode = 'full' }) => {
                             <span
                               className={
                                 Number(row.activated) === 1
-                                  ? 'status-chip-master-data active-master-data'
-                                  : 'status-chip-master-data inactive-master-data'
+                                  ? 'status-chip-master-data active-master-data ictmdx-status-chip ictmdx-status-chip--active'
+                                  : 'status-chip-master-data inactive-master-data ictmdx-status-chip ictmdx-status-chip--inactive'
                               }
                             >
                               {Number(row.activated) === 1 ? 'Active' : 'Inactive'}
@@ -1811,23 +1812,23 @@ const MasterData = ({ mode = 'full' }) => {
             )}
 
             {selectedMasterModule === 'securityCodes' && (
-              <div className="vehicle-admin-card-master-data">
+              <div className="vehicle-admin-card-master-data ictmdx-security-shell">
                 <h3>Security Codes</h3>
-                <p className="vehicle-admin-note-master-data">
+                <p className="vehicle-admin-note-master-data ictmdx-security-note">
                   Current code is hidden for security. Any existing security code item can be reset to a new auto-generated 4-digit value.
                 </p>
-                <div className="master-list-master-data">
+                <div className="master-list-master-data ictmdx-security-list">
                   {securityCodeItems.length === 0 ? (
-                    <div className="master-row-master-data">
-                      <span style={{ color: '#666' }}>No security code items found.</span>
+                    <div className="master-row-master-data ictmdx-security-row">
+                      <span className="ictmdx-security-empty">No security code items found.</span>
                     </div>
                   ) : securityCodeItems.map((item) => (
-                    <div key={item.id} className="master-row-master-data">
-                      <div style={{ flex: 1, minWidth: 260 }}>
-                        <span className="master-label-master-data">
+                    <div key={item.id} className="master-row-master-data ictmdx-security-row">
+                      <div className="ictmdx-security-row-main">
+                        <span className="master-label-master-data ictmdx-security-label">
                           {item.section || '-'} / {item.sec_tag || '-'}
                         </span>
-                        <div style={{ marginTop: 4, fontSize: '0.82em', color: '#555' }}>
+                        <div className="ictmdx-security-meta">
                           Code: {item.current_code || 'Not set'} | Last Changed By:{' '}
                           {item.last_changed_by_name
                             ? `${item.last_changed_by_name}${item.last_changed_by_mobile_masked ? ` (${item.last_changed_by_mobile_masked})` : ''}`
@@ -1837,7 +1838,7 @@ const MasterData = ({ mode = 'full' }) => {
                         </div>
                       </div>
                       <button
-                        className="btn-submit-master-data"
+                        className="btn-submit-master-data ictmdx-security-reset-btn"
                         disabled={resettingFinanceSecurity}
                         onClick={async () => {
                           try {
@@ -1900,7 +1901,7 @@ const MasterData = ({ mode = 'full' }) => {
                     <td>{v.linked_card_no_masked || '-'}</td>
                     <td>{v.vehicle_category_name || '-'}</td>
                     <td>
-                      <span className={v.activated === 1 ? 'status-chip-master-data active-master-data' : 'status-chip-master-data inactive-master-data'}>
+                      <span className={v.activated === 1 ? 'status-chip-master-data active-master-data ictmdx-status-chip ictmdx-status-chip--active' : 'status-chip-master-data inactive-master-data ictmdx-status-chip ictmdx-status-chip--inactive'}>
                         {v.activated === 1 ? 'Active' : 'Inactive'}
                       </span>
                     </td>
@@ -1938,7 +1939,7 @@ const MasterData = ({ mode = 'full' }) => {
                           <button className="action-btn-master-data danger-master-data" onClick={() => handleQuickSave(async () => decideMaintenance({ id: m.id, approval: 'd' }).unwrap())}>Decline</button>
                         </div>
                       ) : (
-                        <span className={m.approval === 'a' ? 'status-chip-master-data approved-master-data' : 'status-chip-master-data declined-master-data'}>
+                        <span className={m.approval === 'a' ? 'status-chip-master-data approved-master-data ictmdx-status-chip ictmdx-status-chip--approved' : 'status-chip-master-data declined-master-data ictmdx-status-chip ictmdx-status-chip--declined'}>
                           {m.approval === 'a' ? 'Approved' : 'Declined'}
                         </span>
                       )}

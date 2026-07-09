@@ -821,6 +821,14 @@ function App() {
             element={<FleetUpdateRedirect />}
           />
           <Route
+            path="ict/system-admin"
+            element={
+              <ProtectedRoute>
+                <Navigate to="/home/ict/system-admin/system-maintenance" replace />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="ict/system-admin/users"
             element={
               <ProtectedRoute>

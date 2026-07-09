@@ -20,15 +20,15 @@ const Pm2ProcessCard = ({ process, onViewLogs, onRestart, isRestarting }) => {
   };
 
   return (
-    <div className={`sysmaint-pm2-card ${process.isCurrentProcess ? 'sysmaint-pm2-card--current' : ''}`}>
-      <div className="sysmaint-pm2-card-header">
+    <div className={`sysmaint-pm2-card ictg-pm2-card ${process.isCurrentProcess ? 'sysmaint-pm2-card--current' : ''}`}>
+      <div className="sysmaint-pm2-card-header ictg-pm2-header">
         <h4>{process.name}</h4>
-        <span className={`sysmaint-badge ${statusClass(process.status)}`}>{process.status}</span>
+        <span className={`sysmaint-badge ictg-chip ${statusClass(process.status)}`}>{process.status}</span>
       </div>
       {process.isCurrentProcess && (
         <p className="sysmaint-hint sysmaint-hint--warn">This API instance is serving your current session.</p>
       )}
-      <div className="sysmaint-pm2-metrics">
+      <div className="sysmaint-pm2-metrics ictg-pm2-metrics">
         <div>
           <span className="sysmaint-metric-label">Uptime</span>
           <span className="sysmaint-metric-value">{process.uptimeFormatted}</span>
@@ -49,7 +49,7 @@ const Pm2ProcessCard = ({ process, onViewLogs, onRestart, isRestarting }) => {
       {process.nodeEnv && (
         <p className="sysmaint-hint">NODE_ENV: {process.nodeEnv}</p>
       )}
-      <div className="sysmaint-pm2-actions">
+      <div className="sysmaint-pm2-actions ictg-pm2-actions">
         <button type="button" className="sysmaint-btn-secondary" onClick={() => onViewLogs(process.name)}>
           <FaFileAlt /> Logs
         </button>

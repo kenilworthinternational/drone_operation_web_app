@@ -43,6 +43,7 @@ const LeftNavBar = ({ showSidebar = false, onClose = () => { }, onCollapseChange
   const [searchParams] = useSearchParams();
   const wingTitle = searchParams.get('wing') ? decodeURIComponent(searchParams.get('wing')) : null;
   const normalizedWingTitle = normalizeWingTitle(wingTitle);
+  const isIctWing = normalizedWingTitle === 'ICT Wing';
   const showForecastNav = isForecastAllowedWing(normalizedWingTitle);
   const showCalendarNav = isCalendarAllowedWing(normalizedWingTitle);
   const isGeoSpatial = isGeoSpatialWing(normalizedWingTitle);
@@ -181,6 +182,18 @@ const LeftNavBar = ({ showSidebar = false, onClose = () => { }, onCollapseChange
       return next;
     });
   }, [wingTitle]);
+
+  useEffect(() => {
+    const className = 'wing-theme-ict';
+    if (isIctWing) {
+      document.body.classList.add(className);
+    } else {
+      document.body.classList.remove(className);
+    }
+    return () => {
+      document.body.classList.remove(className);
+    };
+  }, [isIctWing]);
   const devCenterPath = '/home/ict/development/dev-center';
   const devCenterAliasPaths = [
     '/home/ict/development/sprints',

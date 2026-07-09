@@ -231,6 +231,12 @@
   justify-content: flex-end;
 }
 
+.ictacx-row-checkboxes-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
 .auth-controls-checkbox-header {
   display: inline-flex;
   align-items: center;
@@ -246,6 +252,12 @@
   cursor: help;
   flex-shrink: 0;
   box-sizing: border-box;
+}
+
+.ictacx-checkbox-header {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .auth-controls-checkbox-code {
@@ -443,4 +455,147 @@
   .auth-controls-table-wrapper {
     overflow-x: scroll;
   }
+}
+
+/* ICT glass overrides for Auth Controls */
+body.wing-theme-ict .auth-controls-page,
+.home-layout-root--ict-wing .auth-controls-page {
+  color: #f4f9ff;
+}
+
+body.wing-theme-ict .auth-controls-header h1,
+body.wing-theme-ict .auth-controls-header p,
+body.wing-theme-ict .auth-controls-category-title,
+body.wing-theme-ict .auth-controls-row-label,
+body.wing-theme-ict .auth-controls-row-label strong,
+body.wing-theme-ict .auth-controls-row-hint,
+body.wing-theme-ict .auth-controls-path-path,
+body.wing-theme-ict .auth-controls-expand-icon,
+body.wing-theme-ict .auth-controls-legend h2,
+body.wing-theme-ict .legend-description,
+body.wing-theme-ict .auth-controls-checkbox-code,
+body.wing-theme-ict .auth-controls-table th,
+body.wing-theme-ict .auth-controls-table td,
+.home-layout-root--ict-wing .auth-controls-header h1,
+.home-layout-root--ict-wing .auth-controls-header p,
+.home-layout-root--ict-wing .auth-controls-category-title,
+.home-layout-root--ict-wing .auth-controls-row-label,
+.home-layout-root--ict-wing .auth-controls-row-label strong,
+.home-layout-root--ict-wing .auth-controls-row-hint,
+.home-layout-root--ict-wing .auth-controls-path-path,
+.home-layout-root--ict-wing .auth-controls-expand-icon,
+.home-layout-root--ict-wing .auth-controls-legend h2,
+.home-layout-root--ict-wing .legend-description,
+.home-layout-root--ict-wing .auth-controls-checkbox-code,
+.home-layout-root--ict-wing .auth-controls-table th,
+.home-layout-root--ict-wing .auth-controls-table td {
+  color: #f4f9ff !important;
+}
+
+body.wing-theme-ict .legend-code,
+.home-layout-root--ict-wing .legend-code {
+  color: #d5ecff !important;
+}
+
+body.wing-theme-ict .auth-controls-header,
+body.wing-theme-ict .auth-controls-tabs,
+body.wing-theme-ict .auth-controls-search,
+body.wing-theme-ict .auth-controls-legend,
+body.wing-theme-ict .auth-controls-category-group,
+body.wing-theme-ict .auth-controls-table-wrapper,
+.home-layout-root--ict-wing .auth-controls-header,
+.home-layout-root--ict-wing .auth-controls-tabs,
+.home-layout-root--ict-wing .auth-controls-search,
+.home-layout-root--ict-wing .auth-controls-legend,
+.home-layout-root--ict-wing .auth-controls-category-group,
+.home-layout-root--ict-wing .auth-controls-table-wrapper {
+  background: linear-gradient(145deg, rgba(7, 18, 34, 0.66), rgba(10, 24, 45, 0.5)) !important;
+  border: 1px solid rgba(188, 220, 255, 0.24) !important;
+  box-shadow: 0 18px 40px rgba(2, 8, 22, 0.36) !important;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+body.wing-theme-ict .auth-controls-category-header,
+body.wing-theme-ict .auth-controls-row-header,
+body.wing-theme-ict .auth-controls-category-row,
+body.wing-theme-ict .auth-controls-path-row,
+body.wing-theme-ict .auth-controls-table thead,
+.home-layout-root--ict-wing .auth-controls-category-header,
+.home-layout-root--ict-wing .auth-controls-row-header,
+.home-layout-root--ict-wing .auth-controls-category-row,
+.home-layout-root--ict-wing .auth-controls-path-row,
+.home-layout-root--ict-wing .auth-controls-table thead {
+  background: rgba(159, 204, 241, 0.12) !important;
+  border-bottom-color: rgba(188, 220, 255, 0.2) !important;
+}
+
+body.wing-theme-ict .auth-controls-path-row:hover,
+body.wing-theme-ict .auth-controls-category-row:hover,
+body.wing-theme-ict .auth-controls-table tbody tr:hover,
+.home-layout-root--ict-wing .auth-controls-path-row:hover,
+.home-layout-root--ict-wing .auth-controls-category-row:hover,
+.home-layout-root--ict-wing .auth-controls-table tbody tr:hover {
+  background: rgba(172, 209, 255, 0.1) !important;
+}
+
+body.wing-theme-ict .auth-controls-sync-btn,
+body.wing-theme-ict .auth-controls-tab,
+.home-layout-root--ict-wing .auth-controls-sync-btn,
+.home-layout-root--ict-wing .auth-controls-tab {
+  border: 1px solid rgba(188, 220, 255, 0.34) !important;
+  background:
+    linear-gradient(150deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.04)),
+    rgba(10, 24, 43, 0.58) !important;
+  color: #f6faff !important;
+}
+
+body.wing-theme-ict .auth-controls-tab.active,
+.home-layout-root--ict-wing .auth-controls-tab.active {
+  border-color: rgba(150, 209, 255, 0.55) !important;
+  background:
+    linear-gradient(150deg, rgba(187, 224, 255, 0.28), rgba(104, 164, 255, 0.2)),
+    rgba(25, 63, 116, 0.56) !important;
+}
+
+body.wing-theme-ict .auth-controls-sync-btn:hover:not(:disabled),
+body.wing-theme-ict .auth-controls-tab:hover,
+.home-layout-root--ict-wing .auth-controls-sync-btn:hover:not(:disabled),
+.home-layout-root--ict-wing .auth-controls-tab:hover {
+  background:
+    linear-gradient(150deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.06)),
+    rgba(13, 31, 55, 0.68) !important;
+}
+
+body.wing-theme-ict .auth-controls-search-input,
+.home-layout-root--ict-wing .auth-controls-search-input {
+  background:
+    linear-gradient(155deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.03)),
+    rgba(8, 20, 38, 0.62) !important;
+  border: 1px solid rgba(181, 214, 255, 0.4) !important;
+  color: #f6faff !important;
+}
+
+body.wing-theme-ict .auth-controls-search-input::placeholder,
+.home-layout-root--ict-wing .auth-controls-search-input::placeholder {
+  color: rgba(226, 238, 255, 0.72) !important;
+}
+
+body.wing-theme-ict .ictacx-checkbox-header,
+.home-layout-root--ict-wing .ictacx-checkbox-header {
+  background:
+    linear-gradient(150deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.03)),
+    rgba(9, 22, 40, 0.64) !important;
+  border: 1px solid rgba(188, 220, 255, 0.32) !important;
+  color: #f6faff !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 8px 18px rgba(2, 8, 22, 0.26) !important;
+}
+
+body.wing-theme-ict .ictacx-row-checkboxes-header,
+.home-layout-root--ict-wing .ictacx-row-checkboxes-header {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
 }

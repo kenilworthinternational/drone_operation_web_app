@@ -29,14 +29,14 @@ const BackupPanel = ({
   };
 
   return (
-    <div className="sysmaint-panel">
+    <div className="sysmaint-panel ictg-backup-panel">
       <h3 className="sysmaint-panel-title">MySQL &amp; Backups</h3>
 
       <div className="sysmaint-mysql-row">
         <FaDatabase />
         <div>
           <span className="sysmaint-metric-label">Database</span>
-          <span className={`sysmaint-badge ${mysql?.ok ? 'sysmaint-badge--ok' : 'sysmaint-badge--bad'}`}>
+          <span className={`sysmaint-badge ictg-chip ${mysql?.ok ? 'sysmaint-badge--ok' : 'sysmaint-badge--bad'}`}>
             {mysql?.ok ? 'Connected' : 'Unavailable'}
           </span>
           {mysql?.database && (
@@ -51,7 +51,7 @@ const BackupPanel = ({
 
       <h4 className="sysmaint-section-label">Latest backup</h4>
       <div className="sysmaint-backup-summary">
-        <span className={`sysmaint-badge ${backupAgeBadge(backup?.lastBackupAt)}`}>
+        <span className={`sysmaint-badge ictg-chip ${backupAgeBadge(backup?.lastBackupAt)}`}>
           {backup?.lastBackupAt
             ? new Date(backup.lastBackupAt).toLocaleString()
             : 'No backup found'}

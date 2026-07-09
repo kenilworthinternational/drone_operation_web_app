@@ -8,10 +8,11 @@ import {
   OD_WING_OPERATION_DIGITALIZATION_TITLE,
   isOdWingWorkflowShellPath,
 } from '../config/odWingShell';
-import { resolveWingNavTheme } from '../config/wingHubDisplay';
+import { normalizeWingTitle, resolveWingNavTheme } from '../config/wingHubDisplay';
 import { getUserData } from '../utils/authUtils';
 import RequireWingQueryParam from '../components/RequireWingQueryParam';
 import '../styles/home.css';
+import '../styles/ict-liquid-glass.css';
 
 const COMB_TAB_BASES = ['/home/monitoringDashboard', '/home/dataViewer', '/home/dashboard'];
 
@@ -20,6 +21,7 @@ const HomePage = () => {
   const [showSidebar, setShowSidebar] = useState(false);
   const userData = getUserData();
   const wingTheme = resolveWingNavTheme(new URLSearchParams(location.search).get('wing'));
+  const isIctWingFromQuery = normalizeWingTitle(new URLSearchParams(location.search).get('wing')) === 'ICT Wing';
   const isExternalUser = userData?.member_type === 'e';
   const isWingHubLanding = location.pathname === '/home';
 
@@ -86,8 +88,13 @@ const HomePage = () => {
 
   return (
     <div
-      className={wingTheme ? 'home-layout-root home-layout-root--wing-theme' : 'home-layout-root'}
-      style={wingTheme ? { '--wing-nav-primary': wingTheme.color } : undefined}
+      className={`${wingTheme ? 'home-layout-root home-layout-root--wing-theme' : 'home-layout-root'}${isIctWingFromQuery ? ' home-layout-root--ict-wing' : ''}`}
+      style={wingTheme ? {
+        '--wing-nav-primary': wingTheme.color,
+        '--ict-wing-bg-url': `url("${process.env.PUBLIC_URL || ''}/assets/images/bg.jpg")`,
+      } : {
+        '--ict-wing-bg-url': `url("${process.env.PUBLIC_URL || ''}/assets/images/bg.jpg")`,
+      }}
     >
       {!isExternalUser && <TopNavBar onMenuClick={() => setShowSidebar(true)} />}
       {!isExternalUser && !fullWidthNoLeftNav && (

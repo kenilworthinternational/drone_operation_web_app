@@ -36,6 +36,7 @@ import {
   FaMoneyCheckAlt,
 } from 'react-icons/fa';
 import '../../../styles/logsReportPage.css';
+import '../../../styles/ictLogsMasterGlass.css';
 
 const CATEGORY_ICONS = {
   'mapping-logs': { icon: FaMapMarkedAlt, color: 'blue-logs-report' },
@@ -237,7 +238,7 @@ export default function LogsReportPage() {
                 className={`category-card-logs-report ${isEmpty ? 'category-card-empty-logs-report' : ''}`}
                 onClick={() => handleCategoryClick(cat)}
               >
-                <div className="category-header-logs-report">
+                <div className="category-header-logs-report ictlrx-category-header">
                   <div className={`category-icon-wrapper-logs-report ${iconConfig.color}`}>
                     <IconComp />
                   </div>
@@ -273,7 +274,7 @@ export default function LogsReportPage() {
 
     return (
       <div className="files-section-logs-report">
-        <div className="files-header-logs-report">
+        <div className="files-header-logs-report ictlrx-files-header">
           <div className="files-title-logs-report">{filesLabel || selectedCategory?.label} - Log Files</div>
           <button className="btn-back-logs-report" onClick={handleBack}>
             <FaArrowLeft /> Back to Categories
@@ -414,13 +415,13 @@ export default function LogsReportPage() {
   };
 
   return (
-    <div className="page-logs-report">
-      <div className="header-logs-report">
-        <div className="header-left-logs-report">
-          <FaClipboardList className="header-icon-logs-report" />
-          <div>
-            <div className="header-title-logs-report">System Logs & Reports</div>
-            <div className="header-subtitle-logs-report">View, search, and download system activity logs</div>
+    <div className="page-logs-report ictlrx-shell">
+      <div className="header-logs-report ictlrx-header-shell">
+        <div className="header-left-logs-report ictlrx-header-left">
+          <FaClipboardList className="header-icon-logs-report ictlrx-header-icon" />
+          <div className="ictlrx-header-text-wrap">
+            <div className="header-title-logs-report ictlrx-header-title">System Logs & Reports</div>
+            <div className="header-subtitle-logs-report ictlrx-header-subtitle">View, search, and download system activity logs</div>
           </div>
         </div>
         <div className="header-right-logs-report">

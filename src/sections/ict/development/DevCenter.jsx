@@ -7,7 +7,7 @@ import {
   useGetIctWorkItemsQuery,
 } from '../../../api/services NodeJs/ictDevelopmentApi';
 import { getUserData } from '../../../utils/authUtils';
-import '../../../styles/ictDevelopment.css';
+import '../../../styles/ictDevCenter.css';
 
 function toTitleCase(value) {
   if (!value) return '-';
@@ -96,30 +96,34 @@ function DevCenterDashboard() {
   }, [allWorkItems, myUserId]);
 
   const totals = summary.totals || {};
+  const devCenterBgUrl = `${process.env.PUBLIC_URL || ''}/assets/images/bg.jpg`;
 
   return (
-    <div className="ict-dev-page ict-dev-stack">
-      <div className="ict-dev-hero">
+    <div
+      className="ictdc-page ictdc-stack"
+      style={{ '--ictdc-bg-url': `url("${devCenterBgUrl}")` }}
+    >
+      <div className="ictdc-hero">
         <div>
-          <h2 className="ict-dev-title">ICT Dev Center</h2>
-          <p className="ict-dev-subtitle">
+          <h2 className="ictdc-title">ICT Dev Center</h2>
+          <p className="ictdc-subtitle">
             Professional control center for sprint, board, extra work, and delivery performance.
           </p>
         </div>
-        <div className="ict-dev-actions">
-          <button className="ict-dev-btn-secondary" type="button" onClick={() => go('/home/ict/development/board')}>
+        <div className="ictdc-actions">
+          <button className="ictdc-btn-secondary" type="button" onClick={() => go('/home/ict/development/board')}>
             Go to Board
           </button>
         </div>
       </div>
 
-      <div className="ict-dev-card">
-        <div className="ict-dev-grid-2">
+      <div className="ictdc-card">
+        <div className="ictdc-grid-2">
           <div>
-            <label className="ict-dev-label" htmlFor="wf_project_filter">Project</label>
+            <label className="ictdc-label" htmlFor="wf_project_filter">Project</label>
             <select
               id="wf_project_filter"
-              className="ict-dev-select"
+              className="ictdc-select"
               value={projectId}
               onChange={(e) => {
                 setProjectId(e.target.value);
@@ -135,10 +139,10 @@ function DevCenterDashboard() {
             </select>
           </div>
           <div>
-            <label className="ict-dev-label" htmlFor="wf_sprint_filter">Sprint</label>
+            <label className="ictdc-label" htmlFor="wf_sprint_filter">Sprint</label>
             <select
               id="wf_sprint_filter"
-              className="ict-dev-select"
+              className="ictdc-select"
               value={sprintId}
               onChange={(e) => setSprintId(e.target.value)}
             >
@@ -153,69 +157,69 @@ function DevCenterDashboard() {
         </div>
       </div>
 
-      <div className="ict-dev-kpi-grid">
-        <div className="ict-dev-card">
-          <div className="ict-dev-kpi-title">Total Items</div>
-          <div className="ict-dev-kpi-value">{loadingSummary ? '...' : (totals.total_items || 0)}</div>
+      <div className="ictdc-kpi-grid">
+        <div className="ictdc-card">
+          <div className="ictdc-kpi-title">Total Items</div>
+          <div className="ictdc-kpi-value">{loadingSummary ? '...' : (totals.total_items || 0)}</div>
         </div>
-        <div className="ict-dev-card">
-          <div className="ict-dev-kpi-title">Completed</div>
-          <div className="ict-dev-kpi-value">{loadingSummary ? '...' : (totals.completed_items || 0)}</div>
+        <div className="ictdc-card">
+          <div className="ictdc-kpi-title">Completed</div>
+          <div className="ictdc-kpi-value">{loadingSummary ? '...' : (totals.completed_items || 0)}</div>
         </div>
-        <div className="ict-dev-card">
-          <div className="ict-dev-kpi-title">Pending</div>
-          <div className="ict-dev-kpi-value">{loadingSummary ? '...' : (totals.pending_items || 0)}</div>
+        <div className="ictdc-card">
+          <div className="ictdc-kpi-title">Pending</div>
+          <div className="ictdc-kpi-value">{loadingSummary ? '...' : (totals.pending_items || 0)}</div>
         </div>
-        <div className="ict-dev-card">
-          <div className="ict-dev-kpi-title">Sprint Work</div>
-          <div className="ict-dev-kpi-value">{loadingSummary ? '...' : (totals.sprint_items || 0)}</div>
+        <div className="ictdc-card">
+          <div className="ictdc-kpi-title">Sprint Work</div>
+          <div className="ictdc-kpi-value">{loadingSummary ? '...' : (totals.sprint_items || 0)}</div>
         </div>
-        <div className="ict-dev-card">
-          <div className="ict-dev-kpi-title">Extra Work</div>
-          <div className="ict-dev-kpi-value">{loadingSummary ? '...' : (totals.extra_items || 0)}</div>
+        <div className="ictdc-card">
+          <div className="ictdc-kpi-title">Extra Work</div>
+          <div className="ictdc-kpi-value">{loadingSummary ? '...' : (totals.extra_items || 0)}</div>
         </div>
       </div>
 
-      <div className="ict-dev-grid-2">
-        <div className="ict-dev-card">
-          <h3 className="ict-dev-section-title">Process Modules</h3>
-          <div className="ict-dev-workflow-actions">
-            <button className="ict-dev-btn" type="button" onClick={() => go('/home/ict/development/sprints')}>
+      <div className="ictdc-grid-2">
+        <div className="ictdc-card">
+          <h3 className="ictdc-section-title">Process Modules</h3>
+          <div className="ictdc-workflow-actions">
+            <button className="ictdc-btn" type="button" onClick={() => go('/home/ict/development/sprints')}>
               Sprint Planning
             </button>
-            <button className="ict-dev-btn" type="button" onClick={() => go('/home/ict/development/board')}>
+            <button className="ictdc-btn" type="button" onClick={() => go('/home/ict/development/board')}>
               Development Board
             </button>
-            <button className="ict-dev-btn" type="button" onClick={() => go('/home/ict/development/extra-work')}>
+            <button className="ictdc-btn" type="button" onClick={() => go('/home/ict/development/extra-work')}>
               Extra Work Queue
             </button>
-            <button className="ict-dev-btn" type="button" onClick={() => go('/home/ict/development/metrics')}>
+            <button className="ictdc-btn" type="button" onClick={() => go('/home/ict/development/metrics')}>
               Metrics Dashboard
             </button>
-            <button className="ict-dev-btn" type="button" onClick={() => go('/home/ict/system-admin/app-versions')}>
+            <button className="ictdc-btn" type="button" onClick={() => go('/home/ict/system-admin/app-versions')}>
               App Versions
             </button>
           </div>
         </div>
 
-        <div className="ict-dev-card">
-          <h3 className="ict-dev-section-title">Execution Flow</h3>
-          <div className="ict-dev-meta">1. Plan sprint and set task estimated end dates.</div>
-          <div className="ict-dev-meta">2. Developers work in Development and move to Testing.</div>
-          <div className="ict-dev-meta">3. QA verifies, reports bugs, and closes or reopens.</div>
-          <div className="ict-dev-meta">4. Handle urgent ad-hoc work via Extra Work Queue.</div>
+        <div className="ictdc-card">
+          <h3 className="ictdc-section-title">Execution Flow</h3>
+          <div className="ictdc-meta">1. Plan sprint and set task estimated end dates.</div>
+          <div className="ictdc-meta">2. Developers work in Development and move to Testing.</div>
+          <div className="ictdc-meta">3. QA verifies, reports bugs, and closes or reopens.</div>
+          <div className="ictdc-meta">4. Handle urgent ad-hoc work via Extra Work Queue.</div>
         </div>
       </div>
 
-      <div className="ict-dev-card">
-        <h3 className="ict-dev-section-title">My Sprint Tasks - Attend ASAP</h3>
-        {loadingItems && <p className="ict-dev-loading-state">Loading your tasks...</p>}
+      <div className="ictdc-card">
+        <h3 className="ictdc-section-title">My Sprint Tasks - Attend ASAP</h3>
+        {loadingItems && <p className="ictdc-loading-state">Loading your tasks...</p>}
         {!loadingItems && mySprintTasks.length === 0 && (
-          <p className="ict-dev-empty-state">No active sprint tasks assigned to you for this filter.</p>
+          <p className="ictdc-empty-state">No active sprint tasks assigned to you for this filter.</p>
         )}
         {mySprintTasks.length > 0 && (
-          <div className="ict-dev-table-wrap">
-            <table className="ict-dev-table">
+          <div className="ictdc-table-wrap">
+            <table className="ictdc-table">
               <thead>
                 <tr>
                   <th>Key</th>
@@ -233,7 +237,7 @@ function DevCenterDashboard() {
                     <td>{item.work_key}</td>
                     <td>
                       <div>{item.title}</div>
-                      {item.needsAsap && <span className="ict-dev-chip ict-dev-chip-asap">ASAP</span>}
+                      {item.needsAsap && <span className="ictdc-chip ictdc-chip-asap">ASAP</span>}
                     </td>
                     <td>{toTitleCase(item.workflow_stage)}</td>
                     <td>{toTitleCase(item.workflow_status)}</td>
@@ -241,7 +245,7 @@ function DevCenterDashboard() {
                     <td>{formatDate(item.due_date)}</td>
                     <td>
                       <button
-                        className="ict-dev-btn-secondary ict-dev-btn-compact"
+                        className="ictdc-btn-secondary ictdc-btn-compact"
                         type="button"
                         onClick={() => go('/home/ict/development/board')}
                       >

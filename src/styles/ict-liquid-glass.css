@@ -1,0 +1,372 @@
+:root {
+  --ict-glass-bg: linear-gradient(135deg, rgba(12, 69, 95, 0.78), rgba(18, 126, 147, 0.72));
+  --ict-glass-surface: rgba(224, 252, 255, 0.24);
+  --ict-glass-surface-strong: rgba(221, 251, 255, 0.34);
+  --ict-glass-layer: rgba(255, 255, 255, 0.48);
+  --ict-glass-layer-strong: rgba(255, 255, 255, 0.58);
+  --ict-glass-border: rgba(185, 241, 255, 0.55);
+  --ict-glass-border-strong: rgba(157, 234, 250, 0.72);
+  --ict-glass-text: #e9feff;
+  --ict-glass-muted: #c8e7ed;
+  --ict-glass-accent: #31d9df;
+  --ict-glass-accent-2: #90f7ff;
+  --ict-glass-shadow: 0 16px 40px rgba(7, 61, 75, 0.23);
+  --ict-content-bg: radial-gradient(circle at top right, rgba(103, 252, 255, 0.22), transparent 42%),
+    radial-gradient(circle at 20% 20%, rgba(131, 247, 255, 0.16), transparent 38%),
+    linear-gradient(180deg, #effaff 0%, #e8f6fb 100%);
+}
+
+body.wing-theme-ict .content-dashboard,
+.home-layout-root--ict-wing .content-dashboard {
+  background-image:
+    linear-gradient(125deg, rgba(4, 10, 20, 0.72) 0%, rgba(8, 18, 33, 0.62) 45%, rgba(5, 12, 24, 0.74) 100%),
+    var(--ict-wing-bg-url),
+    var(--ict-content-bg);
+  background-size: cover, cover, cover;
+  background-position: center, center, center;
+  background-repeat: no-repeat, no-repeat, no-repeat;
+  min-height: 100vh;
+  scrollbar-color: #39b6c4 #dcedf1;
+}
+
+body.wing-theme-ict .left-nav,
+body.wing-theme-ict .left-nav.blue,
+body.wing-theme-ict .left-nav.green,
+body.wing-theme-ict .left-nav.darkblue,
+.home-layout-root--ict-wing .left-nav,
+.home-layout-root--ict-wing .left-nav.blue,
+.home-layout-root--ict-wing .left-nav.green,
+.home-layout-root--ict-wing .left-nav.darkblue {
+  background-image:
+    linear-gradient(150deg, rgba(6, 16, 30, 0.94), rgba(9, 24, 44, 0.9)),
+    var(--ict-wing-bg-url),
+    var(--ict-glass-bg) !important;
+  background-size: cover, cover, cover !important;
+  background-position: center, center, center !important;
+  background-repeat: no-repeat, no-repeat, no-repeat !important;
+  color: var(--ict-glass-text);
+  border-right: 1px solid rgba(214, 250, 255, 0.3);
+  box-shadow: 10px 0 40px rgba(8, 56, 68, 0.3);
+  backdrop-filter: blur(20px) saturate(145%);
+  -webkit-backdrop-filter: blur(20px) saturate(145%);
+}
+
+body.wing-theme-ict .top-nav,
+body.wing-theme-ict .top-nav.blue,
+body.wing-theme-ict .top-nav.green,
+body.wing-theme-ict .top-nav.darkblue,
+.home-layout-root--ict-wing .top-nav,
+.home-layout-root--ict-wing .top-nav.blue,
+.home-layout-root--ict-wing .top-nav.green,
+.home-layout-root--ict-wing .top-nav.darkblue {
+  background: linear-gradient(90deg, rgba(13, 102, 124, 0.84), rgba(16, 137, 159, 0.78)) !important;
+  border-bottom: 1px solid rgba(160, 232, 245, 0.44);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+}
+
+body.wing-theme-ict .nav-category-btn,
+.home-layout-root--ict-wing .nav-category-btn {
+  background: rgba(146, 210, 228, 0.28) !important;
+  border: 1px solid rgba(180, 238, 247, 0.34) !important;
+  border-radius: 12px !important;
+  color: var(--ict-glass-text) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24);
+}
+
+body.wing-theme-ict .nav-category-btn:hover,
+.home-layout-root--ict-wing .nav-category-btn:hover {
+  background: rgba(168, 225, 241, 0.36) !important;
+  box-shadow: 0 10px 24px rgba(7, 63, 78, 0.3);
+}
+
+body.wing-theme-ict .nav-sublist,
+.home-layout-root--ict-wing .nav-sublist {
+  background: rgba(10, 33, 55, 0.5) !important;
+  border-left-color: var(--ict-glass-accent) !important;
+  border-radius: 12px !important;
+  border: 1px solid rgba(167, 241, 255, 0.3);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+body.wing-theme-ict .nav-link,
+.home-layout-root--ict-wing .nav-link {
+  color: var(--ict-glass-text) !important;
+  border-radius: 10px !important;
+}
+
+body.wing-theme-ict .left-nav .nav-link:hover,
+body.wing-theme-ict .logout-btn:hover,
+.home-layout-root--ict-wing .left-nav .nav-link:hover,
+.home-layout-root--ict-wing .logout-btn:hover {
+  background-color: rgba(168, 225, 241, 0.32) !important;
+}
+
+body.wing-theme-ict .nav-link.active,
+.home-layout-root--ict-wing .nav-link.active {
+  background: linear-gradient(
+    120deg,
+    rgba(88, 220, 232, 0.42) 0%,
+    rgba(73, 179, 197, 0.34) 100%
+  );
+  border: 1px solid var(--ict-glass-border) !important;
+  box-shadow: 0 10px 26px rgba(3, 58, 70, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.34);
+}
+
+body.wing-theme-ict .nav-link.active::after,
+.home-layout-root--ict-wing .nav-link.active::after {
+  background: linear-gradient(
+    180deg,
+    var(--ict-glass-accent-2) 0%,
+    var(--ict-glass-accent) 100%
+  );
+  box-shadow: 0 0 14px rgba(50, 214, 220, 0.75);
+}
+
+body.wing-theme-ict .pending-count,
+.home-layout-root--ict-wing .pending-count {
+  background: #0b6f7a;
+  color: #d9fbff;
+  border: 1px solid rgba(171, 247, 255, 0.55);
+}
+
+body.wing-theme-ict .left-nav .nav-icon,
+body.wing-theme-ict .left-nav .nav-category-icon,
+body.wing-theme-ict .left-nav .nav-category-chevron,
+body.wing-theme-ict .left-nav .nav-subgroup-chevron,
+body.wing-theme-ict .left-nav .nav-subgroup-toggle,
+body.wing-theme-ict .left-nav .nav-subgroup-link .nav-icon,
+body.wing-theme-ict .left-nav .logout-btn .nav-icon,
+.home-layout-root--ict-wing .left-nav .nav-icon,
+.home-layout-root--ict-wing .left-nav .nav-category-icon,
+.home-layout-root--ict-wing .left-nav .nav-category-chevron,
+.home-layout-root--ict-wing .left-nav .nav-subgroup-chevron,
+.home-layout-root--ict-wing .left-nav .nav-subgroup-toggle,
+.home-layout-root--ict-wing .left-nav .nav-subgroup-link .nav-icon,
+.home-layout-root--ict-wing .left-nav .logout-btn .nav-icon {
+  color: #ffffff !important;
+  opacity: 1 !important;
+  fill: #ffffff !important;
+}
+
+body.wing-theme-ict .left-nav .nav-category-chevron svg,
+body.wing-theme-ict .left-nav .nav-subgroup-chevron svg,
+body.wing-theme-ict .left-nav .nav-subgroup-toggle svg,
+.home-layout-root--ict-wing .left-nav .nav-category-chevron svg,
+.home-layout-root--ict-wing .left-nav .nav-subgroup-chevron svg,
+.home-layout-root--ict-wing .left-nav .nav-subgroup-toggle svg {
+  color: #ffffff !important;
+  fill: #ffffff !important;
+  stroke: #ffffff !important;
+  opacity: 1 !important;
+}
+
+body.wing-theme-ict .page-sysmaint {
+  background: var(--ict-content-bg);
+}
+
+body.wing-theme-ict .sysmaint-summary-card,
+body.wing-theme-ict .sysmaint-panel,
+body.wing-theme-ict .sysmaint-pm2-card,
+body.wing-theme-ict .sysmaint-api-self,
+body.wing-theme-ict .sysmaint-table-wrap {
+  background: var(--ict-glass-layer);
+  border: 1px solid rgba(174, 229, 241, 0.62);
+  box-shadow: var(--ict-glass-shadow);
+  backdrop-filter: blur(18px) saturate(138%);
+  -webkit-backdrop-filter: blur(18px) saturate(138%);
+}
+
+body.wing-theme-ict .sysmaint-title,
+body.wing-theme-ict .sysmaint-section-title {
+  color: #0e5d6d;
+}
+
+body.wing-theme-ict .sysmaint-btn-primary {
+  background: linear-gradient(120deg, #0f7d91 0%, #1699a8 100%);
+  border: 1px solid var(--ict-glass-border-strong);
+}
+
+body.wing-theme-ict .sysmaint-btn-primary:hover:not(:disabled) {
+  background: linear-gradient(120deg, #0d6f81 0%, #128a98 100%);
+}
+
+body.wing-theme-ict .sysmaint-btn-secondary {
+  background: rgba(219, 248, 255, 0.82);
+  color: #0d5f70;
+  border: 1px solid rgba(146, 217, 229, 0.64);
+}
+
+body.wing-theme-ict .sysmaint-btn-secondary:hover:not(:disabled) {
+  background: rgba(204, 242, 250, 0.94);
+}
+
+body.wing-theme-ict .content-dashboard h1,
+body.wing-theme-ict .content-dashboard h2,
+body.wing-theme-ict .content-dashboard h3 {
+  color: #0f5b69;
+}
+
+body.wing-theme-ict .content-dashboard table,
+body.wing-theme-ict .content-dashboard [class*='table'],
+body.wing-theme-ict .content-dashboard [class*='Table'] {
+  background: transparent;
+}
+
+body.wing-theme-ict .content-dashboard thead tr,
+body.wing-theme-ict .content-dashboard [class*='header'],
+body.wing-theme-ict .content-dashboard [class*='Header'] {
+  background: rgba(224, 251, 255, 0.42);
+}
+
+body.wing-theme-ict .content-dashboard input,
+body.wing-theme-ict .content-dashboard select,
+body.wing-theme-ict .content-dashboard textarea {
+  background: rgba(248, 254, 255, 0.7);
+  border: 1px solid rgba(145, 216, 228, 0.6);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+body.wing-theme-ict .content-dashboard button:not(.sysmaint-btn-primary):not(.sysmaint-btn-secondary) {
+  background: rgba(228, 251, 255, 0.72);
+  border: 1px solid rgba(148, 216, 227, 0.54);
+}
+
+body.wing-theme-ict .content-dashboard [class*='card'],
+body.wing-theme-ict .content-dashboard [class*='Card'],
+body.wing-theme-ict .content-dashboard [class*='panel'],
+body.wing-theme-ict .content-dashboard [class*='Panel'],
+body.wing-theme-ict .content-dashboard [class*='widget'],
+body.wing-theme-ict .content-dashboard [class*='Widget'],
+body.wing-theme-ict .content-dashboard [class*='container'],
+body.wing-theme-ict .content-dashboard [class*='Container'],
+body.wing-theme-ict .content-dashboard [class*='box'],
+body.wing-theme-ict .content-dashboard [class*='Box'],
+body.wing-theme-ict .content-dashboard [class*='toolbar'],
+body.wing-theme-ict .content-dashboard [class*='Toolbar'] {
+  border-color: rgba(176, 230, 240, 0.66);
+}
+
+/* System Administration routes: users/auth/logs/master-data */
+body.wing-theme-ict .auth-controls-page,
+body.wing-theme-ict .page-logs-report,
+body.wing-theme-ict .vehicle-admin-page-master-data,
+body.wing-theme-ict .user-mgmt-shell,
+body.wing-theme-ict .user-registration-container,
+body.wing-theme-ict .registration-form-content,
+.home-layout-root--ict-wing .auth-controls-page,
+.home-layout-root--ict-wing .page-logs-report,
+.home-layout-root--ict-wing .vehicle-admin-page-master-data,
+.home-layout-root--ict-wing .user-mgmt-shell,
+.home-layout-root--ict-wing .user-registration-container,
+.home-layout-root--ict-wing .registration-form-content {
+  background: transparent !important;
+  color: #f4f9ff;
+}
+
+body.wing-theme-ict .auth-controls-header,
+body.wing-theme-ict .auth-controls-category-group,
+body.wing-theme-ict .auth-controls-search,
+body.wing-theme-ict .auth-controls-legend,
+body.wing-theme-ict .header-logs-report,
+body.wing-theme-ict .stats-bar-logs-report,
+body.wing-theme-ict .categories-grid-logs-report .category-card-logs-report,
+body.wing-theme-ict .files-section-logs-report,
+body.wing-theme-ict .data-section-logs-report,
+body.wing-theme-ict .table-wrapper-logs-report,
+body.wing-theme-ict .vehicle-admin-header-master-data,
+body.wing-theme-ict .vehicle-admin-card-master-data,
+body.wing-theme-ict .masters-picker-master-data,
+body.wing-theme-ict .masters-workspace-master-data,
+body.wing-theme-ict .user-mgmt-header,
+body.wing-theme-ict .user-mgmt-body,
+body.wing-theme-ict .users-table-wrapper,
+body.wing-theme-ict .users-mgmt-toolbar,
+body.wing-theme-ict .update-popup-card,
+body.wing-theme-ict .update-popup-card-master-data,
+body.wing-theme-ict .user-register-modal-card,
+.home-layout-root--ict-wing .auth-controls-header,
+.home-layout-root--ict-wing .auth-controls-category-group,
+.home-layout-root--ict-wing .auth-controls-search,
+.home-layout-root--ict-wing .auth-controls-legend,
+.home-layout-root--ict-wing .header-logs-report,
+.home-layout-root--ict-wing .stats-bar-logs-report,
+.home-layout-root--ict-wing .categories-grid-logs-report .category-card-logs-report,
+.home-layout-root--ict-wing .files-section-logs-report,
+.home-layout-root--ict-wing .data-section-logs-report,
+.home-layout-root--ict-wing .table-wrapper-logs-report,
+.home-layout-root--ict-wing .vehicle-admin-header-master-data,
+.home-layout-root--ict-wing .vehicle-admin-card-master-data,
+.home-layout-root--ict-wing .masters-picker-master-data,
+.home-layout-root--ict-wing .masters-workspace-master-data,
+.home-layout-root--ict-wing .user-mgmt-header,
+.home-layout-root--ict-wing .user-mgmt-body,
+.home-layout-root--ict-wing .users-table-wrapper,
+.home-layout-root--ict-wing .users-mgmt-toolbar,
+.home-layout-root--ict-wing .update-popup-card,
+.home-layout-root--ict-wing .update-popup-card-master-data,
+.home-layout-root--ict-wing .user-register-modal-card {
+  background: linear-gradient(145deg, rgba(7, 18, 34, 0.62), rgba(10, 24, 45, 0.48)) !important;
+  border: 1px solid rgba(188, 220, 255, 0.24) !important;
+  box-shadow: 0 18px 40px rgba(2, 8, 22, 0.36) !important;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+body.wing-theme-ict .auth-controls-page input,
+body.wing-theme-ict .auth-controls-page select,
+body.wing-theme-ict .auth-controls-page textarea,
+body.wing-theme-ict .page-logs-report input,
+body.wing-theme-ict .page-logs-report select,
+body.wing-theme-ict .vehicle-admin-page-master-data input,
+body.wing-theme-ict .vehicle-admin-page-master-data select,
+body.wing-theme-ict .vehicle-admin-page-master-data textarea,
+body.wing-theme-ict .user-mgmt-shell input,
+body.wing-theme-ict .user-mgmt-shell select,
+body.wing-theme-ict .user-mgmt-shell textarea,
+.home-layout-root--ict-wing .auth-controls-page input,
+.home-layout-root--ict-wing .auth-controls-page select,
+.home-layout-root--ict-wing .auth-controls-page textarea,
+.home-layout-root--ict-wing .page-logs-report input,
+.home-layout-root--ict-wing .page-logs-report select,
+.home-layout-root--ict-wing .vehicle-admin-page-master-data input,
+.home-layout-root--ict-wing .vehicle-admin-page-master-data select,
+.home-layout-root--ict-wing .vehicle-admin-page-master-data textarea,
+.home-layout-root--ict-wing .user-mgmt-shell input,
+.home-layout-root--ict-wing .user-mgmt-shell select,
+.home-layout-root--ict-wing .user-mgmt-shell textarea {
+  background:
+    linear-gradient(155deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.03)),
+    rgba(8, 20, 38, 0.62) !important;
+  border: 1px solid rgba(181, 214, 255, 0.4) !important;
+  color: #f6faff !important;
+}
+
+body.wing-theme-ict .auth-controls-page h1,
+body.wing-theme-ict .auth-controls-page h2,
+body.wing-theme-ict .auth-controls-page h3,
+body.wing-theme-ict .auth-controls-page h4,
+body.wing-theme-ict .page-logs-report h1,
+body.wing-theme-ict .page-logs-report h2,
+body.wing-theme-ict .page-logs-report h3,
+body.wing-theme-ict .vehicle-admin-page-master-data h1,
+body.wing-theme-ict .vehicle-admin-page-master-data h2,
+body.wing-theme-ict .vehicle-admin-page-master-data h3,
+body.wing-theme-ict .user-mgmt-shell h1,
+body.wing-theme-ict .user-mgmt-shell h2,
+body.wing-theme-ict .user-mgmt-shell h3,
+.home-layout-root--ict-wing .auth-controls-page h1,
+.home-layout-root--ict-wing .auth-controls-page h2,
+.home-layout-root--ict-wing .auth-controls-page h3,
+.home-layout-root--ict-wing .auth-controls-page h4,
+.home-layout-root--ict-wing .page-logs-report h1,
+.home-layout-root--ict-wing .page-logs-report h2,
+.home-layout-root--ict-wing .page-logs-report h3,
+.home-layout-root--ict-wing .vehicle-admin-page-master-data h1,
+.home-layout-root--ict-wing .vehicle-admin-page-master-data h2,
+.home-layout-root--ict-wing .vehicle-admin-page-master-data h3,
+.home-layout-root--ict-wing .user-mgmt-shell h1,
+.home-layout-root--ict-wing .user-mgmt-shell h2,
+.home-layout-root--ict-wing .user-mgmt-shell h3 {
+  color: #ffffff !important;
+}

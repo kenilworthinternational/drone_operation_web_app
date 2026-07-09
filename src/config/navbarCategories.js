@@ -84,22 +84,15 @@ const navbarCategories = [
     icon: FaSitemap,
     children: [
       {
-        path: '/home/ict/development/dev-center',
-        label: 'ICT Development',
-        icon: FaProjectDiagram,
-        subItems: [
-          { path: '/home/ict/development/dev-center', label: 'Dev Center', icon: FaTachometerAlt },
-        ],
-      },
-      {
-        path: '/home/ict/system-admin/users',
+        path: '/home/ict/system-admin/system-maintenance',
         label: 'System Administration',
         icon: FaUserCog,
         subItems: [
+          { path: '/home/ict/system-admin/system-maintenance', label: 'Dashboard', icon: FaTachometerAlt },
+          { path: '/home/ict/development/dev-center', label: 'ICT Development', icon: FaProjectDiagram },
           { path: '/home/ict/system-admin/users', label: 'Users', icon: FaUsers },
           { path: '/home/ict/system-admin/auth-controls', label: 'Auth Controls', icon: FaKey },
           { path: '/home/ict/system-admin/logs-report', label: 'Logs Report', icon: FaClipboardList },
-          { path: '/home/ict/system-admin/system-maintenance', label: 'System Maintenance', icon: FaServer },
           { path: '/home/ict/system-admin/master-data-update', label: 'Master Data Update', icon: FaTools },
         ],
       },

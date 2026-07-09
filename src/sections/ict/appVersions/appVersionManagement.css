@@ -547,3 +547,131 @@
     padding: 10px 12px;
   }
 }
+
+/* App Versions dark glass overrides */
+body.wing-theme-ict .content-dashboard .avm-container {
+  --avm-primary: #d8ebff;
+  --avm-primary-soft: rgba(164, 210, 255, 0.24);
+  --avm-primary-soft-2: rgba(111, 168, 236, 0.2);
+  --avm-text: #f5f9ff;
+  --avm-muted: rgba(217, 230, 247, 0.85);
+  --avm-line: rgba(188, 220, 255, 0.24);
+  --avm-line-soft: rgba(188, 220, 255, 0.14);
+  --avm-shadow: 0 18px 40px rgba(2, 8, 22, 0.36);
+}
+
+body.wing-theme-ict .content-dashboard .avm-container h1,
+body.wing-theme-ict .content-dashboard .avm-container h2,
+body.wing-theme-ict .content-dashboard .avm-container h3 {
+  color: #ffffff !important;
+}
+
+body.wing-theme-ict .content-dashboard .avm-search-bar,
+body.wing-theme-ict .content-dashboard .avm-table-wrap,
+body.wing-theme-ict .content-dashboard .avm-info-note {
+  background: linear-gradient(145deg, rgba(7, 18, 34, 0.58), rgba(10, 24, 45, 0.44)) !important;
+  border: 1px solid rgba(188, 220, 255, 0.24) !important;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 18px 40px rgba(2, 8, 22, 0.36) !important;
+}
+
+body.wing-theme-ict .content-dashboard .avm-search-input,
+body.wing-theme-ict .content-dashboard .avm-field input,
+body.wing-theme-ict .content-dashboard .avm-field select,
+body.wing-theme-ict .content-dashboard .avm-field textarea {
+  border: 1px solid rgba(181, 214, 255, 0.4) !important;
+  background:
+    linear-gradient(155deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.03)),
+    rgba(8, 20, 38, 0.62) !important;
+  color: #f6faff !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    0 10px 24px rgba(2, 8, 22, 0.28) !important;
+  caret-color: #ffffff;
+}
+
+body.wing-theme-ict .content-dashboard .avm-search-input:focus,
+body.wing-theme-ict .content-dashboard .avm-field input:focus,
+body.wing-theme-ict .content-dashboard .avm-field select:focus,
+body.wing-theme-ict .content-dashboard .avm-field textarea:focus {
+  border-color: rgba(173, 217, 255, 0.82) !important;
+  box-shadow:
+    0 0 0 3px rgba(132, 186, 255, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 10px 24px rgba(2, 8, 22, 0.28) !important;
+}
+
+body.wing-theme-ict .content-dashboard .avm-search-input::placeholder,
+body.wing-theme-ict .content-dashboard .avm-field input::placeholder,
+body.wing-theme-ict .content-dashboard .avm-field textarea::placeholder {
+  color: rgba(226, 238, 255, 0.72) !important;
+}
+
+body.wing-theme-ict .content-dashboard .avm-field select option {
+  background: #0c1b31;
+  color: #f8fbff;
+}
+
+body.wing-theme-ict .content-dashboard .avm-table thead th {
+  background: rgba(172, 209, 255, 0.14);
+  color: rgba(227, 240, 255, 0.92);
+  border-bottom-color: rgba(188, 220, 255, 0.22);
+}
+
+body.wing-theme-ict .content-dashboard .avm-table tbody tr:hover {
+  background: rgba(172, 209, 255, 0.08);
+}
+
+body.wing-theme-ict .content-dashboard .avm-table td,
+body.wing-theme-ict .content-dashboard .avm-cell-name,
+body.wing-theme-ict .content-dashboard .avm-cell-id,
+body.wing-theme-ict .content-dashboard .avm-search-count,
+body.wing-theme-ict .content-dashboard .avm-field label,
+body.wing-theme-ict .content-dashboard .avm-field-hint,
+body.wing-theme-ict .content-dashboard .avm-toggle-label {
+  color: #f6faff !important;
+}
+
+body.wing-theme-ict .content-dashboard .avm-btn {
+  border-radius: 10px;
+  color: #f6faff !important;
+  border: 1px solid rgba(188, 220, 255, 0.34) !important;
+}
+
+body.wing-theme-ict .content-dashboard .avm-btn-primary {
+  background:
+    linear-gradient(150deg, rgba(175, 218, 255, 0.28), rgba(90, 151, 255, 0.18)),
+    rgba(36, 78, 138, 0.42) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.26),
+    0 12px 28px rgba(7, 26, 52, 0.34) !important;
+}
+
+body.wing-theme-ict .content-dashboard .avm-btn-cancel,
+body.wing-theme-ict .content-dashboard .avm-btn-edit {
+  background:
+    linear-gradient(150deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.04)),
+    rgba(10, 24, 43, 0.58) !important;
+}
+
+body.wing-theme-ict .content-dashboard .avm-modal-overlay {
+  background: rgba(3, 12, 24, 0.6);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+
+body.wing-theme-ict .content-dashboard .avm-modal {
+  background: linear-gradient(145deg, rgba(7, 18, 34, 0.72), rgba(10, 24, 45, 0.62)) !important;
+  border: 1px solid rgba(188, 220, 255, 0.28) !important;
+  box-shadow: 0 22px 52px rgba(2, 8, 22, 0.5) !important;
+  color: #f6faff;
+}
+
+body.wing-theme-ict .content-dashboard .avm-modal-header {
+  border-bottom-color: rgba(188, 220, 255, 0.2);
+}
+
+body.wing-theme-ict .content-dashboard .avm-form-actions {
+  border-top-color: rgba(188, 220, 255, 0.2);
+}

@@ -651,9 +651,9 @@ const AuthControls = () => {
                     {/* Column headers for job roles */}
                     <div className="auth-controls-row-header">
                       <div className="auth-controls-row-label-header"></div>
-                      <div className="auth-controls-row-checkboxes-header">
+                      <div className="auth-controls-row-checkboxes-header ictacx-row-checkboxes-header">
                         {Object.values(jobRoleMap).map((role) => (
-                          <div key={role.id} className="auth-controls-checkbox-header" title={role.name}>
+                          <div key={role.id} className="auth-controls-checkbox-header ictacx-checkbox-header" title={role.name}>
                             <span className="auth-controls-checkbox-code">{role.code?.toUpperCase() || 'N/A'}</span>
                           </div>
                         ))}
@@ -756,9 +756,9 @@ const AuthControls = () => {
                       {/* Column headers for job roles */}
                       <div className="auth-controls-row-header">
                         <div className="auth-controls-row-label-header"></div>
-                        <div className="auth-controls-row-checkboxes-header">
+                        <div className="auth-controls-row-checkboxes-header ictacx-row-checkboxes-header">
                           {Object.values(jobRoleMap).map((role) => (
-                            <div key={role.id} className="auth-controls-checkbox-header" title={role.name}>
+                            <div key={role.id} className="auth-controls-checkbox-header ictacx-checkbox-header" title={role.name}>
                               <span className="auth-controls-checkbox-code">{role.code?.toUpperCase() || 'N/A'}</span>
                             </div>
                           ))}

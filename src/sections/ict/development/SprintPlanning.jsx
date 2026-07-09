@@ -29,6 +29,7 @@ function formatDisplayDate(value) {
 function SprintPlanning() {
   const routerLocation = useLocation();
   const navigate = useNavigate();
+  const devBgUrl = `${process.env.PUBLIC_URL || ''}/assets/images/bg.jpg`;
   const { data: projects = [], isLoading: loadingProjects } = useGetIctProjectsQuery();
   const { data: users = [] } = useGetIctAssignableUsersQuery();
   const [selectedProjectId, setSelectedProjectId] = useState('');
@@ -164,7 +165,10 @@ function SprintPlanning() {
   };
 
   return (
-    <div className="ict-dev-page ict-dev-stack">
+    <div
+      className="ict-dev-page ict-dev-stack"
+      style={{ '--ict-dev-bg-url': `url("${devBgUrl}")` }}
+    >
       <div className="ict-dev-page-header ict-dev-page-header-balanced">
         <div className="ict-dev-page-actions">
           <button className="ict-dev-btn-secondary" type="button" onClick={() => navigate({ pathname: '/home/ict/development/dev-center', search: routerLocation.search })}>

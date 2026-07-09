@@ -42,6 +42,7 @@ function toBit(value, defaultWhenMissing = 0) {
 export default function AppVersionManagement() {
   const routerLocation = useLocation();
   const navigate = useNavigate();
+  const devBgUrl = `${process.env.PUBLIC_URL || ''}/assets/images/bg.jpg`;
   const { data: versions = [], isLoading, refetch } = useGetAppVersionsQuery();
   const [createAppVersion, { isLoading: creating }] = useCreateAppVersionMutation();
   const [updateAppVersion, { isLoading: updating }] = useUpdateAppVersionMutation();
@@ -127,7 +128,10 @@ export default function AppVersionManagement() {
   };
 
   return (
-    <div className="avm-container ict-dev-page ict-dev-stack">
+    <div
+      className="avm-container ict-dev-page ict-dev-stack"
+      style={{ '--ict-dev-bg-url': `url("${devBgUrl}")` }}
+    >
       {/* Header */}
       <div className="ict-dev-page-header ict-dev-page-header-balanced">
         <div className="ict-dev-page-actions">
