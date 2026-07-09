@@ -1,26 +1,44 @@
 import React, { useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 
+function toNumber(v) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+function classifyHourlyRain(rainMm) {
+  const rain = toNumber(rainMm);
+  if (rain == null || rain <= 0) return 'No rain';
+  if (rain < 2.5) return 'Slight / Light Rain';
+  if (rain <= 7.5) return 'Moderate Rain';
+  if (rain <= 50) return 'Heavy Rain';
+  return 'Violent / Torrential Rain';
+}
+
+function classifyDailyRain(dailyMm) {
+  const rain = toNumber(dailyMm);
+  if (rain == null || rain <= 0) return 'Minimal';
+  if (rain <= 2) return 'Minimal';
+  if (rain <= 5) return 'Steady light drizzle';
+  if (rain <= 15) return 'Moderate rainfall';
+  if (rain <= 30) return 'Strong, heavy rain';
+  return 'Intense rainfall';
+}
+
 const PlanWeatherCard = ({ plan }) => {
   const safePlan = plan || {};
 
   const weather = safePlan.weather || {};
   const daily = weather?.daily || {};
   const current = weather?.current || null;
+  const summary = weather?.summary || {};
   const hourlyRows = Array.isArray(weather?.hourly) ? weather.hourly : [];
   const [showDetails, setShowDetails] = useState(false);
 
-  const toNumber = (v) => {
-    const n = Number(v);
-    return Number.isFinite(n) ? n : null;
-  };
-
   const tempMin = summary?.temperatureMin ?? daily?.temperature_2m_min;
   const tempMax = summary?.temperatureMax ?? daily?.temperature_2m_max;
-  const rainSum = Number(daily?.rain_sum || 0);
   const precipitationSum = Number(daily?.precipitation_sum || 0);
   const precipProbabilityMax = toNumber(daily?.precipitation_probability_max);
-  const summary = weather?.summary || {};
   const humidity = summary?.humidityAvg;
   const weatherCode = daily?.weather_code;
   const hasWeatherData = Boolean(daily && daily.date);
@@ -42,7 +60,7 @@ const PlanWeatherCard = ({ plan }) => {
       avg: sum / speeds.length,
       max: Math.max(...speeds),
     };
-  }, [hourlyRows, summary, daily]);
+  }, [hourlyRows, summary]);
 
   const windMin = hourlyWindStats.min;
   const windAvg = hourlyWindStats.avg;
@@ -57,26 +75,6 @@ const PlanWeatherCard = ({ plan }) => {
     return date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
   };
 
-  const classifyHourlyRain = (rainMm) => {
-    const rain = toNumber(rainMm);
-    if (rain == null || rain <= 0) return 'No rain';
-    if (rain < 2.5) return 'Slight / Light Rain';
-    if (rain <= 7.5) return 'Moderate Rain';
-    if (rain <= 50) return 'Heavy Rain';
-    return 'Violent / Torrential Rain';
-  };
-
-  const classifyDailyRain = (dailyMm) => {
-    const rain = toNumber(dailyMm);
-    if (rain == null || rain <= 0) return 'Minimal';
-    if (rain <= 2) return 'Minimal';
-    if (rain <= 5) return 'Steady light drizzle';
-    if (rain <= 15) return 'Moderate rainfall';
-    if (rain <= 30) return 'Strong, heavy rain';
-    return 'Intense rainfall';
-  };
-
-  // Determine weather condition and styling
   const getWeatherCondition = () => {
     if (!hasWeatherData) {
       return { condition: 'No Weather Data', icon: '⚪', className: 'weather-unknown' };

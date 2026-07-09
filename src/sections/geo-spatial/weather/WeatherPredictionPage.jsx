@@ -116,14 +116,14 @@ const WeatherPredictionPage = () => {
   const [coordinateModalEstate, setCoordinateModalEstate] = useState(null);
 
   const { data: estatesResponse = [], isLoading: estatesLoading } = useGetMappingEstatesQuery({});
-  const estates = estatesResponse?.data || [];
+  const estates = useMemo(() => estatesResponse?.data || [], [estatesResponse]);
 
   const estateIdNum = selectedEstateId ? Number(selectedEstateId) : null;
   const { data: divisionsResponse = [], isLoading: divisionsLoading } = useGetMappingDivisionsByEstateQuery(
     estateIdNum,
     { skip: !estateIdNum }
   );
-  const divisions = divisionsResponse?.data || [];
+  const divisions = useMemo(() => divisionsResponse?.data || [], [divisionsResponse]);
 
   const selectedDivision = useMemo(
     () => divisions.find((d) => String(d.id) === String(selectedDivisionId)) || null,
@@ -202,22 +202,6 @@ const WeatherPredictionPage = () => {
     if (!weatherResult?.raw || !hourlySelectedDate) return [];
     return extractHourlyWeatherForDate(weatherResult.raw, hourlySelectedDate);
   }, [weatherResult, hourlySelectedDate]);
-
-  const hourlyWindStats = useMemo(() => {
-    const speeds = hourlyRows.map((row) => toNumber(row.wind_speed_10m)).filter((n) => n != null);
-    if (!speeds.length) {
-      const summary = weatherResult?.raw
-        ? summarizeHourlyWeatherForDate(weatherResult.raw, hourlySelectedDate)
-        : null;
-      return {
-        min: toNumber(summary?.windSpeedMin),
-        avg: toNumber(summary?.windSpeedAvg),
-        max: toNumber(summary?.windSpeedMax),
-      };
-    }
-    const sum = speeds.reduce((acc, v) => acc + v, 0);
-    return { min: Math.min(...speeds), avg: sum / speeds.length, max: Math.max(...speeds) };
-  }, [hourlyRows, weatherResult, hourlySelectedDate]);
 
   const dailyRows = useMemo(() => {
     if (!weatherResult) return [];
@@ -552,16 +536,6 @@ const WeatherPredictionPage = () => {
               </span>
             ) : null}
           </div>
-          {/* <div className="weather-pred-report-grid" style={{ padding: '0.75rem 1rem' }}>
-            <div className="weather-pred-stat-card">
-              <div className="weather-pred-stat-label">Wind min / avg / maxs</div>
-              <div className="weather-pred-stat-value" style={{ fontSize: '0.95rem' }}>
-                {hourlyWindStats.min != null || hourlyWindStats.avg != null || hourlyWindStats.max != null
-                  ? `${hourlyWindStats.min != null ? hourlyWindStats.min.toFixed(1) : '—'} / ${hourlyWindStats.avg != null ? hourlyWindStats.avg.toFixed(1) : '—'} / ${hourlyWindStats.max != null ? hourlyWindStats.max.toFixed(1) : '—'} km/h`
-                  : '—'}
-              </div>
-            </div>
-          </div> */}
           <div className="weather-pred-table-wrap">
             <table className="weather-pred-table">
               <thead>

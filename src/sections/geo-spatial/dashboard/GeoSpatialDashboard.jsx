@@ -283,7 +283,7 @@ const GeoSpatialDashboard = () => {
       hour: '2-digit',
       minute: '2-digit',
     });
-  }, [data]);
+  }, []);
 
   return (
     <div className="geo-dash-page">

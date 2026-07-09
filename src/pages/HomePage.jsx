@@ -62,7 +62,7 @@ const HomePage = () => {
     return pathname.includes('/employeeRegistration')
       || pathname.includes('/employeeProfileDetails')
       || pathname.includes('/employees');
-  }, [location.pathname]);
+  }, [location]);
 
   /** Geo Spatial weather: fixed location panel; scroll forecast panel only. */
   const isWeatherPredictionRoute = location.pathname.includes('/geo-spatial/weather-prediction');
