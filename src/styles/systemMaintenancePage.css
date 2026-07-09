@@ -269,6 +269,22 @@
   font-size: 0.85rem;
 }
 
+.sysmaint-jenkins-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sysmaint-jenkins-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+
 .sysmaint-task-list {
   display: flex;
   flex-direction: column;

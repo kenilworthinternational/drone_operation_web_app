@@ -12,6 +12,7 @@ import Pm2ProcessCard from './components/Pm2ProcessCard';
 import HostMetricsPanel from './components/HostMetricsPanel';
 import BackupPanel from './components/BackupPanel';
 import LogTailModal from './components/LogTailModal';
+import JenkinsPanel from './components/JenkinsPanel';
 import '../../../styles/systemMaintenancePage.css';
 
 function formatCollectedAt(iso) {
@@ -221,6 +222,9 @@ const SystemMaintenancePage = () => {
           onPollStatus={() => refetch()}
         />
       </div>
+      <section className="sysmaint-section">
+        <JenkinsPanel jenkins={overview?.jenkins} errors={sectionErrors} />
+      </section>
 
       <section className="sysmaint-section">
         <h2 className="sysmaint-section-title">Recent actions</h2>
