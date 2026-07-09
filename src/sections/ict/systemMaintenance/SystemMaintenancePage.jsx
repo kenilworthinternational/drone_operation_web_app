@@ -74,8 +74,10 @@ const SystemMaintenancePage = () => {
       await triggerBackup({ confirmAction }).unwrap();
       setActionMessage('Database backup started. Status will update when complete.');
       setBackupPolling(true);
+      return { ok: true };
     } catch (err) {
       setActionMessage(err?.data?.message || err?.message || 'Failed to start backup.');
+      return { ok: false };
     }
   }, [triggerBackup]);
 

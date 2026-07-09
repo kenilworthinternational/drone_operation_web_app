@@ -20,10 +20,12 @@ const BackupPanel = ({
   const [confirmAction, setConfirmAction] = useState('');
 
   const handleTrigger = async () => {
-    await onTriggerBackup(confirmAction);
-    setShowConfirm(false);
-    setConfirmAction('');
-    if (onPollStatus) onPollStatus();
+    const result = await onTriggerBackup(confirmAction);
+    if (result?.ok) {
+      setShowConfirm(false);
+      setConfirmAction('');
+      if (onPollStatus) onPollStatus();
+    }
   };
 
   return (
@@ -84,6 +86,7 @@ const BackupPanel = ({
             className="sysmaint-btn-primary"
             disabled={backup?.inProgress || isTriggering}
             onClick={() => setShowConfirm(true)}
+            title={backup?.inProgress ? 'A backup is already running. Wait for completion.' : ''}
           >
             <FaPlay /> Run backup now
           </button>
@@ -113,6 +116,11 @@ const BackupPanel = ({
           </div>
         )}
       </div>
+      {backup?.inProgress && (
+        <p className="sysmaint-hint sysmaint-hint--warn">
+          Manual trigger is disabled while a backup is already in progress.
+        </p>
+      )}
     </div>
   );
 };
