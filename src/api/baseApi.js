@@ -100,6 +100,7 @@ export const baseApi = createApi({
     'GeneratorFuelApprovals', 'FuelGeneratorVouchers', 'FinanceMasterData', 'StrategicFinanceApprovals',
     'VehicleApp', 'PoolVehicleTasks',
     'EmpOrgStructure',
+    'SystemMaintenance',
   ],
   endpoints: () => ({}),
 });

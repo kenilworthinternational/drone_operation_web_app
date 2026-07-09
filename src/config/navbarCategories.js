@@ -31,6 +31,7 @@ import {
   FaCheck,
   FaTachometerAlt,
   FaCloudSunRain,
+  FaServer,
 } from 'react-icons/fa';
 
 const navbarCategories = [
@@ -98,6 +99,7 @@ const navbarCategories = [
           { path: '/home/ict/system-admin/users', label: 'Users', icon: FaUsers },
           { path: '/home/ict/system-admin/auth-controls', label: 'Auth Controls', icon: FaKey },
           { path: '/home/ict/system-admin/logs-report', label: 'Logs Report', icon: FaClipboardList },
+          { path: '/home/ict/system-admin/system-maintenance', label: 'System Maintenance', icon: FaServer },
           { path: '/home/ict/system-admin/master-data-update', label: 'Master Data Update', icon: FaTools },
         ],
       },

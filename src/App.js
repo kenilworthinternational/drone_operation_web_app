@@ -76,6 +76,7 @@ import IctUserManagement from './sections/ict/users/IctUserManagement';
 import AuthControls from './sections/ict/authentication/AuthControls';
 import AppVersionManagement from './sections/ict/appVersions/AppVersionManagement';
 import LogsReportPage from './sections/ict/logsReport/LogsReportPage';
+import SystemMaintenancePage from './sections/ict/systemMaintenance/SystemMaintenancePage';
 import SprintPlanning from './sections/ict/development/SprintPlanning';
 import DevelopmentBoard from './sections/ict/development/DevelopmentBoard';
 import ExtraWorkQueue from './sections/ict/development/ExtraWorkQueue';
@@ -848,6 +849,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <LogsReportPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="ict/system-admin/system-maintenance"
+            element={
+              <ProtectedRoute>
+                <SystemMaintenancePage />
               </ProtectedRoute>
             }
           />

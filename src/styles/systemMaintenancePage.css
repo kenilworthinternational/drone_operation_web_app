@@ -1,0 +1,528 @@
+.page-sysmaint {
+  padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+  color: #202124;
+}
+
+.sysmaint-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.sysmaint-title {
+  margin: 0 0 8px;
+  font-size: 1.75rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #004b71;
+}
+
+.sysmaint-subtitle {
+  margin: 0;
+  color: #5f6368;
+  font-size: 0.95rem;
+}
+
+.sysmaint-header-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.sysmaint-updated {
+  font-size: 0.85rem;
+  color: #5f6368;
+}
+
+.sysmaint-btn-primary,
+.sysmaint-btn-secondary,
+.sysmaint-btn-danger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+}
+
+.sysmaint-btn-primary {
+  background: #004b71;
+  color: #fff;
+}
+
+.sysmaint-btn-primary:hover:not(:disabled) {
+  background: #003a57;
+}
+
+.sysmaint-btn-secondary {
+  background: #e8f0fe;
+  color: #1a73e8;
+}
+
+.sysmaint-btn-secondary:hover:not(:disabled) {
+  background: #d2e3fc;
+}
+
+.sysmaint-btn-danger {
+  background: #fce8e6;
+  color: #c5221f;
+}
+
+.sysmaint-btn-danger:hover:not(:disabled) {
+  background: #f9d0cc;
+}
+
+.sysmaint-btn-primary:disabled,
+.sysmaint-btn-secondary:disabled,
+.sysmaint-btn-danger:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.sysmaint-api-self {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 12px 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  font-size: 0.875rem;
+}
+
+.sysmaint-warnings {
+  background: #fef7e0;
+  border: 1px solid #f4b400;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  font-size: 0.875rem;
+}
+
+.sysmaint-section {
+  margin-bottom: 28px;
+}
+
+.sysmaint-section-title {
+  margin: 0 0 16px;
+  font-size: 1.15rem;
+  color: #004b71;
+}
+
+.sysmaint-section-label {
+  margin: 16px 0 8px;
+  font-size: 0.9rem;
+  color: #5f6368;
+}
+
+.sysmaint-pm2-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.sysmaint-pm2-card {
+  background: #fff;
+  border: 1px solid #dadce0;
+  border-radius: 10px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.sysmaint-pm2-card--current {
+  border-color: #1a73e8;
+  box-shadow: 0 0 0 1px #1a73e8;
+}
+
+.sysmaint-pm2-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.sysmaint-pm2-card-header h4 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.sysmaint-pm2-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.sysmaint-metric-label {
+  display: block;
+  font-size: 0.75rem;
+  color: #5f6368;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.sysmaint-metric-value {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.sysmaint-pm2-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.sysmaint-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 28px;
+}
+
+@media (max-width: 960px) {
+  .sysmaint-split {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sysmaint-panel {
+  background: #fff;
+  border: 1px solid #dadce0;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.sysmaint-panel-title {
+  margin: 0 0 4px;
+  font-size: 1.1rem;
+  color: #004b71;
+}
+
+.sysmaint-panel-subtitle {
+  margin: 0 0 16px;
+  font-size: 0.85rem;
+  color: #5f6368;
+}
+
+.sysmaint-kpi-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin-bottom: 8px;
+}
+
+.sysmaint-kpi {
+  min-width: 120px;
+}
+
+.sysmaint-disk-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sysmaint-disk-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+
+.sysmaint-progress {
+  height: 8px;
+  background: #e8eaed;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+.sysmaint-progress-fill {
+  height: 100%;
+  background: #1a73e8;
+  border-radius: 4px;
+}
+
+.sysmaint-service-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px;
+}
+
+.sysmaint-service-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+
+.sysmaint-task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sysmaint-task-item {
+  padding: 10px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+
+.sysmaint-task-item strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.sysmaint-mysql-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 16px;
+  font-size: 1.5rem;
+  color: #004b71;
+}
+
+.sysmaint-backup-summary {
+  margin-bottom: 12px;
+}
+
+.sysmaint-backup-actions {
+  margin-top: 16px;
+}
+
+.sysmaint-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.sysmaint-badge--ok {
+  background: #e6f4ea;
+  color: #137333;
+}
+
+.sysmaint-badge--warn {
+  background: #fef7e0;
+  color: #b06000;
+}
+
+.sysmaint-badge--bad {
+  background: #fce8e6;
+  color: #c5221f;
+}
+
+.sysmaint-badge--muted {
+  background: #f1f3f4;
+  color: #5f6368;
+}
+
+.sysmaint-hint {
+  margin: 6px 0 0;
+  font-size: 0.8rem;
+  color: #5f6368;
+}
+
+.sysmaint-hint--warn {
+  color: #b06000;
+}
+
+.sysmaint-error {
+  color: #c5221f;
+  font-size: 0.875rem;
+}
+
+.sysmaint-table-wrap {
+  overflow-x: auto;
+  border: 1px solid #dadce0;
+  border-radius: 8px;
+}
+
+.sysmaint-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.sysmaint-table th,
+.sysmaint-table td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid #e8eaed;
+}
+
+.sysmaint-table th {
+  background: #f8f9fa;
+  font-weight: 600;
+}
+
+.sysmaint-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 24px;
+  color: #5f6368;
+}
+
+.sysmaint-loading--page {
+  min-height: 300px;
+  justify-content: center;
+}
+
+.sysmaint-unavailable {
+  text-align: center;
+  padding: 48px 24px;
+  color: #5f6368;
+}
+
+.sysmaint-unavailable svg {
+  font-size: 2.5rem;
+  color: #f4b400;
+  margin-bottom: 16px;
+}
+
+.sysmaint-toast {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  background: #e8f0fe;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.sysmaint-toast button {
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  cursor: pointer;
+  color: #5f6368;
+}
+
+.sysmaint-inline-confirm {
+  margin-top: 12px;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.sysmaint-inline-confirm-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.sysmaint-input {
+  width: 100%;
+  max-width: 320px;
+  padding: 8px 10px;
+  border: 1px solid #dadce0;
+  border-radius: 6px;
+  margin-top: 8px;
+  font-size: 0.9rem;
+}
+
+.sysmaint-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+}
+
+.sysmaint-modal {
+  background: #fff;
+  border-radius: 12px;
+  max-width: 640px;
+  width: 100%;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.sysmaint-modal--wide {
+  max-width: 900px;
+}
+
+.sysmaint-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e8eaed;
+}
+
+.sysmaint-modal-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.sysmaint-modal-close {
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  cursor: pointer;
+  color: #5f6368;
+}
+
+.sysmaint-modal-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  border-bottom: 1px solid #e8eaed;
+  font-size: 0.875rem;
+}
+
+.sysmaint-modal-toolbar select {
+  margin-left: 8px;
+  padding: 4px 8px;
+}
+
+.sysmaint-modal-body {
+  padding: 16px 20px;
+  overflow: auto;
+  flex: 1;
+}
+
+.sysmaint-log-pre {
+  margin: 0;
+  padding: 12px;
+  background: #1e1e1e;
+  color: #d4d4d4;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 60vh;
+  overflow: auto;
+}
+
+.sysmaint-log-pre--compact {
+  max-height: 160px;
+  font-size: 0.7rem;
+}
