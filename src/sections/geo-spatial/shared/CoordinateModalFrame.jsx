@@ -1,5 +1,5 @@
 import React from 'react';
-import { FaEdit, FaSave, FaTimes } from 'react-icons/fa';
+import { FaEdit, FaSave } from 'react-icons/fa';
 import CoordinateMapPicker from './CoordinateMapPicker';
 import './coordinateModal.css';
 
@@ -23,7 +23,9 @@ const CoordinateModalFrame = ({
           {title}
         </h3>
         <button type="button" className="geo-coord-modal__close" onClick={onClose} aria-label="Close">
-          <FaTimes />
+          <span className="geo-coord-modal__close-icon" aria-hidden="true">
+            ×
+          </span>
         </button>
       </header>
 
