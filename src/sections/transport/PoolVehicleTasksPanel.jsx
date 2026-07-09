@@ -6,6 +6,7 @@ import {
   useGetPoolPassengerUsersQuery,
   useGetPoolVehiclesForAssignmentQuery,
   useCreatePoolVehicleRequestMutation,
+  useUpdatePoolVehicleRequestMutation,
   useHrDecidePoolVehicleTaskMutation,
   useAssignPoolVehicleTaskMutation,
 } from '../../api/services NodeJs/poolVehicleTaskApi';
@@ -69,10 +70,12 @@ const openNativeDateTimePicker = (event) => {
 
 export default function PoolVehicleTasksPanel() {
   const [showRequestModal, setShowRequestModal] = useState(false);
+  const [editingTaskId, setEditingTaskId] = useState(null);
   const [requestForm, setRequestForm] = useState(emptyRequestForm);
   const [filterStatus, setFilterStatus] = useState('all');
   const [assignTaskId, setAssignTaskId] = useState(null);
   const [assignVehicleId, setAssignVehicleId] = useState('');
+  const [assignResponsibleUserId, setAssignResponsibleUserId] = useState('');
   const [message, setMessage] = useState('');
   const [passengerSearch, setPassengerSearch] = useState('');
 
@@ -80,7 +83,7 @@ export default function PoolVehicleTasksPanel() {
   const { data: wingsData, isLoading: loadingWings } = useGetWingsQuery();
   const wings = useMemo(() => normalizeWings(wingsData), [wingsData]);
   const { data: passengerUsers = [], isLoading: loadingPassengers } = useGetPoolPassengerUsersQuery(undefined, {
-    skip: !showRequestModal,
+    skip: !showRequestModal && !assignTaskId,
   });
 
   const filteredPassengerUsers = useMemo(() => {
@@ -105,6 +108,7 @@ export default function PoolVehicleTasksPanel() {
   });
 
   const [createRequest, { isLoading: creating }] = useCreatePoolVehicleRequestMutation();
+  const [updateRequest, { isLoading: updating }] = useUpdatePoolVehicleRequestMutation();
   const [hrDecide, { isLoading: deciding }] = useHrDecidePoolVehicleTaskMutation();
   const [assignVehicle, { isLoading: assigning }] = useAssignPoolVehicleTaskMutation();
 
@@ -112,10 +116,30 @@ export default function PoolVehicleTasksPanel() {
     () => tasks.find((row) => Number(row.id) === Number(assignTaskId)) || null,
     [tasks, assignTaskId]
   );
+  const assignVehicleRecord = useMemo(
+    () => poolVehicles.find((row) => Number(row.id) === Number(assignVehicleId)) || null,
+    [poolVehicles, assignVehicleId]
+  );
+  const assignVehicleIsRented = useMemo(
+    () => String(assignVehicleRecord?.ownership || '').trim().toLowerCase() === 'r',
+    [assignVehicleRecord?.ownership]
+  );
+  const responsibleUsersForAssign = useMemo(() => {
+    const selectedPassengerIds = new Set(
+      (Array.isArray(assignTask?.passenger_user_ids) ? assignTask.passenger_user_ids : [])
+        .map((id) => Number(id))
+        .filter((id) => Number.isFinite(id) && id > 0)
+    );
+    if (!selectedPassengerIds.size) return [];
+    return (passengerUsers || []).filter(
+      (u) => Number(u?.id) > 0 && !u?.is_guest && selectedPassengerIds.has(Number(u.id))
+    );
+  }, [passengerUsers, assignTask?.passenger_user_ids]);
 
   const closeAssignModal = () => {
     setAssignTaskId(null);
     setAssignVehicleId('');
+    setAssignResponsibleUserId('');
   };
 
   const formatTaskDateRange = (row) => {
@@ -127,13 +151,35 @@ export default function PoolVehicleTasksPanel() {
   };
 
   const openRequestModal = () => {
+    setEditingTaskId(null);
     setRequestForm(emptyRequestForm());
     setPassengerSearch('');
     setShowRequestModal(true);
   };
 
+  const openEditModal = (row) => {
+    if (!row) return;
+    setEditingTaskId(Number(row.id));
+    setPassengerSearch('');
+    setRequestForm({
+      category_id: row.category_id ? String(row.category_id) : '',
+      task_date: row.task_date || todayIso(),
+      task_end_date: row.task_end_date || row.task_date || todayIso(),
+      required_from_time: row.required_from_time || '',
+      required_to_time: row.required_to_time || '',
+      pickup_location: row.pickup_location || '',
+      destination: row.destination || '',
+      passenger_user_ids: Array.isArray(row.passenger_user_ids) ? row.passenger_user_ids : [],
+      requester_department: row.requester_department || '',
+      request_reason: row.request_reason || '',
+      notes: row.notes || '',
+    });
+    setShowRequestModal(true);
+  };
+
   const closeRequestModal = () => {
     setShowRequestModal(false);
+    setEditingTaskId(null);
     setRequestForm(emptyRequestForm());
   };
 
@@ -152,16 +198,21 @@ export default function PoolVehicleTasksPanel() {
     e.preventDefault();
     setMessage('');
     try {
-      await createRequest({
+      const payload = {
         ...requestForm,
         category_id: Number(requestForm.category_id),
         passenger_user_ids: requestForm.passenger_user_ids || [],
-      }).unwrap();
+      };
+      if (editingTaskId) {
+        await updateRequest({ id: editingTaskId, ...payload }).unwrap();
+      } else {
+        await createRequest(payload).unwrap();
+      }
       closeRequestModal();
-      setMessage('Vehicle request submitted.');
+      setMessage(editingTaskId ? 'Vehicle request updated.' : 'Vehicle request submitted.');
       refetch();
     } catch (err) {
-      setMessage(err?.data?.message || err?.message || 'Could not submit request.');
+      setMessage(err?.data?.message || err?.message || 'Could not save request.');
     }
   };
 
@@ -177,9 +228,17 @@ export default function PoolVehicleTasksPanel() {
 
   const handleAssign = async () => {
     if (!assignTaskId || !assignVehicleId) return;
+    if (assignVehicleIsRented && !assignResponsibleUserId) {
+      setMessage('Responsible internal person is required for rented additional tasks.');
+      return;
+    }
     setMessage('');
     try {
-      await assignVehicle({ id: assignTaskId, vehicle_id: Number(assignVehicleId) }).unwrap();
+      await assignVehicle({
+        id: assignTaskId,
+        vehicle_id: Number(assignVehicleId),
+        responsible_user_id: assignVehicleIsRented ? Number(assignResponsibleUserId) : null,
+      }).unwrap();
       closeAssignModal();
       refetch();
       setMessage('Pool vehicle assigned.');
@@ -278,7 +337,7 @@ export default function PoolVehicleTasksPanel() {
                 <td>{statusLabel(row)}</td>
                 <td>
                   {row.vehicle_no
-                    ? `${row.vehicle_no}${row.driver_name ? ` · ${row.driver_name}` : ''}`
+                    ? `${row.vehicle_no}${row.driver_name ? ` · ${row.driver_name}` : ''}${row.responsible_user_name ? ` · Responsible: ${row.responsible_user_name}` : ''}`
                     : '—'}
                 </td>
                 <td>
@@ -303,15 +362,44 @@ export default function PoolVehicleTasksPanel() {
                     </div>
                   ) : null}
                   {row.hr_approval === 'a' && !row.vehicle_id ? (
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        className="action-btn-outline-transport-hr"
+                        onClick={() => {
+                          setAssignTaskId(row.id);
+                          setAssignVehicleId('');
+                          setAssignResponsibleUserId('');
+                        }}
+                      >
+                        Assign
+                      </button>
+                      <button
+                        type="button"
+                        className="action-btn-secondary-transport-hr"
+                        onClick={() => openEditModal(row)}
+                      >
+                        Edit
+                      </button>
+                    </div>
+                  ) : null}
+                  {row.task_status === 'assigned' ? (
                     <button
                       type="button"
-                      className="action-btn-outline-transport-hr"
-                      onClick={() => {
-                        setAssignTaskId(row.id);
-                        setAssignVehicleId('');
-                      }}
+                      className="action-btn-secondary-transport-hr"
+                      onClick={() => openEditModal(row)}
                     >
-                      Assign pool vehicle
+                      Edit
+                    </button>
+                  ) : null}
+                  {row.hr_approval === 'p' ? (
+                    <button
+                      type="button"
+                      className="action-btn-secondary-transport-hr"
+                      style={{ marginTop: 6 }}
+                      onClick={() => openEditModal(row)}
+                    >
+                      Edit
                     </button>
                   ) : null}
                 </td>
@@ -339,7 +427,7 @@ export default function PoolVehicleTasksPanel() {
             aria-labelledby="pool-request-modal-title"
             onClick={(e) => e.stopPropagation()}
           >
-            <h4 id="pool-request-modal-title">Request a pool vehicle</h4>
+            <h4 id="pool-request-modal-title">{editingTaskId ? 'Edit pool vehicle request' : 'Request a pool vehicle'}</h4>
             <form className="pool-request-form-transport-hr" onSubmit={handleCreateRequest}>
               <div className="pool-request-grid-transport-hr">
                 <div className="pool-request-category-dept-row-transport-hr">
@@ -506,12 +594,14 @@ export default function PoolVehicleTasksPanel() {
                   type="button"
                   className="action-btn-secondary-transport-hr"
                   onClick={closeRequestModal}
-                  disabled={creating}
+                  disabled={creating || updating}
                 >
                   Cancel
                 </button>
-                <button type="submit" className="action-btn-outline-transport-hr" disabled={creating}>
-                  {creating ? 'Submitting…' : 'Submit request'}
+                <button type="submit" className="action-btn-outline-transport-hr" disabled={creating || updating}>
+                  {creating || updating
+                    ? (editingTaskId ? 'Saving…' : 'Submitting…')
+                    : (editingTaskId ? 'Save changes' : 'Submit request')}
                 </button>
               </div>
             </form>
@@ -587,6 +677,27 @@ export default function PoolVehicleTasksPanel() {
               </small>
             </label>
 
+            {assignVehicleIsRented ? (
+              <label className="pool-assign-field-transport-hr">
+                Responsible internal person *
+                <select
+                  value={assignResponsibleUserId}
+                  onChange={(e) => setAssignResponsibleUserId(e.target.value)}
+                  className="pool-assign-select-transport-hr"
+                >
+                  <option value="">Select responsible user</option>
+                  {responsibleUsersForAssign.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.name}
+                    </option>
+                  ))}
+                </select>
+                <small className="pool-assign-hint-transport-hr">
+                  For rented tasks, this person can open Day Operations for the assigned date range and vehicle.
+                </small>
+              </label>
+            ) : null}
+
             <div className="pool-assign-actions-transport-hr">
               <button
                 type="button"
@@ -599,7 +710,7 @@ export default function PoolVehicleTasksPanel() {
               <button
                 type="button"
                 className="action-btn-outline-transport-hr"
-                disabled={!assignVehicleId || assigning}
+                disabled={!assignVehicleId || (assignVehicleIsRented && !assignResponsibleUserId) || assigning}
                 onClick={handleAssign}
               >
                 {assigning ? 'Assigning…' : 'Confirm assign'}

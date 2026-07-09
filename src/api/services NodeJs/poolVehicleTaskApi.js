@@ -81,6 +81,18 @@ export const poolVehicleTaskApi = baseApi.injectEndpoints({
       },
       invalidatesTags: ['PoolVehicleTasks'],
     }),
+    updatePoolVehicleRequest: builder.mutation({
+      queryFn: async ({ id, ...body }) => {
+        const result = await nodeBackendBaseQuery(
+          { url: `/api/pool-vehicle-tasks/requests/${id}`, method: 'PUT', body },
+          {},
+          {}
+        );
+        if (result.error) return { error: result.error };
+        return { data: result.data?.data || null };
+      },
+      invalidatesTags: ['PoolVehicleTasks'],
+    }),
     hrDecidePoolVehicleTask: builder.mutation({
       queryFn: async ({ id, ...body }) => {
         const result = await nodeBackendBaseQuery(
@@ -115,6 +127,7 @@ export const {
   useGetPoolPassengerUsersQuery,
   useGetPoolVehiclesForAssignmentQuery,
   useCreatePoolVehicleRequestMutation,
+  useUpdatePoolVehicleRequestMutation,
   useHrDecidePoolVehicleTaskMutation,
   useAssignPoolVehicleTaskMutation,
 } = poolVehicleTaskApi;

@@ -110,6 +110,32 @@
   box-shadow: 0 1px 0 rgba(188, 220, 255, 0.24);
 }
 
+/* Soften bright table grid lines for dark ICT theme */
+.ictum-shell .users-table th,
+.ictum-shell .users-table td {
+  border-bottom: 1px solid rgba(166, 201, 236, 0.24) !important;
+  border-right: 1px solid rgba(166, 201, 236, 0.18) !important;
+}
+
+.ictum-shell .users-table th:last-child,
+.ictum-shell .users-table td:last-child {
+  border-right: none !important;
+}
+
+/* Reduce PROFILE column width */
+.ictum-shell .users-table th:nth-child(3),
+.ictum-shell .users-table td:nth-child(3) {
+  width: 112px !important;
+  min-width: 112px !important;
+  max-width: 112px !important;
+}
+
+.ictum-shell .users-table .user-avatar-thumb,
+.ictum-shell .users-table .user-avatar-placeholder {
+  width: 34px !important;
+  height: 34px !important;
+}
+
 .ictum-shell .users-table tbody tr.users-table-row-clickable:hover {
   background: rgba(172, 209, 255, 0.1) !important;
 }
