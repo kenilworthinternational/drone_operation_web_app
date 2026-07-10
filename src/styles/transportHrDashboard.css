@@ -511,6 +511,69 @@
   margin: 5px;
 }
 
+.dashboard-shell-transport-hr--standalone {
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  gap: 0;
+  padding: 10px 14px 8px;
+  box-sizing: border-box;
+}
+
+.details-table-wrap-transport-hr--scroll {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  padding: 0 4px 4px;
+  margin: 0;
+}
+
+.details-table-toolbar-transport-hr {
+  flex-shrink: 0;
+  margin-bottom: 8px;
+}
+
+.details-table-panel-body-transport-hr {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.details-table-panel-body-transport-hr > .quick-add-modal-hint-transport-hr,
+.details-table-panel-body-transport-hr > .assign-vehicle-toolbar-transport-hr,
+.details-table-panel-body-transport-hr > .pilot-assignment-teams-loading-pilotsassign {
+  flex-shrink: 0;
+}
+
+.details-table-scroll-transport-hr {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.details-table-scroll-transport-hr .details-table-transport-hr {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.details-table-scroll-transport-hr .details-table-transport-hr thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #f2f7fb;
+  box-shadow: 0 1px 0 #dde6ee;
+}
+
 .assign-vehicle-toolbar-transport-hr {
   display: flex;
   align-items: center;
@@ -546,9 +609,12 @@
 }
 
 .standalone-details-card-transport-hr {
-  height: 99vh;
+  flex: 1;
+  height: 100%;
   min-height: 0;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
   background: #ffffff;
   border: 1px solid #d8e2ea;
   box-shadow: 0 8px 22px rgba(15, 23, 42, 0.1);
@@ -556,13 +622,14 @@
 }
 
 .standalone-details-header-transport-hr {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
   padding: 6px 8px 10px 8px;
   border-bottom: 1px solid #e2e8f0;
-  margin-bottom: 8px;
+  margin-bottom: 0;
 }
 
 .standalone-details-title-transport-hr {
@@ -573,9 +640,12 @@
 }
 
 .standalone-details-body-transport-hr {
+  flex: 1;
   min-height: 0;
-  height: calc(100% - 56px);
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
+  padding-top: 8px;
 }
 
 .standalone-back-btn-transport-hr {
@@ -1213,6 +1283,28 @@
 
 .pool-tasks-panel-transport-hr {
   margin-top: 8px;
+}
+
+.pool-tasks-panel-transport-hr--scroll {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  margin-top: 0;
+}
+
+.pool-tasks-panel-transport-hr--scroll .pool-tasks-toolbar-transport-hr {
+  flex-shrink: 0;
+  margin-bottom: 8px;
+}
+
+.pool-tasks-panel-transport-hr--scroll .pool-tasks-message-transport-hr {
+  flex-shrink: 0;
+}
+
+.pool-tasks-panel-transport-hr--scroll .pilot-assignment-teams-loading-pilotsassign {
+  flex-shrink: 0;
 }
 
 .pool-tasks-toolbar-transport-hr {

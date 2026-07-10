@@ -248,7 +248,7 @@ export default function PoolVehicleTasksPanel() {
   };
 
   return (
-    <div className="pool-tasks-panel-transport-hr">
+    <div className="pool-tasks-panel-transport-hr pool-tasks-panel-transport-hr--scroll">
       <div className="pool-tasks-toolbar-transport-hr">
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
           <label htmlFor="pool-task-filter">Show</label>
@@ -281,6 +281,7 @@ export default function PoolVehicleTasksPanel() {
           <span>Loading additional tasks…</span>
         </div>
       ) : (
+        <div className="details-table-scroll-transport-hr">
         <table className="details-table-transport-hr">
           <thead>
             <tr>
@@ -412,6 +413,7 @@ export default function PoolVehicleTasksPanel() {
             ) : null}
           </tbody>
         </table>
+        </div>
       )}
 
       {showRequestModal ? (

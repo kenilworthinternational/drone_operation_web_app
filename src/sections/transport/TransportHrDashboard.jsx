@@ -973,6 +973,15 @@ function TransportHrDashboard() {
     }
   }, [chartVehicleNo, chartVehicleOptions]);
 
+  const showStandaloneDetail = Boolean(detailModule && SUMMARY_DETAIL_KEYS.has(detailModule));
+
+  useEffect(() => {
+    if (!showStandaloneDetail) return undefined;
+    const root = document.querySelector('.content-dashboard');
+    root?.classList.add('content-dashboard--transport-hr-standalone');
+    return () => root?.classList.remove('content-dashboard--transport-hr-standalone');
+  }, [showStandaloneDetail]);
+
   const getSeriesColor = (index) => {
     const palette = [
       '#004B71', '#0A9396', '#3A86FF', '#8338EC', '#2A9D8F',
@@ -1002,29 +1011,31 @@ function TransportHrDashboard() {
   const renderDetailsContent = () => {
     if (detailModule === 'availableToday') {
       return (
-        <div className="details-table-wrap-transport-hr">
-          <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
-            <button
-              type="button"
-              className={availableTodayTab === 'assignVehicle' ? 'action-btn-outline-transport-hr' : 'action-btn-secondary-transport-hr'}
-              onClick={() => setAvailableTodayTab('assignVehicle')}
-            >
-              Operational
-            </button>
-            <button
-              type="button"
-              className={availableTodayTab === 'additional' ? 'action-btn-outline-transport-hr' : 'action-btn-secondary-transport-hr'}
-              onClick={() => setAvailableTodayTab('additional')}
-            >
-              Additional
-            </button>
-            <button
-              type="button"
-              className={availableTodayTab === 'availableVehicles' ? 'action-btn-outline-transport-hr' : 'action-btn-secondary-transport-hr'}
-              onClick={() => setAvailableTodayTab('availableVehicles')}
-            >
-              Available Vehicles
-            </button>
+        <div className="details-table-wrap-transport-hr details-table-wrap-transport-hr--scroll">
+          <div className="details-table-toolbar-transport-hr">
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                type="button"
+                className={availableTodayTab === 'assignVehicle' ? 'action-btn-outline-transport-hr' : 'action-btn-secondary-transport-hr'}
+                onClick={() => setAvailableTodayTab('assignVehicle')}
+              >
+                Operational
+              </button>
+              <button
+                type="button"
+                className={availableTodayTab === 'additional' ? 'action-btn-outline-transport-hr' : 'action-btn-secondary-transport-hr'}
+                onClick={() => setAvailableTodayTab('additional')}
+              >
+                Additional
+              </button>
+              <button
+                type="button"
+                className={availableTodayTab === 'availableVehicles' ? 'action-btn-outline-transport-hr' : 'action-btn-secondary-transport-hr'}
+                onClick={() => setAvailableTodayTab('availableVehicles')}
+              >
+                Available Vehicles
+              </button>
+            </div>
           </div>
 
           {availableTodayTab === 'additional' ? (
@@ -1032,7 +1043,7 @@ function TransportHrDashboard() {
           ) : null}
 
           {availableTodayTab === 'assignVehicle' ? (
-            <>
+            <div className="details-table-panel-body-transport-hr">
               <p className="quick-add-modal-hint-transport-hr" style={{ marginBottom: 10 }}>
                 Operational assignments use pool vehicles only (vehicle category = Pool).
               </p>
@@ -1054,55 +1065,58 @@ function TransportHrDashboard() {
                   <span>Loading assignment list...</span>
                 </div>
               ) : (
-                <table className="details-table-transport-hr">
-                  <thead>
-                    <tr>
-                      <th>Date</th>
-                      <th>Assignment</th>
-                      <th>Pilot Team</th>
-                      <th>Current Transport</th>
-                      <th>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {transportSelectedDateRows.map((row) => (
-                      <tr key={`${row.assignment_id}-${row.day_label}`}>
-                        <td>{formatApiDateYmd(row.assignment_day) || '-'}</td>
-                        <td>
-                          <div>{row.assignment_id}</div>
-                          <small style={{ color: '#64748b' }}>{row.estate_summary || '-'}</small>
-                        </td>
-                        <td>{row.team_name} {row.pilot_names ? `· ${row.pilot_names}` : ''}</td>
-                        <td>
-                          {row.driver_id
-                            ? `${row.transport_driver_name || row.driver_id} · ${row.transport_vehicle_no || '—'} · ${formatTransportTimeDisplay(row.driver_arrival_time)}`
-                            : 'No driver/vehicle assigned'}
-                        </td>
-                        <td>
-                          <button
-                            type="button"
-                            className="action-btn-outline-transport-hr"
-                            onClick={() => openTransportDetail(row)}
-                          >
-                            {row.editable_transport ? 'Arrange' : 'View'}
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                    {!transportSelectedDateRows.length ? (
+                <div className="details-table-scroll-transport-hr">
+                  <table className="details-table-transport-hr">
+                    <thead>
                       <tr>
-                        <td colSpan={5}>No transport assignments for selected date.</td>
+                        <th>Date</th>
+                        <th>Assignment</th>
+                        <th>Pilot Team</th>
+                        <th>Current Transport</th>
+                        <th>Action</th>
                       </tr>
-                    ) : null}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {transportSelectedDateRows.map((row) => (
+                        <tr key={`${row.assignment_id}-${row.day_label}`}>
+                          <td>{formatApiDateYmd(row.assignment_day) || '-'}</td>
+                          <td>
+                            <div>{row.assignment_id}</div>
+                            <small style={{ color: '#64748b' }}>{row.estate_summary || '-'}</small>
+                          </td>
+                          <td>{row.team_name} {row.pilot_names ? `· ${row.pilot_names}` : ''}</td>
+                          <td>
+                            {row.driver_id
+                              ? `${row.transport_driver_name || row.driver_id} · ${row.transport_vehicle_no || '—'} · ${formatTransportTimeDisplay(row.driver_arrival_time)}`
+                              : 'No driver/vehicle assigned'}
+                          </td>
+                          <td>
+                            <button
+                              type="button"
+                              className="action-btn-outline-transport-hr"
+                              onClick={() => openTransportDetail(row)}
+                            >
+                              {row.editable_transport ? 'Arrange' : 'View'}
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                      {!transportSelectedDateRows.length ? (
+                        <tr>
+                          <td colSpan={5}>No transport assignments for selected date.</td>
+                        </tr>
+                      ) : null}
+                    </tbody>
+                  </table>
+                </div>
               )}
-            </>
+            </div>
           ) : availableTodayTab === 'availableVehicles' ? (
-            <>
+            <div className="details-table-panel-body-transport-hr">
             <p className="quick-add-modal-hint-transport-hr" style={{ marginBottom: 10 }}>
               Available pool vehicle–driver pairs for today (assign-category vehicles are excluded).
             </p>
+            <div className="details-table-scroll-transport-hr">
             <table className="details-table-transport-hr">
               <thead>
                 <tr>
@@ -1128,7 +1142,8 @@ function TransportHrDashboard() {
                 ) : null}
               </tbody>
             </table>
-            </>
+            </div>
+            </div>
           ) : null}
 
           {showTransportDetailModal ? (
@@ -1172,10 +1187,11 @@ function TransportHrDashboard() {
     if (detailModule === 'leaveDates') return <DriverLeaveDatesHr embedded />;
     if (detailModule === 'vehicleAdminVehicles') {
       return (
-        <div className="details-table-wrap-transport-hr">
-          <p className="quick-add-modal-hint-transport-hr" style={{ marginBottom: 10 }}>
+        <div className="details-table-wrap-transport-hr details-table-wrap-transport-hr--scroll">
+          <p className="quick-add-modal-hint-transport-hr" style={{ marginBottom: 10, flexShrink: 0 }}>
             Fuel cards are assigned per vehicle (not per driver). Use Assign card to link the vehicle&apos;s fuel card.
           </p>
+          <div className="details-table-scroll-transport-hr">
           <table className="details-table-transport-hr">
             <thead>
               <tr>
@@ -1244,13 +1260,14 @@ function TransportHrDashboard() {
               ) : null}
             </tbody>
           </table>
+          </div>
         </div>
       );
     }
     if (detailModule === 'vehicleAdminMaintenance' || detailModule === 'maintenanceApprovals') {
       return (
-        <div className="details-table-wrap-transport-hr">
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 10 }}>
+        <div className="details-table-wrap-transport-hr details-table-wrap-transport-hr--scroll">
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 10, flexShrink: 0 }}>
             <label style={{ display: 'grid', gap: 4 }}>
               <span style={{ fontSize: 12, color: '#4b5563', fontWeight: 600 }}>Status</span>
               <select value={maintenanceStatusFilter} onChange={(e) => setMaintenanceStatusFilter(e.target.value)}>
@@ -1279,6 +1296,7 @@ function TransportHrDashboard() {
               />
             </label>
           </div>
+          <div className="details-table-scroll-transport-hr">
           <table className="details-table-transport-hr">
             <thead>
               <tr>
@@ -1407,6 +1425,7 @@ function TransportHrDashboard() {
               ) : null}
             </tbody>
           </table>
+          </div>
         </div>
       );
     }
@@ -1415,7 +1434,6 @@ function TransportHrDashboard() {
 
   const showInitialLoading = !initialLoadComplete && isPrimaryLoading;
   const activeDetailMeta = MODULE_META.find((item) => item.key === detailModule) || null;
-  const showStandaloneDetail = detailModule && SUMMARY_DETAIL_KEYS.has(detailModule);
 
   if (showInitialLoading) {
     return (
@@ -1447,7 +1465,7 @@ function TransportHrDashboard() {
   if (showStandaloneDetail) {
     const ActiveIcon = activeDetailMeta?.icon || FaTools;
     return (
-      <div className="dashboard-shell-transport-hr">
+      <div className="dashboard-shell-transport-hr dashboard-shell-transport-hr--standalone">
         <div className="standalone-details-card-transport-hr">
           <div className="standalone-details-header-transport-hr">
             <div className="standalone-details-title-transport-hr">
