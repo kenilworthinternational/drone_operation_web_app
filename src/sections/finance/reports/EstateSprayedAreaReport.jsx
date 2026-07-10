@@ -224,7 +224,7 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
         });
         try {
             const ctx = getBillingContext();
-            await updatePlanFieldBill({
+            const result = await updatePlanFieldBill({
                 plan_id: planId,
                 field_id: fieldId,
                 bill: nextBillIncluded ? 1 : 0,
@@ -240,6 +240,9 @@ const EstateSprayedAreaReport = ({ onInvoicePreview }) => {
                       }
                     : {}),
             }).unwrap();
+            if (result?.draft_sync_error) {
+                toast.warn('Bill updated, but billing draft could not be saved. Ask ICT to run finance work summary billing SQL migration.');
+            }
         } catch (e) {
             if (snapshot) setReportData(snapshot);
             console.error('Failed to update bill flag', e);
