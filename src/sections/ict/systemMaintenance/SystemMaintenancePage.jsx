@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { FaSync, FaServer, FaExclamationTriangle, FaCheckCircle, FaDatabase, FaMicrochip } from 'react-icons/fa';
 import { Bars } from 'react-loader-spinner';
 import {
@@ -63,6 +63,7 @@ const SystemMaintenancePage = () => {
   const [actionMessage, setActionMessage] = useState(null);
   const [backupPolling, setBackupPolling] = useState(false);
   const [queuedRefresh, setQueuedRefresh] = useState(false);
+  const hostMetricsRetriedRef = useRef(false);
 
   const isDisabled = error?.status === 503 || error?.status === 403;
   const capabilities = overview?.capabilities;
@@ -129,6 +130,15 @@ const SystemMaintenancePage = () => {
     setQueuedRefresh(false);
     refetch();
   }, [queuedRefresh, isFetching, refetch]);
+
+  useEffect(() => {
+    if (!overview || hostMetricsRetriedRef.current || isFetching) return;
+    const hostErr = (overview.errors || []).find((e) => e.section === 'host');
+    if (!hostErr || overview.host) return;
+    hostMetricsRetriedRef.current = true;
+    const id = window.setTimeout(() => refetch(), 2500);
+    return () => window.clearTimeout(id);
+  }, [overview, isFetching, refetch]);
 
   if (isLoading) {
     return (
