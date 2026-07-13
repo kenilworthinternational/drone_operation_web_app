@@ -559,6 +559,31 @@ export const assetsApi = baseApi.injectEndpoints({
       invalidatesTags: ['FuelCategories'],
     }),
 
+    getOfficialFuelPrices: builder.query({
+      queryFn: async () => {
+        const result = await nodeBackendBaseQuery(
+          { url: '/api/jd-management/fuel-categories/official-prices', method: 'POST', body: {} },
+          {},
+          {}
+        );
+        if (result.error) return { error: result.error };
+        return { data: result.data?.data || null };
+      },
+    }),
+
+    refreshFuelCategoryOfficialSnapshots: builder.mutation({
+      queryFn: async () => {
+        const result = await nodeBackendBaseQuery(
+          { url: '/api/jd-management/fuel-categories/refresh-official-snapshots', method: 'POST', body: {} },
+          {},
+          {}
+        );
+        if (result.error) return { error: result.error };
+        return { data: result.data?.data || null };
+      },
+      invalidatesTags: ['FuelCategories'],
+    }),
+
     // Sector Updates
     updateAssetsSectorDrone: builder.mutation({
       query: (data) => ({
@@ -633,6 +658,9 @@ export const {
     useGetVehicleModelsQuery,
     useGetFuelCategoriesQuery,
     useSaveFuelCategoryMutation,
+    useGetOfficialFuelPricesQuery,
+    useLazyGetOfficialFuelPricesQuery,
+    useRefreshFuelCategoryOfficialSnapshotsMutation,
     useUpdateAssetsSectorDroneMutation,
     useUpdateAssetsSectorVehicleMutation,
     useUpdateAssetsSectorGeneratorMutation,

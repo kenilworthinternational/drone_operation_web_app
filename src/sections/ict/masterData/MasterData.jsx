@@ -15,8 +15,6 @@ import {
   useSavePoolRequestCategoryMutation,
 } from '../../../api/services NodeJs/poolVehicleTaskApi';
 import {
-  useGetFuelCategoriesQuery,
-  useSaveFuelCategoryMutation,
   useGetWingsQuery as useGetLegacyWingsQuery,
 } from '../../../api/services/assetsApi';
 import {
@@ -60,6 +58,7 @@ import {
 } from '../../../api/services NodeJs/timeOfDaysApi';
 import HrMasterOptionsPanel from './HrMasterOptionsPanel';
 import LocationHierarchyPanel from './LocationHierarchyPanel';
+import FuelTypesMasterPanel from './FuelTypesMasterPanel';
 import { useSendMessageMutation } from '../../../api/services/authApi';
 import {
   useGetInvoiceOrganizationsQuery,
@@ -94,7 +93,6 @@ const MasterData = ({ mode = 'full' }) => {
   const { data: poolRequestCategories = [], refetch: refetchPoolRequestCategories } = useGetPoolRequestCategoriesQuery(false);
   const [savePoolRequestCategory] = useSavePoolRequestCategoryMutation();
   const { data: maintenanceRequests = [] } = useGetVehicleAppMaintenanceRequestsQuery(yearMonth);
-  const { data: fuelCategories = [], refetch: refetchFuelCategories } = useGetFuelCategoriesQuery();
   const { data: wingsData, refetch: refetchWings } = useGetWingsQuery();
   const { data: legacyWingsData } = useGetLegacyWingsQuery();
   const { data: employeesData } = useGetAllEmployeeRegistrationsQuery();
@@ -197,7 +195,6 @@ const MasterData = ({ mode = 'full' }) => {
   const [saveVehicleCategory] = useSaveVehicleAppVehicleCategoryMutation();
   const [saveMaintenanceCategory] = useSaveVehicleAppMaintenanceCategoryMutation();
   const [decideMaintenance] = useDecideVehicleAppMaintenanceRequestMutation();
-  const [saveFuelCategory] = useSaveFuelCategoryMutation();
   const [saveWing] = useSaveWingMutation();
   const [saveWorkLocation] = useSaveWorkLocationMutation();
   const [saveMasterVehicleCategory] = useSaveMasterVehicleCategoryMutation();
@@ -223,7 +220,6 @@ const MasterData = ({ mode = 'full' }) => {
   const [newWorkingTimeText, setNewWorkingTimeText] = useState('');
   const [newWorkingTimeActivated, setNewWorkingTimeActivated] = useState('1');
   const [addChemicalOpen, setAddChemicalOpen] = useState(false);
-  const [addFuelOpen, setAddFuelOpen] = useState(false);
   const [addWingOpen, setAddWingOpen] = useState(false);
   const [addWorkLocationOpen, setAddWorkLocationOpen] = useState(false);
   const [addMaintenanceCategoryOpen, setAddMaintenanceCategoryOpen] = useState(false);
@@ -231,8 +227,6 @@ const MasterData = ({ mode = 'full' }) => {
   const [addInvoiceOrgOpen, setAddInvoiceOrgOpen] = useState(false);
   const [addInvoiceTaxOpen, setAddInvoiceTaxOpen] = useState(false);
 
-  const [newFuelCategory, setNewFuelCategory] = useState('');
-  const [newFuelUnitPrice, setNewFuelUnitPrice] = useState('');
   const [newWingName, setNewWingName] = useState('');
   const [newWingCode, setNewWingCode] = useState('');
   const [newWingHod, setNewWingHod] = useState('');
@@ -364,29 +358,6 @@ const MasterData = ({ mode = 'full' }) => {
       }).unwrap();
       await refetchChemicals();
       closeAddChemicalModal();
-    });
-  };
-
-  const openAddFuelModal = () => {
-    setNewFuelCategory('');
-    setNewFuelUnitPrice('');
-    setAddFuelOpen(true);
-  };
-  const closeAddFuelModal = () => {
-    setAddFuelOpen(false);
-    setNewFuelCategory('');
-    setNewFuelUnitPrice('');
-  };
-  const saveAddFuelModal = async () => {
-    const cat = String(newFuelCategory || '').trim();
-    if (!cat) {
-      setQuickMessage({ type: 'error', text: 'Fuel type name is required.' });
-      return;
-    }
-    await handleQuickSave(async () => {
-      await saveFuelCategory({ category: cat, unit_price: newFuelUnitPrice || null, activated: 1 }).unwrap();
-      await refetchFuelCategories();
-      closeAddFuelModal();
     });
   };
 
@@ -600,7 +571,6 @@ const MasterData = ({ mode = 'full' }) => {
     }
     if (type === 'maintenanceCategory') setModalDraft({ category: item.category || '' });
     if (type === 'poolRequestCategory') setModalDraft({ category: item.category || '' });
-    if (type === 'fuel') setModalDraft({ category: item.category || '', unit_price: item.unit_price != null ? String(item.unit_price) : '' });
     if (type === 'financeCategory') {
       setModalDraft({ category_name: item.category_name || '' });
     }
@@ -795,15 +765,6 @@ const MasterData = ({ mode = 'full' }) => {
           activated: editModal.item.activated ?? 1,
         }).unwrap();
         await refetchPoolRequestCategories();
-      } else if (editModal.type === 'fuel') {
-        await saveFuelCategory({
-          id: editModal.item.id,
-          category: modalDraft.category,
-          unit_price: modalDraft.unit_price || null,
-          activated: editModal.item.activated ?? 1,
-        }).unwrap();
-        refetchFuelCategories();
-      } else if (editModal.type === 'financeCategory') {
         await saveFinanceCategoryMaster({
           id: editModal.item.id || undefined,
           category_name: modalDraft.category_name,
@@ -918,24 +879,12 @@ const MasterData = ({ mode = 'full' }) => {
       </div>
       {quickMessage.text ? (
         <div
-          className="master-data-flash-banner-master-data"
-          style={{
-            marginBottom: '12px',
-            padding: '10px 12px',
-            borderRadius: '8px',
-            background: quickMessage.type === 'success' ? '#e6f7ee' : '#fdecec',
-            color: quickMessage.type === 'success' ? '#116149' : '#8a1f1f',
-            border: `1px solid ${quickMessage.type === 'success' ? '#b9e4cf' : '#f6c2c2'}`,
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            gap: '12px',
-          }}
+          className={`master-data-flash-banner-master-data master-data-flash-banner--${quickMessage.type === 'success' ? 'success' : 'error'}`}
         >
-          <span>{quickMessage.text}</span>
+          <span className="master-data-flash-banner-text-master-data">{quickMessage.text}</span>
           <button
             type="button"
-            className="action-btn-master-data neutral-master-data"
+            className="master-data-flash-banner-dismiss-master-data"
             onClick={() => setQuickMessage({ type: '', text: '' })}
           >
             Dismiss
@@ -1067,35 +1016,7 @@ const MasterData = ({ mode = 'full' }) => {
             )}
 
             {selectedMasterModule === 'fuelTypes' && (
-              <div className="vehicle-admin-card-master-data">
-                <div className="master-data-chemicals-head-master-data">
-                  <div className="master-data-chemicals-head-text-master-data">
-                    <h3>Fuel Types</h3>
-                  </div>
-                  <button
-                    type="button"
-                    className="btn-submit-master-data master-data-chemicals-add-btn-master-data"
-                    onClick={openAddFuelModal}
-                  >
-                    Add fuel type
-                  </button>
-                </div>
-                <div className="master-list-master-data" style={{ marginTop: 12 }}>
-                  {fuelCategories.map((c) => (
-                    <div key={c.id} className="master-row-master-data">
-                      <div style={{ flex: 1 }}>
-                        <span className="master-label-master-data">{c.category}</span>
-                        <span style={{ marginLeft: 8, fontSize: '0.82em', color: '#555' }}>
-                          {c.unit_price != null && c.unit_price !== '' ? `Current: LKR ${Number(c.unit_price).toFixed(2)}/L` : 'Current: Not set'}
-                        </span>
-                      </div>
-                      <div className="master-actions-master-data">
-                        <button className="action-btn-master-data neutral-master-data" onClick={() => openEditModal('fuel', c)}>Edit</button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <FuelTypesMasterPanel onMessage={setQuickMessage} />
             )}
 
             {selectedMasterModule === 'financeCategories' && (
@@ -2043,25 +1964,6 @@ const MasterData = ({ mode = 'full' }) => {
                 />
               </div>
             )}
-            {editModal.type === 'fuel' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <input
-                  className="master-edit-input-master-data"
-                  value={modalDraft.category || ''}
-                  onChange={(e) => setModalDraft((p) => ({ ...p, category: e.target.value }))}
-                  placeholder="Fuel type name"
-                />
-                <input
-                  type="number"
-                  className="master-edit-input-master-data"
-                  value={modalDraft.unit_price || ''}
-                  onChange={(e) => setModalDraft((p) => ({ ...p, unit_price: e.target.value }))}
-                  placeholder="Unit price (LKR/L)"
-                  min="0"
-                  step="0.01"
-                />
-              </div>
-            )}
             {editModal.type === 'financeCategory' && (
               <input
                 className="master-edit-input-master-data"
@@ -2496,47 +2398,6 @@ const MasterData = ({ mode = 'full' }) => {
                 Cancel
               </button>
               <button type="button" className="btn-submit-master-data" onClick={() => void saveAddChemicalModal()}>
-                Save
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-      {addFuelOpen && (
-        <div className="update-popup-overlay-master-data">
-          <div className="update-popup-card-master-data update-popup-card-wide-master-data">
-            <h3>Add fuel type</h3>
-            <div className="master-edit-grid-2col-master-data">
-              <div className="master-edit-field-master-data master-edit-field-span2-master-data">
-                <label htmlFor="master-add-fuel-name">Fuel type name</label>
-                <input
-                  id="master-add-fuel-name"
-                  className="master-edit-input-master-data"
-                  value={newFuelCategory}
-                  onChange={(e) => setNewFuelCategory(e.target.value)}
-                  placeholder="e.g. Diesel"
-                  autoComplete="off"
-                />
-              </div>
-              <div className="master-edit-field-master-data master-edit-field-span2-master-data">
-                <label htmlFor="master-add-fuel-price">Unit price (LKR/L)</label>
-                <input
-                  id="master-add-fuel-price"
-                  type="number"
-                  className="master-edit-input-master-data"
-                  value={newFuelUnitPrice}
-                  onChange={(e) => setNewFuelUnitPrice(e.target.value)}
-                  placeholder="Optional"
-                  min="0"
-                  step="0.01"
-                />
-              </div>
-            </div>
-            <div className="update-popup-actions-master-data">
-              <button type="button" className="btn-search-master-data" onClick={closeAddFuelModal}>
-                Cancel
-              </button>
-              <button type="button" className="btn-submit-master-data" onClick={() => void saveAddFuelModal()}>
                 Save
               </button>
             </div>

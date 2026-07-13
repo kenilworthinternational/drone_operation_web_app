@@ -46,6 +46,7 @@ import {
 } from '../../api/services NodeJs/pilotAssignmentApi';
 import TransportAssignmentFields from '../opsroom/pilot-assigment/TransportAssignmentFields';
 import PoolVehicleTasksPanel from './PoolVehicleTasksPanel';
+import FuelPricesModal from './FuelPricesModal';
 import { formatDriverArrivalTimeForInput, formatApiDateYmd, formatTransportTimeDisplay, getColomboYmd } from '../../utils/transportAssignment';
 import '../../styles/transportHrDashboard.css';
 
@@ -148,6 +149,7 @@ function TransportHrDashboard() {
   const [maintenanceSearch, setMaintenanceSearch] = useState('');
   const [availableTodayTab, setAvailableTodayTab] = useState('assignVehicle');
   const [showTransportDetailModal, setShowTransportDetailModal] = useState(false);
+  const [fuelPricesModalOpen, setFuelPricesModalOpen] = useState(false);
   const [transportAssignmentDate, setTransportAssignmentDate] = useState(() => getTodayInfo().today);
   const [transportDetailAssignmentId, setTransportDetailAssignmentId] = useState('');
   const [transportDetailYearMonth, setTransportDetailYearMonth] = useState('');
@@ -1481,6 +1483,7 @@ function TransportHrDashboard() {
         {renderHrDecisionModal()}
         {renderHrDecisionNoticeModal()}
         {renderImagePreviewModal()}
+      <FuelPricesModal open={fuelPricesModalOpen} onClose={() => setFuelPricesModalOpen(false)} />
       </div>
     );
   }
@@ -1496,6 +1499,14 @@ function TransportHrDashboard() {
             </p>
           </div>
           <div className="dashboard-header-actions-transport-hr">
+            <button
+              type="button"
+              className="action-btn-outline-transport-hr"
+              onClick={() => setFuelPricesModalOpen(true)}
+            >
+              <FaGasPump size={13} style={{ marginRight: 6, verticalAlign: '-0.1em' }} />
+              Fuel Prices
+            </button>
             <button
               type="button"
               className="action-btn-outline-transport-hr"
@@ -2028,6 +2039,7 @@ function TransportHrDashboard() {
       ) : null}
 
       {renderImagePreviewModal()}
+      <FuelPricesModal open={fuelPricesModalOpen} onClose={() => setFuelPricesModalOpen(false)} />
 
       {leaveHistoryOpen && (
         <div

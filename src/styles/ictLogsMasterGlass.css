@@ -179,7 +179,9 @@
 .ictmdx-shell .vehicle-tree-category-master-data,
 .ictmdx-shell .vehicle-tree-model-row-master-data,
 .ictmdx-shell .vehicle-table-wrap-master-data,
-.ictmdx-shell .update-popup-card-master-data {
+.ictmdx-shell .update-popup-card-master-data,
+.ictmdx-shell .fuel-types-official-item,
+.ictmdx-shell .fuel-type-row-master-data {
   background:
     linear-gradient(145deg, rgba(7, 18, 34, 0.66), rgba(10, 24, 45, 0.5)) !important;
   border: 1px solid rgba(188, 220, 255, 0.24) !important;
@@ -568,4 +570,174 @@
 
 .ictmdx-shell.vehicle-admin-page-master-data--split-scroll .masters-picker-master-data .masters-picker-item-master-data:last-child {
   margin-bottom: 2px;
+}
+
+/* Fuel Types — Master Data Update */
+.ictmdx-shell .fuel-types-master-panel {
+  gap: 14px;
+}
+
+.ictmdx-shell .fuel-types-official-card .master-data-chemicals-head-master-data,
+.ictmdx-shell .fuel-types-master-panel .master-data-chemicals-head-master-data {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.ictmdx-shell .fuel-types-official-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ictmdx-shell .fuel-types-official-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.ictmdx-shell .fuel-types-official-item {
+  background:
+    linear-gradient(145deg, rgba(12, 28, 50, 0.58), rgba(8, 20, 38, 0.44)) !important;
+  border: 1px solid rgba(188, 220, 255, 0.24) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 10px 22px rgba(2, 8, 22, 0.22) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.ictmdx-shell .fuel-types-official-item strong {
+  color: #ffffff !important;
+  font-size: 1.05rem;
+}
+
+.ictmdx-shell .fuel-types-official-label {
+  color: rgba(198, 220, 255, 0.82) !important;
+}
+
+.ictmdx-shell .fuel-types-official-meta,
+.ictmdx-shell .fuel-types-official-verified {
+  color: rgba(198, 218, 245, 0.72) !important;
+}
+
+.ictmdx-shell .fuel-types-official-error {
+  color: #ffb4b4 !important;
+}
+
+.ictmdx-shell .fuel-type-row-master-data {
+  background: rgba(12, 28, 49, 0.42) !important;
+  border: 1px solid rgba(188, 220, 255, 0.2) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+}
+
+.ictmdx-shell .fuel-type-row-master-data.is-mismatch {
+  background: rgba(72, 28, 28, 0.38) !important;
+  border-color: rgba(252, 153, 153, 0.42) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 0 0 1px rgba(252, 153, 153, 0.12) !important;
+}
+
+.ictmdx-shell .fuel-type-row-title strong {
+  color: #ffffff !important;
+}
+
+.ictmdx-shell .fuel-type-row-label {
+  color: rgba(198, 218, 245, 0.72) !important;
+}
+
+.ictmdx-shell .fuel-type-row-grid > div > span:last-child {
+  color: rgba(225, 238, 255, 0.92) !important;
+}
+
+.ictmdx-shell .fuel-type-live-api-hint {
+  color: #fbbf24 !important;
+  font-weight: 600;
+}
+
+.ictmdx-shell .fuel-type-badge-mismatch {
+  background: rgba(220, 90, 90, 0.22) !important;
+  border: 1px solid rgba(252, 153, 153, 0.48) !important;
+  color: #ffe8e8 !important;
+}
+
+.ictmdx-shell .fuel-type-badge-synced {
+  background: rgba(72, 187, 120, 0.22) !important;
+  border: 1px solid rgba(134, 239, 172, 0.48) !important;
+  color: #d9ffe8 !important;
+}
+
+.ictmdx-shell .fuel-type-row-actions .action-btn-master-data {
+  min-width: 108px;
+}
+
+.ictmdx-shell .fuel-types-master-panel .btn-submit-master-data.master-data-chemicals-add-btn-master-data {
+  background:
+    linear-gradient(160deg, rgba(157, 212, 255, 0.3), rgba(109, 184, 246, 0.16)),
+    rgba(18, 42, 70, 0.72) !important;
+  border-color: rgba(205, 229, 255, 0.46) !important;
+  color: #ffffff !important;
+}
+
+.ictmdx-shell .fuel-types-master-panel label {
+  color: rgba(198, 220, 255, 0.88) !important;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+/* Flash / notify banner */
+.ictmdx-shell .master-data-flash-banner-master-data {
+  background:
+    linear-gradient(145deg, rgba(12, 28, 50, 0.72), rgba(8, 20, 38, 0.58)) !important;
+  border: 1px solid rgba(188, 220, 255, 0.28) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 12px 28px rgba(2, 8, 22, 0.28) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.ictmdx-shell .master-data-flash-banner-text-master-data {
+  color: #f4f9ff !important;
+  font-weight: 500;
+}
+
+.ictmdx-shell .master-data-flash-banner--success {
+  border-color: rgba(134, 239, 172, 0.42) !important;
+  background:
+    linear-gradient(145deg, rgba(20, 58, 42, 0.72), rgba(12, 36, 28, 0.58)) !important;
+}
+
+.ictmdx-shell .master-data-flash-banner--success .master-data-flash-banner-text-master-data {
+  color: #d9ffe8 !important;
+}
+
+.ictmdx-shell .master-data-flash-banner--error {
+  border-color: rgba(252, 153, 153, 0.42) !important;
+  background:
+    linear-gradient(145deg, rgba(58, 24, 24, 0.72), rgba(38, 16, 16, 0.58)) !important;
+}
+
+.ictmdx-shell .master-data-flash-banner--error .master-data-flash-banner-text-master-data {
+  color: #ffe8e8 !important;
+}
+
+.ictmdx-shell .master-data-flash-banner-dismiss-master-data {
+  border: 1px solid rgba(188, 220, 255, 0.34) !important;
+  background:
+    linear-gradient(150deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.04)),
+    rgba(10, 24, 43, 0.58) !important;
+  color: #f6faff !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    0 6px 14px rgba(2, 8, 22, 0.22) !important;
+}
+
+.ictmdx-shell .master-data-flash-banner-dismiss-master-data:hover {
+  background:
+    linear-gradient(150deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.06)),
+    rgba(13, 31, 55, 0.68) !important;
+  color: #ffffff !important;
 }
