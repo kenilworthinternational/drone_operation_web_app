@@ -510,10 +510,34 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
   padding: 8px 10px;
   background: #f8f9fa;
   border-radius: 6px;
   font-size: 0.85rem;
+}
+
+.sysmaint-jenkins-item-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.sysmaint-jenkins-item-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sysmaint-jenkins-item-time {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.sysmaint-jenkins-last-updated {
+  margin-top: 4px;
 }
 
 .sysmaint-task-list {
@@ -1051,6 +1075,11 @@
 
 .page-sysmaint--glass .ictg-jenkins-item strong {
   color: #f3fcff !important;
+}
+
+.page-sysmaint--glass .sysmaint-jenkins-item-time,
+.page-sysmaint--glass .sysmaint-jenkins-last-updated {
+  color: rgba(198, 218, 245, 0.78) !important;
 }
 
 .page-sysmaint--glass .ictg-jenkins-panel {

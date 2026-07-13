@@ -26,7 +26,9 @@ const Pm2ProcessCard = ({ process, onViewLogs, onRestart, isRestarting }) => {
         <span className={`sysmaint-badge ictg-chip ${statusClass(process.status)}`}>{process.status}</span>
       </div>
       {process.isCurrentProcess && (
-        <p className="sysmaint-hint sysmaint-hint--warn">This API instance is serving your current session.</p>
+        <p className="sysmaint-hint sysmaint-hint--warn">
+          This API instance is serving your current session. Restart from here is supported; the dashboard will reconnect shortly.
+        </p>
       )}
       <div className="sysmaint-pm2-metrics ictg-pm2-metrics">
         <div>

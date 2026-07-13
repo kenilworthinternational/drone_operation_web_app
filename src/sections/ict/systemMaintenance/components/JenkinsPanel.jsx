@@ -8,6 +8,28 @@ function badgeForStatus(status) {
   return 'sysmaint-badge--muted';
 }
 
+function formatWhen(iso) {
+  if (!iso) return '—';
+  try {
+    return new Date(iso).toLocaleString();
+  } catch {
+    return iso;
+  }
+}
+
+function jobUpdatedLabel(job) {
+  if (job.building && job.startedAt) {
+    return `Started ${formatWhen(job.startedAt)}`;
+  }
+  if (job.finishedAt) {
+    return `Updated ${formatWhen(job.finishedAt)}`;
+  }
+  if (job.startedAt) {
+    return `Started ${formatWhen(job.startedAt)}`;
+  }
+  return null;
+}
+
 const JenkinsPanel = ({ jenkins, errors }) => {
   const notConfigured = !jenkins?.enabled;
   const err = jenkins?.error || errors?.find((e) => e.section === 'jenkins')?.message;
@@ -20,6 +42,11 @@ const JenkinsPanel = ({ jenkins, errors }) => {
           <a href={jenkins.url} target="_blank" rel="noreferrer">{jenkins.url}</a>
         </p>
       )}
+      {jenkins?.lastUpdatedAt ? (
+        <p className="sysmaint-hint sysmaint-jenkins-last-updated">
+          Latest pipeline activity: {formatWhen(jenkins.lastUpdatedAt)}
+        </p>
+      ) : null}
       {notConfigured && (
         <p className="sysmaint-hint">
           Jenkins integration is not configured. Set
@@ -32,15 +59,24 @@ const JenkinsPanel = ({ jenkins, errors }) => {
         <p className="sysmaint-hint">No Jenkins jobs configured.</p>
       )}
       <div className="sysmaint-jenkins-list ictg-jenkins-list">
-        {(jenkins?.jobs || []).map((job) => (
-          <div className="sysmaint-jenkins-item ictg-jenkins-item" key={job.name}>
-            <div>
-              <strong>{job.name}</strong>
-              {job.number != null && <span className="sysmaint-hint">#{job.number}</span>}
+        {(jenkins?.jobs || []).map((job) => {
+          const updatedLabel = jobUpdatedLabel(job);
+          return (
+            <div className="sysmaint-jenkins-item ictg-jenkins-item" key={job.name}>
+              <div className="sysmaint-jenkins-item-main">
+                <div className="sysmaint-jenkins-item-title">
+                  <strong>{job.name}</strong>
+                  {job.number != null && <span className="sysmaint-hint">#{job.number}</span>}
+                </div>
+                {updatedLabel ? (
+                  <span className="sysmaint-jenkins-item-time">{updatedLabel}</span>
+                ) : null}
+                {job.error ? <span className="sysmaint-error">{job.error}</span> : null}
+              </div>
+              <span className={`sysmaint-badge ictg-chip ${badgeForStatus(job.status)}`}>{job.status}</span>
             </div>
-            <span className={`sysmaint-badge ictg-chip ${badgeForStatus(job.status)}`}>{job.status}</span>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

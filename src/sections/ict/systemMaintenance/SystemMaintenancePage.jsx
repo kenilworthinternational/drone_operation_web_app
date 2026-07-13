@@ -76,11 +76,16 @@ const SystemMaintenancePage = () => {
     try {
       const result = await restartPm2({ appName, confirmName }).unwrap();
       const warning = result?.data?.warning;
+      const selfRestart = result?.data?.selfRestart;
       setActionMessage(
         warning || `Restarted ${appName} successfully.`
       );
-      refetch();
       onDone();
+      if (selfRestart) {
+        window.setTimeout(() => refetch(), 8000);
+      } else {
+        refetch();
+      }
     } catch (err) {
       setActionMessage(err?.data?.message || err?.message || 'Restart failed.');
     }
@@ -234,7 +239,9 @@ const SystemMaintenancePage = () => {
       key: 'jenkins',
       title: 'Jenkins Jobs',
       value: `${jenkinsOk}/${jenkinsJobs.length || 0}`,
-      hint: jenkinsJobs.length ? `${jenkinsOk} successful` : (overview?.jenkins?.enabled ? 'No jobs configured' : 'Integration not configured'),
+      hint: jenkinsJobs.length
+        ? `${jenkinsOk} successful${overview?.jenkins?.lastUpdatedAt ? ` · latest ${formatCollectedAt(overview.jenkins.lastUpdatedAt)}` : ''}`
+        : (overview?.jenkins?.enabled ? 'No jobs configured' : 'Integration not configured'),
       tone: !overview?.jenkins?.enabled || !jenkinsJobs.length ? 'muted' : jenkinsOk === jenkinsJobs.length ? 'ok' : 'warn',
       icon: <FaServer />,
     },
