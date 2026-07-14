@@ -4,7 +4,6 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, addMo
 import { toast } from 'react-toastify';
 import CustomDropdown from '../../../components/CustomDropdown';
 import {
-  useDeleteBookingPlanMutation,
   useDeactivateBookingPlanMutation,
 } from '../../../api/services NodeJs/bookingCreationApi';
 import { useGetDeactivateReasonsQuery } from '../../../api/services NodeJs/reasonsApi';
@@ -38,12 +37,9 @@ const BookingsCalender = ({
 }) => {
   const [loading, setLoading] = useState(false);
   const [tasksByDate, setTasksByDate] = useState({});
-  const [deletingPlanId, setDeletingPlanId] = useState(null);
   const [deactivatingPlanId, setDeactivatingPlanId] = useState(null);
-  const [deleteModalTask, setDeleteModalTask] = useState(null);
   const [deactivateModalTask, setDeactivateModalTask] = useState(null);
   const [selectedDeactivateReason, setSelectedDeactivateReason] = useState(null);
-  const [deleteBookingPlan] = useDeleteBookingPlanMutation();
   const [deactivateBookingPlan] = useDeactivateBookingPlanMutation();
   const { data: deactivateReasons } = useGetDeactivateReasonsQuery({ include_inactive: false });
 
@@ -68,8 +64,6 @@ const BookingsCalender = ({
     }
     return false;
   }, []);
-
-  const closeDeleteModal = () => setDeleteModalTask(null);
 
   const closeDeactivateModal = () => {
     setDeactivateModalTask(null);
@@ -111,18 +105,6 @@ const BookingsCalender = ({
 
   const getDayNumber = (date) => format(date, 'd');
 
-  const openDeleteModal = (task) => {
-    if (!task?.id) return;
-    if (task.can_delete === false) {
-      toast.error(task.delete_block_reason || 'This plan cannot be deleted.', {
-        position: 'top-center',
-        autoClose: 5000,
-      });
-      return;
-    }
-    setDeleteModalTask(task);
-  };
-
   const openDeactivateModal = (task) => {
     if (!task?.id) return;
     if (!deactivateReasonOptions.length) {
@@ -134,53 +116,6 @@ const BookingsCalender = ({
     }
     setSelectedDeactivateReason(null);
     setDeactivateModalTask(task);
-  };
-
-  const executeDeletePlan = async (task) => {
-    try {
-      setDeletingPlanId(task.id);
-      const deleteResult = await deleteBookingPlan(task.id);
-      if (deleteResult.error) {
-        const errMsg =
-          deleteResult.error?.data?.message ||
-          deleteResult.error?.message ||
-          'Failed to delete the plan.';
-        toast.error(errMsg, {
-          position: 'top-center',
-          autoClose: 5000,
-        });
-        return;
-      }
-      const response = deleteResult.data;
-      const isSuccess = response?.status === 'true' || response?.success === true;
-      if (!isSuccess) {
-        toast.error(response?.message || 'Failed to delete the plan.', {
-          position: 'top-center',
-          autoClose: 5000,
-        });
-        return;
-      }
-      setTasksByDate((prev) => {
-        const updated = { ...prev };
-        Object.keys(updated).forEach((dateKey) => {
-          updated[dateKey] = (updated[dateKey] || []).filter((t) => t.id !== task.id);
-        });
-        return updated;
-      });
-      if (onCalendarChange) {
-        await onCalendarChange();
-      }
-      toast.success('Plan deleted.', { position: 'top-center', autoClose: 3000 });
-      closeDeleteModal();
-    } catch (e) {
-      console.error(e);
-      toast.error('Error occurred while deleting the plan.', {
-        position: 'top-center',
-        autoClose: 5000,
-      });
-    } finally {
-      setDeletingPlanId(null);
-    }
   };
 
   const confirmDeactivatePlan = async () => {
@@ -252,43 +187,6 @@ const BookingsCalender = ({
 
   const handleNextMonth = () => {
     onMonthChange(addMonths(currentMonth, 1));
-  };
-
-  const renderDeleteModal = () => {
-    if (!deleteModalTask) return null;
-    const task = deleteModalTask;
-    return (
-      <div className="plan-popup-overlay" onClick={closeDeleteModal}>
-        <div className="plan-popup-container" onClick={(e) => e.stopPropagation()}>
-          <div className="plan-popup-header">
-            <h3>Delete plan</h3>
-            <button type="button" className="plan-popup-close" onClick={closeDeleteModal} aria-label="Close">
-              ×
-            </button>
-          </div>
-          <div className="plan-popup-content">
-            <p className="plan-popup-message">
-              Delete plan <strong>#{task.id}</strong> ({task.estate})? This cannot be undone.
-            </p>
-          </div>
-          <div className="plan-popup-footer">
-            <div className="plan-popup-actions">
-              <button type="button" className="plan-popup-cancel-btn" onClick={closeDeleteModal}>
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="plan-popup-danger-btn"
-                onClick={() => executeDeletePlan(task)}
-                disabled={deletingPlanId === task.id}
-              >
-                {deletingPlanId === task.id ? 'Deleting...' : 'Delete'}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
   };
 
   const renderDeactivateModal = () => {
@@ -396,50 +294,20 @@ const BookingsCalender = ({
                       <span className="booking-calender-task-estate">
                         {task.estate} - ID: {task.id}
                       </span>
-                      {canManagePlans && (
+                      {canManagePlans && task.activated === 1 && (
                         <span className="booking-calender-task-actions">
-                          {task.can_delete !== false && (
-                            <button
-                              className="booking-calender-task-delete"
-                              aria-label="Delete plan"
-                              title="Delete plan"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openDeleteModal(task);
-                              }}
-                              disabled={deletingPlanId === task.id}
-                            >
-                              {deletingPlanId === task.id ? '...' : (
-                                <svg
-                                  className="booking-calender-task-delete-icon"
-                                  viewBox="0 0 24 24"
-                                  width="12"
-                                  height="12"
-                                  aria-hidden="true"
-                                  focusable="false"
-                                >
-                                  <path
-                                    d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zm13-15h-3.5l-1-1h-5l-1 1H5v2h14V4z"
-                                    fill="currentColor"
-                                  />
-                                </svg>
-                              )}
-                            </button>
-                          )}
-                          {task.can_delete === false && task.activated === 1 && (
-                            <button
-                              className="booking-calender-task-deactivate"
-                              aria-label="Deactivate plan"
-                              title={task.delete_block_reason || 'Deactivate plan'}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openDeactivateModal(task);
-                              }}
-                              disabled={deactivatingPlanId === task.id}
-                            >
-                              {deactivatingPlanId === task.id ? '...' : <DeactivatePlanIcon />}
-                            </button>
-                          )}
+                          <button
+                            className="booking-calender-task-deactivate"
+                            aria-label="Deactivate plan"
+                            title={task.delete_block_reason || 'Deactivate plan'}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openDeactivateModal(task);
+                            }}
+                            disabled={deactivatingPlanId === task.id}
+                          >
+                            {deactivatingPlanId === task.id ? '...' : <DeactivatePlanIcon />}
+                          </button>
                         </span>
                       )}
                     </div>
@@ -475,7 +343,6 @@ const BookingsCalender = ({
         </div>
       )}
       {renderCalendar()}
-      {renderDeleteModal()}
       {renderDeactivateModal()}
     </div>
   );

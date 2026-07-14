@@ -196,6 +196,76 @@
 .modal-title-group-booking-calendar { display: flex; flex-direction: column; gap: 4px; }
 .modal-title-booking-calendar { font-size: 16px; font-weight: 800; color: #003057; }
 .modal-subtitle-booking-calendar { font-size: 12px; color: #4b5563; }
+.reschedule-meta-booking-calendar {
+  margin-top: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #5b21b6;
+  line-height: 1.4;
+}
+.reschedule-history-booking-calendar {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.reschedule-history-title-booking-calendar {
+  font-size: 11px;
+  font-weight: 700;
+  color: #5b21b6;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.reschedule-history-list-booking-calendar {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.reschedule-history-list-booking-calendar li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #5b21b6;
+  line-height: 1.4;
+  padding: 6px 8px;
+  background: #f5f3ff;
+  border: 1px solid #ede9fe;
+  border-radius: 8px;
+}
+.reschedule-history-at-booking-calendar {
+  color: #7c3aed;
+  font-size: 11px;
+}
+.reschedule-meta-label-booking-calendar {
+  display: inline-block;
+  background: #ede9fe;
+  color: #5b21b6;
+  border: 1px solid #ddd6fe;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.reschedule-source-badge-booking-calendar {
+  display: inline-block;
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 600;
+}
 .modal-close-booking-calendar { background: transparent; border: none; font-size: 18px; color: #6b7280; cursor: pointer; }
 .modal-close-booking-calendar:hover { color: #111827; }
 .modal-body-booking-calendar { padding: 12px 16px; overflow: auto; }

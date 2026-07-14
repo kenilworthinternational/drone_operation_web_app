@@ -12,13 +12,18 @@ import {
   useGetPilotTransportOptionsQuery,
   useAssignPilotTransportDetailsMutation,
   useGetAllTeamsQuery,
+  useReschedulePilotAssignmentPlanMutation,
 } from '../../../api/services NodeJs/allEndpoints';
+import { useDeactivateBookingPlanMutation } from '../../../api/services NodeJs/bookingCreationApi';
+import { useGetDeactivateReasonsQuery } from '../../../api/services NodeJs/reasonsApi';
 import TransportAssignmentFields from './TransportAssignmentFields';
 import { formatDriverArrivalTimeForInput } from '../../../utils/transportAssignment';
 import { useGetMyPermissionsQuery } from '../../../api/services NodeJs/featurePermissionsApi';
 import { FEATURE_CODES } from '../../../utils/featurePermissions';
 import { isInternalDeveloper } from '../../../utils/authUtils';
+import CustomDropdown from '../../../components/CustomDropdown';
 import '../../../styles/pilotAssignment-pilotsassign.css';
+import '../../../styles/deactivateplan.css';
 
 const PilotAssignment = () => {
   const navigate = useNavigate();
@@ -37,6 +42,14 @@ const PilotAssignment = () => {
   const [selectedMissions, setSelectedMissions] = useState([]);
   const [droneInfo, setDroneInfo] = useState(null);
   const [showTeamsModal, setShowTeamsModal] = useState(false);
+  const [planContextMenu, setPlanContextMenu] = useState(null);
+  const [rescheduleModalPlan, setRescheduleModalPlan] = useState(null);
+  const [rescheduleDate, setRescheduleDate] = useState('');
+  const [deactivateModalPlan, setDeactivateModalPlan] = useState(null);
+  const [selectedDeactivateReason, setSelectedDeactivateReason] = useState(null);
+  const [deactivatingPlanId, setDeactivatingPlanId] = useState(null);
+  const [reschedulingPlanId, setReschedulingPlanId] = useState(null);
+  const planMenuRef = useRef(null);
 
   // Get user data for assigned_by
   const userData = JSON.parse(localStorage.getItem('userData') || '{}');
@@ -82,6 +95,16 @@ const PilotAssignment = () => {
   );
   const [createAssignment, { isLoading: creatingAssignment }] = useCreatePilotAssignmentMutation();
   const [assignTransportDetails, { isLoading: savingTransport }] = useAssignPilotTransportDetailsMutation();
+  const [reschedulePlan] = useReschedulePilotAssignmentPlanMutation();
+  const [deactivateBookingPlan] = useDeactivateBookingPlanMutation();
+  const { data: deactivateReasons } = useGetDeactivateReasonsQuery({ include_inactive: false });
+  const deactivateReasonOptions = useMemo(
+    () =>
+      (deactivateReasons || [])
+        .filter((row) => Number(row.id) !== 1)
+        .map((row) => ({ id: row.id, group: row.reason })),
+    [deactivateReasons]
+  );
   const [deployStep, setDeployStep] = useState(null);
   const [transportForm, setTransportForm] = useState({
     driver_id: '',
@@ -400,20 +423,167 @@ const PilotAssignment = () => {
     // Find the plan to check if it can be edited
     const plan = plans.find(p => p.id === planId);
     if (!plan) return;
-    
+
     // Only allow toggling if plan can be edited (not assigned to another team)
     const canEdit = !plan.is_assigned || (plan.assigned_team_id && parseInt(plan.assigned_team_id) === parseInt(selectedTeamId));
     if (!canEdit) {
       // Prevent toggling plans assigned to other teams (gray checkboxes)
       return;
     }
-    
+
     setSelectedPlans(prev => 
       prev.includes(planId) 
         ? prev.filter(id => id !== planId)
         : [...prev, planId]
     );
   };
+
+  const closePlanContextMenu = () => setPlanContextMenu(null);
+
+  const handlePlanContextMenu = (e, plan) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setPlanContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      plan,
+    });
+  };
+
+  const openRescheduleModal = (plan) => {
+    closePlanContextMenu();
+    if (!plan?.id) return;
+    setRescheduleDate(selectedDate || '');
+    setRescheduleModalPlan(plan);
+  };
+
+  const closeRescheduleModal = () => {
+    setRescheduleModalPlan(null);
+    setRescheduleDate('');
+  };
+
+  const openDeactivateModal = (plan) => {
+    closePlanContextMenu();
+    if (!plan?.id) return;
+    if (!deactivateReasonOptions.length) {
+      toast.error('No deactivate reasons are configured. Add reasons in master data first.');
+      return;
+    }
+    setSelectedDeactivateReason(
+      deactivateReasonOptions.length === 1 ? deactivateReasonOptions[0] : null
+    );
+    setDeactivateModalPlan(plan);
+  };
+
+  const closeDeactivateModal = () => {
+    setDeactivateModalPlan(null);
+    setSelectedDeactivateReason(null);
+  };
+
+  const confirmReschedulePlan = async () => {
+    const plan = rescheduleModalPlan;
+    if (!plan?.id) return;
+    if (!rescheduleDate) {
+      toast.error('Please select a new date.');
+      return;
+    }
+    if (rescheduleDate === selectedDate) {
+      toast.error('Choose a different date than the current plan date.');
+      return;
+    }
+    try {
+      setReschedulingPlanId(plan.id);
+      const result = await reschedulePlan({
+        plan_id: plan.id,
+        pickedDate: rescheduleDate,
+      });
+      if (result.error) {
+        toast.error(
+          result.error?.data?.message || result.error?.message || 'Failed to reschedule the plan.'
+        );
+        return;
+      }
+      const response = result.data;
+      if (response?.status === false) {
+        toast.error(response?.message || 'Failed to reschedule the plan.');
+        return;
+      }
+      setSelectedPlans((prev) => prev.filter((id) => id !== plan.id));
+      closeRescheduleModal();
+      toast.success(
+        `Plan #${plan.id} rescheduled from ${
+          response?.data?.previousDate || selectedDate
+        } to ${rescheduleDate}.`
+      );
+      await refetchPlans();
+    } catch (e) {
+      console.error(e);
+      toast.error('Error occurred while rescheduling the plan.');
+    } finally {
+      setReschedulingPlanId(null);
+    }
+  };
+
+  const confirmDeactivatePlan = async () => {
+    const plan = deactivateModalPlan;
+    if (!plan?.id) return;
+    if (!selectedDeactivateReason?.id) {
+      toast.error('Please select a deactivate reason.');
+      return;
+    }
+    try {
+      setDeactivatingPlanId(plan.id);
+      const result = await deactivateBookingPlan({
+        plan_id: plan.id,
+        deactivate_reason_id: selectedDeactivateReason.id,
+      });
+      if (result.error) {
+        toast.error(
+          result.error?.data?.message || result.error?.message || 'Failed to deactivate the plan.'
+        );
+        return;
+      }
+      const response = result.data;
+      const isSuccess = response?.status === 'true' || response?.success === true || response?.status === true;
+      if (!isSuccess) {
+        toast.error(response?.message || 'Failed to deactivate the plan.');
+        return;
+      }
+      setSelectedPlans((prev) => prev.filter((id) => id !== plan.id));
+      closeDeactivateModal();
+      toast.success(`Plan #${plan.id} deactivated.`);
+      await refetchPlans();
+    } catch (e) {
+      console.error(e);
+      toast.error('Error occurred while deactivating the plan.');
+    } finally {
+      setDeactivatingPlanId(null);
+    }
+  };
+
+  useEffect(() => {
+    if (!planContextMenu) return;
+    const close = () => setPlanContextMenu(null);
+    window.addEventListener('scroll', close, true);
+    window.addEventListener('resize', close);
+    return () => {
+      window.removeEventListener('scroll', close, true);
+      window.removeEventListener('resize', close);
+    };
+  }, [planContextMenu]);
+
+  useEffect(() => {
+    if (!planContextMenu || !planMenuRef.current) return;
+    const rect = planMenuRef.current.getBoundingClientRect();
+    let left = planContextMenu.x;
+    let top = planContextMenu.y;
+    if (left + rect.width > window.innerWidth - 8) left = window.innerWidth - rect.width - 8;
+    if (top + rect.height > window.innerHeight - 8) top = window.innerHeight - rect.height - 8;
+    if (left < 8) left = 8;
+    if (top < 8) top = 8;
+    planMenuRef.current.style.left = `${left}px`;
+    planMenuRef.current.style.top = `${top}px`;
+  }, [planContextMenu]);
 
   const handleMissionToggle = (missionId) => {
     // Find the mission to check if it can be edited
@@ -708,12 +878,18 @@ const PilotAssignment = () => {
                         plan.is_assigned ? 'pilot-assignment-plan-assigned-pilotsassign' : ''
                       } ${selectedPlans.includes(plan.id) ? 'pilot-assignment-plan-selected-pilotsassign' : ''}`}
                       onClick={() => canEdit && handlePlanToggle(plan.id)}
+                      onContextMenu={(e) => handlePlanContextMenu(e, plan)}
                       style={{ cursor: canEdit ? 'pointer' : 'not-allowed' }}
+                      title="Right-click for Reschedule / Deactivate"
                     >
                       <div className="pilot-assignment-plan-content-pilotsassign">
                         <div className="pilot-assignment-plan-info-pilotsassign">
                           <span className="pilot-assignment-plan-id-pilotsassign">
-                            {plan.estate_name || (plan.id ? `Plan ${plan.id}` : 'Plan')}
+                            {plan.estate_name
+                              ? `${plan.estate_name} · Plan #${plan.id}`
+                              : plan.id
+                                ? `Plan #${plan.id}`
+                                : 'Plan'}
                           </span>
                           <span className="pilot-assignment-plan-ha-pilotsassign">
                             {Number(plan.plan_active_ha ?? 0).toLocaleString(undefined, {
@@ -985,6 +1161,115 @@ const PilotAssignment = () => {
           </div>
         </div>
       )}
+      {planContextMenu && (
+        <>
+          <div
+            className="pilot-assignment-plan-ctx-backdrop-pilotsassign"
+            onClick={closePlanContextMenu}
+            aria-hidden
+          />
+          <div
+            ref={planMenuRef}
+            className="pilot-assignment-plan-ctx-menu-pilotsassign"
+            style={{ left: planContextMenu.x, top: planContextMenu.y }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="pilot-assignment-plan-ctx-title-pilotsassign">
+              Plan #{planContextMenu.plan?.id}
+            </div>
+            <button
+              type="button"
+              className="pilot-assignment-plan-ctx-item-pilotsassign"
+              onClick={() => openRescheduleModal(planContextMenu.plan)}
+            >
+              Reschedule
+            </button>
+            <button
+              type="button"
+              className="pilot-assignment-plan-ctx-item-pilotsassign pilot-assignment-plan-ctx-item-danger-pilotsassign"
+              onClick={() => openDeactivateModal(planContextMenu.plan)}
+            >
+              Deactivate
+            </button>
+          </div>
+        </>
+      )}
+
+      {rescheduleModalPlan && (
+        <div className="modal-backdrop" onClick={closeRescheduleModal}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h3>Reschedule Plan</h3>
+            <p>Pick a new date for this plan. No manager request is required.</p>
+            <div className="deactivate-modal-plan">
+              Plan #{rescheduleModalPlan.id}
+              {rescheduleModalPlan.estate_name ? ` — ${rescheduleModalPlan.estate_name}` : ''}
+            </div>
+            <div style={{ marginTop: 12 }}>
+              <label
+                htmlFor="pilot-assignment-reschedule-date"
+                style={{ display: 'block', marginBottom: 6, fontWeight: 600, color: '#374151' }}
+              >
+                New date
+              </label>
+              <input
+                id="pilot-assignment-reschedule-date"
+                type="date"
+                className="pilot-assignment-date-input-pilotsassign"
+                value={rescheduleDate}
+                onChange={(e) => setRescheduleDate(e.target.value)}
+                style={{ width: '100%', maxWidth: 280 }}
+              />
+            </div>
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="confirm-button"
+                onClick={confirmReschedulePlan}
+                disabled={reschedulingPlanId === rescheduleModalPlan.id}
+              >
+                {reschedulingPlanId === rescheduleModalPlan.id ? 'Saving...' : 'Reschedule'}
+              </button>
+              <button type="button" className="cancel-button" onClick={closeRescheduleModal}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deactivateModalPlan && (
+        <div className="modal-backdrop" onClick={closeDeactivateModal}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h3>Deactivate Plan</h3>
+            <p>Select a reason before deactivating this plan.</p>
+            <div className="deactivate-modal-plan">
+              Plan #{deactivateModalPlan.id}
+              {deactivateModalPlan.estate_name ? ` — ${deactivateModalPlan.estate_name}` : ''}
+            </div>
+            <div style={{ marginTop: 12 }}>
+              <CustomDropdown
+                options={deactivateReasonOptions}
+                onSelect={(option) => setSelectedDeactivateReason(option)}
+                selectedValue={selectedDeactivateReason}
+              />
+            </div>
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="confirm-button"
+                onClick={confirmDeactivatePlan}
+                disabled={deactivatingPlanId === deactivateModalPlan.id}
+              >
+                {deactivatingPlanId === deactivateModalPlan.id ? 'Updating...' : 'Deactivate'}
+              </button>
+              <button type="button" className="cancel-button" onClick={closeDeactivateModal}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <ToastContainer position="top-right" autoClose={4500} closeOnClick draggable pauseOnHover />
     </div>
   );

@@ -5,7 +5,6 @@ import { baseApi } from '../../../api/services/allEndpoints';
 import {
   useGetPlantationPlanRequestsListQuery,
   useGetPlantationPlanRescheduleRequestsListQuery,
-  useGetPlantationMonthlyPlanRequestsListQuery,
 } from '../../../api/services NodeJs/plantationDashboardApi';
 import {
   useGetBookingCreationMissionTypesQuery,
@@ -15,7 +14,6 @@ import { useAppDispatch } from '../../../store/hooks';
 import { withCurrentWingSearch } from '../../../config/wingRouteGuard';
 import { mapPlantationRowToAdhocTile } from '../plantation-plan-requests/plantationPlanRequestApproval';
 import { mapRescheduleRowToTile } from '../plantation-plan-requests/plantationPlanRescheduleApproval';
-import { mapMonthlyRowToTile, formatTargetMonthLabel } from '../plantation-plan-requests/plantationMonthlyPlanApproval';
 import '../../../styles/requestsQueue.css';
 
 const RequestsQueueMain = () => {
@@ -59,20 +57,6 @@ const RequestsQueueMain = () => {
   }, [rescheduleRows]);
 
   const rescheduleError = rescheduleQueryError ? 'Failed to load reschedule requests' : '';
-
-  const {
-    data: monthlyRows,
-    isLoading: monthlyLoading,
-    isError: monthlyQueryError,
-  } = useGetPlantationMonthlyPlanRequestsListQuery({ status: 'pending' });
-
-  const monthlyData = useMemo(() => {
-    const rows = Array.isArray(monthlyRows) ? monthlyRows : [];
-    const requests = rows.map((row) => mapMonthlyRowToTile(row)).filter(Boolean);
-    return { requests };
-  }, [monthlyRows]);
-
-  const monthlyError = monthlyQueryError ? 'Failed to load monthly requests' : '';
 
   const [nonpLoading, setNonpLoading] = useState(false);
   const [nonpData, setNonpData] = useState(null);
@@ -134,7 +118,7 @@ const RequestsQueueMain = () => {
         </div>
       </div>
 
-      <div className="columns-container-req-queue monthly-four-col">
+      <div className="columns-container-req-queue">
         {/* Column 1: Plantation Add-hoc Request Queue */}
         <div className="column-req-queue">
           <div className="column-header-req-queue">
@@ -332,69 +316,6 @@ const RequestsQueueMain = () => {
                         <div className="tile-row-req-queue">
                           <span className="tile-label-req-queue">Requested Date:</span>
                           <span className="tile-value-req-queue">{request.requested_date || 'N/A'}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Column 4: Plantation Monthly Request Queue */}
-        <div className="column-req-queue">
-          <div className="column-header-req-queue">
-            <h2 className="column-title-req-queue">Plantation Monthly Request Queue</h2>
-            <span className="column-count-req-queue">Requests {monthlyData?.requests?.length || 0} »</span>
-          </div>
-
-          <div className="requests-list-req-queue">
-            {monthlyLoading && (
-              <div className="loading-req-queue">
-                <Bars height="30" width="30" color="#003057" ariaLabel="bars-loading" visible={true} />
-                <span>Loading...</span>
-              </div>
-            )}
-            {monthlyError && <div className="error-req-queue">{monthlyError}</div>}
-            {!monthlyLoading && !monthlyError && (
-              <>
-                {!monthlyData?.requests || monthlyData.requests.length === 0 ? (
-                  <div className="empty-req-queue">No pending requests</div>
-                ) : (
-                  monthlyData.requests.map((request) => (
-                    <div
-                      key={request.request_id}
-                      className="request-tile-req-queue"
-                      onClick={() => {
-                        navigate(withCurrentWingSearch('/home/monthlyRequestProceed', routerLocation.search), {
-                          state: { requestId: request.request_id, requestType: 'monthly' },
-                        });
-                      }}
-                      style={{ cursor: 'pointer' }}
-                    >
-                      <div className="tile-header-req-queue">
-                        <span className="tile-id-req-queue">Request #{request.request_id}</span>
-                        <span className="tile-status-req-queue">Pending</span>
-                      </div>
-                      <div className="tile-body-req-queue">
-                        <div className="tile-row-req-queue">
-                          <span className="tile-label-req-queue">Estate:</span>
-                          <span className="tile-value-req-queue">{request.estate || 'N/A'}</span>
-                        </div>
-                        <div className="tile-row-req-queue">
-                          <span className="tile-label-req-queue">Target month:</span>
-                          <span className="tile-value-req-queue">
-                            {request.targetMonthLabel || formatTargetMonthLabel(request.target_year_month)}
-                          </span>
-                        </div>
-                        <div className="tile-row-req-queue">
-                          <span className="tile-label-req-queue">Dates:</span>
-                          <span className="tile-value-req-queue">{request.date_count || 0}</span>
-                        </div>
-                        <div className="tile-row-req-queue">
-                          <span className="tile-label-req-queue">Requested plans:</span>
-                          <span className="tile-value-req-queue">{request.total_requested_plans || 0}</span>
                         </div>
                       </div>
                     </div>

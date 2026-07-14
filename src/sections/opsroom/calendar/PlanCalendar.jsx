@@ -40,12 +40,14 @@ function canRequestPlanActivationForWing(wingParam) {
 }
 
 const PLAN_STATUS_META = [
-  { key: 'not_activated', label: 'Not Activated', color: '#BEBEBE' },
-  { key: 'active', label: 'Active', color: '#60a5fa' },
+  { key: 'activated_filter', label: 'Activated', color: '#BEBEBE', isActivatedToggle: true },
+  { key: 'active', label: 'Ongoing', color: '#60a5fa' },
   { key: 'manager_approved', label: 'Manager Approved', color: '#f97316' },
   { key: 'team_assigned', label: 'Team Assigned', color: '#eab308' },
   { key: 'completed', label: 'Completed', color: '#22c55e' },
 ];
+
+const WORKFLOW_STATUS_KEYS = PLAN_STATUS_META.filter((s) => !s.isActivatedToggle).map((s) => s.key);
 
 function formatEstateLabel(estateName) {
   const name = String(estateName || '').trim();
@@ -98,7 +100,9 @@ const PlanCalendar = () => {
   const [estateFieldsLoading, setEstateFieldsLoading] = useState(false);
   const [estateFieldsError, setEstateFieldsError] = useState('');
   const [selectedTypes, setSelectedTypes] = useState(new Set(PLAN_TYPE_META.map((item) => item.key)));
-  const [selectedStatuses, setSelectedStatuses] = useState(new Set(PLAN_STATUS_META.map((item) => item.key)));
+  const [selectedStatuses, setSelectedStatuses] = useState(new Set(WORKFLOW_STATUS_KEYS));
+  /** true (default): only activated=1; false: include deactivated */
+  const [activatedOnly, setActivatedOnly] = useState(true);
   const [showHierarchyFilter, setShowHierarchyFilter] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState('');
   const [selectedPlantation, setSelectedPlantation] = useState('');
@@ -258,11 +262,14 @@ const PlanCalendar = () => {
     if (activated && managerApproved && teamAssigned && completed) return 'completed';
     if (activated && managerApproved && teamAssigned) return 'team_assigned';
     if (activated && managerApproved) return 'manager_approved';
-    return 'active';
+    return 'active'; // Ongoing
   };
 
   const getPlanStatusColor = (plan) => {
     const key = getPlanStatusKey(plan);
+    if (key === 'not_activated') {
+      return PLAN_STATUS_META.find((s) => s.isActivatedToggle)?.color || '#BEBEBE';
+    }
     return PLAN_STATUS_META.find((s) => s.key === key)?.color || '#60a5fa';
   };
 
@@ -341,7 +348,14 @@ const PlanCalendar = () => {
     Object.entries(plansByDate).forEach(([date, plans]) => {
       const matched = plans.filter((plan) => {
         const typeMatch = selectedTypes.has(plan.flag);
-        const statusMatch = selectedStatuses.has(getPlanStatusKey(plan));
+        const isActivated = Number(plan.activated) === 1;
+        if (activatedOnly && !isActivated) return false;
+
+        const statusKey = getPlanStatusKey(plan);
+        // Deactivated plans are only visible when Activated toggle is off
+        const statusMatch = !isActivated
+          ? true
+          : selectedStatuses.has(statusKey);
         const groupId = String(plan.group_id ?? plan.groupId ?? plan.group ?? '');
         const plantationId = String(plan.plantation_id ?? plan.plantationId ?? plan.plantation ?? '');
         const regionId = String(plan.region_id ?? plan.regionId ?? plan.region ?? '');
@@ -360,7 +374,7 @@ const PlanCalendar = () => {
       }
     });
     return grouped;
-  }, [plansByDate, selectedTypes, selectedStatuses, selectedGroup, selectedPlantation, selectedRegion, selectedEstate]);
+  }, [plansByDate, selectedTypes, selectedStatuses, activatedOnly, selectedGroup, selectedPlantation, selectedRegion, selectedEstate]);
 
   const toggleType = (key) => {
     setSelectedTypes((prev) => {
@@ -375,6 +389,10 @@ const PlanCalendar = () => {
   };
 
   const toggleStatus = (key) => {
+    if (key === 'activated_filter') {
+      setActivatedOnly((prev) => !prev);
+      return;
+    }
     setSelectedStatuses((prev) => {
       const next = new Set(prev);
       if (next.has(key)) {
@@ -551,17 +569,34 @@ const PlanCalendar = () => {
         </div>
         <div className="top-filter-group-booking-calendar">
           <span className="legend-label-booking-calendar">Status:</span>
-          {PLAN_STATUS_META.map((item) => (
-            <button
-              key={item.key}
-              type="button"
-              className={`legend-dot-item top-filter-status-booking-calendar ${selectedStatuses.has(item.key) ? 'legend-dot-selected-booking-calendar' : 'legend-dot-unselected-booking-calendar'}`}
-              onClick={() => toggleStatus(item.key)}
-            >
-              <span className="legend-dot" style={{ background: item.color }} />
-              {item.label}
-            </button>
-          ))}
+          {PLAN_STATUS_META.map((item) => {
+            const isSelected = item.isActivatedToggle
+              ? true
+              : selectedStatuses.has(item.key);
+            const label = item.isActivatedToggle
+              ? activatedOnly
+                ? 'Activated'
+                : 'All'
+              : item.label;
+            return (
+              <button
+                key={item.key}
+                type="button"
+                className={`legend-dot-item top-filter-status-booking-calendar ${isSelected ? 'legend-dot-selected-booking-calendar' : 'legend-dot-unselected-booking-calendar'}`}
+                onClick={() => toggleStatus(item.key)}
+                title={
+                  item.isActivatedToggle
+                    ? activatedOnly
+                      ? 'Showing activated plans — click to show all (including deactivated)'
+                      : 'Showing all plans — click to show activated only'
+                    : undefined
+                }
+              >
+                <span className="legend-dot" style={{ background: item.color }} />
+                {label}
+              </button>
+            );
+          })}
         </div>
         <div className="hierarchy-filter-wrap-booking-calendar">
         <button
@@ -690,6 +725,102 @@ const PlanCalendar = () => {
                 <div className="modal-subtitle-booking-calendar">
                   {selectedPlan.date} · {selectedPlan.group} · {selectedPlan.plantation} · {selectedPlan.estate}
                 </div>
+                {(selectedPlan.flag === 'rp' ||
+                  (Array.isArray(selectedPlan.reschedule_history) &&
+                    selectedPlan.reschedule_history.length > 0) ||
+                  selectedPlan.reschedule_from_date) && (
+                  <div className="reschedule-history-booking-calendar">
+                    <div className="reschedule-history-title-booking-calendar">
+                      Reschedule history
+                      {Array.isArray(selectedPlan.reschedule_history) &&
+                      selectedPlan.reschedule_history.length > 1
+                        ? ` (${selectedPlan.reschedule_history.length})`
+                        : ''}
+                    </div>
+                    {Array.isArray(selectedPlan.reschedule_history) &&
+                    selectedPlan.reschedule_history.length > 0 ? (
+                      <ul className="reschedule-history-list-booking-calendar">
+                        {selectedPlan.reschedule_history.map((item, index) => (
+                          <li key={item.id || `${item.from_date}-${item.to_date}-${index}`}>
+                            <span className="reschedule-meta-label-booking-calendar">
+                              #{index + 1}
+                            </span>
+                            <span>
+                              {item.from_date ? (
+                                <>
+                                  from <strong>{item.from_date}</strong>
+                                  {item.to_date ? (
+                                    <>
+                                      {' '}
+                                      to <strong>{item.to_date}</strong>
+                                    </>
+                                  ) : null}
+                                </>
+                              ) : item.to_date ? (
+                                <>
+                                  to <strong>{item.to_date}</strong>
+                                </>
+                              ) : (
+                                'Date not recorded'
+                              )}
+                            </span>
+                            {item.by_name && (
+                              <span>
+                                · by <strong>{item.by_name}</strong>
+                              </span>
+                            )}
+                            {item.source === 'manager' &&
+                              item.requested_by_name &&
+                              item.requested_by_name !== item.by_name && (
+                                <span>
+                                  · requested by <strong>{item.requested_by_name}</strong>
+                                </span>
+                              )}
+                            {item.source === 'kwil' ? (
+                              <span className="reschedule-source-badge-booking-calendar">KWIL</span>
+                            ) : item.source === 'manager' ? (
+                              <span className="reschedule-source-badge-booking-calendar">
+                                Manager request
+                              </span>
+                            ) : null}
+                            {item.at && (
+                              <span className="reschedule-history-at-booking-calendar">
+                                · {item.at}
+                              </span>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <div className="reschedule-meta-booking-calendar">
+                        <span className="reschedule-meta-label-booking-calendar">Rescheduled</span>
+                        {selectedPlan.reschedule_from_date ? (
+                          <span>
+                            from <strong>{selectedPlan.reschedule_from_date}</strong>
+                            {selectedPlan.reschedule_to_date || selectedPlan.date ? (
+                              <>
+                                {' '}
+                                to{' '}
+                                <strong>
+                                  {selectedPlan.reschedule_to_date || selectedPlan.date}
+                                </strong>
+                              </>
+                            ) : null}
+                          </span>
+                        ) : (
+                          <span>
+                            to <strong>{selectedPlan.date}</strong>
+                          </span>
+                        )}
+                        {selectedPlan.reschedule_by_name && (
+                          <span>
+                            · by <strong>{selectedPlan.reschedule_by_name}</strong>
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
               <button
                 className="modal-close-booking-calendar"

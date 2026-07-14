@@ -63,13 +63,9 @@
 /* Columns Container */
 .columns-container-req-queue {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 16px;
   margin-top: 16px;
-}
-
-.columns-container-req-queue.monthly-four-col {
-  grid-template-columns: repeat(4, 1fr);
 }
 
 /* Column */
@@ -203,8 +199,7 @@
 
 /* Responsive */
 @media (max-width: 1200px) {
-  .columns-container-req-queue,
-  .columns-container-req-queue.monthly-four-col {
+  .columns-container-req-queue {
     grid-template-columns: repeat(2, 1fr);
   }
 }

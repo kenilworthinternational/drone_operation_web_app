@@ -345,6 +345,23 @@ export const pilotAssignmentApi = baseApi.injectEndpoints({
       },
       providesTags: ['PilotTransportEstimates'],
     }),
+
+    // Direct ops reschedule (no plantation manager request)
+    reschedulePilotAssignmentPlan: builder.mutation({
+      queryFn: async ({ plan_id, pickedDate }) => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: '/api/pilot-assignment/plans/reschedule',
+            method: 'POST',
+            body: { plan_id, pickedDate },
+          },
+          {},
+          {}
+        );
+        return result;
+      },
+      invalidatesTags: ['PilotAssignmentPlans'],
+    }),
   }),
 });
 
@@ -368,5 +385,6 @@ export const {
   useEstimatePilotTransportDistanceMutation,
   useAssignPilotTransportDetailsMutation,
   useGetHrTransportEstimatesQuery,
+  useReschedulePilotAssignmentPlanMutation,
 } = pilotAssignmentApi;
 
