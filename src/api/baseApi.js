@@ -101,6 +101,9 @@ export const baseApi = createApi({
     'VehicleApp', 'PoolVehicleTasks',
     'EmpOrgStructure',
     'SystemMaintenance',
+    // Auth Controls / feature permissions
+    'FeaturePermissions', 'FeatureDefinitions', 'GroupedPermissions', 'MyPermissions',
+    'JobRoles', 'FeatureEligibleUsers', 'UserFeaturePermissions',
   ],
   endpoints: () => ({}),
 });

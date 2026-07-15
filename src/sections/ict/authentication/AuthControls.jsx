@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   useGetGroupedPermissionsQuery,
   useGetFeatureDefinitionsQuery,
@@ -8,7 +8,10 @@ import {
   useSyncNavbarPathsMutation,
   useGetFeaturePermissionsQuery,
 } from '../../../api/services NodeJs/featurePermissionsApi';
+import { baseApi } from '../../../api/baseApi';
+import { useAppDispatch } from '../../../store/hooks';
 import navbarCategoriesRaw from '../../../config/navbarCategories';
+import FeatureUserAccessPanel, { FeatureParentPathSelect } from './FeatureUserAccessPanel';
 import '../../../styles/authControls.css';
 
 const navbarCategories = navbarCategoriesRaw.map((cat) => {
@@ -30,34 +33,111 @@ const navbarCategories = navbarCategoriesRaw.map((cat) => {
 });
 
 const AuthControls = () => {
+  const dispatch = useAppDispatch();
   const [permissions, setPermissions] = useState({});
   const [pathPermissions, setPathPermissions] = useState({});
-  const [featurePermissions, setFeaturePermissions] = useState({});
   const [activeTab, setActiveTab] = useState('navbar'); // 'navbar' or 'features'
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedCategories, setExpandedCategories] = useState({});
+  const [expandedFeatures, setExpandedFeatures] = useState({});
+  const [syncPopup, setSyncPopup] = useState(null); // { type: 'success'|'error', title, message, stats? }
 
   // Fetch data from backend
-  const { data: groupedPermissions = {}, isLoading: loadingPermissions } = useGetGroupedPermissionsQuery();
-  const { data: navbarDefinitions = [], isLoading: loadingNavbar } = useGetFeatureDefinitionsQuery({ feature_type: 'navbar' });
-  const { data: pathDefinitions = [], isLoading: loadingPaths } = useGetFeatureDefinitionsQuery({ feature_type: 'path' });
-  const { data: featureDefinitions = [], isLoading: loadingFeatures } = useGetFeatureDefinitionsQuery({ feature_type: 'feature' });
+  const {
+    data: groupedPermissions = {},
+    isLoading: loadingPermissions,
+    refetch: refetchGroupedPermissions,
+  } = useGetGroupedPermissionsQuery();
+  const {
+    data: navbarDefinitions = [],
+    isLoading: loadingNavbar,
+    refetch: refetchNavbarDefinitions,
+  } = useGetFeatureDefinitionsQuery({ feature_type: 'navbar' });
+  const {
+    data: pathDefinitions = [],
+    isLoading: loadingPaths,
+    refetch: refetchPathDefinitions,
+  } = useGetFeatureDefinitionsQuery({ feature_type: 'path' });
+  const {
+    data: featureDefinitions = [],
+    isLoading: loadingFeatures,
+    refetch: refetchFeatureDefinitions,
+  } = useGetFeatureDefinitionsQuery({ feature_type: 'feature' });
   // Backend API already filters to only return internal job roles (userMemberTypeId = internal member type)
   // See: dsms_backend/src/services/featurePermissionService.js getJobRoles()
-  const { data: jobRoles = [], isLoading: loadingRoles } = useGetJobRolesQuery();
+  const {
+    data: jobRoles = [],
+    isLoading: loadingRoles,
+    refetch: refetchJobRoles,
+  } = useGetJobRolesQuery();
   const [bulkUpdatePermissions, { isLoading: updating }] = useBulkUpdateCategoryPermissionsMutation();
   const [upsertPermission] = useUpsertFeaturePermissionMutation();
   const [syncNavbarPaths, { isLoading: syncing }] = useSyncNavbarPathsMutation();
 
-  // Fetch individual feature permissions
-  const { data: allFeaturePermissions = [], isLoading: loadingFeaturePerms } = useGetFeaturePermissionsQuery({ feature_type: 'feature' });
-  const { data: allPathPermissions = [], isLoading: loadingPathPerms } = useGetFeaturePermissionsQuery({ feature_type: 'path' });
+  // Fetch individual path permissions (navbar tab)
+  const {
+    data: allPathPermissions = [],
+    isLoading: loadingPathPerms,
+    refetch: refetchPathPermissions,
+  } = useGetFeaturePermissionsQuery({ feature_type: 'path' });
+
+  const refreshNavbarTab = useCallback(() => {
+    dispatch(
+      baseApi.util.invalidateTags([
+        'GroupedPermissions',
+        'FeaturePermissions',
+        'FeatureDefinitions',
+        'JobRoles',
+      ])
+    );
+    refetchGroupedPermissions();
+    refetchNavbarDefinitions();
+    refetchPathDefinitions();
+    refetchPathPermissions();
+    refetchJobRoles();
+  }, [
+    dispatch,
+    refetchGroupedPermissions,
+    refetchNavbarDefinitions,
+    refetchPathDefinitions,
+    refetchPathPermissions,
+    refetchJobRoles,
+  ]);
+
+  const refreshFeaturesTab = useCallback(() => {
+    dispatch(
+      baseApi.util.invalidateTags([
+        'FeatureDefinitions',
+        'JobRoles',
+        'FeatureEligibleUsers',
+        'UserFeaturePermissions',
+        'MyPermissions',
+      ])
+    );
+    refetchFeatureDefinitions();
+    refetchJobRoles();
+  }, [dispatch, refetchFeatureDefinitions, refetchJobRoles]);
+
+  const handleTabChange = useCallback(
+    (tab) => {
+      if (tab === activeTab) {
+        // Re-clicking the active tab also refreshes
+        if (tab === 'navbar') refreshNavbarTab();
+        else refreshFeaturesTab();
+        return;
+      }
+      setActiveTab(tab);
+      if (tab === 'navbar') refreshNavbarTab();
+      else refreshFeaturesTab();
+    },
+    [activeTab, refreshNavbarTab, refreshFeaturesTab]
+  );
 
   // Combine loading states
   useEffect(() => {
-    setLoading(loadingPermissions || loadingNavbar || loadingPaths || loadingFeatures || loadingRoles || loadingFeaturePerms || loadingPathPerms);
-  }, [loadingPermissions, loadingNavbar, loadingPaths, loadingFeatures, loadingRoles, loadingFeaturePerms, loadingPathPerms]);
+    setLoading(loadingPermissions || loadingNavbar || loadingPaths || loadingFeatures || loadingRoles || loadingPathPerms);
+  }, [loadingPermissions, loadingNavbar, loadingPaths, loadingFeatures, loadingRoles, loadingPathPerms]);
 
   // Initialize expanded categories
   useEffect(() => {
@@ -140,57 +220,6 @@ const AuthControls = () => {
     }
   }, [allPathPermissions, pathDefinitions, jobRoles, loading]);
 
-  // Process feature permissions
-  useEffect(() => {
-    if (!loading && featureDefinitions.length > 0 && jobRoles.length > 0) {
-      // Merge with existing state to preserve optimistic updates
-      setFeaturePermissions(prev => {
-        const processed = { ...prev };
-        
-        // Only process features with feature_type === 'feature' (not paths or navbar)
-        const actualFeatures = featureDefinitions.filter(f => f.feature_type === 'feature');
-        
-        // Initialize all features with all job roles set to false (only if not already in state)
-        actualFeatures.forEach(feature => {
-          if (!processed[feature.feature_code]) {
-            processed[feature.feature_code] = {
-              name: feature.feature_name,
-              category: feature.category,
-              permissions: {}
-            };
-            jobRoles.forEach(role => {
-              processed[feature.feature_code].permissions[role.id] = false;
-            });
-          }
-        });
-
-        // Update permissions from backend data (this will overwrite with fresh data from server)
-        // Only process permissions for features (feature_type === 'feature')
-        allFeaturePermissions.forEach(perm => {
-          // Only process if this is a feature permission (not path or navbar)
-          if (perm.feature_type === 'feature') {
-            if (processed[perm.feature_code]) {
-              processed[perm.feature_code].permissions[perm.job_role_id] = perm.is_active === 1;
-            } else {
-              // If feature not in processed yet, add it
-              processed[perm.feature_code] = {
-                name: perm.feature_name || perm.feature_code,
-                category: perm.category || 'Other',
-                permissions: {}
-              };
-              jobRoles.forEach(role => {
-                processed[perm.feature_code].permissions[role.id] = false;
-              });
-              processed[perm.feature_code].permissions[perm.job_role_id] = perm.is_active === 1;
-            }
-          }
-        });
-
-        return processed;
-      });
-    }
-  }, [allFeaturePermissions, featureDefinitions, jobRoles, loading]);
-
   // Get unique categories from navbar definitions
   const categories = useMemo(() => {
     const cats = new Set();
@@ -230,6 +259,23 @@ const AuthControls = () => {
     
     return grouped;
   }, [featureDefinitions]);
+
+  const featureParentPathOptions = useMemo(() => {
+    const fromDefs = (pathDefinitions || [])
+      .filter((p) => p.path && Number(p.is_active) !== 0)
+      .map((p) => ({
+        path: p.path,
+        label: p.feature_name || p.path,
+      }));
+    const fromNav = navbarCategories.flatMap((cat) =>
+      (cat.children || []).map((c) => ({ path: c.path, label: c.label }))
+    );
+    const map = new Map();
+    [...fromNav, ...fromDefs].forEach((row) => {
+      if (row.path && !map.has(row.path)) map.set(row.path, row);
+    });
+    return Array.from(map.values()).sort((a, b) => a.label.localeCompare(b.label));
+  }, [pathDefinitions]);
 
   // Create job role map for display
   // Exclude 'dev' role from being managed in auth-controls
@@ -413,123 +459,11 @@ const AuthControls = () => {
     }
   };
 
-  const handleFeatureToggle = async (featureCode, jobRoleId) => {
-    const currentValue = featurePermissions[featureCode]?.permissions[jobRoleId] || false;
-    const newValue = !currentValue;
-
-    // Optimistically update UI
-    setFeaturePermissions(prev => ({
+  const toggleFeatureExpansion = (featureCode) => {
+    setExpandedFeatures((prev) => ({
       ...prev,
-      [featureCode]: {
-        ...prev[featureCode],
-        permissions: {
-          ...prev[featureCode]?.permissions,
-          [jobRoleId]: newValue,
-        },
-      },
+      [featureCode]: !prev[featureCode],
     }));
-
-    try {
-      // Get feature definition to get category and feature name
-      const featureDef = featureDefinitions.find(f => f.feature_code === featureCode);
-      
-      await upsertPermission({
-        feature_code: featureCode,
-        job_role_id: jobRoleId,
-        permission_type: 'read',
-        is_active: newValue ? 1 : 0,
-        category: featureDef?.category || null,
-        feature_name: featureDef?.feature_name || featureCode,
-      }).unwrap();
-      // Mutation already invalidates tags, so RTK Query will automatically refetch
-    } catch (error) {
-      console.error('Error updating feature permission:', error);
-      // Revert on error
-      setFeaturePermissions(prev => ({
-        ...prev,
-        [featureCode]: {
-          ...prev[featureCode],
-          permissions: {
-            ...prev[featureCode]?.permissions,
-            [jobRoleId]: currentValue,
-          },
-        },
-      }));
-      alert('Failed to update feature permission. Please try again.');
-    }
-  };
-
-  const handleFeatureCategoryToggle = async (category, jobRoleId) => {
-    // Find all features in this category
-    const categoryFeatures = featuresByCategory[category] || [];
-
-    // Calculate current state: check if ALL features are currently checked
-    const allFeaturesCurrentlyChecked = categoryFeatures.length > 0 && 
-      categoryFeatures.every(feature => {
-        const featurePerms = featurePermissions[feature.feature_code] || {};
-        return featurePerms.permissions?.[jobRoleId] === true;
-      });
-    
-    // New value: if all are checked, uncheck all; otherwise, check all
-    const newValue = !allFeaturesCurrentlyChecked;
-
-    // Optimistically update all individual feature permissions in the UI
-    setFeaturePermissions(prev => {
-      const updated = { ...prev };
-      categoryFeatures.forEach(feature => {
-        if (!updated[feature.feature_code]) {
-          updated[feature.feature_code] = {
-            name: feature.feature_name,
-            category: feature.category,
-            permissions: {}
-          };
-        }
-        updated[feature.feature_code] = {
-          ...updated[feature.feature_code],
-          permissions: {
-            ...updated[feature.feature_code].permissions,
-            [jobRoleId]: newValue,
-          },
-        };
-      });
-      return updated;
-    });
-
-    try {
-      // Update all individual feature permissions
-      const featureUpdatePromises = categoryFeatures.map(feature => {
-        return upsertPermission({
-          feature_code: feature.feature_code,
-          job_role_id: jobRoleId,
-          permission_type: 'read',
-          is_active: newValue ? 1 : 0,
-          category: feature.category || category,
-          feature_name: feature.feature_name,
-        }).unwrap();
-      });
-
-      await Promise.all(featureUpdatePromises);
-      // Mutation already invalidates tags, so RTK Query will automatically refetch
-    } catch (error) {
-      console.error('Error updating feature permissions:', error);
-      // Revert feature permissions on error
-      setFeaturePermissions(prev => {
-        const updated = { ...prev };
-        categoryFeatures.forEach(feature => {
-          if (updated[feature.feature_code]) {
-            updated[feature.feature_code] = {
-              ...updated[feature.feature_code],
-              permissions: {
-                ...updated[feature.feature_code].permissions,
-                [jobRoleId]: allFeaturesCurrentlyChecked, // Revert to previous state
-              },
-            };
-          }
-        });
-        return updated;
-      });
-      alert('Failed to update feature permissions. Please try again.');
-    }
   };
 
   const toggleCategoryExpansion = (categoryTitle) => {
@@ -554,10 +488,23 @@ const AuthControls = () => {
       const updated = Number(result?.updated_definitions || 0);
       const removed = Number(result?.deactivated_definitions || 0);
       const permsRemoved = Number(result?.deactivated_permissions || 0);
-      const msg = `Sync complete. Added ${added}, updated ${updated}, removed ${removed} path definition(s). Deactivated ${permsRemoved} permission record(s) for removed items.`;
-      alert(msg);
+      setSyncPopup({
+        type: 'success',
+        title: 'Sync complete',
+        message: 'Navbar path definitions were synced with Access Control.',
+        stats: {
+          added,
+          updated,
+          removed,
+          permsRemoved,
+        },
+      });
     } catch (err) {
-      alert(err?.data?.error || err?.message || 'Sync failed.');
+      setSyncPopup({
+        type: 'error',
+        title: 'Sync failed',
+        message: err?.data?.error || err?.message || 'Sync failed. Please try again.',
+      });
     }
   };
 
@@ -592,13 +539,15 @@ const AuthControls = () => {
       {/* Tab Navigation */}
       <div className="auth-controls-tabs">
         <button
-          onClick={() => setActiveTab('navbar')}
+          type="button"
+          onClick={() => handleTabChange('navbar')}
           className={`auth-controls-tab ${activeTab === 'navbar' ? 'active' : ''}`}
         >
           Navigation Bar
         </button>
         <button
-          onClick={() => setActiveTab('features')}
+          type="button"
+          onClick={() => handleTabChange('features')}
           className={`auth-controls-tab ${activeTab === 'features' ? 'active' : ''}`}
         >
           Features
@@ -616,17 +565,27 @@ const AuthControls = () => {
         />
       </div>
 
-      <div className="auth-controls-legend">
-        <h2>Job Roles</h2>
-        <ul>
-          {Object.values(jobRoleMap).map((role) => (
-            <li key={role.id}>
-              <span className="legend-code">{role.code?.toUpperCase() || 'N/A'}</span>
-              <span className="legend-description">{role.name}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
+      {activeTab === 'navbar' ? (
+        <div className="auth-controls-legend">
+          <h2>Job Roles</h2>
+          <ul>
+            {Object.values(jobRoleMap).map((role) => (
+              <li key={role.id}>
+                <span className="legend-code">{role.code?.toUpperCase() || 'N/A'}</span>
+                <span className="legend-description">{role.name}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : (
+        <div className="auth-controls-legend">
+          <h2>Features (user grants)</h2>
+          <p className="auth-controls-legend-note">
+            Grant button-level access to individual users. Only users whose roles can open the feature parent
+            navbar path are listed. Role alone no longer unlocks FEAT_* codes.
+          </p>
+        </div>
+      )}
 
       {activeTab === 'navbar' ? (
         <div className="auth-controls-navbar">
@@ -728,20 +687,17 @@ const AuthControls = () => {
         <div className="auth-controls-features">
           {filteredFeatureCategories.length === 0 ? (
             <div style={{ padding: '40px', textAlign: 'center' }}>
-              <p>No feature categories found. {searchTerm && 'Try adjusting your search.'}</p>
+              <p>No features found. {searchTerm && 'Try adjusting your search.'}</p>
             </div>
           ) : (
             filteredFeatureCategories.map((category) => {
               const isExpanded = expandedCategories[category] ?? true;
               const categoryFeatures = featuresByCategory[category] || [];
-              
-              if (categoryFeatures.length === 0) {
-                return null; // Don't show empty categories
-              }
-              
+              if (categoryFeatures.length === 0) return null;
+
               return (
                 <div key={category} className="auth-controls-category-group">
-                  <div 
+                  <div
                     className="auth-controls-category-header"
                     onClick={() => toggleCategoryExpansion(category)}
                   >
@@ -750,80 +706,64 @@ const AuthControls = () => {
                       {isExpanded ? '▼' : '▶'}
                     </span>
                   </div>
-                  
+
                   {isExpanded && (
-                    <div className="auth-controls-category-content">
-                      {/* Column headers for job roles */}
-                      <div className="auth-controls-row-header">
-                        <div className="auth-controls-row-label-header"></div>
-                        <div className="auth-controls-row-checkboxes-header ictacx-row-checkboxes-header">
-                          {Object.values(jobRoleMap).map((role) => (
-                            <div key={role.id} className="auth-controls-checkbox-header ictacx-checkbox-header" title={role.name}>
-                              <span className="auth-controls-checkbox-code">{role.code?.toUpperCase() || 'N/A'}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Category-level checkbox row */}
-                      <div className="auth-controls-category-row">
-                        <div className="auth-controls-row-label">
-                          <strong>Entire Category</strong>
-                          <span className="auth-controls-row-hint">(Toggle all features in this category)</span>
-                        </div>
-                        <div className="auth-controls-row-checkboxes">
-                          {Object.values(jobRoleMap).map((role) => {
-                            // Calculate if "Entire Category" should be checked based on ALL features being checked
-                            const allFeaturesChecked = categoryFeatures.length > 0 && 
-                              categoryFeatures.every(feature => {
-                                const featurePerms = featurePermissions[feature.feature_code] || {};
-                                return featurePerms.permissions?.[role.id] === true;
-                              });
-                            return (
-                              <label key={role.id} className="auth-controls-checkbox" title={`${role.name} (${role.code?.toUpperCase()}) - ${category}`}>
-                                <input
-                                  type="checkbox"
-                                  checked={allFeaturesChecked}
-                                  onChange={() => handleFeatureCategoryToggle(category, role.id)}
-                                  disabled={updating}
-                                  aria-label={`${role.name} access to ${category}`}
-                                />
-                              </label>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      {/* Individual feature rows */}
+                    <div className="auth-controls-category-content auth-controls-features-content">
                       {categoryFeatures.map((feature) => {
-                        const featurePerms = featurePermissions[feature.feature_code] || {};
+                        const featExpanded = expandedFeatures[feature.feature_code] ?? false;
                         return (
-                          <div key={feature.feature_code} className="auth-controls-path-row">
-                            <div className="auth-controls-row-label">
-                              <span className="auth-controls-path-icon">→</span>
-                              <span>{feature.feature_name}</span>
-                              {feature.description && (
-                                <span className="auth-controls-path-path" title={feature.description}>
-                                  {feature.description.length > 50 ? feature.description.substring(0, 50) + '...' : feature.description}
-                                </span>
-                              )}
+                          <div
+                            key={feature.feature_code}
+                            className={`auth-controls-feature-card${featExpanded ? ' is-expanded' : ''}`}
+                          >
+                            <div className="auth-controls-feature-card-header">
+                              <div
+                                className="auth-controls-feature-card-header-toggle"
+                                role="button"
+                                tabIndex={0}
+                                onClick={() => toggleFeatureExpansion(feature.feature_code)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    toggleFeatureExpansion(feature.feature_code);
+                                  }
+                                }}
+                              >
+                                <div className="auth-controls-feature-card-main">
+                                  <div className="auth-controls-feature-card-title">
+                                    <strong>{feature.feature_name}</strong>
+                                    <code className="auth-controls-feature-code">{feature.feature_code}</code>
+                                  </div>
+                                  {feature.description ? (
+                                    <p className="auth-controls-feature-desc">{feature.description}</p>
+                                  ) : null}
+                                </div>
+                              </div>
+                              <div className="auth-controls-feature-card-actions">
+                                <FeatureParentPathSelect
+                                  feature={feature}
+                                  pathOptions={featureParentPathOptions}
+                                  updating={updating}
+                                />
+                                <button
+                                  type="button"
+                                  className="auth-controls-feature-card-header-chevron"
+                                  onClick={() => toggleFeatureExpansion(feature.feature_code)}
+                                  aria-expanded={featExpanded}
+                                  aria-label={featExpanded ? 'Collapse feature' : 'Expand feature'}
+                                >
+                                  <span className="auth-controls-expand-icon">
+                                    {featExpanded ? '▼' : '▶'}
+                                  </span>
+                                </button>
+                              </div>
                             </div>
-                            <div className="auth-controls-row-checkboxes">
-                              {Object.values(jobRoleMap).map((role) => {
-                                const isChecked = featurePerms.permissions?.[role.id] || false;
-                                return (
-                                  <label key={role.id} className="auth-controls-checkbox" title={`${role.name} (${role.code?.toUpperCase()}) - ${feature.feature_name}`}>
-                                    <input
-                                      type="checkbox"
-                                      checked={isChecked}
-                                      onChange={() => handleFeatureToggle(feature.feature_code, role.id)}
-                                      disabled={updating}
-                                      aria-label={`${role.name} access to ${feature.feature_name}`}
-                                    />
-                                  </label>
-                                );
-                              })}
-                            </div>
+                            {featExpanded && (
+                              <FeatureUserAccessPanel
+                                feature={feature}
+                                updating={updating}
+                              />
+                            )}
                           </div>
                         );
                       })}
@@ -839,6 +779,66 @@ const AuthControls = () => {
       {updating && (
         <div className="auth-controls-updating">
           <p>Updating permissions...</p>
+        </div>
+      )}
+
+      {syncPopup && (
+        <div
+          className="auth-controls-sync-overlay"
+          onClick={() => setSyncPopup(null)}
+          role="presentation"
+        >
+          <div
+            className={`auth-controls-sync-modal auth-controls-sync-modal--${syncPopup.type}`}
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="auth-controls-sync-title"
+          >
+            <div className="auth-controls-sync-modal-header">
+              <h2 id="auth-controls-sync-title">{syncPopup.title}</h2>
+              <button
+                type="button"
+                className="auth-controls-sync-modal-close"
+                onClick={() => setSyncPopup(null)}
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </div>
+            <div className="auth-controls-sync-modal-body">
+              <p>{syncPopup.message}</p>
+              {syncPopup.stats && (
+                <ul className="auth-controls-sync-stats">
+                  <li>
+                    <span>Added</span>
+                    <strong>{syncPopup.stats.added}</strong>
+                  </li>
+                  <li>
+                    <span>Updated</span>
+                    <strong>{syncPopup.stats.updated}</strong>
+                  </li>
+                  <li>
+                    <span>Removed paths</span>
+                    <strong>{syncPopup.stats.removed}</strong>
+                  </li>
+                  <li>
+                    <span>Permissions deactivated</span>
+                    <strong>{syncPopup.stats.permsRemoved}</strong>
+                  </li>
+                </ul>
+              )}
+            </div>
+            <div className="auth-controls-sync-modal-footer">
+              <button
+                type="button"
+                className="auth-controls-sync-modal-ok"
+                onClick={() => setSyncPopup(null)}
+              >
+                OK
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -15,6 +15,7 @@ const BackupPanel = ({
   onTriggerBackup,
   isTriggering,
   onPollStatus,
+  canRunBackup = false,
 }) => {
   const [showConfirm, setShowConfirm] = useState(false);
   const [confirmAction, setConfirmAction] = useState('');
@@ -79,44 +80,46 @@ const BackupPanel = ({
         </>
       )}
 
-      <div className="sysmaint-backup-actions">
-        {!showConfirm ? (
-          <button
-            type="button"
-            className="sysmaint-btn-primary"
-            disabled={backup?.inProgress || isTriggering}
-            onClick={() => setShowConfirm(true)}
-            title={backup?.inProgress ? 'A backup is already running. Wait for completion.' : ''}
-          >
-            <FaPlay /> Run backup now
-          </button>
-        ) : (
-          <div className="sysmaint-inline-confirm">
-            <p className="sysmaint-hint">Type <strong>RUN_BACKUP</strong> to start a manual database backup.</p>
-            <input
-              type="text"
-              className="sysmaint-input"
-              value={confirmAction}
-              onChange={(e) => setConfirmAction(e.target.value)}
-              placeholder="RUN_BACKUP"
-            />
-            <div className="sysmaint-inline-confirm-actions">
-              <button type="button" className="sysmaint-btn-secondary" onClick={() => setShowConfirm(false)}>
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="sysmaint-btn-primary"
-                disabled={confirmAction !== 'RUN_BACKUP' || isTriggering}
-                onClick={handleTrigger}
-              >
-                {isTriggering ? 'Starting…' : 'Confirm backup'}
-              </button>
+      {canRunBackup ? (
+        <div className="sysmaint-backup-actions">
+          {!showConfirm ? (
+            <button
+              type="button"
+              className="sysmaint-btn-primary"
+              disabled={backup?.inProgress || isTriggering}
+              onClick={() => setShowConfirm(true)}
+              title={backup?.inProgress ? 'A backup is already running. Wait for completion.' : ''}
+            >
+              <FaPlay /> Run backup now
+            </button>
+          ) : (
+            <div className="sysmaint-inline-confirm">
+              <p className="sysmaint-hint">Type <strong>RUN_BACKUP</strong> to start a manual database backup.</p>
+              <input
+                type="text"
+                className="sysmaint-input"
+                value={confirmAction}
+                onChange={(e) => setConfirmAction(e.target.value)}
+                placeholder="RUN_BACKUP"
+              />
+              <div className="sysmaint-inline-confirm-actions">
+                <button type="button" className="sysmaint-btn-secondary" onClick={() => setShowConfirm(false)}>
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="sysmaint-btn-primary"
+                  disabled={confirmAction !== 'RUN_BACKUP' || isTriggering}
+                  onClick={handleTrigger}
+                >
+                  {isTriggering ? 'Starting…' : 'Confirm backup'}
+                </button>
+              </div>
             </div>
-          </div>
-        )}
-      </div>
-      {backup?.inProgress && (
+          )}
+        </div>
+      ) : null}
+      {canRunBackup && backup?.inProgress && (
         <p className="sysmaint-hint sysmaint-hint--warn">
           Manual trigger is disabled while a backup is already in progress.
         </p>

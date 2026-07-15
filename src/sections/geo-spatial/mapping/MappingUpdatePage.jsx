@@ -42,6 +42,9 @@ import {
   useGetMissionPartialReasonsQuery,
   useSaveMissionPartialReasonMutation,
 } from '../../../api/services NodeJs/reasonsApi';
+import { FEATURE_CODES } from '../../../utils/featurePermissions';
+import { isInternalDeveloper } from '../../../utils/authUtils';
+import { useGetMyPermissionsQuery } from '../../../api/services NodeJs/featurePermissionsApi';
 
 const HIERARCHY_LEVELS = [
   { key: 'group', label: 'Group', icon: FaLayerGroup, nameField: 'group' },
@@ -147,14 +150,31 @@ function fieldBlockReasonLabel(field, type, missionReasons) {
   return missionReasons.find((r) => String(r.id) === String(id))?.reason || null;
 }
 
-const AvailabilityCell = ({ field, type, missionReasons, onEdit }) => {
+const AvailabilityCell = ({ field, type, missionReasons, onEdit, canEdit = true }) => {
   const can = type === 'spread' ? Number(field.can_spread) === 1 : Number(field.can_spray) === 1;
   const reason = fieldBlockReasonLabel(field, type, missionReasons);
   const hoverTitle = can
-    ? 'Available — click to update'
+    ? canEdit
+      ? 'Available — click to update'
+      : 'Available'
     : reason
       ? reason
-      : 'No block reason set — click to set';
+      : canEdit
+        ? 'No block reason set — click to set'
+        : 'No block reason set';
+
+  if (!canEdit) {
+    return (
+      <span
+        className={`availability-cell-map-update availability-cell--readonly-map-update ${!can && !reason ? 'availability-cell--missing-reason-map-update' : ''}`}
+        title={hoverTitle}
+      >
+        <span className={`yn-badge-map-update ${can ? 'yn-yes-map-update' : 'yn-no-map-update'}`}>
+          {can ? 'Yes' : 'No'}
+        </span>
+      </span>
+    );
+  }
 
   return (
     <button
@@ -260,6 +280,35 @@ const EstateCoordinateMapPicker = ({ latitude, longitude, onPick }) => {
 
 const MappingUpdatePage = () => {
   const navigate = useNavigate();
+
+  const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+  const userId = userData?.id || null;
+  const isDeveloper = isInternalDeveloper(userData);
+  const { data: featurePermissionsData = {} } = useGetMyPermissionsQuery(undefined, {
+    skip: !userId,
+  });
+
+  const checkFeatureAccess = (featureCode) => {
+    if (isDeveloper) return true;
+    if (!featurePermissionsData || typeof featurePermissionsData !== 'object') return false;
+    if (featurePermissionsData.features && featurePermissionsData.features[featureCode] === true) {
+      return true;
+    }
+    const categories = featurePermissionsData.categories || featurePermissionsData;
+    for (const category in categories) {
+      if (category === 'paths' || category === 'features') continue;
+      const categoryData = categories[category];
+      if (Array.isArray(categoryData) && categoryData.includes(featureCode)) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  const hasAddFeature = checkFeatureAccess(FEATURE_CODES.MAPPING_UPDATE_ADD);
+  const hasEditFeature = checkFeatureAccess(FEATURE_CODES.MAPPING_UPDATE_EDIT);
+  const hasActivateFeature = checkFeatureAccess(FEATURE_CODES.MAPPING_UPDATE_ACTIVATE);
+  const showFieldActionsColumn = hasEditFeature || hasActivateFeature;
 
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [selectedPlantation, setSelectedPlantation] = useState(null);
@@ -1036,14 +1085,16 @@ const MappingUpdatePage = () => {
             {isCompleted && (
               <span className="level-selected-name-map-update">{selectedNames[key]}</span>
             )}
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); setActiveCreateLevel(key); setNewItem({}); }}
-              className="btn-icon-add-map-update"
-              title={`Add ${label}`}
-            >
-              <FaPlus />
-            </button>
+            {hasAddFeature ? (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setActiveCreateLevel(key); setNewItem({}); }}
+                className="btn-icon-add-map-update"
+                title={`Add ${label}`}
+              >
+                <FaPlus />
+              </button>
+            ) : null}
             {expanded ? <FaChevronDown className="level-chevron-map-update" /> : <FaChevronRight className="level-chevron-map-update" />}
           </div>
         </div>
@@ -1053,7 +1104,15 @@ const MappingUpdatePage = () => {
             {loading ? (
               <LoadingSpinner text={`Loading ${label.toLowerCase()}s...`} />
             ) : data.length === 0 ? (
-              <EmptyState icon={Icon} title={`No ${label.toLowerCase()}s found`} description={`Click + to create a new ${label.toLowerCase()}`} />
+              <EmptyState
+                icon={Icon}
+                title={`No ${label.toLowerCase()}s found`}
+                description={
+                  hasAddFeature
+                    ? `Click + to create a new ${label.toLowerCase()}`
+                    : `No ${label.toLowerCase()}s available to view.`
+                }
+              />
             ) : (
               <div className="item-list-map-update">
                 {data.map(item => (
@@ -1062,7 +1121,7 @@ const MappingUpdatePage = () => {
                     className={`item-map-update ${selectedId === item.id ? 'item-selected-map-update' : ''} ${!item.activated ? 'item-disabled-map-update' : ''} ${key === 'estate' ? (item.finalized === 1 ? 'item-estate-finalized-map-update' : 'item-estate-not-finalized-map-update') : ''} ${key === 'estate' && estateCoordinatesMissing(item) ? 'item-estate-missing-coords-map-update' : ''} ${key === 'division' && estateCoordinatesMissing(item) ? 'item-division-missing-coords-map-update' : ''}`}
                     onClick={() => selectHandlers[key](item.id)}
                     onContextMenu={
-                      key === 'estate'
+                      hasEditFeature && key === 'estate'
                         ? (e) => {
                             e.preventDefault();
                             const x = e.clientX;
@@ -1070,7 +1129,7 @@ const MappingUpdatePage = () => {
                             setEstateMenuPosition({ left: x, top: y });
                             setEstateContextMenu({ x, y, estateId: item.id, isFinalized: item.finalized === 1 });
                           }
-                        : key === 'division'
+                        : hasEditFeature && key === 'division'
                           ? (e) => {
                               e.preventDefault();
                               const x = e.clientX;
@@ -1102,15 +1161,17 @@ const MappingUpdatePage = () => {
                       </div>
                       {!item.activated && <span className="item-inactive-tag-map-update">Inactive</span>}
                     </div>
-                    <div className="item-actions-map-update">
-                      <button
-                        onClick={(e) => { e.stopPropagation(); toggleHandlers[key](item.id); }}
-                        className={`btn-toggle-map-update ${item.activated ? 'btn-toggle-on-map-update' : 'btn-toggle-off-map-update'}`}
-                        title={item.activated ? 'Deactivate' : 'Activate'}
-                      >
-                        {item.activated ? <FaToggleOn /> : <FaToggleOff />}
-                      </button>
-                    </div>
+                    {hasActivateFeature ? (
+                      <div className="item-actions-map-update">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); toggleHandlers[key](item.id); }}
+                          className={`btn-toggle-map-update ${item.activated ? 'btn-toggle-on-map-update' : 'btn-toggle-off-map-update'}`}
+                          title={item.activated ? 'Deactivate' : 'Activate'}
+                        >
+                          {item.activated ? <FaToggleOn /> : <FaToggleOff />}
+                        </button>
+                      </div>
+                    ) : null}
                   </div>
                 ))}
               </div>
@@ -1124,7 +1185,7 @@ const MappingUpdatePage = () => {
   return (
     <div className="page-map-update">
       {/* Estate context menu: right-click to set Finalized / Not Finalized */}
-      {estateContextMenu && (
+      {estateContextMenu && hasEditFeature && (
         <>
           <div
             className="estate-context-menu-backdrop-map-update"
@@ -1170,7 +1231,7 @@ const MappingUpdatePage = () => {
           </div>
         </>
       )}
-      {divisionContextMenu && (
+      {divisionContextMenu && hasEditFeature && (
         <>
           <div
             className="estate-context-menu-backdrop-map-update"
@@ -1262,14 +1323,16 @@ const MappingUpdatePage = () => {
                 </div>
                 {selectedDivision && (
                   <div className="fields-card-actions-map-update">
-                    <button
-                      type="button"
-                      onClick={() => setReasonManageOpen(true)}
-                      className="btn-ghost-sm-map-update"
-                      title="Add or edit block reason catalog"
-                    >
-                      Block reasons
-                    </button>
+                    {hasEditFeature ? (
+                      <button
+                        type="button"
+                        onClick={() => setReasonManageOpen(true)}
+                        className="btn-ghost-sm-map-update"
+                        title="Add or edit block reason catalog"
+                      >
+                        Block reasons
+                      </button>
+                    ) : null}
                     <button
                       onClick={handleDownloadExcel}
                       className="btn-excel-map-update"
@@ -1277,13 +1340,15 @@ const MappingUpdatePage = () => {
                     >
                       <FaFileExcel /> Export
                     </button>
-                    <button
-                      onClick={() => { setActiveCreateLevel('field'); setNewItem({}); }}
-                      className="btn-primary-sm-map-update"
-                      title="Create Field"
-                    >
-                      <FaPlus /> Add Field
-                    </button>
+                    {hasAddFeature ? (
+                      <button
+                        onClick={() => { setActiveCreateLevel('field'); setNewItem({}); }}
+                        className="btn-primary-sm-map-update"
+                        title="Create Field"
+                      >
+                        <FaPlus /> Add Field
+                      </button>
+                    ) : null}
                   </div>
                 )}
               </div>
@@ -1321,7 +1386,13 @@ const MappingUpdatePage = () => {
                   <EmptyState
                     icon={FaLeaf}
                     title={searchTerm ? 'No matching fields' : 'No fields yet'}
-                    description={searchTerm ? 'Try a different search term.' : 'Click "Add Field" to create the first field in this division.'}
+                    description={
+                      searchTerm
+                        ? 'Try a different search term.'
+                        : hasAddFeature
+                          ? 'Click "Add Field" to create the first field in this division.'
+                          : 'No fields available to view in this division.'
+                    }
                   />
                 ) : (
                   <table className="table-map-update">
@@ -1333,7 +1404,7 @@ const MappingUpdatePage = () => {
                         <th>Status</th>
                         <th>Spread</th>
                         <th>Spray</th>
-                        <th className="th-actions-map-update">Actions</th>
+                        {showFieldActionsColumn ? <th className="th-actions-map-update">Actions</th> : null}
                       </tr>
                     </thead>
                     <tbody>
@@ -1349,6 +1420,7 @@ const MappingUpdatePage = () => {
                               type="spread"
                               missionReasons={missionReasons}
                               onEdit={openAvailabilityModal}
+                              canEdit={hasEditFeature}
                             />
                           </td>
                           <td>
@@ -1357,22 +1429,29 @@ const MappingUpdatePage = () => {
                               type="spray"
                               missionReasons={missionReasons}
                               onEdit={openAvailabilityModal}
+                              canEdit={hasEditFeature}
                             />
                           </td>
-                          <td>
-                            <div className="table-actions-map-update">
-                              <button onClick={() => handleFieldEdit(field)} className="btn-icon-edit-map-update" title="Edit">
-                                <FaEdit />
-                              </button>
-                              <button
-                                onClick={() => handleToggleFieldActivation(field.id)}
-                                className={`btn-toggle-table-map-update ${field.activated ? 'btn-toggle-on-map-update' : 'btn-toggle-off-map-update'}`}
-                                title={field.activated ? 'Deactivate' : 'Activate'}
-                              >
-                                {field.activated ? <FaToggleOn /> : <FaToggleOff />}
-                              </button>
-                            </div>
-                          </td>
+                          {showFieldActionsColumn ? (
+                            <td>
+                              <div className="table-actions-map-update">
+                                {hasEditFeature ? (
+                                  <button onClick={() => handleFieldEdit(field)} className="btn-icon-edit-map-update" title="Edit">
+                                    <FaEdit />
+                                  </button>
+                                ) : null}
+                                {hasActivateFeature ? (
+                                  <button
+                                    onClick={() => handleToggleFieldActivation(field.id)}
+                                    className={`btn-toggle-table-map-update ${field.activated ? 'btn-toggle-on-map-update' : 'btn-toggle-off-map-update'}`}
+                                    title={field.activated ? 'Deactivate' : 'Activate'}
+                                  >
+                                    {field.activated ? <FaToggleOn /> : <FaToggleOff />}
+                                  </button>
+                                ) : null}
+                              </div>
+                            </td>
+                          ) : null}
                         </tr>
                       ))}
                     </tbody>
@@ -1385,7 +1464,7 @@ const MappingUpdatePage = () => {
       </div>
 
       {/* ===== CREATE MODAL ===== */}
-      {activeCreateLevel && (
+      {activeCreateLevel && hasAddFeature && (
         <div className="modal-overlay-map-update" onClick={closeModal}>
           <div className="modal-map-update" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header-map-update">
@@ -1476,7 +1555,7 @@ const MappingUpdatePage = () => {
       )}
 
       {/* ===== ESTATE PLAN SIZE MODAL ===== */}
-      {estatePlanSizeModal && (
+      {estatePlanSizeModal && hasEditFeature && (
         <div className="modal-overlay-map-update" onClick={closeModal}>
           <div className="modal-map-update" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header-map-update">
@@ -1541,7 +1620,7 @@ const MappingUpdatePage = () => {
       )}
 
       {/* ===== ESTATE COORDINATE MODAL ===== */}
-      {estateCoordinateModal && (
+      {estateCoordinateModal && hasEditFeature && (
         <div className="modal-overlay-map-update" onClick={closeModal}>
           <div className="modal-map-update modal-map-coordinate-large-map-update" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header-map-update">
@@ -1636,7 +1715,7 @@ const MappingUpdatePage = () => {
       )}
 
       {/* ===== DIVISION COORDINATE MODAL ===== */}
-      {divisionCoordinateModal && (
+      {divisionCoordinateModal && hasEditFeature && (
         <div className="modal-overlay-map-update" onClick={closeModal}>
           <div className="modal-map-update modal-map-coordinate-large-map-update" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header-map-update">
@@ -1731,7 +1810,7 @@ const MappingUpdatePage = () => {
       )}
 
       {/* ===== FIELD AVAILABILITY / REASON MODAL ===== */}
-      {availabilityModal && (
+      {availabilityModal && hasEditFeature && (
         <div className="modal-overlay-map-update" onClick={closeModal}>
           <div className="modal-map-update" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header-map-update">
@@ -1817,7 +1896,7 @@ const MappingUpdatePage = () => {
       )}
 
       {/* ===== MANAGE BLOCK REASONS MODAL ===== */}
-      {reasonManageOpen && (
+      {reasonManageOpen && hasEditFeature && (
         <div className="modal-overlay-map-update" onClick={closeModal}>
           <div className="modal-map-update modal-wide-map-update" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header-map-update">
@@ -1919,7 +1998,7 @@ const MappingUpdatePage = () => {
       )}
 
       {/* ===== EDIT FIELD MODAL ===== */}
-      {editingField && (
+      {editingField && hasEditFeature && (
         <div className="modal-overlay-map-update" onClick={closeModal}>
           <div className="modal-map-update modal-wide-map-update" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header-map-update">

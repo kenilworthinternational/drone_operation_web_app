@@ -78,6 +78,9 @@ const PilotAssignment = () => {
 
   const hasResourceQueueFeature = checkFeatureAccess(FEATURE_CODES.PILOT_ASSIGNMENT_RESOURCE_QUEUE);
   const hasArrangeTransportFeature = checkFeatureAccess(FEATURE_CODES.PILOT_ASSIGNMENT_ARRANGE_TRANSPORT);
+  const hasRescheduleFeature = checkFeatureAccess(FEATURE_CODES.PILOT_ASSIGNMENT_RESCHEDULE);
+  const hasDeactivateFeature = checkFeatureAccess(FEATURE_CODES.PILOT_ASSIGNMENT_DEACTIVATE);
+  const hasPlanContextActions = hasRescheduleFeature || hasDeactivateFeature;
 
   // Fetch data
   const { data: plansData, isLoading: loadingPlans, refetch: refetchPlans } = useGetPilotAssignmentPlansQuery(selectedDate, {
@@ -97,7 +100,10 @@ const PilotAssignment = () => {
   const [assignTransportDetails, { isLoading: savingTransport }] = useAssignPilotTransportDetailsMutation();
   const [reschedulePlan] = useReschedulePilotAssignmentPlanMutation();
   const [deactivateBookingPlan] = useDeactivateBookingPlanMutation();
-  const { data: deactivateReasons } = useGetDeactivateReasonsQuery({ include_inactive: false });
+  const { data: deactivateReasons } = useGetDeactivateReasonsQuery(
+    { include_inactive: false },
+    { skip: !hasDeactivateFeature }
+  );
   const deactivateReasonOptions = useMemo(
     () =>
       (deactivateReasons || [])
@@ -443,6 +449,7 @@ const PilotAssignment = () => {
   const handlePlanContextMenu = (e, plan) => {
     e.preventDefault();
     e.stopPropagation();
+    if (!hasPlanContextActions) return;
     setPlanContextMenu({
       x: e.clientX,
       y: e.clientY,
@@ -452,6 +459,10 @@ const PilotAssignment = () => {
 
   const openRescheduleModal = (plan) => {
     closePlanContextMenu();
+    if (!hasRescheduleFeature) {
+      toast.error('Access denied. Ask ICT to enable Reschedule under Auth Controls → Features.');
+      return;
+    }
     if (!plan?.id) return;
     setRescheduleDate(selectedDate || '');
     setRescheduleModalPlan(plan);
@@ -464,6 +475,10 @@ const PilotAssignment = () => {
 
   const openDeactivateModal = (plan) => {
     closePlanContextMenu();
+    if (!hasDeactivateFeature) {
+      toast.error('Access denied. Ask ICT to enable Deactivate under Auth Controls → Features.');
+      return;
+    }
     if (!plan?.id) return;
     if (!deactivateReasonOptions.length) {
       toast.error('No deactivate reasons are configured. Add reasons in master data first.');
@@ -481,6 +496,10 @@ const PilotAssignment = () => {
   };
 
   const confirmReschedulePlan = async () => {
+    if (!hasRescheduleFeature) {
+      toast.error('Access denied. Ask ICT to enable Reschedule under Auth Controls → Features.');
+      return;
+    }
     const plan = rescheduleModalPlan;
     if (!plan?.id) return;
     if (!rescheduleDate) {
@@ -525,6 +544,10 @@ const PilotAssignment = () => {
   };
 
   const confirmDeactivatePlan = async () => {
+    if (!hasDeactivateFeature) {
+      toast.error('Access denied. Ask ICT to enable Deactivate under Auth Controls → Features.');
+      return;
+    }
     const plan = deactivateModalPlan;
     if (!plan?.id) return;
     if (!selectedDeactivateReason?.id) {
@@ -880,7 +903,16 @@ const PilotAssignment = () => {
                       onClick={() => canEdit && handlePlanToggle(plan.id)}
                       onContextMenu={(e) => handlePlanContextMenu(e, plan)}
                       style={{ cursor: canEdit ? 'pointer' : 'not-allowed' }}
-                      title="Right-click for Reschedule / Deactivate"
+                      title={
+                        hasPlanContextActions
+                          ? `Right-click for ${[
+                              hasRescheduleFeature ? 'Reschedule' : null,
+                              hasDeactivateFeature ? 'Deactivate' : null,
+                            ]
+                              .filter(Boolean)
+                              .join(' / ')}`
+                          : undefined
+                      }
                     >
                       <div className="pilot-assignment-plan-content-pilotsassign">
                         <div className="pilot-assignment-plan-info-pilotsassign">
@@ -1161,7 +1193,7 @@ const PilotAssignment = () => {
           </div>
         </div>
       )}
-      {planContextMenu && (
+      {planContextMenu && hasPlanContextActions && (
         <>
           <div
             className="pilot-assignment-plan-ctx-backdrop-pilotsassign"
@@ -1177,25 +1209,29 @@ const PilotAssignment = () => {
             <div className="pilot-assignment-plan-ctx-title-pilotsassign">
               Plan #{planContextMenu.plan?.id}
             </div>
-            <button
-              type="button"
-              className="pilot-assignment-plan-ctx-item-pilotsassign"
-              onClick={() => openRescheduleModal(planContextMenu.plan)}
-            >
-              Reschedule
-            </button>
-            <button
-              type="button"
-              className="pilot-assignment-plan-ctx-item-pilotsassign pilot-assignment-plan-ctx-item-danger-pilotsassign"
-              onClick={() => openDeactivateModal(planContextMenu.plan)}
-            >
-              Deactivate
-            </button>
+            {hasRescheduleFeature ? (
+              <button
+                type="button"
+                className="pilot-assignment-plan-ctx-item-pilotsassign"
+                onClick={() => openRescheduleModal(planContextMenu.plan)}
+              >
+                Reschedule
+              </button>
+            ) : null}
+            {hasDeactivateFeature ? (
+              <button
+                type="button"
+                className="pilot-assignment-plan-ctx-item-pilotsassign pilot-assignment-plan-ctx-item-danger-pilotsassign"
+                onClick={() => openDeactivateModal(planContextMenu.plan)}
+              >
+                Deactivate
+              </button>
+            ) : null}
           </div>
         </>
       )}
 
-      {rescheduleModalPlan && (
+      {rescheduleModalPlan && hasRescheduleFeature && (
         <div className="modal-backdrop" onClick={closeRescheduleModal}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <h3>Reschedule Plan</h3>
@@ -1237,7 +1273,7 @@ const PilotAssignment = () => {
         </div>
       )}
 
-      {deactivateModalPlan && (
+      {deactivateModalPlan && hasDeactivateFeature && (
         <div className="modal-backdrop" onClick={closeDeactivateModal}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <h3>Deactivate Plan</h3>

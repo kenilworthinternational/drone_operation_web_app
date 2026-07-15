@@ -8,7 +8,14 @@ function statusClass(status) {
   return 'sysmaint-badge--bad';
 }
 
-const Pm2ProcessCard = ({ process, onViewLogs, onRestart, isRestarting }) => {
+const Pm2ProcessCard = ({
+  process,
+  onViewLogs,
+  onRestart,
+  isRestarting,
+  canViewLogs = false,
+  canRestart = false,
+}) => {
   const [showRestart, setShowRestart] = useState(false);
   const [confirmName, setConfirmName] = useState('');
 
@@ -18,6 +25,8 @@ const Pm2ProcessCard = ({ process, onViewLogs, onRestart, isRestarting }) => {
       setConfirmName('');
     });
   };
+
+  const showActions = canViewLogs || canRestart;
 
   return (
     <div className={`sysmaint-pm2-card ictg-pm2-card ${process.isCurrentProcess ? 'sysmaint-pm2-card--current' : ''}`}>
@@ -51,16 +60,22 @@ const Pm2ProcessCard = ({ process, onViewLogs, onRestart, isRestarting }) => {
       {process.nodeEnv && (
         <p className="sysmaint-hint">NODE_ENV: {process.nodeEnv}</p>
       )}
-      <div className="sysmaint-pm2-actions ictg-pm2-actions">
-        <button type="button" className="sysmaint-btn-secondary" onClick={() => onViewLogs(process.name)}>
-          <FaFileAlt /> Logs
-        </button>
-        <button type="button" className="sysmaint-btn-danger" onClick={() => setShowRestart(true)}>
-          <FaRedo /> Restart
-        </button>
-      </div>
+      {showActions ? (
+        <div className="sysmaint-pm2-actions ictg-pm2-actions">
+          {canViewLogs ? (
+            <button type="button" className="sysmaint-btn-secondary" onClick={() => onViewLogs(process.name)}>
+              <FaFileAlt /> Logs
+            </button>
+          ) : null}
+          {canRestart ? (
+            <button type="button" className="sysmaint-btn-danger" onClick={() => setShowRestart(true)}>
+              <FaRedo /> Restart
+            </button>
+          ) : null}
+        </div>
+      ) : null}
 
-      {showRestart && (
+      {showRestart && canRestart && (
         <div className="sysmaint-inline-confirm">
           <p className="sysmaint-hint sysmaint-hint--warn">
             Type <strong>{process.name}</strong> to confirm restart.

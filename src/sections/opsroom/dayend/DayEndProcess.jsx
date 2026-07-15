@@ -934,10 +934,14 @@ const DayEndProcess = () => {
                             <input
                               type="checkbox"
                               checked={mission.completed === 1}
-                              disabled={userData.job_role !== 'dops' || mission.activated === 0 || mission.team_assigned === 0}
+                              disabled={
+                                !showDirOpsApprovalFeature ||
+                                mission.activated === 0 ||
+                                mission.team_assigned === 0
+                              }
                               onChange={async (e) => {
-                                if (userData.job_role !== 'dops') {
-                                  toast.error("You don't have permission to modify approvals");
+                                if (!showDirOpsApprovalFeature) {
+                                  toast.error("You don't have permission to modify Dir-Ops approvals");
                                   return;
                                 }
                                 const newStatus = e.target.checked ? 1 : 0;

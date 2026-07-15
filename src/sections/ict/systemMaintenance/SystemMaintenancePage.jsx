@@ -13,6 +13,9 @@ import HostMetricsPanel from './components/HostMetricsPanel';
 import BackupPanel from './components/BackupPanel';
 import LogTailModal from './components/LogTailModal';
 import JenkinsPanel from './components/JenkinsPanel';
+import { FEATURE_CODES } from '../../../utils/featurePermissions';
+import { isInternalDeveloper } from '../../../utils/authUtils';
+import { useGetMyPermissionsQuery } from '../../../api/services NodeJs/featurePermissionsApi';
 import '../../../styles/systemMaintenancePage.css';
 
 function formatCollectedAt(iso) {
@@ -40,6 +43,34 @@ function toneFromState(state) {
 }
 
 const SystemMaintenancePage = () => {
+  const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+  const userId = userData?.id || null;
+  const isDeveloper = isInternalDeveloper(userData);
+  const { data: featurePermissionsData = {} } = useGetMyPermissionsQuery(undefined, {
+    skip: !userId,
+  });
+
+  const checkFeatureAccess = (featureCode) => {
+    if (isDeveloper) return true;
+    if (!featurePermissionsData || typeof featurePermissionsData !== 'object') return false;
+    if (featurePermissionsData.features && featurePermissionsData.features[featureCode] === true) {
+      return true;
+    }
+    const categories = featurePermissionsData.categories || featurePermissionsData;
+    for (const category in categories) {
+      if (category === 'paths' || category === 'features') continue;
+      const categoryData = categories[category];
+      if (Array.isArray(categoryData) && categoryData.includes(featureCode)) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  const canViewLogs = checkFeatureAccess(FEATURE_CODES.SYSTEM_MAINTENANCE_VIEW_LOGS);
+  const canRestart = checkFeatureAccess(FEATURE_CODES.SYSTEM_MAINTENANCE_RESTART);
+  const canRunBackup = checkFeatureAccess(FEATURE_CODES.SYSTEM_MAINTENANCE_RUN_BACKUP);
+
   const {
     data: overview,
     isLoading,
@@ -69,11 +100,19 @@ const SystemMaintenancePage = () => {
   const capabilities = overview?.capabilities;
 
   const handleViewLogs = useCallback((appName) => {
+    if (!canViewLogs) {
+      setActionMessage('Access denied. Ask ICT to enable View PM2 logs under Auth Controls → Features.');
+      return;
+    }
     setLogAppName(appName);
     fetchLogs({ appName, lines: 100 });
-  }, [fetchLogs]);
+  }, [canViewLogs, fetchLogs]);
 
   const handleRestart = useCallback(async (appName, confirmName, onDone) => {
+    if (!canRestart) {
+      setActionMessage('Access denied. Ask ICT to enable Restart under Auth Controls → Features.');
+      return;
+    }
     try {
       const result = await restartPm2({ appName, confirmName }).unwrap();
       const warning = result?.data?.warning;
@@ -90,9 +129,13 @@ const SystemMaintenancePage = () => {
     } catch (err) {
       setActionMessage(err?.data?.message || err?.message || 'Restart failed.');
     }
-  }, [restartPm2, refetch]);
+  }, [canRestart, restartPm2, refetch]);
 
   const handleTriggerBackup = useCallback(async (confirmAction) => {
+    if (!canRunBackup) {
+      setActionMessage('Access denied. Ask ICT to enable Run backup now under Auth Controls → Features.');
+      return { ok: false };
+    }
     try {
       await triggerBackup({ confirmAction }).unwrap();
       setActionMessage('Database backup started. Status will update when complete.');
@@ -102,7 +145,7 @@ const SystemMaintenancePage = () => {
       setActionMessage(err?.data?.message || err?.message || 'Failed to start backup.');
       return { ok: false };
     }
-  }, [triggerBackup]);
+  }, [canRunBackup, triggerBackup]);
 
   useEffect(() => {
     if (!backupPolling) return undefined;
@@ -351,6 +394,8 @@ const SystemMaintenancePage = () => {
                     onViewLogs={handleViewLogs}
                     onRestart={handleRestart}
                     isRestarting={isRestarting}
+                    canViewLogs={canViewLogs}
+                    canRestart={canRestart}
                   />
                 ))}
               </div>
@@ -367,6 +412,7 @@ const SystemMaintenancePage = () => {
                 onTriggerBackup={handleTriggerBackup}
                 isTriggering={isTriggering}
                 onPollStatus={() => refetch()}
+                canRunBackup={canRunBackup}
               />
             </div>
           </section>
@@ -419,7 +465,7 @@ const SystemMaintenancePage = () => {
         )}
       </div>
 
-      {logAppName && (
+      {logAppName && canViewLogs && (
         <LogTailModal
           appName={logAppName}
           onClose={() => setLogAppName(null)}

@@ -9,6 +9,9 @@ import {
   useApproveFieldUnblockRequestMutation,
   useDeclineFieldUnblockRequestMutation,
 } from '../../../api/services NodeJs/fieldUnblockRequestsApi';
+import { FEATURE_CODES } from '../../../utils/featurePermissions';
+import { isInternalDeveloper } from '../../../utils/authUtils';
+import { useGetMyPermissionsQuery } from '../../../api/services NodeJs/featurePermissionsApi';
 import './fieldUnblockRequestQueue.css';
 
 function missionLabel(code) {
@@ -33,6 +36,34 @@ const FieldUnblockRequestQueue = () => {
   const routerLocation = useLocation();
   const go = (path) => navigate({ pathname: path, search: routerLocation.search });
 
+  const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+  const userId = userData?.id || null;
+  const isDeveloper = isInternalDeveloper(userData);
+  const { data: featurePermissionsData = {} } = useGetMyPermissionsQuery(undefined, {
+    skip: !userId,
+  });
+
+  const checkFeatureAccess = (featureCode) => {
+    if (isDeveloper) return true;
+    if (!featurePermissionsData || typeof featurePermissionsData !== 'object') return false;
+    if (featurePermissionsData.features && featurePermissionsData.features[featureCode] === true) {
+      return true;
+    }
+    const categories = featurePermissionsData.categories || featurePermissionsData;
+    for (const category in categories) {
+      if (category === 'paths' || category === 'features') continue;
+      const categoryData = categories[category];
+      if (Array.isArray(categoryData) && categoryData.includes(featureCode)) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  const hasApproveFeature = checkFeatureAccess(FEATURE_CODES.FIELD_UNBLOCK_APPROVE);
+  const hasRejectFeature = checkFeatureAccess(FEATURE_CODES.FIELD_UNBLOCK_REJECT);
+  const showActionsColumn = hasApproveFeature || hasRejectFeature;
+
   const { data: rows = [], isLoading, isFetching, isError, refetch } =
     useGetFieldUnblockRequestsListQuery(
       { status: 'p' },
@@ -49,6 +80,14 @@ const FieldUnblockRequestQueue = () => {
   const isBusy = busyId != null || approving || declining;
 
   const openActionModal = (row, action) => {
+    if (action === 'approve' && !hasApproveFeature) {
+      toast.error('Access denied. Ask ICT to enable Approve under Auth Controls → Features.');
+      return;
+    }
+    if (action === 'reject' && !hasRejectFeature) {
+      toast.error('Access denied. Ask ICT to enable Reject under Auth Controls → Features.');
+      return;
+    }
     setActionModal({ row, action });
     setModalNote('');
   };
@@ -62,6 +101,14 @@ const FieldUnblockRequestQueue = () => {
   const submitAction = async () => {
     if (!actionModal) return;
     const { row, action } = actionModal;
+    if (action === 'approve' && !hasApproveFeature) {
+      toast.error('Access denied. Ask ICT to enable Approve under Auth Controls → Features.');
+      return;
+    }
+    if (action === 'reject' && !hasRejectFeature) {
+      toast.error('Access denied. Ask ICT to enable Reject under Auth Controls → Features.');
+      return;
+    }
     const note = modalNote.trim();
 
     setBusyId(row.id);
@@ -123,7 +170,7 @@ const FieldUnblockRequestQueue = () => {
                 <th>Block reason</th>
                 <th>Requested by</th>
                 <th>Requested at</th>
-                <th className="th-actions-fur-queue">Actions</th>
+                {showActionsColumn ? <th className="th-actions-fur-queue">Actions</th> : null}
               </tr>
             </thead>
             <tbody>
@@ -153,30 +200,36 @@ const FieldUnblockRequestQueue = () => {
                   </td>
                   <td>{row.requestedByName || row.requestedByUserId}</td>
                   <td>{row.requestedAt ? String(row.requestedAt).slice(0, 16).replace('T', ' ') : '—'}</td>
-                  <td>
-                    <div className="icon-actions-fur-queue">
-                      <button
-                        type="button"
-                        className="icon-btn-fur-queue icon-btn-fur-queue--approve"
-                        title="Approve unblock"
-                        aria-label={`Approve request ${row.id}`}
-                        disabled={isBusy}
-                        onClick={() => openActionModal(row, 'approve')}
-                      >
-                        <FaCheck />
-                      </button>
-                      <button
-                        type="button"
-                        className="icon-btn-fur-queue icon-btn-fur-queue--reject"
-                        title="Reject request"
-                        aria-label={`Reject request ${row.id}`}
-                        disabled={isBusy}
-                        onClick={() => openActionModal(row, 'reject')}
-                      >
-                        <FaTimes />
-                      </button>
-                    </div>
-                  </td>
+                  {showActionsColumn ? (
+                    <td>
+                      <div className="icon-actions-fur-queue">
+                        {hasApproveFeature ? (
+                          <button
+                            type="button"
+                            className="icon-btn-fur-queue icon-btn-fur-queue--approve"
+                            title="Approve unblock"
+                            aria-label={`Approve request ${row.id}`}
+                            disabled={isBusy}
+                            onClick={() => openActionModal(row, 'approve')}
+                          >
+                            <FaCheck />
+                          </button>
+                        ) : null}
+                        {hasRejectFeature ? (
+                          <button
+                            type="button"
+                            className="icon-btn-fur-queue icon-btn-fur-queue--reject"
+                            title="Reject request"
+                            aria-label={`Reject request ${row.id}`}
+                            disabled={isBusy}
+                            onClick={() => openActionModal(row, 'reject')}
+                          >
+                            <FaTimes />
+                          </button>
+                        ) : null}
+                      </div>
+                    </td>
+                  ) : null}
                 </tr>
               ))}
             </tbody>
@@ -184,7 +237,7 @@ const FieldUnblockRequestQueue = () => {
         </div>
       )}
 
-      {actionModal && modalRow ? (
+      {actionModal && modalRow && ((isApproveModal && hasApproveFeature) || (!isApproveModal && hasRejectFeature)) ? (
         <div className="modal-overlay-fur-queue" onClick={closeActionModal} role="presentation">
           <div
             className="modal-panel-fur-queue"

@@ -112,15 +112,18 @@ const WorkflowDashboard = () => {
     return false;
   };
 
-  const hasPilotAssignmentResourceFeature = checkFeatureAccess(FEATURE_CODES.PILOT_ASSIGNMENT_RESOURCE_QUEUE);
-
-  const [quickAccessDeniedMessage, setQuickAccessDeniedMessage] = useState('');
-
-  useEffect(() => {
-    if (!quickAccessDeniedMessage) return undefined;
-    const t = setTimeout(() => setQuickAccessDeniedMessage(''), 4500);
-    return () => clearTimeout(t);
-  }, [quickAccessDeniedMessage]);
+  const hasAdhocPlansFeature = checkFeatureAccess(FEATURE_CODES.WORKFLOW_ACTION_ADHOC_PLANS);
+  const hasRescheduleRequestsFeature = checkFeatureAccess(FEATURE_CODES.WORKFLOW_ACTION_RESCHEDULE_REQUESTS);
+  const hasManagerApprovalFeature = checkFeatureAccess(FEATURE_CODES.WORKFLOW_ACTION_MANAGER_APPROVAL);
+  const hasResourceAssignmentCardFeature = checkFeatureAccess(
+    FEATURE_CODES.WORKFLOW_ACTION_RESOURCE_ASSIGNMENT
+  );
+  const hasPendingPaymentFeature = checkFeatureAccess(FEATURE_CODES.WORKFLOW_ACTION_PENDING_PAYMENT);
+  const hasDroneUnlockingFeature = checkFeatureAccess(FEATURE_CODES.WORKFLOW_ACTION_DRONE_UNLOCKING);
+  const hasOpsAssignmentFeature = checkFeatureAccess(FEATURE_CODES.WORKFLOW_ACTION_OPS_ASSIGNMENT);
+  const hasDayEndCardFeature = checkFeatureAccess(FEATURE_CODES.WORKFLOW_ACTION_DAY_END);
+  const hasDjiMapUploadFeature = checkFeatureAccess(FEATURE_CODES.WORKFLOW_ACTION_DJI_MAP_UPLOAD);
+  const showPlanRequestsCard = hasAdhocPlansFeature || hasRescheduleRequestsFeature;
 
   // Fetch notifications for all users (no feature gate)
   const { data: unreadCountData, refetch: refetchUnreadCount } = useGetUnreadCountQuery(undefined, {
@@ -333,6 +336,7 @@ const WorkflowDashboard = () => {
         opsAssignPending: opsAssignPendingCount,
       };
     },
+    enabled: Boolean(userId && (hasManagerApprovalFeature || hasOpsAssignmentFeature)),
     staleTime: 2 * 60 * 1000, // 2 minutes - data is fresh for 2 minutes
     gcTime: 2 * 60 * 1000, // 2 minutes - keep in cache for 2 minutes
     refetchInterval: 2 * 60 * 1000, // Refetch every 2 minutes (max refresh interval)
@@ -346,41 +350,53 @@ const WorkflowDashboard = () => {
   });
 
   // Get pending payment missions count
-  const { data: pendingPaymentData, refetch: refetchPendingPayment } = useGetMissionsPendingPaymentQuery();
+  const { data: pendingPaymentData, refetch: refetchPendingPayment } = useGetMissionsPendingPaymentQuery(
+    undefined,
+    { skip: !userId || !hasPendingPaymentFeature }
+  );
   const pendingPaymentCount = pendingPaymentData?.data?.length || 0;
 
   // Get drone unlocking queue count
-  const { data: droneUnlockingData, refetch: refetchDroneUnlocking } = useGetDroneUnlockingQueueQuery();
-  const droneUnlockingCount = (droneUnlockingData?.data?.plans?.length || 0) + 
+  const { data: droneUnlockingData, refetch: refetchDroneUnlocking } = useGetDroneUnlockingQueueQuery(
+    undefined,
+    { skip: !userId || !hasDroneUnlockingFeature }
+  );
+  const droneUnlockingCount = (droneUnlockingData?.data?.plans?.length || 0) +
                               (droneUnlockingData?.data?.missions?.length || 0);
 
   // Get plans pending day end process count
-  const { data: dayEndProcessData, refetch: refetchDayEndProcess } = useGetPlansPendingDayEndCountQuery();
+  const { data: dayEndProcessData, refetch: refetchDayEndProcess } = useGetPlansPendingDayEndCountQuery(
+    undefined,
+    { skip: !userId || !hasDayEndCardFeature }
+  );
   const dayEndProcessCount = dayEndProcessData?.data?.count || 0;
 
   // Get DJI images uploaded today count
-  const { data: djiImagesCountData, refetch: refetchDjiImages } = useGetTodayDjiImagesCountQuery();
+  const { data: djiImagesCountData, refetch: refetchDjiImages } = useGetTodayDjiImagesCountQuery(
+    undefined,
+    { skip: !userId || !hasDjiMapUploadFeature }
+  );
   const djiImagesCount = djiImagesCountData?.data?.count || 0;
 
   // Get resource assignment count for tomorrow
   const tomorrowDate = getTomorrowDate();
   const { data: resourceAssignmentData, refetch: refetchResourceAssignment } = useGetResourceAssignmentCountQuery(
     tomorrowDate,
-    { skip: !userId || !hasPilotAssignmentResourceFeature }
+    { skip: !userId || !hasResourceAssignmentCardFeature }
   );
   const resourceAssignmentCount = resourceAssignmentData?.data?.total || 0;
 
   const { data: plantationPlanReschedulePayload, refetch: refetchPlantationPlanRescheduleCount } =
     useGetPlantationPlanRescheduleRequestsPendingCountQuery(undefined, {
       pollingInterval: 120000,
-      skip: !userId,
+      skip: !userId || !hasRescheduleRequestsFeature,
     });
   const plantationPlanRescheduleCount = Number(plantationPlanReschedulePayload?.data?.count ?? 0);
 
   const { data: plantationPlanRequestPayload, refetch: refetchPlantationPlanRequestCount } =
     useGetPlantationPlanRequestsPendingCountQuery(undefined, {
       pollingInterval: 120000,
-      skip: !userId,
+      skip: !userId || !hasAdhocPlansFeature,
     });
   const plantationPlanRequestCount = Number(plantationPlanRequestPayload?.data?.count ?? 0);
 
@@ -390,14 +406,14 @@ const WorkflowDashboard = () => {
     try {
       // Refetch all queries in parallel
       await Promise.all([
-        refetchCounts(), // Use refetch function instead of invalidateQueries
-        refetchPendingPayment(),
-        refetchDroneUnlocking(),
-        refetchDayEndProcess(),
-        refetchDjiImages(),
-        refetchPlantationPlanRequestCount(),
-        refetchPlantationPlanRescheduleCount(),
-        ...(hasPilotAssignmentResourceFeature ? [refetchResourceAssignment()] : []),
+        ...(hasManagerApprovalFeature || hasOpsAssignmentFeature ? [refetchCounts()] : []),
+        ...(hasPendingPaymentFeature ? [refetchPendingPayment()] : []),
+        ...(hasDroneUnlockingFeature ? [refetchDroneUnlocking()] : []),
+        ...(hasDayEndCardFeature ? [refetchDayEndProcess()] : []),
+        ...(hasDjiMapUploadFeature ? [refetchDjiImages()] : []),
+        ...(hasAdhocPlansFeature ? [refetchPlantationPlanRequestCount()] : []),
+        ...(hasRescheduleRequestsFeature ? [refetchPlantationPlanRescheduleCount()] : []),
+        ...(hasResourceAssignmentCardFeature ? [refetchResourceAssignment()] : []),
       ]);
     } catch (error) {
       console.error('Error refreshing counts:', error);
@@ -412,14 +428,14 @@ const WorkflowDashboard = () => {
     const refreshAllData = async () => {
       try {
         await Promise.all([
-          refetchCounts(),
-          refetchPendingPayment(),
-          refetchDroneUnlocking(),
-          refetchDayEndProcess(),
-          refetchDjiImages(),
-          refetchPlantationPlanRequestCount(),
-          refetchPlantationPlanRescheduleCount(),
-          ...(hasPilotAssignmentResourceFeature ? [refetchResourceAssignment()] : []),
+          ...(hasManagerApprovalFeature || hasOpsAssignmentFeature ? [refetchCounts()] : []),
+          ...(hasPendingPaymentFeature ? [refetchPendingPayment()] : []),
+          ...(hasDroneUnlockingFeature ? [refetchDroneUnlocking()] : []),
+          ...(hasDayEndCardFeature ? [refetchDayEndProcess()] : []),
+          ...(hasDjiMapUploadFeature ? [refetchDjiImages()] : []),
+          ...(hasAdhocPlansFeature ? [refetchPlantationPlanRequestCount()] : []),
+          ...(hasRescheduleRequestsFeature ? [refetchPlantationPlanRescheduleCount()] : []),
+          ...(hasResourceAssignmentCardFeature ? [refetchResourceAssignment()] : []),
         ]);
       } catch (error) {
         console.error('Error auto-refreshing counts:', error);
@@ -431,7 +447,18 @@ const WorkflowDashboard = () => {
       refreshAllData();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [routerLocation.pathname, hasPilotAssignmentResourceFeature]); // Refresh when route changes to this page
+  }, [
+    routerLocation.pathname,
+    hasManagerApprovalFeature,
+    hasOpsAssignmentFeature,
+    hasPendingPaymentFeature,
+    hasDroneUnlockingFeature,
+    hasDayEndCardFeature,
+    hasDjiMapUploadFeature,
+    hasAdhocPlansFeature,
+    hasRescheduleRequestsFeature,
+    hasResourceAssignmentCardFeature,
+  ]);
 
   // Extract counts with fallback to 0
   const adhocCount = plantationPlanRequestCount;
@@ -454,6 +481,7 @@ const WorkflowDashboard = () => {
       unit: 'plans',
       path: '/home/managerApprovalQueue',
       icon: FaUserCheck,
+      featureCode: FEATURE_CODES.WORKFLOW_ACTION_MANAGER_APPROVAL,
     },
     {
       title: 'Resource assignment',
@@ -462,7 +490,7 @@ const WorkflowDashboard = () => {
       unit: 'items',
       path: '/home/pilotAssignment',
       icon: FaTruck,
-      featureCode: FEATURE_CODES.PILOT_ASSIGNMENT_RESOURCE_QUEUE,
+      featureCode: FEATURE_CODES.WORKFLOW_ACTION_RESOURCE_ASSIGNMENT,
     },
     {
       title: 'Pending payment',
@@ -471,6 +499,7 @@ const WorkflowDashboard = () => {
       unit: 'missions',
       path: '/home/pendingPaymentQueue',
       icon: FaCreditCard,
+      featureCode: FEATURE_CODES.WORKFLOW_ACTION_PENDING_PAYMENT,
     },
     {
       title: 'Drone unlocking',
@@ -479,6 +508,7 @@ const WorkflowDashboard = () => {
       unit: 'items',
       path: '/home/droneUnlockingQueue',
       icon: FaUnlock,
+      featureCode: FEATURE_CODES.WORKFLOW_ACTION_DRONE_UNLOCKING,
     },
     {
       title: 'Ops assignment',
@@ -487,6 +517,7 @@ const WorkflowDashboard = () => {
       unit: 'items',
       path: '/home/opsAsign',
       icon: FaTasks,
+      featureCode: FEATURE_CODES.WORKFLOW_ACTION_OPS_ASSIGNMENT,
     },
     {
       title: 'Day end process',
@@ -495,6 +526,7 @@ const WorkflowDashboard = () => {
       unit: 'plans',
       path: '/home/dayEndProcess',
       icon: FaCalendarDay,
+      featureCode: FEATURE_CODES.WORKFLOW_ACTION_DAY_END,
     },
     {
       title: 'DJI map upload',
@@ -503,12 +535,25 @@ const WorkflowDashboard = () => {
       unit: 'maps',
       path: '/home/djiMapUpload',
       icon: FaMapMarkedAlt,
+      featureCode: FEATURE_CODES.WORKFLOW_ACTION_DJI_MAP_UPLOAD,
     },
   ];
 
   const quickAccessItems = [
-    { label: 'Plan calendar', description: 'Schedule & browse plans', path: '/home/opsroomPlanCalendar', icon: FaCalendarAlt, featureCode: null },
-    { label: "Today's plans", description: "Today's operational view", path: '/home/todayPlans', icon: FaClipboardList, featureCode: null },
+    {
+      label: 'Plan calendar',
+      description: 'Schedule & browse plans',
+      path: '/home/opsroomPlanCalendar',
+      icon: FaCalendarAlt,
+      featureCode: FEATURE_CODES.WORKFLOW_QUICK_PLAN_CALENDAR,
+    },
+    {
+      label: "Today's plans",
+      description: "Today's operational view",
+      path: '/home/todayPlans',
+      icon: FaClipboardList,
+      featureCode: FEATURE_CODES.WORKFLOW_QUICK_TODAYS_PLANS,
+    },
     {
       label: 'Emergency moving',
       description: 'Reassign or move plans',
@@ -516,8 +561,20 @@ const WorkflowDashboard = () => {
       icon: FaBolt,
       featureCode: FEATURE_CODES.WORKFLOW_QUICK_EMERGENCY_MOVING,
     },
-    { label: 'Field history', description: 'Past field activity', path: '/home/fieldHistory', icon: FaHistory, featureCode: null },
-    { label: 'Reports', description: 'Ops reporting', path: '/home/reports/ops', icon: FaChartBar, featureCode: null },
+    {
+      label: 'Field history',
+      description: 'Past field activity',
+      path: '/home/fieldHistory',
+      icon: FaHistory,
+      featureCode: FEATURE_CODES.WORKFLOW_QUICK_FIELD_HISTORY,
+    },
+    {
+      label: 'Reports',
+      description: 'Ops reporting',
+      path: '/home/reports/ops',
+      icon: FaChartBar,
+      featureCode: FEATURE_CODES.WORKFLOW_QUICK_REPORTS,
+    },
     {
       label: 'Field size adjustments',
       description: 'Area corrections',
@@ -661,42 +718,48 @@ const WorkflowDashboard = () => {
             </div>
 
             <div className="wf-action-cards-grid-workflowDashboard">
-              <div className="wf-nested-queue-card-workflowDashboard">
-                <div className="wf-nested-queue-head-workflowDashboard">
-                  <FaInbox className="wf-nested-queue-icon-workflowDashboard" aria-hidden />
-                  <div>
-                    <span className="wf-nested-queue-title-workflowDashboard">Plan requests</span>
-                    <span className="wf-nested-queue-sub-workflowDashboard">Requests queue</span>
+              {showPlanRequestsCard ? (
+                <div className="wf-nested-queue-card-workflowDashboard">
+                  <div className="wf-nested-queue-head-workflowDashboard">
+                    <FaInbox className="wf-nested-queue-icon-workflowDashboard" aria-hidden />
+                    <div>
+                      <span className="wf-nested-queue-title-workflowDashboard">Plan requests</span>
+                      <span className="wf-nested-queue-sub-workflowDashboard">Requests queue</span>
+                    </div>
                   </div>
+                  {hasAdhocPlansFeature ? (
+                    <button
+                      type="button"
+                      className="wf-nested-queue-row-workflowDashboard"
+                      onClick={() => go('/home/requestsQueue')}
+                      aria-label={`Ad-hoc plans, ${adhocCount} pending`}
+                    >
+                      <span className="wf-nested-queue-label-workflowDashboard">Ad-hoc plans</span>
+                      <span className="wf-nested-queue-meta-workflowDashboard">
+                        <span className="wf-count-pill-workflowDashboard">{adhocCount}</span>
+                        <FaChevronRight className="wf-chevron-workflowDashboard" aria-hidden />
+                      </span>
+                    </button>
+                  ) : null}
+                  {hasRescheduleRequestsFeature ? (
+                    <button
+                      type="button"
+                      className="wf-nested-queue-row-workflowDashboard"
+                      onClick={() => go('/home/requestsQueue')}
+                      aria-label={`Reschedule requests, ${rescheduleCount} pending`}
+                    >
+                      <span className="wf-nested-queue-label-workflowDashboard">Reschedule requests</span>
+                      <span className="wf-nested-queue-meta-workflowDashboard">
+                        <span className="wf-count-pill-workflowDashboard">{rescheduleCount}</span>
+                        <FaChevronRight className="wf-chevron-workflowDashboard" aria-hidden />
+                      </span>
+                    </button>
+                  ) : null}
                 </div>
-                <button
-                  type="button"
-                  className="wf-nested-queue-row-workflowDashboard"
-                  onClick={() => go('/home/requestsQueue')}
-                  aria-label={`Ad-hoc plans, ${adhocCount} pending`}
-                >
-                  <span className="wf-nested-queue-label-workflowDashboard">Ad-hoc plans</span>
-                  <span className="wf-nested-queue-meta-workflowDashboard">
-                    <span className="wf-count-pill-workflowDashboard">{adhocCount}</span>
-                    <FaChevronRight className="wf-chevron-workflowDashboard" aria-hidden />
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  className="wf-nested-queue-row-workflowDashboard"
-                  onClick={() => go('/home/requestsQueue')}
-                  aria-label={`Reschedule requests, ${rescheduleCount} pending`}
-                >
-                  <span className="wf-nested-queue-label-workflowDashboard">Reschedule requests</span>
-                  <span className="wf-nested-queue-meta-workflowDashboard">
-                    <span className="wf-count-pill-workflowDashboard">{rescheduleCount}</span>
-                    <FaChevronRight className="wf-chevron-workflowDashboard" aria-hidden />
-                  </span>
-                </button>
-              </div>
+              ) : null}
 
               {actionMetricCards
-                .filter((c) => !c.featureCode || checkFeatureAccess(c.featureCode))
+                .filter((c) => checkFeatureAccess(c.featureCode))
                 .map(({ title, subtitle, count, unit, path, icon: Icon }) => (
                 <button
                   key={path}
@@ -724,36 +787,16 @@ const WorkflowDashboard = () => {
           <section className="wf-panel-workflowDashboard wf-panel--quick-workflowDashboard">
             <h3 className="wf-quick-section-title-workflowDashboard">Quick access</h3>
             <p className="wf-quick-section-sub-workflowDashboard">Shortcuts to common workflow tools</p>
-            {quickAccessDeniedMessage ? (
-              <p className="wf-quick-denied-banner-workflowDashboard" role="status">
-                {quickAccessDeniedMessage}
-              </p>
-            ) : null}
             <div className="wf-quick-grid-workflowDashboard">
-              {quickAccessItems.map(({ label, description, path, icon: Icon, featureCode }) => {
-                const gated = featureCode != null;
-                const allowed = !gated || checkFeatureAccess(featureCode);
-                return (
+              {quickAccessItems
+                .filter(({ featureCode }) => checkFeatureAccess(featureCode))
+                .map(({ label, description, path, icon: Icon }) => (
                   <button
                     key={path}
                     type="button"
-                    className={[
-                      'wf-quick-card-workflowDashboard',
-                      gated && !allowed ? 'wf-quick-card--access-denied-workflowDashboard' : '',
-                    ]
-                      .filter(Boolean)
-                      .join(' ')}
-                    onClick={() => {
-                      if (!allowed) {
-                        setQuickAccessDeniedMessage(
-                          'Access denied. Ask an administrator to enable this shortcut under ICT → Auth Controls → Features (Workflow Dashboard).'
-                        );
-                        return;
-                      }
-                      go(path);
-                    }}
-                    aria-label={allowed ? label : `${label} — access denied`}
-                    title={!allowed ? 'Access denied — enable feature in Auth Controls' : undefined}
+                    className="wf-quick-card-workflowDashboard"
+                    onClick={() => go(path)}
+                    aria-label={label}
                   >
                     <span className="wf-quick-icon-wrap-workflowDashboard" aria-hidden>
                       <Icon className="wf-quick-icon-workflowDashboard" />
@@ -764,8 +807,7 @@ const WorkflowDashboard = () => {
                     </span>
                     <FaChevronRight className="wf-quick-chevron-workflowDashboard" aria-hidden />
                   </button>
-                );
-              })}
+                ))}
             </div>
           </section>
         </div>

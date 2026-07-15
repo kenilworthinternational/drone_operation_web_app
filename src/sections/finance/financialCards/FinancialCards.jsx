@@ -46,6 +46,9 @@ import {
   voucherStatusLabel,
 } from './fuelTransportVoucherUi';
 import { groupDriverLabel } from './transportVoucherPrintUtils';
+import { FEATURE_CODES } from '../../../utils/featurePermissions';
+import { isInternalDeveloper } from '../../../utils/authUtils';
+import { useGetMyPermissionsQuery } from '../../../api/services NodeJs/featurePermissionsApi';
 import '../../../styles/financialCards.css';
 
 const VOUCHER_ELIGIBLE_STATUSES = ['not_create', 'declined'];
@@ -147,6 +150,33 @@ function numberToAmountString(v) {
 }
 
 const FinancialCards = () => {
+  const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+  const userId = userData?.id || null;
+  const isDeveloper = isInternalDeveloper(userData);
+  const { data: featurePermissionsData = {} } = useGetMyPermissionsQuery(undefined, {
+    skip: !userId,
+  });
+
+  const checkFeatureAccess = (featureCode) => {
+    if (isDeveloper) return true;
+    if (!featurePermissionsData || typeof featurePermissionsData !== 'object') return false;
+    if (featurePermissionsData.features && featurePermissionsData.features[featureCode] === true) {
+      return true;
+    }
+    const categories = featurePermissionsData.categories || featurePermissionsData;
+    for (const category in categories) {
+      if (category === 'paths' || category === 'features') continue;
+      const categoryData = categories[category];
+      if (Array.isArray(categoryData) && categoryData.includes(featureCode)) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  const hasCreateVoucherFeature = checkFeatureAccess(FEATURE_CODES.FINANCIAL_CARDS_CREATE_VOUCHER);
+  const hasSettleFuelBillFeature = checkFeatureAccess(FEATURE_CODES.FINANCIAL_CARDS_SETTLE_FUEL_BILL);
+
   const [showCardModal, setShowCardModal] = useState(false);
   const [showTransactionModal, setShowTransactionModal] = useState(false);
   const [showCardDetails, setShowCardDetails] = useState(false);
@@ -1008,6 +1038,10 @@ const FinancialCards = () => {
   }, [selectedEligibleRows]);
 
   const handleCreateVoucher = async () => {
+    if (!hasCreateVoucherFeature) {
+      toast.error('Access denied. Ask ICT to enable Create voucher under Auth Controls → Features.');
+      return;
+    }
     if (!selectedEligibleRows.length) return;
     try {
       const createFn =
@@ -1057,6 +1091,10 @@ const FinancialCards = () => {
 
   const handleSettleVoucher = async (e) => {
     e.preventDefault();
+    if (!hasSettleFuelBillFeature) {
+      toast.error('Access denied. Ask ICT to enable Settle fuel bill under Auth Controls → Features.');
+      return;
+    }
     if (!selectedVoucherToSettle?.id) return;
     try {
       const imageDataUri = await fileToDataUri(voucherSettleImage);
@@ -1346,25 +1384,29 @@ const FinancialCards = () => {
               />
             </div>
             <div className="settlements-header-actions-financial-cards">
-              <button
-                type="button"
-                className="btn-primary-financial-cards"
-                disabled={!selectedEligibleRows.length || isCreatingVoucher}
-                onClick={() => setShowCreateVoucherModal(true)}
-              >
-                {isCreatingVoucher ? 'Creating...' : `Create Voucher (${selectedEligibleRows.length})`}
-              </button>
-              <button
-                type="button"
-                className="btn-primary-financial-cards"
-                disabled={!approvedUnsettledVouchers.length}
-                onClick={() => {
-                  setSelectedVoucherToSettle(approvedUnsettledVouchers[0] || null);
-                  setShowSettleVoucherModal(true);
-                }}
-              >
-                Settle Fuel Bill
-              </button>
+              {hasCreateVoucherFeature ? (
+                <button
+                  type="button"
+                  className="btn-primary-financial-cards"
+                  disabled={!selectedEligibleRows.length || isCreatingVoucher}
+                  onClick={() => setShowCreateVoucherModal(true)}
+                >
+                  {isCreatingVoucher ? 'Creating...' : `Create Voucher (${selectedEligibleRows.length})`}
+                </button>
+              ) : null}
+              {hasSettleFuelBillFeature ? (
+                <button
+                  type="button"
+                  className="btn-primary-financial-cards"
+                  disabled={!approvedUnsettledVouchers.length}
+                  onClick={() => {
+                    setSelectedVoucherToSettle(approvedUnsettledVouchers[0] || null);
+                    setShowSettleVoucherModal(true);
+                  }}
+                >
+                  Settle Fuel Bill
+                </button>
+              ) : null}
               <button
                 type="button"
                 className="btn-decline-voucher-financial-cards"
@@ -2491,7 +2533,7 @@ const FinancialCards = () => {
         </div>
       ) : null}
 
-      {showCreateVoucherModal ? (
+      {showCreateVoucherModal && hasCreateVoucherFeature ? (
         <div className="modal-overlay-financial-cards" onClick={() => !creatingVoucher && setShowCreateVoucherModal(false)}>
           <div className="modal-content-financial-cards create-voucher-modal-financial-cards" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header-financial-cards">
@@ -2575,7 +2617,7 @@ const FinancialCards = () => {
         </div>
       ) : null}
 
-      {showSettleVoucherModal ? (
+      {showSettleVoucherModal && hasSettleFuelBillFeature ? (
         <div className="modal-overlay-financial-cards" onClick={() => !settlingVoucher && setShowSettleVoucherModal(false)}>
           <div className="modal-content-financial-cards settle-voucher-modal-financial-cards" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header-financial-cards">

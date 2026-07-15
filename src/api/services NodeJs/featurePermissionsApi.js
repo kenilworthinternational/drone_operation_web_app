@@ -223,6 +223,95 @@ export const featurePermissionsApi = baseApi.injectEndpoints({
       },
       invalidatesTags: ['FeaturePermissions', 'GroupedPermissions'],
     }),
+
+    getFeatureEligibleUsers: builder.query({
+      queryFn: async (featureCode) => {
+        try {
+          const result = await nodeBackendBaseQuery(
+            {
+              url: `/api/feature-permissions/features/${encodeURIComponent(featureCode)}/eligible-users`,
+              method: 'GET',
+            },
+            {},
+            {}
+          );
+          if (result.error) return { error: result.error };
+          return { data: result.data?.data || result.data || { users: [] } };
+        } catch (error) {
+          return { error: { status: 'FETCH_ERROR', error: error.message } };
+        }
+      },
+      providesTags: (result, error, featureCode) => [
+        { type: 'FeatureEligibleUsers', id: featureCode },
+      ],
+    }),
+
+    getUserFeaturePermissions: builder.query({
+      queryFn: async (featureCode) => {
+        try {
+          const result = await nodeBackendBaseQuery(
+            {
+              url: `/api/feature-permissions/user-features?feature_code=${encodeURIComponent(featureCode)}`,
+              method: 'GET',
+            },
+            {},
+            {}
+          );
+          if (result.error) return { error: result.error };
+          return { data: result.data?.data || result.data || [] };
+        } catch (error) {
+          return { error: { status: 'FETCH_ERROR', error: error.message } };
+        }
+      },
+      providesTags: (result, error, featureCode) => [
+        { type: 'UserFeaturePermissions', id: featureCode },
+      ],
+    }),
+
+    upsertUserFeaturePermission: builder.mutation({
+      queryFn: async (body) => {
+        try {
+          const result = await nodeBackendBaseQuery(
+            {
+              url: '/api/feature-permissions/user-features',
+              method: 'POST',
+              body,
+            },
+            {},
+            {}
+          );
+          if (result.error) return { error: result.error };
+          return { data: result.data?.data || result.data };
+        } catch (error) {
+          return { error: { status: 'FETCH_ERROR', error: error.message } };
+        }
+      },
+      invalidatesTags: (result, error, arg) => [
+        { type: 'UserFeaturePermissions', id: arg?.feature_code },
+        'MyPermissions',
+      ],
+    }),
+
+    updateFeatureDefinition: builder.mutation({
+      queryFn: async ({ featureCode, ...body }) => {
+        try {
+          const result = await nodeBackendBaseQuery(
+            {
+              url: `/api/feature-permissions/definitions/${encodeURIComponent(featureCode)}`,
+              method: 'PATCH',
+              body,
+            },
+            {},
+            {}
+          );
+          if (result.error) return { error: result.error };
+          return { data: result.data?.data || result.data };
+        } catch (error) {
+          return { error: { status: 'FETCH_ERROR', error: error.message } };
+        }
+      },
+      invalidatesTags: ['FeatureDefinitions', 'FeatureEligibleUsers', 'MyPermissions'],
+    }),
   }),
 });
 
@@ -236,5 +325,11 @@ export const {
   useBulkUpdateCategoryPermissionsMutation,
   useSyncNavbarPathsMutation,
   useDeleteFeaturePermissionMutation,
+  useGetFeatureEligibleUsersQuery,
+  useLazyGetFeatureEligibleUsersQuery,
+  useGetUserFeaturePermissionsQuery,
+  useLazyGetUserFeaturePermissionsQuery,
+  useUpsertUserFeaturePermissionMutation,
+  useUpdateFeatureDefinitionMutation,
 } = featurePermissionsApi;
 
