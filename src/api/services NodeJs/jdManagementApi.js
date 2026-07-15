@@ -22,6 +22,22 @@ export const jdManagementApi = baseApi.injectEndpoints({
       providesTags: ['UserLevels'],
     }),
 
+    saveUserLevel: builder.mutation({
+      queryFn: async (data) => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: '/api/user-levels/save',
+            method: 'POST',
+            body: data,
+          },
+          {},
+          {}
+        );
+        return result;
+      },
+      invalidatesTags: ['UserLevels', 'UserJobRoles', 'JobRoles'],
+    }),
+
     // =====================================================
     // USER MEMBER TYPES
     // =====================================================
@@ -39,6 +55,22 @@ export const jdManagementApi = baseApi.injectEndpoints({
         return result;
       },
       providesTags: ['UserMemberTypes'],
+    }),
+
+    saveUserMemberType: builder.mutation({
+      queryFn: async (data) => {
+        const result = await nodeBackendBaseQuery(
+          {
+            url: '/api/user-member-types/save',
+            method: 'POST',
+            body: data,
+          },
+          {},
+          {}
+        );
+        return result;
+      },
+      invalidatesTags: ['UserMemberTypes', 'UserJobRoles', 'JobRoles'],
     }),
 
     // =====================================================
@@ -618,7 +650,7 @@ export const jdManagementApi = baseApi.injectEndpoints({
         );
         return result;
       },
-      invalidatesTags: ['UserJobRoles'],
+      invalidatesTags: ['UserJobRoles', 'JobRoles'],
     }),
 
     updateUserJobRole: builder.mutation({
@@ -634,7 +666,11 @@ export const jdManagementApi = baseApi.injectEndpoints({
         );
         return result;
       },
-      invalidatesTags: (result, error, { id }) => [{ type: 'UserJobRoles', id }, 'UserJobRoles'],
+      invalidatesTags: (result, error, { id }) => [
+        { type: 'UserJobRoles', id },
+        'UserJobRoles',
+        'JobRoles',
+      ],
     }),
 
     deleteUserJobRole: builder.mutation({
@@ -1252,7 +1288,9 @@ export const jdManagementApi = baseApi.injectEndpoints({
 
 export const {
   useGetUserLevelsQuery,
+  useSaveUserLevelMutation,
   useGetUserMemberTypesQuery,
+  useSaveUserMemberTypeMutation,
   useGetWingsQuery,
   useSaveWingMutation,
   useGetDrivingLicenseTypesQuery,

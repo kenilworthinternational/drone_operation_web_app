@@ -12,6 +12,7 @@ import { baseApi } from '../../../api/baseApi';
 import { useAppDispatch } from '../../../store/hooks';
 import navbarCategoriesRaw from '../../../config/navbarCategories';
 import FeatureUserAccessPanel, { FeatureParentPathSelect } from './FeatureUserAccessPanel';
+import SystemRolesPanel from './SystemRolesPanel';
 import '../../../styles/authControls.css';
 
 const navbarCategories = navbarCategoriesRaw.map((cat) => {
@@ -36,7 +37,7 @@ const AuthControls = () => {
   const dispatch = useAppDispatch();
   const [permissions, setPermissions] = useState({});
   const [pathPermissions, setPathPermissions] = useState({});
-  const [activeTab, setActiveTab] = useState('navbar'); // 'navbar' or 'features'
+  const [activeTab, setActiveTab] = useState('navbar'); // 'navbar' | 'features' | 'system-roles'
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedCategories, setExpandedCategories] = useState({});
@@ -119,19 +120,26 @@ const AuthControls = () => {
     refetchJobRoles();
   }, [dispatch, refetchFeatureDefinitions, refetchJobRoles]);
 
+  const refreshSystemRolesTab = useCallback(() => {
+    dispatch(
+      baseApi.util.invalidateTags(['UserJobRoles', 'UserLevels', 'UserMemberTypes', 'JobRoles'])
+    );
+  }, [dispatch]);
+
   const handleTabChange = useCallback(
     (tab) => {
       if (tab === activeTab) {
-        // Re-clicking the active tab also refreshes
         if (tab === 'navbar') refreshNavbarTab();
-        else refreshFeaturesTab();
+        else if (tab === 'features') refreshFeaturesTab();
+        else refreshSystemRolesTab();
         return;
       }
       setActiveTab(tab);
       if (tab === 'navbar') refreshNavbarTab();
-      else refreshFeaturesTab();
+      else if (tab === 'features') refreshFeaturesTab();
+      else refreshSystemRolesTab();
     },
-    [activeTab, refreshNavbarTab, refreshFeaturesTab]
+    [activeTab, refreshNavbarTab, refreshFeaturesTab, refreshSystemRolesTab]
   );
 
   // Combine loading states
@@ -525,15 +533,17 @@ const AuthControls = () => {
           <h1>Access Control Management</h1>
           <p>Manage which job roles can access navigation sections and specific features.</p>
         </div>
-        <button
-          type="button"
-          className="auth-controls-sync-btn"
-          onClick={handleSyncNavbarPaths}
-          disabled={syncing || updating}
-          title="Sync new, updated, and removed navbar items with auth controls"
-        >
-          {syncing ? 'Syncing...' : 'Sync Navbar Items'}
-        </button>
+        {activeTab === 'navbar' ? (
+          <button
+            type="button"
+            className="auth-controls-sync-btn"
+            onClick={handleSyncNavbarPaths}
+            disabled={syncing || updating}
+            title="Sync new, updated, and removed navbar items with auth controls"
+          >
+            {syncing ? 'Syncing...' : 'Sync Navbar Items'}
+          </button>
+        ) : null}
       </header>
 
       {/* Tab Navigation */}
@@ -552,13 +562,26 @@ const AuthControls = () => {
         >
           Features
         </button>
+        <button
+          type="button"
+          onClick={() => handleTabChange('system-roles')}
+          className={`auth-controls-tab ${activeTab === 'system-roles' ? 'active' : ''}`}
+        >
+          System roles
+        </button>
       </div>
 
       {/* Search Bar */}
       <div className="auth-controls-search">
         <input
           type="text"
-          placeholder={activeTab === 'navbar' ? "Search categories or paths..." : "Search categories or features..."}
+          placeholder={
+            activeTab === 'navbar'
+              ? 'Search categories or paths...'
+              : activeTab === 'features'
+                ? 'Search categories or features...'
+                : 'Search roles, levels, or member types...'
+          }
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="auth-controls-search-input"
@@ -577,12 +600,19 @@ const AuthControls = () => {
             ))}
           </ul>
         </div>
-      ) : (
+      ) : activeTab === 'features' ? (
         <div className="auth-controls-legend">
           <h2>Features (user grants)</h2>
           <p className="auth-controls-legend-note">
             Grant button-level access to individual users. Only users whose roles can open the feature parent
             navbar path are listed. Role alone no longer unlocks FEAT_* codes.
+          </p>
+        </div>
+      ) : (
+        <div className="auth-controls-legend">
+          <h2>System roles</h2>
+          <p className="auth-controls-legend-note">
+            Add or update job roles, user levels, and member types. Delete is not available from this screen.
           </p>
         </div>
       )}
@@ -683,7 +713,7 @@ const AuthControls = () => {
             );
           })}
         </div>
-      ) : (
+      ) : activeTab === 'features' ? (
         <div className="auth-controls-features">
           {filteredFeatureCategories.length === 0 ? (
             <div style={{ padding: '40px', textAlign: 'center' }}>
@@ -774,6 +804,8 @@ const AuthControls = () => {
             })
           )}
         </div>
+      ) : (
+        <SystemRolesPanel searchTerm={searchTerm} />
       )}
 
       {updating && (

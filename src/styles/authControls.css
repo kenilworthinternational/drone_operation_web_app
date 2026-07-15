@@ -509,12 +509,14 @@ body.wing-theme-ict .auth-controls-search,
 body.wing-theme-ict .auth-controls-legend,
 body.wing-theme-ict .auth-controls-category-group,
 body.wing-theme-ict .auth-controls-table-wrapper,
+body.wing-theme-ict .auth-controls-system-roles-toolbar,
 .home-layout-root--ict-wing .auth-controls-header,
 .home-layout-root--ict-wing .auth-controls-tabs,
 .home-layout-root--ict-wing .auth-controls-search,
 .home-layout-root--ict-wing .auth-controls-legend,
 .home-layout-root--ict-wing .auth-controls-category-group,
-.home-layout-root--ict-wing .auth-controls-table-wrapper {
+.home-layout-root--ict-wing .auth-controls-table-wrapper,
+.home-layout-root--ict-wing .auth-controls-system-roles-toolbar {
   background: linear-gradient(145deg, rgba(7, 18, 34, 0.66), rgba(10, 24, 45, 0.5)) !important;
   border: 1px solid rgba(188, 220, 255, 0.24) !important;
   box-shadow: 0 8px 20px rgba(2, 8, 22, 0.28) !important;
@@ -544,6 +546,21 @@ body.wing-theme-ict .auth-controls-table tbody tr:hover,
 .home-layout-root--ict-wing .auth-controls-category-row:hover,
 .home-layout-root--ict-wing .auth-controls-table tbody tr:hover {
   background: rgba(172, 209, 255, 0.1) !important;
+}
+
+body.wing-theme-ict .auth-controls-table tbody tr,
+.home-layout-root--ict-wing .auth-controls-table tbody tr {
+  background: transparent !important;
+}
+
+body.wing-theme-ict .auth-controls-table tbody tr:nth-child(even),
+.home-layout-root--ict-wing .auth-controls-table tbody tr:nth-child(even) {
+  background: rgba(159, 204, 241, 0.06) !important;
+}
+
+body.wing-theme-ict .auth-controls-table tbody tr:nth-child(even):hover,
+.home-layout-root--ict-wing .auth-controls-table tbody tr:nth-child(even):hover {
+  background: rgba(172, 209, 255, 0.12) !important;
 }
 
 body.wing-theme-ict .auth-controls-sync-btn,
@@ -1167,4 +1184,196 @@ body.wing-theme-ict .auth-controls-sync-modal-ok,
 body.wing-theme-ict .auth-controls-sync-modal-ok:hover,
 .home-layout-root--ict-wing .auth-controls-sync-modal-ok:hover {
   background: #2563eb !important;
+}
+
+/* ===== System roles tab ===== */
+.auth-controls-system-roles {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.auth-controls-system-roles-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+}
+
+.auth-controls-system-roles-sections {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.auth-controls-system-roles-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.auth-controls-system-roles-add,
+.auth-controls-system-roles-edit,
+.auth-controls-system-roles-cancel {
+  padding: 7px 14px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #0f172a;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.auth-controls-system-roles-add {
+  background: #004b71;
+  border-color: #004b71;
+  color: #fff;
+}
+
+.auth-controls-system-roles-add:hover {
+  background: #003d5c;
+}
+
+.auth-controls-system-roles-edit {
+  padding: 5px 10px;
+  font-size: 0.85rem;
+}
+
+.auth-controls-system-roles-edit:hover {
+  background: #e2e8f0;
+}
+
+.auth-controls-system-roles-table-wrap {
+  overflow: auto;
+}
+
+.auth-controls-system-roles-table th,
+.auth-controls-system-roles-table td {
+  text-align: left;
+  padding: 10px 12px;
+  white-space: nowrap;
+}
+
+.auth-controls-system-roles-status {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.auth-controls-system-roles-status.is-active {
+  background: rgba(34, 197, 94, 0.16);
+  color: #15803d;
+}
+
+.auth-controls-system-roles-status.is-inactive {
+  background: rgba(148, 163, 184, 0.22);
+  color: #64748b;
+}
+
+.auth-controls-system-roles-modal {
+  width: min(480px, calc(100vw - 32px));
+}
+
+.auth-controls-system-roles-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.auth-controls-system-roles-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.auth-controls-system-roles-form input,
+.auth-controls-system-roles-form select {
+  padding: 9px 11px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #0f172a;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.auth-controls-system-roles-error {
+  margin: 0;
+  color: #b91c1c;
+  font-size: 0.9rem;
+}
+
+.auth-controls-system-roles-footer {
+  gap: 8px;
+}
+
+.auth-controls-system-roles-cancel:hover {
+  background: #e2e8f0;
+}
+
+body.wing-theme-ict .auth-controls-system-roles-add,
+.home-layout-root--ict-wing .auth-controls-system-roles-add {
+  background: #3b82f6 !important;
+  border-color: rgba(150, 209, 255, 0.55) !important;
+  color: #f6faff !important;
+}
+
+body.wing-theme-ict .auth-controls-system-roles-add:hover,
+.home-layout-root--ict-wing .auth-controls-system-roles-add:hover {
+  background: #2563eb !important;
+}
+
+body.wing-theme-ict .auth-controls-system-roles-edit,
+body.wing-theme-ict .auth-controls-system-roles-cancel,
+.home-layout-root--ict-wing .auth-controls-system-roles-edit,
+.home-layout-root--ict-wing .auth-controls-system-roles-cancel {
+  background:
+    linear-gradient(150deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.04)),
+    rgba(10, 24, 43, 0.58) !important;
+  border: 1px solid rgba(188, 220, 255, 0.34) !important;
+  color: #f6faff !important;
+}
+
+body.wing-theme-ict .auth-controls-system-roles-form label,
+.home-layout-root--ict-wing .auth-controls-system-roles-form label {
+  color: rgba(226, 238, 255, 0.82) !important;
+}
+
+body.wing-theme-ict .auth-controls-system-roles-form input,
+body.wing-theme-ict .auth-controls-system-roles-form select,
+.home-layout-root--ict-wing .auth-controls-system-roles-form input,
+.home-layout-root--ict-wing .auth-controls-system-roles-form select {
+  background:
+    linear-gradient(155deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.03)),
+    rgba(8, 20, 38, 0.62) !important;
+  border: 1px solid rgba(181, 214, 255, 0.4) !important;
+  color: #f6faff !important;
+}
+
+body.wing-theme-ict .auth-controls-system-roles-error,
+.home-layout-root--ict-wing .auth-controls-system-roles-error {
+  color: #fda4af !important;
+}
+
+body.wing-theme-ict .auth-controls-system-roles-status.is-active,
+.home-layout-root--ict-wing .auth-controls-system-roles-status.is-active {
+  background: rgba(34, 197, 94, 0.22) !important;
+  color: #86efac !important;
+}
+
+body.wing-theme-ict .auth-controls-system-roles-status.is-inactive,
+.home-layout-root--ict-wing .auth-controls-system-roles-status.is-inactive {
+  background: rgba(148, 163, 184, 0.22) !important;
+  color: #cbd5e1 !important;
 }
