@@ -57,6 +57,8 @@ import {
   useUpdateTimeOfDayMutation,
 } from '../../../api/services NodeJs/timeOfDaysApi';
 import HrMasterOptionsPanel from './HrMasterOptionsPanel';
+import KpiDefinitionsPanel from './KpiDefinitionsPanel';
+import KpiRatingBandsPanel from './KpiRatingBandsPanel';
 import LocationHierarchyPanel from './LocationHierarchyPanel';
 import FuelTypesMasterPanel from './FuelTypesMasterPanel';
 import { useSendMessageMutation } from '../../../api/services/authApi';
@@ -952,6 +954,8 @@ const MasterData = ({ mode = 'full' }) => {
               { key: 'chemicals', label: 'Chemicals' },
               { key: 'workingTimes', label: 'Working Times' },
               { key: 'hrMasterOptions', label: 'HR Master Options' },
+              { key: 'kpiDefinitions', label: 'KPI Definitions' },
+              { key: 'kpiRatingBands', label: 'KPI Rating Bands' },
               { key: 'locationHierarchy', label: 'Province/District/DS/ASC Hierarchy' },
               { key: 'reasons', label: 'Reasons' },
               { key: 'invoiceOrganizations', label: 'Invoice Organizations' },
@@ -1338,6 +1342,14 @@ const MasterData = ({ mode = 'full' }) => {
 
             {selectedMasterModule === 'hrMasterOptions' && (
               <HrMasterOptionsPanel onMessage={setQuickMessage} />
+            )}
+
+            {selectedMasterModule === 'kpiDefinitions' && (
+              <KpiDefinitionsPanel onMessage={setQuickMessage} />
+            )}
+
+            {selectedMasterModule === 'kpiRatingBands' && (
+              <KpiRatingBandsPanel onMessage={setQuickMessage} />
             )}
 
             {selectedMasterModule === 'locationHierarchy' && (

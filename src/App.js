@@ -63,6 +63,7 @@ import EmployeeAssignment from './sections/hr&admin/EmployeeAssignment';
 import MonthlyRoaster from './sections/hr&admin/roaster/MonthlyRoaster';
 import RoasterPlanning from './sections/hr&admin/roaster/RoasterPlanning';
 import LeaveManagement from './sections/hr&admin/leave/LeaveManagement';
+import EmployeeKpiDashboard from './sections/hr&admin/kpi/EmployeeKpiDashboard';
 import ResourceAllocation from './sections/administration/resource-allocation/ResourceAllocation';
 import AccidentReports from './sections/administration/accident-reports/AccidentReports';
 import Maintenance from './sections/administration/maintenance/Maintenance';
@@ -773,6 +774,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <RoasterPlanning />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="attendance/employee-kpi"
+            element={
+              <ProtectedRoute>
+                <EmployeeKpiDashboard />
               </ProtectedRoute>
             }
           />
