@@ -200,7 +200,7 @@ export function removeResultsForGoalKey(resultFields, goalKey) {
   return resultFields.filter((f) => f.linkedGoalKey !== goalKey && f.key !== goalKey);
 }
 
-export function emptyTemplateDraft(dimensionCode = 'specific') {
+export function emptyTemplateDraft(dimensionCode = 'specific', scope = {}) {
   const goal = createGoalField('', []);
   const result = createPairedResultField(goal, []);
   return {
@@ -214,5 +214,8 @@ export function emptyTemplateDraft(dimensionCode = 'specific') {
     weight: '1',
     sort_order: '0',
     activated: '1',
+    emp_department_id: scope.emp_department_id != null ? String(scope.emp_department_id) : '',
+    emp_sub_division_id: scope.emp_sub_division_id != null ? String(scope.emp_sub_division_id) : '',
+    emp_job_role_id: scope.emp_job_role_id != null ? String(scope.emp_job_role_id) : '',
   };
 }

@@ -121,10 +121,16 @@ export default function SmartKpiTemplatesPanel({ onMessage, variant = 'ict', sho
   const [draft, setDraft] = useState(null);
   const [activeDimension, setActiveDimension] = useState('all');
 
+  const draftDeptId = draft?.emp_department_id || '';
+
   const { data: dimensions = [] } = useGetSmartKpiDimensionsQuery();
   const { data: fieldTypes = [] } = useGetSmartKpiFieldTypesQuery();
   const { data: departmentsRaw = [] } = useGetEmpDepartmentsQuery();
   const { data: subDivisionsRaw = [] } = useGetEmpSubDivisionsQuery(deptId ? { dept_id: Number(deptId) } : undefined, { skip: !deptId });
+  const { data: draftSubDivisionsRaw = [] } = useGetEmpSubDivisionsQuery(
+    draftDeptId ? { dept_id: Number(draftDeptId) } : undefined,
+    { skip: !draftDeptId },
+  );
   const { data: jobRolesRaw = [] } = useGetEmpJobRolesQuery();
   const { data: chiefRolesRaw = [] } = useGetEmpChiefJobRolesQuery();
   const { data: templates = [], refetch, isLoading } = useGetSmartKpiTemplatesQuery({
@@ -137,9 +143,14 @@ export default function SmartKpiTemplatesPanel({ onMessage, variant = 'ict', sho
 
   const departments = useMemo(() => filterActiveEmpDepartments(departmentsRaw), [departmentsRaw]);
   const subDivisions = useMemo(() => [...(subDivisionsRaw || [])], [subDivisionsRaw]);
+  const draftSubDivisions = useMemo(() => [...(draftSubDivisionsRaw || [])], [draftSubDivisionsRaw]);
   const jobRoles = useMemo(
     () => filterEmpJobRolesForDepartment(jobRolesRaw, chiefRolesRaw, deptId),
     [jobRolesRaw, chiefRolesRaw, deptId],
+  );
+  const draftJobRoles = useMemo(
+    () => filterEmpJobRolesForDepartment(jobRolesRaw, chiefRolesRaw, draftDeptId),
+    [jobRolesRaw, chiefRolesRaw, draftDeptId],
   );
 
   const dimensionOptions = useMemo(
@@ -179,7 +190,11 @@ export default function SmartKpiTemplatesPanel({ onMessage, variant = 'ict', sho
     const defaultDimension = activeDimension === 'all'
       ? (dimensionOptions[0]?.code || 'specific')
       : activeDimension;
-    setDraft(emptyTemplateDraft(defaultDimension));
+    setDraft(emptyTemplateDraft(defaultDimension, {
+      emp_department_id: deptId || '',
+      emp_sub_division_id: subDivId || '',
+      emp_job_role_id: roleId || '',
+    }));
   };
 
   const openEdit = (row) => {
@@ -196,6 +211,9 @@ export default function SmartKpiTemplatesPanel({ onMessage, variant = 'ict', sho
       weight: String(row.weight ?? 1),
       sort_order: String(row.sort_order ?? 0),
       activated: String(Number(row.activated) === 0 ? 0 : 1),
+      emp_department_id: row.emp_department_id != null ? String(row.emp_department_id) : '',
+      emp_sub_division_id: row.emp_sub_division_id != null ? String(row.emp_sub_division_id) : '',
+      emp_job_role_id: row.emp_job_role_id != null ? String(row.emp_job_role_id) : '',
     });
   };
 
@@ -219,8 +237,10 @@ export default function SmartKpiTemplatesPanel({ onMessage, variant = 'ict', sho
   }, [draft]);
 
   const save = async () => {
-    if (!draft || !deptId) {
-      notify('error', 'Select a department first.');
+    if (!draft) return;
+    const saveDeptId = draft.emp_department_id || deptId;
+    if (!saveDeptId) {
+      notify('error', 'Select a department for this SMART KPI scope.');
       return;
     }
     const title = String(draft.title || '').trim();
@@ -236,9 +256,9 @@ export default function SmartKpiTemplatesPanel({ onMessage, variant = 'ict', sho
     try {
       await saveTemplate({
         id: editRow?.id,
-        emp_department_id: Number(deptId),
-        emp_sub_division_id: subDivId ? Number(subDivId) : null,
-        emp_job_role_id: roleId ? Number(roleId) : null,
+        emp_department_id: Number(saveDeptId),
+        emp_sub_division_id: draft.emp_sub_division_id ? Number(draft.emp_sub_division_id) : null,
+        emp_job_role_id: draft.emp_job_role_id ? Number(draft.emp_job_role_id) : null,
         dimension_code: draft.dimension_code,
         title,
         guidance_text: draft.guidance_text || null,
@@ -252,12 +272,27 @@ export default function SmartKpiTemplatesPanel({ onMessage, variant = 'ict', sho
         sort_order: Number(draft.sort_order) || 0,
         activated: Number(draft.activated) === 0 ? 0 : 1,
       }).unwrap();
+      setDeptId(String(saveDeptId));
+      setSubDivId(draft.emp_sub_division_id || '');
+      setRoleId(draft.emp_job_role_id || '');
       notify('success', editRow?.id ? 'Template updated.' : 'Template saved.');
       closeModal();
       refetch();
     } catch (err) {
       notify('error', err?.data?.message || 'Save failed.');
     }
+  };
+
+  const formatScopeSubtitle = () => {
+    const dept = departments.find((d) => String(d.id) === String(draft?.emp_department_id));
+    const sub = draftSubDivisions.find((s) => String(s.id) === String(draft?.emp_sub_division_id));
+    const role = draftJobRoles.find((r) => String(r.id) === String(draft?.emp_job_role_id));
+    return [
+      formatDimensionLabel(draft?.dimension_code),
+      dept ? formatEmpDepartmentOption(dept) : 'No department',
+      sub?.sub_division_name || 'All sub-divisions',
+      role ? formatEmpJobRoleOption(role) : 'All roles',
+    ].join(' · ');
   };
 
   const popup = draft ? createPortal(
@@ -276,16 +311,61 @@ export default function SmartKpiTemplatesPanel({ onMessage, variant = 'ict', sho
         <div className={ui.popupHead}>
           <div>
             <h3 id="smart-kpi-md-popup-title">{editRow?.id ? 'Edit SMART KPI' : 'Add SMART KPI'}</h3>
-            <p className={ui.popupSub}>
-              {formatDimensionLabel(draft.dimension_code)}
-              {' · '}
-              {departments.find((d) => String(d.id) === String(deptId))?.department_name || 'Department'}
-            </p>
+            <p className={ui.popupSub}>{formatScopeSubtitle()}</p>
           </div>
           <button type="button" className={ui.popupClose} onClick={closeModal} aria-label="Close">×</button>
         </div>
 
         <div className={ui.formGrid}>
+          <div className={ui.formField}>
+            <label htmlFor="smart-kpi-scope-dept">Department</label>
+            <select
+              id="smart-kpi-scope-dept"
+              className={ui.input}
+              value={draft.emp_department_id || ''}
+              onChange={(e) => setDraft({
+                ...draft,
+                emp_department_id: e.target.value,
+                emp_sub_division_id: '',
+                emp_job_role_id: '',
+              })}
+            >
+              <option value="">-- Select department --</option>
+              {departments.map((d) => (
+                <option key={d.id} value={d.id}>{formatEmpDepartmentOption(d)}</option>
+              ))}
+            </select>
+          </div>
+          <div className={ui.formField}>
+            <label htmlFor="smart-kpi-scope-sub">Sub-division</label>
+            <select
+              id="smart-kpi-scope-sub"
+              className={ui.input}
+              value={draft.emp_sub_division_id || ''}
+              onChange={(e) => setDraft({ ...draft, emp_sub_division_id: e.target.value })}
+              disabled={!draft.emp_department_id}
+            >
+              <option value="">All / department default</option>
+              {draftSubDivisions.map((s) => (
+                <option key={s.id} value={s.id}>{s.sub_division_name}</option>
+              ))}
+            </select>
+          </div>
+          <div className={ui.formField}>
+            <label htmlFor="smart-kpi-scope-role">Job role</label>
+            <select
+              id="smart-kpi-scope-role"
+              className={ui.input}
+              value={draft.emp_job_role_id || ''}
+              onChange={(e) => setDraft({ ...draft, emp_job_role_id: e.target.value })}
+              disabled={!draft.emp_department_id}
+            >
+              <option value="">{draft.emp_department_id ? 'All roles in department' : 'Select department first'}</option>
+              {draftJobRoles.map((r) => (
+                <option key={r.id} value={r.id}>{formatEmpJobRoleOption(r)}</option>
+              ))}
+            </select>
+          </div>
           <div className={ui.formField}>
             <label htmlFor="smart-kpi-dimension">Dimension</label>
             <select
@@ -419,13 +499,13 @@ export default function SmartKpiTemplatesPanel({ onMessage, variant = 'ict', sho
               Configure department and role-specific SMART KPI templates (Specific, Measurable, Achievable, Relevant, Time-bound).
             </p>
           </div>
-          <button type="button" className={ui.addBtn} onClick={openAdd} disabled={!deptId}>
+          <button type="button" className={ui.addBtn} onClick={openAdd}>
             Add SMART KPI
           </button>
         </div>
       ) : (
         <div className={ui.head}>
-          <button type="button" className={ui.addBtn} onClick={openAdd} disabled={!deptId}>
+          <button type="button" className={ui.addBtn} onClick={openAdd}>
             Add SMART KPI
           </button>
         </div>
