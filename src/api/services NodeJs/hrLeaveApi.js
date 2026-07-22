@@ -18,6 +18,18 @@ export const hrLeaveApi = baseApi.injectEndpoints({
         nodeBackendBaseQuery({ url: '/api/hr-leave/dashboard', method: 'POST', body }, {}, {}),
       providesTags: ['HrLeave', 'HrAttendance'],
     }),
+    getHrmDashboardSummary: builder.query({
+      queryFn: async (body = {}) => {
+        const result = await nodeBackendBaseQuery(
+          { url: '/api/hr/dashboard/summary', method: 'POST', body: body || {} },
+          {},
+          {},
+        );
+        if (result.error) return result;
+        return { data: result.data?.data || null };
+      },
+      providesTags: ['HrmDashboard'],
+    }),
     getHrMyLeaveRequests: builder.query({
       queryFn: async (body = {}) =>
         nodeBackendBaseQuery({ url: '/api/hr-leave/my-requests', method: 'POST', body }, {}, {}),
@@ -115,6 +127,7 @@ export const {
   useGetHrLeaveTypesQuery,
   useGetHrLeaveTypesAllQuery,
   useGetHrDashboardQuery,
+  useGetHrmDashboardSummaryQuery,
   useGetHrMyLeaveRequestsQuery,
   useCreateHrLeaveRequestMutation,
   useGetHrApprovalsInboxQuery,

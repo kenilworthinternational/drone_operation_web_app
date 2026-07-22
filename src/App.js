@@ -55,6 +55,7 @@ import TodayPlans from './sections/opsroom/today-plans/TodayPlans';
 import EmergencyMoving from './sections/opsroom/emergency/EmergencyMoving';
 import FieldSizeAdjustments from './sections/opsroom/fieldSizeAdjustments/FieldSizeAdjustments';
 import EmployeeProfileDetails from './sections/hr&admin/EmployeeProfileDetails';
+import HrmDashboard from './sections/hr&admin/dashboard/HrmDashboard';
 import OrganizationStructure from './sections/hr&admin/OrganizationStructure';
 import EmpOrgMasterPage from './sections/hr&admin/EmpOrgMasterPage';
 import Employees from './sections/hr&admin/Employees';
@@ -64,6 +65,7 @@ import MonthlyRoaster from './sections/hr&admin/roaster/MonthlyRoaster';
 import RoasterPlanning from './sections/hr&admin/roaster/RoasterPlanning';
 import LeaveManagement from './sections/hr&admin/leave/LeaveManagement';
 import EmployeeKpiDashboard from './sections/hr&admin/kpi/EmployeeKpiDashboard';
+import SmartKpiTemplatesPage from './sections/hr&admin/kpi/SmartKpiTemplatesPage';
 import ResourceAllocation from './sections/administration/resource-allocation/ResourceAllocation';
 import AccidentReports from './sections/administration/accident-reports/AccidentReports';
 import Maintenance from './sections/administration/maintenance/Maintenance';
@@ -706,6 +708,14 @@ function App() {
             }
           />
           <Route
+            path="hrm/dashboard"
+            element={
+              <ProtectedRoute>
+                <HrmDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="employeeRegistration"
             element={
               <ProtectedRoute>
@@ -782,6 +792,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <EmployeeKpiDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="attendance/smart-kpi-templates"
+            element={
+              <ProtectedRoute>
+                <SmartKpiTemplatesPage />
               </ProtectedRoute>
             }
           />

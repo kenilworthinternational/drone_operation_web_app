@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { useGetUserMemberTypesQuery, useGetUserJobRolesQuery, useGetUserLevelsQuery, useGetWingsQuery, useGetDrivingLicenseTypesQuery, useGetWorkLocationsQuery, useGetDSCSQuery, useGetProvincesQuery, useGetDistrictsQuery, useGetASCSQuery, useCreateEmployeeRegistrationMutation, useUpdateEmployeeRegistrationMutation, useGetEmployeeRegistrationByIdQuery, useGetLastEmpNoQuery, useGetAllEmployeeRegistrationsQuery } from '../../api/services NodeJs/jdManagementApi';
+import { useGetUserMemberTypesQuery, useGetUserJobRolesQuery, useGetUserLevelsQuery, useGetDrivingLicenseTypesQuery, useGetWorkLocationsQuery, useGetDSCSQuery, useGetProvincesQuery, useGetDistrictsQuery, useGetASCSQuery, useCreateEmployeeRegistrationMutation, useUpdateEmployeeRegistrationMutation, useGetEmployeeRegistrationByIdQuery, useGetLastEmpNoQuery, useGetAllEmployeeRegistrationsQuery } from '../../api/services NodeJs/jdManagementApi';
+import { useGetEmpDepartmentsQuery } from '../../api/services NodeJs/empOrgStructureApi';
 import { parseNic } from '../../utils/nic';
 import '../../styles/employeeRegistration.css';
 
@@ -33,30 +34,14 @@ const EmployeeRegistration = ({ employeeId = null, embedded = false, onSaved = n
   const { data: userLevelsData, isLoading: loadingLevels } = useGetUserLevelsQuery();
   const userLevels = userLevelsData?.data || [];
 
-  // Fetch Wings for Department dropdown
-  const { data: wingsData, isLoading: loadingWings, error: wingsError } = useGetWingsQuery();
-  
-  // Extract wings array - API returns array directly or wrapped in data/wings property
-  const wings = useMemo(() => {
-    if (!wingsData) return [];
-    
-    // If it's already an array, return it
-    if (Array.isArray(wingsData)) {
-      return wingsData;
-    }
-    
-    // If it's wrapped in data property (new format: { status: true, data: [...] })
-    if (wingsData.data && Array.isArray(wingsData.data)) {
-      return wingsData.data;
-    }
-    
-    // If it's wrapped in wings property (legacy format: { status: 'true', count: 7, wings: [...] })
-    if (wingsData.wings && Array.isArray(wingsData.wings)) {
-      return wingsData.wings;
-    }
-    
-    return [];
-  }, [wingsData]);
+  // Fetch emp_departments for Department dropdown (HR org — not system wings)
+  const { data: departmentsData, isLoading: loadingDepartments, error: departmentsError } = useGetEmpDepartmentsQuery();
+  const departments = useMemo(() => {
+    const list = Array.isArray(departmentsData) ? departmentsData : departmentsData?.data || [];
+    return [...list]
+      .filter((d) => Number(d.activated) !== 0)
+      .sort((a, b) => String(a.department_name || a.dept_code || '').localeCompare(String(b.department_name || b.dept_code || '')));
+  }, [departmentsData]);
 
   // Fetch Driving License Types for Driving License Type dropdown
   const { data: drivingLicenseTypesData, isLoading: loadingLicenseTypes } = useGetDrivingLicenseTypesQuery();
@@ -403,7 +388,16 @@ const EmployeeRegistration = ({ employeeId = null, embedded = false, onSaved = n
     const splitDate = (v) => (v ? String(v).split('T')[0] : '');
     const jobRoleId = userJobRoles.find((r) => r.jdCode === editEmployee.employeeJobRole)?.id || '';
     const levelId = userLevels.find((l) => l.levelCode === editEmployee.jobRoleLayer)?.id || '';
-    const deptId = wings.find((w) => w.wingsCode === editEmployee.department)?.id || '';
+    const deptId =
+      editEmployee.emp_department_id != null && editEmployee.emp_department_id !== ''
+        ? String(editEmployee.emp_department_id)
+        : String(
+            departments.find(
+              (d) =>
+                String(d.dept_code || '').toLowerCase() === String(editEmployee.department || '').toLowerCase() ||
+                String(d.department_name || '').toLowerCase() === String(editEmployee.departmentName || '').toLowerCase()
+            )?.id || ''
+          );
     const locId = workLocations.find((wl) => wl.locationCode === editEmployee.workLocation)?.id || '';
     let licenseTypes = [];
     if (editEmployee.drivingLicenseType) {
@@ -479,7 +473,7 @@ const EmployeeRegistration = ({ employeeId = null, embedded = false, onSaved = n
       permanentDate: splitDate(editEmployee.permanentDate),
       workLocation: locId,
     }));
-  }, [isEditMode, editEmployee, userJobRoles, userLevels, wings, workLocations]);
+  }, [isEditMode, editEmployee, userJobRoles, userLevels, departments, workLocations]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -612,7 +606,6 @@ const EmployeeRegistration = ({ employeeId = null, embedded = false, onSaved = n
       const employeeTypeObj = userMemberTypes.find(mt => mt.id === formData.employeeType || mt.typeCode === formData.employeeType);
       const employeeJobRoleObj = userJobRoles.find(jr => jr.id === formData.employeeJobRole);
       const jobRoleLayerObj = userLevels.find(ul => ul.id === formData.jobRoleLayer);
-      const departmentObj = wings.find(w => w.id === formData.department);
       const workLocationObj = workLocations.find(wl => wl.id === formData.workLocation);
 
       // Prepare FormData for file uploads
@@ -621,6 +614,11 @@ const EmployeeRegistration = ({ employeeId = null, embedded = false, onSaved = n
       // Edit mode: include the employee id so backend updates the existing row
       if (isEditMode) {
         formDataToSend.append('id', String(employeeId));
+      }
+
+      // HR department from emp_departments (not system wings)
+      if (formData.department) {
+        formDataToSend.append('emp_department_id', String(formData.department));
       }
       
       // Add all form fields
@@ -2047,26 +2045,26 @@ const EmployeeRegistration = ({ employeeId = null, embedded = false, onSaved = n
                   name="department"
                   value={formData.department}
                   onChange={handleInputChange}
-                  disabled={loadingWings}
+                  disabled={loadingDepartments}
                 >
                   <option value="">-- Select --</option>
-                  {loadingWings ? (
+                  {loadingDepartments ? (
                     <option value="" disabled>Loading...</option>
-                  ) : wingsError ? (
-                    <option value="" disabled>Error loading wings</option>
-                  ) : wings.length === 0 ? (
-                    <option value="" disabled>No wings available</option>
+                  ) : departmentsError ? (
+                    <option value="" disabled>Error loading departments</option>
+                  ) : departments.length === 0 ? (
+                    <option value="" disabled>No departments available</option>
                   ) : (
-                    wings.map((wing) => (
-                      <option key={wing.id} value={wing.id}>
-                        {wing.wing || `Wing ${wing.id}`}
+                    departments.map((dept) => (
+                      <option key={dept.id} value={dept.id}>
+                        {dept.department_name || dept.dept_code || `Department ${dept.id}`}
                       </option>
                     ))
                   )}
                 </select>
-                {wingsError && (
+                {departmentsError && (
                   <span style={{ color: 'red', fontSize: '12px', marginTop: '4px', display: 'block' }}>
-                    Error: {wingsError.message || 'Failed to load wings'}
+                    Error: {departmentsError.message || 'Failed to load departments'}
                   </span>
                 )}
               </div>

@@ -1,17 +1,13 @@
-import React, { useCallback, useMemo, useState } from 'react';
-import { useLocation, useSearchParams } from 'react-router-dom';
-import * as XLSX from 'xlsx';
-import { Bars } from 'react-loader-spinner';
-import {
-  useGetKpiLeaderboardQuery,
-  useLazyGetKpiEmployeeDetailQuery,
-} from '../../../api/services NodeJs/employeeKpiApi';
-import { useGetWingsQuery } from '../../../api/services NodeJs/jdManagementApi';
-import { useGetEmpDepartmentsQuery, useGetEmpDesignationsQuery } from '../../../api/services NodeJs/empOrgStructureApi';
-import EmployeeKpiTaskKanban from './EmployeeKpiTaskKanban';
+import React, { useState } from 'react';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
+import SmartKpiTab from './SmartKpiTab';
+import EmployeeKpiSystemMetrics from './EmployeeKpiSystemMetrics';
 import '../../../styles/employeeKpi.css';
 
-const EMPTY_LIST = [];
+function buildSmartKpiTemplatesUrl(wing) {
+  const base = '/home/attendance/smart-kpi-templates';
+  return wing ? `${base}?wing=${encodeURIComponent(wing)}` : base;
+}
 
 function getWingFromUrl(searchParams, location) {
   const fromParams = searchParams.get('wing');
@@ -26,434 +22,54 @@ function getWingFromUrl(searchParams, location) {
   return '';
 }
 
-function pad2(n) {
-  return String(n).padStart(2, '0');
-}
-
-function defaultPeriodKey(periodType) {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = now.getMonth() + 1;
-  if (periodType === 'year') return String(y);
-  if (periodType === 'quarter') return `${y}-Q${Math.floor((m - 1) / 3) + 1}`;
-  return `${y}-${pad2(m)}`;
-}
-
-function periodLabel(periodType, periodKey) {
-  if (periodType === 'month') {
-    const [y, m] = periodKey.split('-');
-    const d = new Date(Number(y), Number(m) - 1, 1);
-    return d.toLocaleString(undefined, { month: 'long', year: 'numeric' });
-  }
-  if (periodType === 'quarter') return periodKey.replace('-', ' ');
-  return periodKey;
-}
-
-function buildMonthOptions(count = 18) {
-  const options = [];
-  const now = new Date();
-  for (let i = 0; i < count; i += 1) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    options.push(`${d.getFullYear()}-${pad2(d.getMonth() + 1)}`);
-  }
-  return options;
-}
-
-function buildQuarterOptions(count = 8) {
-  const options = [];
-  const now = new Date();
-  let y = now.getFullYear();
-  let q = Math.floor(now.getMonth() / 3) + 1;
-  for (let i = 0; i < count; i += 1) {
-    options.push(`${y}-Q${q}`);
-    q -= 1;
-    if (q < 1) {
-      q = 4;
-      y -= 1;
-    }
-  }
-  return options;
-}
-
-function buildYearOptions(count = 5) {
-  const y = new Date().getFullYear();
-  return Array.from({ length: count }, (_, i) => String(y - i));
-}
-
 export default function EmployeeKpiDashboard() {
   const [searchParams] = useSearchParams();
   const location = useLocation();
   const wingLabel = getWingFromUrl(searchParams, location);
-
-  const [periodType, setPeriodType] = useState('month');
-  const [periodKey, setPeriodKey] = useState(defaultPeriodKey('month'));
-  const [wingCode, setWingCode] = useState('');
-  const [empDepartmentId, setEmpDepartmentId] = useState('');
-  const [designationId, setDesignationId] = useState('');
-  const [search, setSearch] = useState('');
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState(null);
-  const [activeTab, setActiveTab] = useState('performance');
-
-  const queryBody = useMemo(
-    () => ({
-      periodType,
-      periodKey,
-      wingCode: wingCode || undefined,
-      empDepartmentId: empDepartmentId ? Number(empDepartmentId) : undefined,
-      designationId: designationId ? Number(designationId) : undefined,
-      search: search.trim() || undefined,
-      limit: 200,
-      offset: 0,
-    }),
-    [periodType, periodKey, wingCode, empDepartmentId, designationId, search],
-  );
-
-  const { data: leaderboard, isLoading, isFetching, error, refetch } = useGetKpiLeaderboardQuery(queryBody);
-  const [fetchDetail, { data: detail, isFetching: detailLoading }] = useLazyGetKpiEmployeeDetailQuery();
-
-  const { data: wingsRaw } = useGetWingsQuery();
-  const wings = wingsRaw?.wings || wingsRaw?.data?.wings || wingsRaw?.data || EMPTY_LIST;
-  const { data: departmentsRaw } = useGetEmpDepartmentsQuery();
-  const { data: designationsRaw } = useGetEmpDesignationsQuery({ activated: 1 });
-
-  const departments = useMemo(() => {
-    const list = Array.isArray(departmentsRaw) ? departmentsRaw : [];
-    return [...list].sort((a, b) => String(a.department_name || a.dept_code || '').localeCompare(String(b.department_name || b.dept_code || '')));
-  }, [departmentsRaw]);
-
-  const designations = useMemo(() => {
-    const list = Array.isArray(designationsRaw) ? designationsRaw : [];
-    return [...list]
-      .filter((d) => Number(d.activated) !== 0)
-      .sort((a, b) => String(a.designation_title || a.des_code || '').localeCompare(String(b.designation_title || b.des_code || '')));
-  }, [designationsRaw]);
-
-  const rows = leaderboard?.rows || EMPTY_LIST;
-  const definitions = leaderboard?.definitions || EMPTY_LIST;
-  const summary = leaderboard?.summary || {};
-
-  const periodOptions = useMemo(() => {
-    if (periodType === 'quarter') return buildQuarterOptions();
-    if (periodType === 'year') return buildYearOptions();
-    return buildMonthOptions();
-  }, [periodType]);
-
-  const handlePeriodTypeChange = (nextType) => {
-    setPeriodType(nextType);
-    setPeriodKey(defaultPeriodKey(nextType));
-  };
-
-  const openDetail = useCallback(
-    (employeeId) => {
-      setSelectedEmployeeId(employeeId);
-      fetchDetail({
-        employeeId,
-        periodType,
-        periodKey,
-      });
-    },
-    [fetchDetail, periodType, periodKey],
-  );
-
-  const closeDetail = () => {
-    setSelectedEmployeeId(null);
-  };
-
-  const exportExcel = () => {
-    if (!rows.length) return;
-    const metricCodes = definitions.map((d) => d.code);
-    const sheetRows = rows.map((row) => {
-      const base = {
-        Rank: row.rank,
-        'Emp No': row.emp_no,
-        Employee: row.employee_name,
-        Designation: row.designation,
-        Department: row.department,
-        Composite: row.composite_score,
-        Band: row.rating_label,
-      };
-      for (const code of metricCodes) {
-        const metric = (row.metrics || []).find((m) => m.code === code);
-        base[code] = metric?.normalized_score ?? '';
-      }
-      return base;
-    });
-    const ws = XLSX.utils.json_to_sheet(sheetRows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Employee KPI');
-    XLSX.writeFile(wb, `employee-kpi-${periodType}-${periodKey}.xlsx`);
-  };
-
-  const profileHref = selectedEmployeeId
-    ? `#/home/employeeProfileDetails?employeeId=${selectedEmployeeId}${wingLabel ? `&wing=${encodeURIComponent(wingLabel)}` : ''}`
-    : '#';
+  const [activeTab, setActiveTab] = useState('smart');
 
   return (
     <div className="employee-kpi-container">
       <div className="employee-kpi-header">
         <h1>Employee KPI</h1>
-        <p>Auto-computed performance scores and assignable KPI tasks with Kanban workflow.</p>
+        <p>SMART goal management per employee and auto-computed system metrics from HR data.</p>
         {wingLabel ? <span className="employee-kpi-wing-badge">{wingLabel}</span> : null}
       </div>
 
       <div className="employee-kpi-tabs">
         <button
           type="button"
-          className={`employee-kpi-tab${activeTab === 'performance' ? ' active' : ''}`}
-          onClick={() => setActiveTab('performance')}
+          className={`employee-kpi-tab${activeTab === 'smart' ? ' active' : ''}`}
+          onClick={() => setActiveTab('smart')}
         >
-          Performance
+          SMART KPI
         </button>
         <button
           type="button"
-          className={`employee-kpi-tab${activeTab === 'tasks' ? ' active' : ''}`}
-          onClick={() => setActiveTab('tasks')}
+          className={`employee-kpi-tab${activeTab === 'system' ? ' active' : ''}`}
+          onClick={() => setActiveTab('system')}
         >
-          Tasks
+          System Metrics
         </button>
       </div>
 
-      {activeTab === 'tasks' ? (
-        <EmployeeKpiTaskKanban />
-      ) : (
+      {activeTab === 'smart' ? (
         <>
-      <div className="employee-kpi-toolbar">
-        <label>
-          Period type
-          <select value={periodType} onChange={(e) => handlePeriodTypeChange(e.target.value)}>
-            <option value="month">Month</option>
-            <option value="quarter">Quarter</option>
-            <option value="year">Year</option>
-          </select>
-        </label>
-        <label>
-          Period
-          <select value={periodKey} onChange={(e) => setPeriodKey(e.target.value)}>
-            {periodOptions.map((opt) => (
-              <option key={opt} value={opt}>{periodLabel(periodType, opt)}</option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Wing
-          <select value={wingCode} onChange={(e) => setWingCode(e.target.value)}>
-            <option value="">All wings</option>
-            {wings.map((w) => (
-              <option key={w.id || w.wingsCode} value={w.wingsCode || w.code}>
-                {w.wing || w.wingsCode}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Department
-          <select value={empDepartmentId} onChange={(e) => setEmpDepartmentId(e.target.value)}>
-            <option value="">All departments</option>
-            {departments.map((d) => (
-              <option key={d.id} value={d.id}>{d.department_name || d.dept_code}</option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Designation
-          <select value={designationId} onChange={(e) => setDesignationId(e.target.value)}>
-            <option value="">All designations</option>
-            {designations.map((d) => (
-              <option key={d.id} value={d.id}>{d.designation_title || d.des_code || `Designation #${d.id}`}</option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Search
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Name or emp no"
-          />
-        </label>
-        <div className="employee-kpi-toolbar-actions">
-          <button type="button" className="employee-kpi-btn employee-kpi-btn-secondary" onClick={() => refetch()}>
-            Refresh
-          </button>
-          <button type="button" className="employee-kpi-btn employee-kpi-btn-primary" onClick={exportExcel} disabled={!rows.length}>
-            Export Excel
-          </button>
-        </div>
-      </div>
-
-      {error ? (
-        <div className="employee-kpi-error">
-          {error?.data?.message || error?.message || 'Failed to load KPI leaderboard.'}
-        </div>
-      ) : null}
-
-      <div className="employee-kpi-summary">
-        <div className="employee-kpi-card">
-          <div className="employee-kpi-card-label">Top performer</div>
-          <div className="employee-kpi-card-value">
-            {summary.top_performer?.employee_name || '—'}
+          <div className="smart-kpi-tab-toolbar">
+            <p className="smart-kpi-tab-intro">
+              Assign department templates by role, set goals across Specific · Measurable · Achievable · Relevant · Time-bound, then capture results at period end.
+            </p>
+            <Link
+              to={buildSmartKpiTemplatesUrl(wingLabel)}
+              className="employee-kpi-btn employee-kpi-btn-primary smart-kpi-templates-link"
+            >
+              SMART KPIs
+            </Link>
           </div>
-          <div className="employee-kpi-card-sub">
-            {summary.top_performer?.composite_score != null
-              ? `${summary.top_performer.composite_score} composite`
-              : 'No rated employees'}
-          </div>
-        </div>
-        <div className="employee-kpi-card">
-          <div className="employee-kpi-card-label">Average score</div>
-          <div className="employee-kpi-card-value">
-            {summary.average_score != null ? summary.average_score : '—'}
-          </div>
-          <div className="employee-kpi-card-sub">{periodLabel(periodType, periodKey)}</div>
-        </div>
-        <div className="employee-kpi-card">
-          <div className="employee-kpi-card-label">Employees rated</div>
-          <div className="employee-kpi-card-value">{summary.rated_employees ?? 0}</div>
-          <div className="employee-kpi-card-sub">of {summary.total_employees ?? 0} active employees</div>
-        </div>
-      </div>
-
-      {isLoading || isFetching ? (
-        <div className="employee-kpi-loading">
-          <Bars height={40} width={40} color="#004b71" />
-        </div>
-      ) : rows.length === 0 ? (
-        <div className="employee-kpi-empty">
-          No KPI data for this period. Employees need attendance, assigned tasks, or other HR records in the selected range.
-        </div>
-      ) : (
-        <div className="employee-kpi-table-wrap">
-          <table className="employee-kpi-table">
-            <thead>
-              <tr>
-                <th>Rank</th>
-                <th>Employee</th>
-                <th>Designation</th>
-                <th>Composite</th>
-                <th>Band</th>
-                {definitions.map((def) => (
-                  <th key={def.code}>{def.name}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => (
-                <tr key={row.employee_id} onClick={() => openDetail(row.employee_id)}>
-                  <td className="employee-kpi-rank">{row.rank}</td>
-                  <td>
-                    <div>{row.employee_name}</div>
-                    <div style={{ fontSize: 12, color: '#64748b' }}>{row.emp_no}</div>
-                  </td>
-                  <td>{row.designation}</td>
-                  <td className="employee-kpi-score">{row.composite_score ?? '—'}</td>
-                  <td>
-                    <span className="employee-kpi-band">
-                      <span className="employee-kpi-band-dot" style={{ backgroundColor: row.rating_color || '#64748b' }} />
-                      {row.rating_label}
-                    </span>
-                  </td>
-                  {definitions.map((def) => {
-                    const metric = (row.metrics || []).find((m) => m.code === def.code);
-                    return (
-                      <td key={def.code}>{metric?.normalized_score ?? '—'}</td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {selectedEmployeeId && (
-        <div className="employee-kpi-drawer-overlay" onClick={closeDetail}>
-          <div className="employee-kpi-drawer" onClick={(e) => e.stopPropagation()}>
-            <div className="employee-kpi-drawer-header">
-              <div>
-                <h2>{detail?.employee?.employee_name || 'Employee detail'}</h2>
-                <p>
-                  {detail?.employee?.emp_no ? `${detail.employee.emp_no} · ` : ''}
-                  {detail?.employee?.designation || ''}
-                  {detail?.employee?.department ? ` · ${detail.employee.department}` : ''}
-                </p>
-              </div>
-              <button type="button" className="employee-kpi-drawer-close" onClick={closeDetail}>×</button>
-            </div>
-            <div className="employee-kpi-drawer-body">
-              {detailLoading ? (
-                <div className="employee-kpi-loading">Loading detail…</div>
-              ) : (
-                <>
-                  <div className="employee-kpi-card" style={{ marginBottom: 16 }}>
-                    <div className="employee-kpi-card-label">Composite score</div>
-                    <div className="employee-kpi-card-value">{detail?.composite_score ?? '—'}</div>
-                    <div className="employee-kpi-card-sub">
-                      <span className="employee-kpi-band">
-                        <span className="employee-kpi-band-dot" style={{ backgroundColor: detail?.rating_color || '#64748b' }} />
-                        {detail?.rating_label}
-                      </span>
-                      {' · '}
-                      {periodLabel(periodType, periodKey)}
-                    </div>
-                  </div>
-
-                  {(detail?.metrics || []).map((metric) => (
-                    <div key={metric.code} className="employee-kpi-metric-row">
-                      <div>
-                        <div className="employee-kpi-metric-name">{metric.name}</div>
-                        <div className="employee-kpi-metric-values">
-                          Raw: {metric.raw_value ?? '—'} · Target: {metric.target_value}
-                        </div>
-                      </div>
-                      <div className="employee-kpi-metric-score">{metric.normalized_score ?? '—'}</div>
-                    </div>
-                  ))}
-
-                  {detail?.trend?.length ? (
-                    <div className="employee-kpi-trend">
-                      <h3>Recent trend</h3>
-                      <div className="employee-kpi-trend-bars">
-                        {[...detail.trend].reverse().map((item) => (
-                          <div key={item.period_key} className="employee-kpi-trend-item">
-                            <div className="employee-kpi-trend-bar-wrap">
-                              <div
-                                className="employee-kpi-trend-bar"
-                                style={{ height: `${Math.max(8, Number(item.composite_score) || 0)}%` }}
-                              />
-                            </div>
-                            <div className="employee-kpi-trend-label">{item.period_key}</div>
-                            <div className="employee-kpi-trend-label">{item.composite_score ?? '—'}</div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : null}
-
-                  {(detail?.active_tasks || []).length ? (
-                    <div className="employee-kpi-task-summary">
-                      <h3>Active tasks ({detail.active_tasks.length})</h3>
-                      {detail.active_tasks.map((task) => (
-                        <div key={task.id} className={`employee-kpi-task-summary-row${task.is_overdue ? ' overdue' : ''}`}>
-                          <div>{task.title}</div>
-                          <div className="employee-kpi-muted">
-                            {task.status} · Due {task.due_date}
-                            {task.total_subtasks ? ` · ${task.completed_subtasks}/${task.total_subtasks} subtasks` : ''}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : null}
-
-                  <a className="employee-kpi-profile-link" href={profileHref}>
-                    Open employee profile →
-                  </a>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+          <SmartKpiTab />
         </>
+      ) : (
+        <EmployeeKpiSystemMetrics />
       )}
     </div>
   );

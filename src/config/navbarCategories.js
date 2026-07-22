@@ -103,6 +103,7 @@ const navbarCategories = [
     title: 'Human Resource Management',
     icon: FaUsers,
     children: [
+      { path: '/home/hrm/dashboard', label: 'Dashboard', icon: FaTachometerAlt },
       { path: '/home/employeeProfileDetails', label: 'Employee Profile', icon: FaUserTie },
       { path: '/home/employees', label: 'Employees', icon: FaUsers },
       { path: '/home/organizationStructure', label: 'Organization Structure', icon: FaUsers },

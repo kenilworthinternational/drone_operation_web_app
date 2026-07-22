@@ -1,0 +1,414 @@
+/* SMART KPI Templates — ICT Master Data (glass theme) */
+
+.smart-kpi-md-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.smart-kpi-md-filters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(180px, 1fr));
+  gap: 12px 16px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: rgba(6, 16, 32, 0.42);
+  border: 1px solid rgba(188, 220, 255, 0.16);
+}
+
+.smart-kpi-md-filters label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: rgba(210, 230, 255, 0.88);
+}
+
+.smart-kpi-md-tabs-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(4, 12, 26, 0.55);
+  border: 1px solid rgba(188, 220, 255, 0.14);
+}
+
+.smart-kpi-md-tabs-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(200, 220, 245, 0.78);
+}
+
+.smart-kpi-md-tabs {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: thin;
+}
+
+.smart-kpi-md-tab {
+  flex: 1 1 0;
+  min-width: max-content;
+  white-space: nowrap;
+  text-align: center;
+  border: 1px solid rgba(188, 220, 255, 0.2);
+  background: rgba(8, 20, 38, 0.45);
+  color: rgba(210, 228, 255, 0.82);
+  border-radius: 999px;
+  padding: 9px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.smart-kpi-md-tab:hover {
+  border-color: rgba(140, 200, 255, 0.45);
+  color: #ffffff;
+  background: rgba(14, 32, 58, 0.72);
+}
+
+.smart-kpi-md-tab.active {
+  background: linear-gradient(160deg, #38bdf8 0%, #0284c7 100%);
+  border-color: #7dd3fc;
+  color: #042f4a;
+  font-weight: 700;
+  box-shadow:
+    0 0 0 2px rgba(56, 189, 248, 0.35),
+    0 6px 18px rgba(14, 165, 233, 0.45);
+}
+
+.smart-kpi-md-tab-all.active {
+  background: linear-gradient(160deg, #e2e8f0 0%, #cbd5e1 100%);
+  border-color: #f8fafc;
+  color: #0f172a;
+  box-shadow:
+    0 0 0 2px rgba(248, 250, 252, 0.35),
+    0 6px 18px rgba(15, 23, 42, 0.35);
+}
+
+/* Override ICT glass global button styles so tabs stay readable */
+.ictmdx-shell .smart-kpi-md-tabs .smart-kpi-md-tab {
+  border: 1px solid rgba(188, 220, 255, 0.22) !important;
+  background: rgba(8, 20, 38, 0.55) !important;
+  color: rgba(210, 228, 255, 0.88) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+}
+
+.ictmdx-shell .smart-kpi-md-tabs .smart-kpi-md-tab:hover {
+  border-color: rgba(140, 200, 255, 0.5) !important;
+  background: rgba(14, 32, 58, 0.78) !important;
+  color: #ffffff !important;
+}
+
+.ictmdx-shell .smart-kpi-md-tabs .smart-kpi-md-tab.active {
+  background: linear-gradient(160deg, #38bdf8 0%, #0284c7 100%) !important;
+  border-color: #7dd3fc !important;
+  color: #042f4a !important;
+  font-weight: 700 !important;
+  box-shadow:
+    0 0 0 2px rgba(56, 189, 248, 0.4),
+    0 8px 22px rgba(14, 165, 233, 0.5) !important;
+}
+
+.ictmdx-shell .smart-kpi-md-tabs .smart-kpi-md-tab-all.active {
+  background: linear-gradient(160deg, #f1f5f9 0%, #cbd5e1 100%) !important;
+  border-color: #ffffff !important;
+  color: #0f172a !important;
+  box-shadow:
+    0 0 0 2px rgba(255, 255, 255, 0.45),
+    0 8px 22px rgba(15, 23, 42, 0.4) !important;
+}
+
+.smart-kpi-md-type-chip {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: rgba(56, 189, 248, 0.18);
+  border: 1px solid rgba(125, 211, 252, 0.45);
+  color: #e0f2fe;
+  white-space: nowrap;
+}
+
+.smart-kpi-md-table-wrap {
+  margin-top: 0;
+}
+
+/* Main list table — block global tbody tr:hover gray/white wash on glass theme */
+.ictmdx-shell .smart-kpi-md-panel .smart-kpi-md-table-wrap .vehicle-table-master-data tbody tr,
+.ictmdx-shell .smart-kpi-md-panel .smart-kpi-md-table-wrap .vehicle-table-master-data tbody tr:hover {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+.ictmdx-shell .smart-kpi-md-panel .smart-kpi-md-table-wrap .vehicle-table-master-data tbody tr:hover td {
+  background: rgba(18, 42, 70, 0.62) !important;
+  color: #ffffff !important;
+  border-bottom-color: rgba(188, 220, 255, 0.22) !important;
+}
+
+.ictmdx-shell .smart-kpi-md-panel .smart-kpi-md-table-wrap .vehicle-table-master-data tbody tr:hover .smart-kpi-md-type-chip {
+  background: rgba(56, 189, 248, 0.26) !important;
+  border-color: rgba(125, 211, 252, 0.62) !important;
+  color: #e0f2fe !important;
+}
+
+.ictmdx-shell .smart-kpi-md-panel .smart-kpi-md-table-wrap .vehicle-table-master-data tbody tr:hover .action-btn-master-data {
+  background:
+    linear-gradient(150deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.06)),
+    rgba(13, 31, 55, 0.72) !important;
+  border-color: rgba(205, 229, 255, 0.46) !important;
+  color: #ffffff !important;
+}
+
+.smart-kpi-md-btn-secondary {
+  border: 1px solid rgba(188, 220, 255, 0.28);
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.08);
+  color: #eef6ff;
+}
+
+.smart-kpi-md-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(188, 220, 255, 0.42);
+}
+
+/* Solid popup — avoids double-glass blur on the form */
+.smart-kpi-md-popup-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 28px 16px;
+  overflow-y: auto;
+  background: rgba(2, 8, 22, 0.78);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+
+.smart-kpi-md-popup-card {
+  width: 70%;
+  max-width: calc(100vw - 32px);
+  margin: auto 0;
+  padding: 22px 24px 20px;
+  border-radius: 16px;
+  background: #0c1a2e !important;
+  border: 1px solid rgba(140, 190, 240, 0.38) !important;
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.55) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  color: #eef6ff;
+  display: grid;
+  gap: 14px;
+}
+
+.smart-kpi-md-popup-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.smart-kpi-md-popup-head h3 {
+  margin: 0 0 4px;
+  color: #ffffff !important;
+  font-size: 20px;
+}
+
+.smart-kpi-md-popup-sub {
+  margin: 0;
+  font-size: 13px;
+  color: rgba(210, 228, 255, 0.78) !important;
+}
+
+.smart-kpi-md-popup-close {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(188, 220, 255, 0.24);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.smart-kpi-md-popup-close:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.smart-kpi-md-popup-form {
+  margin-top: 4px;
+}
+
+.smart-kpi-md-textarea {
+  min-height: 72px;
+  resize: vertical;
+}
+
+.smart-kpi-md-popup-card .master-edit-field-master-data > label {
+  color: rgba(210, 228, 255, 0.85) !important;
+}
+
+.smart-kpi-md-popup-card .master-edit-input-master-data {
+  background: rgba(4, 12, 26, 0.85) !important;
+  border-color: rgba(140, 190, 240, 0.32) !important;
+  color: #f4f9ff !important;
+}
+
+.smart-kpi-md-popup-card .smart-kpi-schema-editor {
+  border-top-color: rgba(188, 220, 255, 0.18);
+}
+
+.smart-kpi-md-popup-card .smart-kpi-schema-head-main strong {
+  color: #ffffff;
+}
+
+.smart-kpi-md-popup-card .smart-kpi-schema-hint,
+.smart-kpi-md-popup-card .smart-kpi-schema-empty {
+  color: rgba(180, 200, 225, 0.82);
+}
+
+.smart-kpi-md-popup-card .smart-kpi-schema-empty {
+  background: rgba(4, 12, 26, 0.45);
+  border-color: rgba(188, 220, 255, 0.2);
+}
+
+.smart-kpi-md-popup-card .smart-kpi-schema-col-label {
+  color: rgba(160, 190, 225, 0.72);
+}
+
+.smart-kpi-md-popup-card .smart-kpi-schema-row {
+  background: rgba(4, 12, 26, 0.42);
+  border-color: rgba(188, 220, 255, 0.16);
+}
+
+.smart-kpi-md-popup-card .smart-kpi-schema-row:hover {
+  background: rgba(8, 20, 38, 0.55);
+  border-color: rgba(188, 220, 255, 0.28);
+}
+
+.smart-kpi-md-popup-card .smart-kpi-check,
+.smart-kpi-md-popup-card .smart-kpi-check-text {
+  color: rgba(225, 238, 255, 0.9);
+}
+
+.smart-kpi-md-preview-card {
+  margin-top: 4px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(4, 12, 26, 0.55);
+  border: 1px solid rgba(188, 220, 255, 0.16);
+  overflow-x: auto;
+}
+
+.smart-kpi-md-preview-card h4 {
+  margin: 0 0 10px;
+  color: #ffffff;
+  font-size: 14px;
+}
+
+/* Preview table — dark theme; block global tbody tr:hover white-out */
+.smart-kpi-md-popup-card .smart-kpi-md-preview-card .smart-kpi-sheet-table {
+  border-color: rgba(188, 220, 255, 0.14);
+}
+
+.smart-kpi-md-popup-card .smart-kpi-md-preview-card .smart-kpi-sheet-table th,
+.smart-kpi-md-popup-card .smart-kpi-md-preview-card .smart-kpi-sheet-table td {
+  border-color: rgba(188, 220, 255, 0.14);
+}
+
+.smart-kpi-md-popup-card .smart-kpi-md-preview-card .smart-kpi-sheet-table th {
+  background: rgba(8, 20, 38, 0.85) !important;
+  color: rgba(210, 228, 255, 0.92) !important;
+}
+
+.smart-kpi-md-popup-card .smart-kpi-md-preview-card .smart-kpi-sheet-table td {
+  background: rgba(6, 16, 32, 0.72) !important;
+  color: rgba(235, 245, 255, 0.92) !important;
+}
+
+.smart-kpi-md-popup-card .smart-kpi-md-preview-card .smart-kpi-sheet-table tbody tr,
+.smart-kpi-md-popup-card .smart-kpi-md-preview-card .smart-kpi-sheet-table tbody tr:hover {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+.smart-kpi-md-popup-card .smart-kpi-md-preview-card .smart-kpi-sheet-table tbody tr:hover td {
+  background: rgba(10, 26, 48, 0.82) !important;
+}
+
+.smart-kpi-md-popup-card .smart-kpi-md-preview-card .smart-kpi-field-label,
+.smart-kpi-md-popup-card .smart-kpi-md-preview-card .smart-kpi-field-inline > span {
+  color: rgba(200, 220, 245, 0.88) !important;
+}
+
+.smart-kpi-md-popup-card .smart-kpi-md-preview-card .smart-kpi-field-block input,
+.smart-kpi-md-popup-card .smart-kpi-md-preview-card .smart-kpi-field-block textarea,
+.smart-kpi-md-popup-card .smart-kpi-md-preview-card .smart-kpi-field-inline input {
+  background: rgba(4, 12, 26, 0.85) !important;
+  border: 1px solid rgba(140, 190, 240, 0.32) !important;
+  color: #f4f9ff !important;
+}
+
+.smart-kpi-md-popup-card .smart-kpi-md-preview-card .smart-kpi-field-block input:hover,
+.smart-kpi-md-popup-card .smart-kpi-md-preview-card .smart-kpi-field-block textarea:hover,
+.smart-kpi-md-popup-card .smart-kpi-md-preview-card .smart-kpi-field-inline input:hover,
+.smart-kpi-md-popup-card .smart-kpi-md-preview-card .smart-kpi-field-block input:focus,
+.smart-kpi-md-popup-card .smart-kpi-md-preview-card .smart-kpi-field-block textarea:focus,
+.smart-kpi-md-popup-card .smart-kpi-md-preview-card .smart-kpi-field-inline input:focus {
+  background: rgba(6, 18, 36, 0.95) !important;
+  border-color: rgba(125, 211, 252, 0.5) !important;
+  color: #ffffff !important;
+}
+
+.smart-kpi-md-popup-card .smart-kpi-md-preview-card .employee-kpi-muted {
+  color: rgba(180, 200, 220, 0.78) !important;
+}
+
+.smart-kpi-md-popup-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(188, 220, 255, 0.16);
+}
+
+.ictmdx-shell .smart-kpi-md-panel .smart-kpi-md-filters .master-edit-input-master-data {
+  width: 100%;
+}
+
+@media (max-width: 900px) {
+  .smart-kpi-md-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .smart-kpi-md-popup-card {
+    width: calc(100vw - 32px);
+  }
+
+  .smart-kpi-md-popup-card .smart-kpi-schema-columns {
+    display: none;
+  }
+
+  .smart-kpi-md-popup-card .smart-kpi-schema-row--goal,
+  .smart-kpi-md-popup-card .smart-kpi-schema-row--result {
+    grid-template-columns: 1fr 1fr;
+  }
+}

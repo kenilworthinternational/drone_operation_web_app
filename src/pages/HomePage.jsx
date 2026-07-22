@@ -58,6 +58,9 @@ const HomePage = () => {
     location.pathname === '/home/corporate-customers' ||
     location.pathname.endsWith('/corporate-customers');
 
+  /** HRM dashboard: scrollable overview page. */
+  const isHrmDashboardRoute = location.pathname.includes('/hrm/dashboard');
+
   /** HRM employee profile / directory: fill viewport; scroll sidebar + tab body only. */
   const isEmployeeProfileRoute = useMemo(() => {
     const { pathname } = location;
@@ -105,7 +108,7 @@ const HomePage = () => {
         />
       )}
       <div 
-        className={`content-dashboard${isWingHubLanding ? ' content-dashboard--wing-hub' : ''}${showCombChrome || isDashboardChartBreakdownRoute || isOdWingShell ? ' content-dashboard--comb' : ''}${isMasterDataUpdateRoute ? ' content-dashboard--master-data-split' : ''}${isCorporateCustomersRoute ? ' content-dashboard--corporate-customers' : ''}${isEmployeeProfileRoute ? ' content-dashboard--employee-profile' : ''}${isWeatherPredictionRoute ? ' content-dashboard--weather-prediction' : ''}`}
+        className={`content-dashboard${isWingHubLanding ? ' content-dashboard--wing-hub' : ''}${showCombChrome || isDashboardChartBreakdownRoute || isOdWingShell ? ' content-dashboard--comb' : ''}${isMasterDataUpdateRoute ? ' content-dashboard--master-data-split' : ''}${isCorporateCustomersRoute ? ' content-dashboard--corporate-customers' : ''}${isEmployeeProfileRoute ? ' content-dashboard--employee-profile' : ''}${isHrmDashboardRoute ? ' content-dashboard--hrm-dashboard' : ''}${isWeatherPredictionRoute ? ' content-dashboard--weather-prediction' : ''}`}
         style={{
           marginLeft: isExternalUser || fullWidthNoLeftNav ? '0' : '280px',
           width: isExternalUser || fullWidthNoLeftNav ? '100vw' : 'calc(100vw - 280px)',

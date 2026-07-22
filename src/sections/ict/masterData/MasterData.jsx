@@ -59,6 +59,8 @@ import {
 import HrMasterOptionsPanel from './HrMasterOptionsPanel';
 import KpiDefinitionsPanel from './KpiDefinitionsPanel';
 import KpiRatingBandsPanel from './KpiRatingBandsPanel';
+import SmartKpiTemplatesPanel from './SmartKpiTemplatesPanel';
+import SmartKpiFieldTypesPanel from './SmartKpiFieldTypesPanel';
 import LocationHierarchyPanel from './LocationHierarchyPanel';
 import FuelTypesMasterPanel from './FuelTypesMasterPanel';
 import { useSendMessageMutation } from '../../../api/services/authApi';
@@ -956,6 +958,8 @@ const MasterData = ({ mode = 'full' }) => {
               { key: 'hrMasterOptions', label: 'HR Master Options' },
               { key: 'kpiDefinitions', label: 'KPI Definitions' },
               { key: 'kpiRatingBands', label: 'KPI Rating Bands' },
+              { key: 'smartKpiFieldTypes', label: 'SMART KPI Field Types' },
+              { key: 'smartKpiTemplates', label: 'SMART KPI' },
               { key: 'locationHierarchy', label: 'Province/District/DS/ASC Hierarchy' },
               { key: 'reasons', label: 'Reasons' },
               { key: 'invoiceOrganizations', label: 'Invoice Organizations' },
@@ -1350,6 +1354,14 @@ const MasterData = ({ mode = 'full' }) => {
 
             {selectedMasterModule === 'kpiRatingBands' && (
               <KpiRatingBandsPanel onMessage={setQuickMessage} />
+            )}
+
+            {selectedMasterModule === 'smartKpiFieldTypes' && (
+              <SmartKpiFieldTypesPanel onMessage={setQuickMessage} />
+            )}
+
+            {selectedMasterModule === 'smartKpiTemplates' && (
+              <SmartKpiTemplatesPanel onMessage={setQuickMessage} />
             )}
 
             {selectedMasterModule === 'locationHierarchy' && (

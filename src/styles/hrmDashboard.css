@@ -1,0 +1,339 @@
+.hrm-dashboard {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 10px 12px 14px;
+  box-sizing: border-box;
+  background: #fff;
+}
+
+.hrm-dashboard--embedded {
+  padding: 0;
+  background: transparent;
+}
+
+.hrm-dash-toolbar {
+  margin-bottom: 10px;
+}
+
+.content-dashboard.content-dashboard--hrm-dashboard {
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0;
+  background: #fff;
+}
+
+.content-dashboard.content-dashboard--hrm-dashboard > * {
+  width: 100%;
+  max-width: 100%;
+}
+
+.hrm-dash-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.hrm-dash-header h1 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #1e1033;
+}
+
+.hrm-dash-subtitle {
+  margin: 2px 0 0;
+  color: #64748b;
+  font-size: 0.82rem;
+}
+
+.hrm-dash-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.hrm-dash-period-tabs {
+  display: inline-flex;
+  padding: 2px;
+  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.hrm-dash-period-tab {
+  border: none;
+  background: transparent;
+  color: #475569;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.hrm-dash-period-tab.active {
+  background: #6b4c8a;
+  color: #fff;
+}
+
+.hrm-dash-input {
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 0.82rem;
+  color: #0f172a;
+  background: #fff;
+}
+
+.hrm-dash-input-year {
+  width: 84px;
+}
+
+.hrm-dash-refresh,
+.hrm-dash-export-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #334155;
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.hrm-dash-export-btn {
+  color: #166534;
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+  padding: 4px 8px;
+}
+
+.hrm-dash-export-btn:hover {
+  background: #dcfce7;
+}
+
+.hrm-dash-export-btn--icon {
+  padding: 4px 7px;
+  min-width: 28px;
+  justify-content: center;
+}
+
+.hrm-dash-refresh:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.hrm-dash-refresh .spin,
+.hrm-dash-toolbar .spin {
+  animation: hrm-dash-spin 0.8s linear infinite;
+}
+
+@keyframes hrm-dash-spin {
+  to { transform: rotate(360deg); }
+}
+
+.hrm-dash-error {
+  margin-bottom: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+  font-size: 0.85rem;
+}
+
+.hrm-dash-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.hrm-dash-section-head h2 {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #334155;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.hrm-dash-stats {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.hrm-dash-stat {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 10px;
+  border-radius: 8px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+}
+
+.hrm-dash-stat-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  font-size: 0.95rem;
+  flex-shrink: 0;
+}
+
+.hrm-dash-stat--purple .hrm-dash-stat-icon { background: rgba(107, 76, 138, 0.1); color: #6b4c8a; }
+.hrm-dash-stat--green .hrm-dash-stat-icon { background: rgba(16, 185, 129, 0.1); color: #059669; }
+.hrm-dash-stat--blue .hrm-dash-stat-icon { background: rgba(37, 99, 235, 0.1); color: #2563eb; }
+.hrm-dash-stat--amber .hrm-dash-stat-icon { background: rgba(245, 158, 11, 0.12); color: #d97706; }
+.hrm-dash-stat--violet .hrm-dash-stat-icon { background: rgba(124, 58, 237, 0.1); color: #7c3aed; }
+
+.hrm-dash-stat-label {
+  display: block;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.hrm-dash-stat-value {
+  display: block;
+  margin-top: 2px;
+  font-size: 1.25rem;
+  line-height: 1.1;
+  color: #0f172a;
+}
+
+.hrm-dash-stat-hint {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.72rem;
+  color: #64748b;
+}
+
+.hrm-dash-grid {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.hrm-dash-grid--2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.hrm-dash-chart-panel {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.hrm-dash-chart-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.hrm-dash-chart-head-main {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.hrm-dash-chart-head h3 {
+  margin: 0;
+  font-size: 0.92rem;
+  color: #1e293b;
+}
+
+.hrm-dash-chart-head span {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.hrm-dash-chart-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.hrm-dash-empty {
+  margin: 12px 0;
+  text-align: center;
+  color: #64748b;
+  font-size: 0.82rem;
+}
+
+.hrm-dash-quick-links {
+  margin-top: 4px;
+}
+
+.hrm-dash-quick-links .hrm-dash-section-head h2 {
+  text-transform: none;
+  font-size: 0.92rem;
+}
+
+.hrm-dash-quick-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.hrm-dash-quick-card {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #4c1d73;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.hrm-dash-quick-card:hover {
+  border-color: rgba(107, 76, 138, 0.35);
+  background: #faf8fc;
+}
+
+@media (max-width: 1200px) {
+  .hrm-dash-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .hrm-dash-quick-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .hrm-dash-stats,
+  .hrm-dash-grid--2,
+  .hrm-dash-quick-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hrm-dashboard {
+    padding: 8px;
+  }
+}
