@@ -554,6 +554,38 @@
   font-weight: 600;
 }
 
+.dayend-done-badge-emergency {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.dayend-lock-hint-emergency {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #c62828;
+  font-weight: 500;
+}
+
+.field-dayend-badge-emergency {
+  margin-left: 8px;
+  background: #e8f5e9;
+  color: #2e7d32;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.field-dayend-pending-badge-emergency {
+  margin-left: 8px;
+  background: #fff3e0;
+  color: #ef6c00;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
 .assignment-pilot-drone-section-emergency {
   padding: 15px;
   background: #f8f9fa;

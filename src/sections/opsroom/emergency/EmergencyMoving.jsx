@@ -256,6 +256,21 @@ const EmergencyMoving = () => {
                         {assignment.mission_count > 0 && (
                           <span className="count-badge-emergency">{assignment.mission_count} Mission(s)</span>
                         )}
+                        {assignment.dayend_done && (
+                          <span
+                            className="count-badge-emergency dayend-done-badge-emergency"
+                            title={
+                              assignment.dayend_done_fields_count
+                                ? `Dayend done on ${assignment.dayend_done_fields_count} field(s)`
+                                : 'Dayend process done'
+                            }
+                          >
+                            Dayend done
+                            {assignment.dayend_done_fields_count
+                              ? ` (${assignment.dayend_done_fields_count})`
+                              : ''}
+                          </span>
+                        )}
                       </div>
                     </div>
                     
@@ -357,6 +372,12 @@ const EmergencyMoving = () => {
                           <select
                             value={assignment.drone_id || ''}
                             onChange={async (e) => {
+                              if (assignment.dayend_done) {
+                                e.target.value = assignment.drone_id || '';
+                                alert('Cannot change drone: dayend process is done on this assignment');
+                                return;
+                              }
+
                               const newDroneId = e.target.value;
                               const currentPilotId = assignment.pilot_id;
                               
@@ -379,7 +400,7 @@ const EmergencyMoving = () => {
                                 }
                               } catch (error) {
                                 console.error('Error updating assignment:', error);
-                                alert(`Failed to update: ${error?.data?.error || error?.message || 'Unknown error'}`);
+                                alert(`Failed to update: ${error?.data?.error || error?.data?.message || error?.message || 'Unknown error'}`);
                                 // Reset dropdown on error
                                 e.target.value = assignment.drone_id || '';
                               } finally {
@@ -391,7 +412,12 @@ const EmergencyMoving = () => {
                               }
                             }}
                             className="select-input-emergency"
-                            disabled={updatingAssignments.has(assignment.id)}
+                            disabled={assignment.dayend_done || updatingAssignments.has(assignment.id)}
+                            title={
+                              assignment.dayend_done
+                                ? 'Drone locked: dayend process is done on one or more fields'
+                                : 'Select drone'
+                            }
                           >
                             <option value="">-- Select Drone --</option>
                             {drones.map((drone) => (
@@ -400,6 +426,14 @@ const EmergencyMoving = () => {
                               </option>
                             ))}
                           </select>
+                          {assignment.dayend_done && (
+                            <div className="dayend-lock-hint-emergency">
+                              Drone locked — dayend done
+                              {assignment.dayend_done_fields_count
+                                ? ` on ${assignment.dayend_done_fields_count} field(s)`
+                                : ''}
+                            </div>
+                          )}
                         </div>
                         <div className="edit-actions-emergency">
                           {/* Only show View button if assignment has plans with active fields (activated = 1 in field_pilot_and_drones) */}
@@ -498,6 +532,14 @@ const EmergencyMoving = () => {
           <div className="modal-content-emergency view-plans-modal-emergency" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header-emergency">
               <h3>Plans - {selectedAssignmentForView.assignment_id || `Assignment ${selectedAssignmentForView.id}`}</h3>
+              {selectedAssignmentForView.dayend_done && (
+                <span className="count-badge-emergency dayend-done-badge-emergency">
+                  Dayend done
+                  {selectedAssignmentForView.dayend_done_fields_count
+                    ? ` (${selectedAssignmentForView.dayend_done_fields_count})`
+                    : ''}
+                </span>
+              )}
               <button
                 className="modal-close-button-emergency"
                 onClick={() => {
@@ -525,14 +567,23 @@ const EmergencyMoving = () => {
                               const activated = field.activated;
                               return activated === 1 || activated === '1' || activated === true;
                             })
-                            .map((field) => (
+                            .map((field) => {
+                              const fieldDayendDone =
+                                String(field.ops_task_status || '').toLowerCase() === 's';
+                              return (
                             <div key={field.id} className="view-field-item-emergency">
                               <span className="field-name-emergency">{field.field_short_name || field.field || 'Unknown Field'}</span>
                               {field.field_area && (
                                 <span className="field-area-emergency">{field.field_area} Ha</span>
                               )}
+                              {fieldDayendDone ? (
+                                <span className="field-dayend-badge-emergency">Dayend done</span>
+                              ) : (
+                                <span className="field-dayend-pending-badge-emergency">Dayend pending</span>
+                              )}
                             </div>
-                          ))}
+                              );
+                            })}
                         </div>
                       )}
                     </div>
