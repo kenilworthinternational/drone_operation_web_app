@@ -26,6 +26,8 @@ import {
   FaClock,
   FaUserTie,
   FaFileExcel,
+  FaBirthdayCake,
+  FaUmbrellaBeach,
 } from 'react-icons/fa';
 import { useGetHrmDashboardSummaryQuery } from '../../../api/services NodeJs/hrLeaveApi';
 import { withCurrentWingSearch } from '../../../config/wingRouteGuard';
@@ -59,6 +61,21 @@ function formatStatusLabel(status) {
 function shortDeptLabel(name, max = 12) {
   const text = String(name || '—');
   return text.length > max ? `${text.slice(0, max - 1)}…` : text;
+}
+
+function daysUntilLabel(daysUntil) {
+  const days = Number(daysUntil);
+  if (!Number.isFinite(days)) return '';
+  if (days === 0) return 'Today';
+  if (days === 1) return 'Tomorrow';
+  return `In ${days} days`;
+}
+
+function formatShortDate(isoDate) {
+  if (!isoDate) return '—';
+  const d = new Date(`${isoDate}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return isoDate;
+  return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
 function ExcelButton({ onClick, label = 'Export Excel' }) {
@@ -142,6 +159,10 @@ export default function HrmDashboard({ embedded = false }) {
   const attendance = data?.attendance || {};
   const leave = data?.leave || {};
   const kpi = data?.kpi || {};
+  const upcomingHolidays = data?.upcomingHolidays?.items || [];
+  const upcomingBirthdays = data?.upcomingBirthdays?.items || [];
+  const holidayDaysAhead = data?.upcomingHolidays?.daysAhead ?? 60;
+  const birthdayDaysAhead = data?.upcomingBirthdays?.daysAhead ?? 30;
 
   const attendanceTrend = attendance.trend || [];
   const leaveBreakdown = leave.statusBreakdown || [];
@@ -380,6 +401,63 @@ export default function HrmDashboard({ embedded = false }) {
               </Bar>
             </BarChart>
           </ResponsiveContainer>
+        </ChartPanel>
+      </section>
+
+      <section className="hrm-dash-grid hrm-dash-grid--2">
+        <ChartPanel
+          title="Upcoming holidays"
+          subtitle={`Next ${holidayDaysAhead} days · marked calendar`}
+          empty={!upcomingHolidays.length}
+          emptyText="No marked holidays in the next window."
+        >
+          <ul className="hrm-dash-upcoming-list">
+            {upcomingHolidays.map((row) => (
+              <li key={`${row.holidayDate}-${row.id || row.holidayType}`} className="hrm-dash-upcoming-item">
+                <div className="hrm-dash-upcoming-icon hrm-dash-upcoming-icon--holiday" aria-hidden>
+                  <FaUmbrellaBeach />
+                </div>
+                <div className="hrm-dash-upcoming-body">
+                  <strong>{row.description || row.holidayTypeLabel || 'Holiday'}</strong>
+                  <span>
+                    {formatShortDate(row.holidayDate)}
+                    {row.holidayTypeLabel ? ` · ${row.holidayTypeLabel}` : ''}
+                  </span>
+                </div>
+                <span className={`hrm-dash-upcoming-when${row.daysUntil === 0 ? ' is-today' : ''}`}>
+                  {daysUntilLabel(row.daysUntil)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </ChartPanel>
+
+        <ChartPanel
+          title="Upcoming birthdays"
+          subtitle={`Next ${birthdayDaysAhead} days · employees`}
+          empty={!upcomingBirthdays.length}
+          emptyText="No employee birthdays in the next window."
+        >
+          <ul className="hrm-dash-upcoming-list">
+            {upcomingBirthdays.map((row) => (
+              <li key={row.employeeId} className="hrm-dash-upcoming-item">
+                <div className="hrm-dash-upcoming-icon hrm-dash-upcoming-icon--birthday" aria-hidden>
+                  <FaBirthdayCake />
+                </div>
+                <div className="hrm-dash-upcoming-body">
+                  <strong>{row.employeeName}</strong>
+                  <span>
+                    {formatShortDate(row.nextBirthdayDate)}
+                    {row.departmentName ? ` · ${row.departmentName}` : ''}
+                    {row.empNo ? ` · ${row.empNo}` : ''}
+                  </span>
+                </div>
+                <span className={`hrm-dash-upcoming-when${row.daysUntil === 0 ? ' is-today' : ''}`}>
+                  {daysUntilLabel(row.daysUntil)}
+                </span>
+              </li>
+            ))}
+          </ul>
         </ChartPanel>
       </section>
 

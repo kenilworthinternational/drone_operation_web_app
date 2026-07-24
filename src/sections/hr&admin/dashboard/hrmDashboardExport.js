@@ -207,5 +207,21 @@ export function exportHrmFullDashboardExcel({ data, periodType, periodKey, perio
     'Rating label': row.ratingLabel ?? '',
   })));
 
+  writeSheet(wb, 'Upcoming holidays', (data?.upcomingHolidays?.items || []).map((row) => ({
+    Date: row.holidayDate ?? '',
+    Type: row.holidayTypeLabel || row.holidayType || '',
+    Description: row.description ?? '',
+    'Days until': row.daysUntil ?? '',
+  })));
+
+  writeSheet(wb, 'Upcoming birthdays', (data?.upcomingBirthdays?.items || []).map((row) => ({
+    Employee: row.employeeName ?? '',
+    'Emp No': row.empNo ?? '',
+    Department: row.departmentName ?? '',
+    'Next birthday': row.nextBirthdayDate ?? '',
+    DOB: row.dob ?? '',
+    'Days until': row.daysUntil ?? '',
+  })));
+
   downloadWorkbook(wb, `HRM_Dashboard_Full_${periodType}_${periodKey}_${stamp()}.xlsx`);
 }
